@@ -64,6 +64,41 @@
 - Fragments: `config/fragments/mt7668.config`
 
 ### Build Result
+- Status: FAILED - type errors in ps4-bpcie-icc.c
+- Output: -
+- Errors:
+```
+drivers/ps4/ps4-bpcie-icc.c:292:35: error: passing argument 1 of 'ioread32' 
+makes pointer from integer without a cast [-Wint-conversion]
+  292 |         value_to_write = ioread32(addr) | 1;
+                                          ^~~~
+drivers/ps4/ps4-bpcie-icc.c:286: u32 addr; should be void __iomem *addr;
+```
+
+### Test Result
+- Booted: -
+- Display: -
+- WiFi: -
+- Notes: -
+
+---
+
+## Build Attempt #3
+
+**Date:** 2024-01-14
+**Base:** crashniels/linux `ps4-linux-6.15.y-baikal`
+**Branch/Commit:** b3b6b1e4f
+
+### Patches Applied
+```
+0100-southbridge/0001-ps4-bpcie-icc-fix-ioread-iowrite-pointer-types.patch
+```
+
+### Config Changes
+- Base: `config/config.baikal-b1`
+- Fragments: `config/fragments/mt7668.config`, `config/fragments/debug.config`
+
+### Build Result
 - Status: IN PROGRESS
 - Output: -
 - Errors: -

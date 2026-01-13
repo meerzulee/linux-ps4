@@ -1,24 +1,5 @@
-From: PS4 Linux Port <ps4linux@localhost>
-Date: Tue, 14 Jan 2025 00:00:00 +0000
-Subject: [PATCH] ps4: bpcie-icc: Fix ioread32/iowrite32 pointer type errors
-
-The ioread32() and iowrite32() functions expect void __iomem * pointers,
-not u32 integers. This causes build errors with modern kernels that are
-stricter about pointer types.
-
-Fix by changing the addr variable type from u32 to void __iomem *.
-
-Fixes build error:
-  drivers/ps4/ps4-bpcie-icc.c:292:35: error: passing argument 1 of
-  'ioread32' makes pointer from integer without a cast [-Wint-conversion]
-
-Signed-off-by: PS4 Linux Port <ps4linux@localhost>
----
- drivers/ps4/ps4-bpcie-icc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
 diff --git a/drivers/ps4/ps4-bpcie-icc.c b/drivers/ps4/ps4-bpcie-icc.c
-index 1234567..abcdefg 100644
+index 34acb7cf8..f3788bd1d 100644
 --- a/drivers/ps4/ps4-bpcie-icc.c
 +++ b/drivers/ps4/ps4-bpcie-icc.c
 @@ -283,7 +283,7 @@ EXPORT_SYMBOL_GPL(bpcie_icc_cmd);
