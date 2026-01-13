@@ -30,12 +30,16 @@ echo "PS4 Linux 6.x - Initramfs Loaded!"
 echo "==================================="
 echo ""
 
-# Parse kernel command line for root device
+# Parse kernel command line
 ROOT_DEV=""
+DEBUG_NET=""
 for param in $(cat /proc/cmdline); do
     case "$param" in
         root=*)
             ROOT_DEV="${param#root=}"
+            ;;
+        debug_net=*)
+            DEBUG_NET="${param#debug_net=}"
             ;;
     esac
 done
@@ -47,6 +51,27 @@ echo ""
 # Wait for USB to settle
 echo "Waiting for USB devices..."
 sleep 3
+
+# Try to set up networking for debug
+echo "Setting up debug network..."
+if [ -n "${DEBUG_NET}" ]; then
+    # Load USB ethernet driver
+    modprobe r8152 2>/dev/null || echo "r8152 module not found (may be built-in)"
+    sleep 2
+    
+    # Find ethernet interface
+    for iface in eth0 enp0s0 $(ls /sys/class/net/ | grep -v lo); do
+        if [ -d "/sys/class/net/${iface}" ]; then
+            echo "Configuring ${iface} with IP ${DEBUG_NET}..."
+            ip addr add ${DEBUG_NET}/24 dev ${iface} 2>/dev/null
+            ip link set ${iface} up 2>/dev/null
+            break
+        fi
+    done
+    
+    echo "Network interfaces:"
+    ip addr 2>/dev/null || echo "ip command failed"
+fi
 
 # List available block devices
 echo "Available block devices:"
@@ -98,11 +123,15 @@ else
     }
     chmod +x "${WORK_DIR}/bin/busybox"
     
-    # Create symlinks
-    for cmd in sh mount umount switch_root sleep cat ls echo mkdir mknod; do
+    # Create symlinks (including networking tools)
+    for cmd in sh mount umount switch_root sleep cat ls echo mkdir mknod ip ifconfig modprobe insmod dmesg grep; do
         ln -s busybox "${WORK_DIR}/bin/${cmd}"
     done
 fi
+
+# Create /sbin symlinks too
+ln -s ../bin/busybox "${WORK_DIR}/sbin/modprobe"
+ln -s ../bin/busybox "${WORK_DIR}/sbin/insmod"
 
 # Create the cpio archive
 echo "Creating initramfs archive..."
