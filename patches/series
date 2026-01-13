@@ -22,6 +22,9 @@
 # Baikal-specific initialization and quirks
 # (Extract from whitehax0r/ps4-linux-baikal if not in crashniels base)
 
+# Fix ioread32/iowrite32 pointer type errors in bpcie-icc driver
+0100-southbridge/0001-ps4-bpcie-icc-fix-ioread-iowrite-pointer-types.patch
+
 # 0100-southbridge/0101-baikal-platform.patch
 # 0100-southbridge/0102-apcie-controller.patch
 # 0100-southbridge/0103-baikal-b1-quirks.patch
