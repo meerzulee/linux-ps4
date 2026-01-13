@@ -11,10 +11,12 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Base Kernel | Not cloned yet | crashniels 6.15.y-baikal |
-| Patches Applied | 0 | None yet |
-| Config | Ready | crashniels base + MT7668 fragment |
-| Build Attempts | 0 | - |
+| Base Kernel | 6.15.4 | crashniels ps4-linux-6.15.y-baikal |
+| Patches Applied | 1 | bpcie-icc pointer fix (via sed) |
+| Config | Ready | crashniels base + MT7668 + debug |
+| Build | SUCCESS | bzImage 9.6MB |
+| Boot Test #1 | FAILED | Black screen - old initramfs |
+| Boot Test #2 | PENDING | Using new minimal initramfs |
 
 ---
 
@@ -85,13 +87,15 @@ drivers/ps4/ps4-bpcie-icc.c:286: u32 addr; should be void __iomem *addr;
 
 ## Build Attempt #3
 
-**Date:** 2024-01-14
+**Date:** 2026-01-14
 **Base:** crashniels/linux `ps4-linux-6.15.y-baikal`
 **Branch/Commit:** b3b6b1e4f
+**Kernel Version:** 6.15.4
 
 ### Patches Applied
 ```
-0100-southbridge/0001-ps4-bpcie-icc-fix-ioread-iowrite-pointer-types.patch
+# Applied via sed in build.sh (patch file had format issues)
+drivers/ps4/ps4-bpcie-icc.c: u32 addr -> void __iomem *addr
 ```
 
 ### Config Changes
@@ -99,15 +103,20 @@ drivers/ps4/ps4-bpcie-icc.c:286: u32 addr; should be void __iomem *addr;
 - Fragments: `config/fragments/mt7668.config`, `config/fragments/debug.config`
 
 ### Build Result
-- Status: IN PROGRESS
-- Output: -
-- Errors: -
+- Status: SUCCESS
+- Output: `output/bzImage` (9.6MB)
+- Kernel: 6.15.4-gb3b6b1e4fe87-dirty
 
-### Test Result
-- Booted: -
-- Display: -
+### Test Result #1 (old initramfs)
+- Booted: NO
+- Display: BLACK SCREEN
 - WiFi: -
-- Notes: -
+- Notes: Used old initramfs from 2021 (whitehax0r) - incompatible with 6.x kernel
+
+### Test Result #2 (minimal initramfs) - PENDING
+- initramfs: `output/initramfs-minimal.cpio.gz` (688KB)
+- Built with static busybox 1.35.0
+- Will show debug output on screen
 
 ---
 
@@ -179,9 +188,10 @@ CONFIG_BT_MTKSDIO=m
 - **Credentials:** ps4/ps4, root/root
 
 ### Boot Files
-- `bzImage` - TBD (need to build)
-- `initramfs.cpio.gz` - Downloaded from whitehax0r (3.9MB)
-- `bootargs.txt` - TBD
+- `bzImage` - 9.6MB (kernel 6.15.4)
+- `initramfs.cpio.gz` - OLD: whitehax0r 2021 (3.9MB) - INCOMPATIBLE
+- `initramfs-minimal.cpio.gz` - NEW: custom built (688KB) - TESTING
+- `bootargs.txt` - `initrd=initramfs.cpio.gz root=/dev/sda2 rootfstype=ext4 rw loglevel=7 debug`
 
 ---
 
@@ -201,11 +211,19 @@ CONFIG_BT_MTKSDIO=m
 
 ## History
 
-### 2024-01-14
+### 2026-01-14 (continued)
+- Build #3 SUCCESS - kernel 6.15.4 built (9.6MB)
+- Test #1 FAILED - black screen with old 2021 initramfs
+- Created minimal initramfs with busybox (688KB)
+- **Next:** Test #2 with new initramfs
+
+### 2026-01-14
 - Project structure created
 - Reference repos cloned
 - Config files prepared
 - Arch Linux rootfs created (1.5GB)
-- initramfs downloaded
+- initramfs downloaded (whitehax0r 2021 - later found incompatible)
 - USB formatted (FAT32 + EXT4)
-- **Next:** Build kernel attempt #1
+- Build #1 FAILED - missing bc dependency
+- Build #2 FAILED - bpcie-icc type errors
+- Added sed fix to build.sh for bpcie-icc

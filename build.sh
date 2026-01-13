@@ -127,6 +127,11 @@ log_info "Resetting source tree to clean state..."
 git checkout . 2>/dev/null || true
 git clean -fd 2>/dev/null || true
 
+# Manual fixes (workaround for patch format issues)
+# Fix ioread32/iowrite32 pointer type in bpcie-icc driver
+sed -i 's/^\tu32 addr;$/\tvoid __iomem *addr;/' drivers/ps4/ps4-bpcie-icc.c
+log_info "Applied manual fix: bpcie-icc ioread32/iowrite32 pointer types"
+
 if [ "$NO_PATCHES" = false ] && [ -f "${SERIES_FILE}" ]; then
     PATCH_COUNT=0
     PATCH_FAILED=0
