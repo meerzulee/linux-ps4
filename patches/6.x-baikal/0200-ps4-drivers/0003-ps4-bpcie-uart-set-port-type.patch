@@ -1,0 +1,60 @@
+From: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+Date: Thu, 6 May 2026 23:00:00 +0600
+Subject: [PATCH] ps4-bpcie-uart: set port.type so console=ttySN actually works
+
+The Baikal BPCIe UART is registered via serial8250_register_8250_port()
+without setting `port.type`, leaving it as PORT_UNKNOWN after autoconfig
+fails on this hardware. The 8250 console layer refuses any I/O on a
+PORT_UNKNOWN port, so:
+
+  - /dev/ttyS<N> can't be written to (EIO on every write/stty)
+  - console=ttyS<N>,115200n8 in cmdline silently goes nowhere
+  - serial-getty@ttyS<N>.service cycles every ~10 s as getty open
+    succeeds but reads/writes fail
+
+Workaround the user has to use today is `earlycon=uart8250,mmio32,...`
+which writes directly to MMIO and bypasses the regular driver. That
+only covers boot up to fbcon takeover (~1 s); past that point UART is
+silent unless `keep_bootcon` is set, and `keep_bootcon` causes
+xhci_aeolia (which shares the BPCIe glue parent at 00:14.4) to crash
+under sustained early-console traffic.
+
+Fix: tell the 8250 driver up-front that this is a 16550A-class port
+and don't try to autodetect. UPF_FIXED_TYPE keeps the type we set.
+
+After this patch:
+  - /proc/tty/driver/serial shows `uart:16550A mmio:0x...` instead of
+    `uart:unknown`
+  - `console=ttyS4,115200n8` produces real output for the entire boot
+  - `keep_bootcon` becomes unnecessary (regular driver path is IRQ-
+    driven, much lighter on the BPCIe bus than poll-mode earlycon)
+  - serial-getty on ttyS4 lets us log in via the cable too
+
+Discovered 2026-05-06 while bringing up Linux on Baikal Slim CUH-2xxx
+with feeRnt's 5.4.247-neocine kernel + ArabPixel v24b loader. Confirmed
+this is feeRnt's behavior too — same code, same silent UART. Patch
+applies cleanly to both 5.4 and 6.x trees.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/ps4/ps4-bpcie-uart.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ps4/ps4-bpcie-uart.c b/drivers/ps4/ps4-bpcie-uart.c
+--- a/drivers/ps4/ps4-bpcie-uart.c
++++ b/drivers/ps4/ps4-bpcie-uart.c
+@@ -21,11 +21,13 @@ int bpcie_uart_init(struct bpcie_dev *sc)
+ 		memset(&uart, 0, sizeof(uart));
+ 		uart.port.irq		= bpcie_irqnum(sc, BPCIE_SUBFUNC_UART0 + i);
+ 		uart.port.uartclk	= 58500000;
+-		uart.port.flags		= UPF_SHARE_IRQ;
++		uart.port.flags		= UPF_SHARE_IRQ | UPF_FIXED_TYPE;
+ 		uart.port.iotype	= UPIO_MEM32;
+ 		uart.port.mapbase	= pci_resource_start(sc->pdev, 2) + off;
+ 		uart.port.membase	= sc->bar2 + off;
+ 		uart.port.regshift	= 2;
++		/* Force 16550A type — 8250 autoconfig fails on PS4's BPCIe UART. */
++		uart.port.type		= PORT_16550A;
+ 		uart.port.dev		= &sc->pdev->dev;
+
+ 		sc->serial_line[i] = serial8250_register_8250_port(&uart);

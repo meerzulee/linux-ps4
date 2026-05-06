@@ -17,6 +17,7 @@
 
 # === 0200: PS4 southbridge drivers (Aeolia/Belize/Baikal, ICC, UART, pwrbutton)
 0200-ps4-drivers/0001-drivers-ps4-add-aeolia-belize-baikal.patch
+0200-ps4-drivers/0002-ps4-bpcie-uart-set-port-type.patch
 
 # === 0300: Liverpool GPU (amdgpu ps4_bridge, CIK quirks, connector glue)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch

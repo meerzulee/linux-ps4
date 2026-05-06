@@ -27,6 +27,9 @@
 # === 0200: PS4 southbridge drivers (Aeolia/Belize/Baikal, ICC, UART, pwrbutton)
 0200-ps4-drivers/0001-drivers-ps4-add-aeolia-belize-baikal.patch
 0200-ps4-drivers/0002-ps4-bpcie-icc-fix-ioread-iowrite-pointer-types.patch
+# Disabled for A/B test — re-enable once we confirm whether it causes the
+# 6.x kexec triple-fault.
+# 0200-ps4-drivers/0003-ps4-bpcie-uart-set-port-type.patch
 
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch
