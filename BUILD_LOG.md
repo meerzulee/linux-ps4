@@ -27,6 +27,30 @@
 
 ---
 
+## 2026-05-06 — UART unlocked via earlycon
+
+Building on the morning's working boot, tracked down why Linux UART was silent post-kexec. Two findings:
+
+1. **`ps4-bpcie-uart.c` registers ports without `port.type`** → kernel sets `PORT_UNKNOWN` → 8250 console layer refuses any I/O on those ttySN devices, including writes. Confirmed: `stty -F /dev/ttyS4 …` errored with EIO. Workaround: bypass the regular driver path with `earlycon=uart8250,mmio32,<addr>,…` which writes directly to MMIO from the printk path.
+
+2. **The kernel registered the wrong BPCIe UART as the first ttyS line.** `BPCIE_NR_UARTS=2`. UART0 is at BAR2+`0x10E000` = `0xC890E000`, UART1 is at BAR2+`0x10F000` = `0xC890F000`. Linux's ttyS4 was UART1, but the user's physical UART cable is wired to **UART0**. Confirmed by writing sentinel bytes to both via `/dev/mem` (`scripts/uartprobe.py`); only `0xC890E000` reached the cable.
+
+3. **`keep_bootcon` crashes xhci_aeolia at ~57 s** on this hardware — constant earlycon writes saturate the BPCIe bus, the xhci host (also behind `00:14.4` glue) goes "not responding" → USB rootfs disappears → ext4 errors → systemd cascade-fails. Don't use `keep_bootcon`. Earlycon retires when `console=tty0` registers (~1 s), HDMI fbcon takes over from there.
+
+Final bootargs:
+
+```
+earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 console=ttyS0,115200n8 8250.nr_uarts=8 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
+```
+
+Result: ~1 s of full UART boot capture (decompression → BIOS-e820 → ACPI → CPU bring-up → memory init → IRQ alloc → fbcon switch), then HDMI. Sample capture committed at `checkpoint/docs/uart-boot-capture-ttyS0E000.log` (135 lines).
+
+Iteration setup that drops the unplug-USB step entirely: bootargs and bzImage live on the FAT32 (`sda1`); from running Linux we mount `/dev/sda1` over SSH, edit the file, `sudo systemctl reboot`, user re-launches `linux-1024mb.bin` via PSFree, kernel boots with the new cmdline. Whole loop ~1 minute.
+
+Same SSH-driven workflow now lets us swap bzImages on demand for 6.x port experiments — see `9000-todo`.
+
+---
+
 ## 2026-05-06 — first successful end-to-end Linux boot
 
 After multiple failed boot attempts the actual blocker was finally pinned down. Working combo, captured in `checkpoint/`:

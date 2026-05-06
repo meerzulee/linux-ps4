@@ -86,6 +86,66 @@ Linux *will* eventually print to the same UART once the in-kernel `ps4-bpcie-uar
 - We deleted/recreated `bootargs.txt` several times before realizing the earlyprintk arg was the killer. The same content exists in multiple locations the v24b payload checks (`/mnt/usb0/`, `/mnt/usb1/`, `/data/linux/boot/`, `/user/system/boot/`); whichever it finds first wins, so an old `/data/linux/boot/bootargs.txt` on PS4 internal storage from a previous experiment can override your USB one. Worth checking via FTP if cmdlines look stale.
 - An empty `vram.txt` ≠ no `vram.txt`. The payload's compiled-in default is 1024; the file just confirms/overrides.
 
+## UART unlock — earlycon to the right MMIO
+
+After the first successful boot we still had **zero Linux UART output** even though the FreeBSD-side persistent-UART payload had been logging the firmware fine. Tracking it down took several iterations and produced reproducible knowledge worth keeping.
+
+### Root cause of the silence
+
+The PS4's `ps4-bpcie-uart.c` driver registers BPCIe UART instances via `serial8250_register_8250_port()` **without setting `port.type`**. Result in `/proc/tty/driver/serial`:
+
+```
+4: uart:unknown mmio:0xC890F000 irq:29
+```
+
+`type=unknown` is fatal: the 8250 console layer refuses to write/transmit on a port of unknown type. Even reads fail with `EIO`. So `console=ttyS0,115200n8` (or any `console=ttySN`) goes nowhere — kernel printk has nothing to output to. The standard PC ttyS0..ttyS3 are phantom legacy 8250s at I/O `0x3F8` etc. that the PS4 doesn't physically have.
+
+The proper fix is a kernel patch — see `9000-todo`. Workaround that does *not* need a kernel rebuild: **earlycon**, which writes directly to MMIO from the kernel printk path without going through the regular driver.
+
+### Finding the right MMIO address
+
+`BPCIE_NR_UARTS=2` per `drivers/ps4/baikal.h`, with offsets:
+
+| Index | Offset | Address with BAR2=`0xC8800000` |
+|---|---|---|
+| 0 | `0x10E000` | `0xC890E000` |
+| 1 | `0x10F000` | `0xC890F000` |
+
+We can find BAR2 from `lspci -vv -s 0000:00:14.4` (the BPCIe glue function). It's the second non-prefetchable region.
+
+The Linux 8250 driver registered ttyS4 at `0xC890F000` (UART1). But the user's physical UART cable was wired to **UART0 at `0xC890E000`**. To prove it without a reboot we wrote sentinel bytes via `/dev/mem` to both addresses (script: `checkpoint/docs/uartprobe.py`) — only `0xC890E000` produced output on the cable.
+
+That MMIO address is the one to put in the bootargs:
+
+```
+earlycon=uart8250,mmio32,0xC890E000,115200n8
+```
+
+Note `mmio32`: every Linux earlycon write transmits a 32-bit dword to the data register. With `regshift=2` the chip select picks the right reg, but the transmitted bytes are still padded with three zero bytes per character (so output looks like `H e l l o` with embedded NULs if you log it raw). Acceptable for debug, ignore the cosmetic spacing.
+
+### Don't add `keep_bootcon` on this hardware
+
+We tried `keep_bootcon` to extend earlycon past the regular console handover so we'd get full-boot UART. **It crashes xhci_aeolia at ~57 seconds.** The BPCIe glue device parents both the UART and the xhci controller (`00:14.7`); constant earlycon writes to UART MMIO appear to overload the bus and the xhci host eventually goes into "not responding" → "HC died" → USB rootfs disappears → ext4 errors → systemd cascade-fails.
+
+So the **stable** bootargs is **earlycon without `keep_bootcon`**:
+
+```
+earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 console=ttyS0,115200n8 8250.nr_uarts=8 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
+```
+
+Behavior:
+- 0.000s — earlycon active, UART logs every printk
+- ~1.0s — `console=tty0` registers (HDMI fbcon), earlycon retires automatically (`bootconsole [uart8250] disabled` in dmesg)
+- ~1.0s onward — kernel output goes to HDMI; UART silent; xhci stays alive
+
+`checkpoint/docs/uart-boot-capture-ttyS0E000.log` is a real capture of the ~135-line UART window for reference.
+
+### When the kernel boot fails silently and the screen shows just `_`
+
+That underscore is the firmware's leftover cursor. Here's the rundown:
+- Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
+- Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
+
 ## What's still on the to-do list
 
 - Investigate why our self-built bzImages hang. Suspect: Clang 22 / GCC 15 toolchain regressions for old kernels. Prove it by rebuilding 5.4 with Clang-14 and seeing if it boots.

@@ -9,7 +9,7 @@ checkpoint/
 ├── boot/             # files for the FAT32 partition on USB (sda1)
 │   ├── bzImage              # feeRnt 5.4.247-neocine-1.1, Clang-14 prebuilt
 │   ├── initramfs.cpio.gz    # better-initramfs External HDD variant (DionKill)
-│   ├── bootargs.txt         # tested-working kernel cmdline
+│   ├── bootargs.txt         # tested-working kernel cmdline (earlycon at 0xC890E000)
 │   ├── vram.txt             # 1024 — matches the 1024 MB payload
 │   └── config_kernel        # kernel .config feeRnt's bzImage was built with
 ├── payload/          # files for /data/payloads/ on the PS4 (via FTP/2121)
