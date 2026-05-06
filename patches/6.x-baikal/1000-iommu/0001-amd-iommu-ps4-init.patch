@@ -1,0 +1,59 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] iommu/amd: PS4 init quirks (Linux 6.15)
+
+AMD IOMMU init/iommu path adjustments for Liverpool. NB: in 6.x the
+AMD IOMMU code moved from drivers/iommu/amd_iommu_init.c to
+drivers/iommu/amd/{init.c,iommu.c} — this patch matches the new layout.
+
+Source: crashniels/linux ps4-linux-6.15.y-baikal (HEAD b3b6b1e4f)
+        on top of vanilla v6.15.4 (e60eb4415).
+
+---
+diff --git a/drivers/iommu/amd/init.c b/drivers/iommu/amd/init.c
+index 14aa0d77d..ad7180877 100644
+--- a/drivers/iommu/amd/init.c
++++ b/drivers/iommu/amd/init.c
+@@ -2948,6 +2948,7 @@ static void __init free_iommu_resources(void)
+ 	free_pci_segments();
+ }
+ 
++#ifndef CONFIG_X86_PS4 // TODO this should detect ps4-ness at runtime
+ /* SB IOAPIC is always on this device in AMD systems */
+ #define IOAPIC_SB_DEVID		((0x00 << 8) | PCI_DEVFN(0x14, 0))
+ 
+@@ -2999,6 +3000,7 @@ static bool __init check_ioapic_information(void)
+ 
+ 	return ret;
+ }
++#endif
+ 
+ static void __init free_dma_resources(void)
+ {
+@@ -3099,8 +3101,10 @@ static int __init early_amd_iommu_init(void)
+ 	if (!is_kdump_kernel() || amd_iommu_disabled)
+ 		disable_iommus();
+ 
++	#ifndef CONFIG_X86_PS4
+ 	if (amd_iommu_irq_remap)
+ 		amd_iommu_irq_remap = check_ioapic_information();
++	#endif
+ 
+ 	if (amd_iommu_irq_remap) {
+ 		struct amd_iommu_pci_seg *pci_seg;
+diff --git a/drivers/iommu/amd/iommu.c b/drivers/iommu/amd/iommu.c
+index 31f8d208d..0a035afad 100644
+--- a/drivers/iommu/amd/iommu.c
++++ b/drivers/iommu/amd/iommu.c
+@@ -3819,9 +3819,12 @@ static int irq_remapping_select(struct irq_domain *d, struct irq_fwspec *fwspec,
+ 		devid = get_ioapic_devid(fwspec->param[0]);
+ 	else if (x86_fwspec_is_hpet(fwspec))
+ 		devid = get_hpet_devid(fwspec->param[0]);
++	else if(x86_fwspec_is_aeolia(fwspec))
++		devid = fwspec->param[0];
+ 
+ 	if (devid < 0)
+ 		return 0;
++	pr_err("Remapping Selected: %x\n", devid);
+ 	iommu = __rlookup_amd_iommu((devid >> 16), (devid & 0xffff));
+ 
+ 	return iommu && iommu->ir_domain == d;

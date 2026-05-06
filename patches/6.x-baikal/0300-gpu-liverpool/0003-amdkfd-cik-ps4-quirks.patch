@@ -1,0 +1,130 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drm/amdkfd: PS4 CIK / Liverpool quirks
+
+amdkfd (kernel fusion driver — compute) adjustments needed for
+Liverpool. Touches CIK event interrupt path, CRAT topology, device queue
+manager, flat memory, kernel queue, packet manager, topology. Not present
+in 5.4 work — amdkfd was less mature then; added by crashniels.
+
+Source: crashniels/linux ps4-linux-6.15.y-baikal (HEAD b3b6b1e4f)
+        on top of vanilla v6.15.4 (e60eb4415).
+
+---
+diff --git a/drivers/gpu/drm/amd/amdkfd/cik_event_interrupt.c b/drivers/gpu/drm/amd/amdkfd/cik_event_interrupt.c
+index 981d9adcc..617a98f2c 100644
+--- a/drivers/gpu/drm/amd/amdkfd/cik_event_interrupt.c
++++ b/drivers/gpu/drm/amd/amdkfd/cik_event_interrupt.c
+@@ -38,12 +38,13 @@ static bool cik_event_interrupt_isr(struct kfd_node *dev,
+ 	uint16_t pasid;
+ 	bool ret;
+ 
+-	/* This workaround is due to HW/FW limitation on Hawaii that
++	/* This workaround is due to HW/FW limitation on Hawaii and Liverpool that
+ 	 * VMID and PASID are not written into ih_ring_entry
+ 	 */
+ 	if ((ihre->source_id == CIK_INTSRC_GFX_PAGE_INV_FAULT ||
+ 		ihre->source_id == CIK_INTSRC_GFX_MEM_PROT_FAULT) &&
+-		dev->adev->asic_type == CHIP_HAWAII) {
++		((dev->adev->asic_type == CHIP_HAWAII) || 
++		 (dev->adev->asic_type == CHIP_LIVERPOOL)) {
+ 		struct cik_ih_ring_entry *tmp_ihre =
+ 			(struct cik_ih_ring_entry *)patched_ihre;
+ 
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_crat.c b/drivers/gpu/drm/amd/amdkfd/kfd_crat.c
+index 4a7180b46..5ecd75dfd 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_crat.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_crat.c
+@@ -1587,6 +1587,9 @@ int kfd_get_gpu_cache_info(struct kfd_node *kdev, struct kfd_gpu_cache_info **pc
+ 		num_of_cache_types = ARRAY_SIZE(kaveri_cache_info);
+ 		break;
+ 	case CHIP_HAWAII:
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
++		// TODO (ps4patches): Is the Hawaii cache info really fine here?
+ 		*pcache_info = hawaii_cache_info;
+ 		num_of_cache_types = ARRAY_SIZE(hawaii_cache_info);
+ 		break;
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c b/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c
+index c610e172a..92cb5a7f7 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c
+@@ -603,7 +603,8 @@ static void deallocate_vmid(struct device_queue_manager *dqm,
+ 	struct device *dev = dqm->dev->adev->dev;
+ 
+ 	/* On GFX v7, CP doesn't flush TC at dequeue */
+-	if (q->device->adev->asic_type == CHIP_HAWAII)
++	if ((q->device->adev->asic_type == CHIP_HAWAII) ||
++		(q->device->adev->asic_type == CHIP_LIVERPOOL))
+ 		if (flush_texture_cache_nocpsch(q->device, qpd))
+ 			dev_err(dev, "Failed to flush TC\n");
+ 
+@@ -2903,6 +2904,8 @@ struct device_queue_manager *device_queue_manager_init(struct kfd_node *dev)
+ 
+ 	switch (dev->adev->asic_type) {
+ 	/* HWS is not available on Hawaii. */
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
+ 	case CHIP_HAWAII:
+ 	/* HWS depends on CWSR for timely dequeue. CWSR is not
+ 	 * available on Tonga.
+@@ -2972,6 +2975,8 @@ struct device_queue_manager *device_queue_manager_init(struct kfd_node *dev)
+ 	switch (dev->adev->asic_type) {
+ 	case CHIP_KAVERI:
+ 	case CHIP_HAWAII:
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
+ 		device_queue_manager_init_cik(&dqm->asic_ops);
+ 		break;
+ 
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_flat_memory.c b/drivers/gpu/drm/amd/amdkfd/kfd_flat_memory.c
+index dbcb60eb5..fccd0fd0b 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_flat_memory.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_flat_memory.c
+@@ -397,6 +397,8 @@ int kfd_init_apertures(struct kfd_process *process)
+ 			switch (dev->adev->asic_type) {
+ 			case CHIP_KAVERI:
+ 			case CHIP_HAWAII:
++			case CHIP_GLADIUS:
++			case CHIP_LIVERPOOL:
+ 			case CHIP_CARRIZO:
+ 			case CHIP_TONGA:
+ 			case CHIP_FIJI:
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_kernel_queue.c b/drivers/gpu/drm/amd/amdkfd/kfd_kernel_queue.c
+index 2b0a830f5..24ddd2fe4 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_kernel_queue.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_kernel_queue.c
+@@ -94,6 +94,8 @@ static bool kq_initialize(struct kernel_queue *kq, struct kfd_node *dev,
+ 	kq->pq_gpu_addr = kq->pq->gpu_addr;
+ 
+ 	/* For CIK family asics, kq->eop_mem is not needed */
++	// TODO (ps4patches): Liverpool and Gladius were specifically added here before,
++	// this seems to be unneeded here now.
+ 	if (dev->adev->asic_type > CHIP_MULLINS) {
+ 		retval = kfd_gtt_sa_allocate(dev, PAGE_SIZE, &kq->eop_mem);
+ 		if (retval != 0)
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c b/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c
+index 271c56724..1da971af7 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c
+@@ -247,6 +247,8 @@ int pm_init(struct packet_manager *pm, struct device_queue_manager *dqm)
+ 	switch (dqm->dev->adev->asic_type) {
+ 	case CHIP_KAVERI:
+ 	case CHIP_HAWAII:
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
+ 		/* PM4 packet structures on CIK are the same as on VI */
+ 	case CHIP_CARRIZO:
+ 	case CHIP_TONGA:
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_topology.c b/drivers/gpu/drm/amd/amdkfd/kfd_topology.c
+index d6653e39e..bed90b1c0 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_topology.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_topology.c
+@@ -2114,6 +2114,8 @@ int kfd_topology_add_device(struct kfd_node *gpu)
+ 	switch (dev->gpu->adev->asic_type) {
+ 	case CHIP_KAVERI:
+ 	case CHIP_HAWAII:
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
+ 	case CHIP_TONGA:
+ 		dev->node_props.capability |= ((HSA_CAP_DOORBELL_TYPE_PRE_1_0 <<
+ 			HSA_CAP_DOORBELL_TYPE_TOTALBITS_SHIFT) &

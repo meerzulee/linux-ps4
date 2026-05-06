@@ -1,0 +1,113 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] pci/msi: PS4 vendor-specific quirks
+
+Adds PS4 vendor IDs to pci_ids.h and small probe/MSI-allocation
+adjustments needed by the southbridge MFD glue.
+
+Extracted from feeRnt/ps4-linux-12xx branch 5.4.247-baikal-dfaus
+(HEAD 1fdfbd9a4) versus vanilla v5.4.247 (kernel.org).
+
+---
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index a41d04c57..b6963d0a6 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -2533,6 +2533,9 @@ static int only_one_child(struct pci_bus *bus)
+ 	return 0;
+ }
+ 
++// It can be arbitrary (above 2). Freebsd uses 20, so use that too.
++#define AEOLIA_SLOT_NUM 20
++
+ /**
+  * pci_scan_slot - Scan a PCI slot on a bus for devices
+  * @bus: PCI bus to scan
+@@ -2548,10 +2551,15 @@ int pci_scan_slot(struct pci_bus *bus, int devfn)
+ {
+ 	unsigned fn, nr = 0;
+ 	struct pci_dev *dev;
+-
++        u32 l;
+ 	if (only_one_child(bus) && (devfn > 0))
+ 		return 0; /* Already scanned the entire slot */
+-
++        // skip phantom Aeolia devices that bleed through the PCI space
++	if (PCI_SLOT(devfn) != AEOLIA_SLOT_NUM &&
++		pci_bus_read_dev_vendor_id(bus, devfn, &l, 60*1000) &&
++		(l & 0xffff) == PCI_VENDOR_ID_SONY) {
++		return 0;
++	}
+ 	dev = pci_scan_single_device(bus, devfn);
+ 	if (!dev)
+ 		return 0;
+@@ -2559,7 +2567,12 @@ int pci_scan_slot(struct pci_bus *bus, int devfn)
+ 		nr++;
+ 
+ 	for (fn = next_fn(bus, dev, 0); fn > 0; fn = next_fn(bus, dev, fn)) {
+-		dev = pci_scan_single_device(bus, devfn + fn);
++		if (PCI_SLOT(devfn) != AEOLIA_SLOT_NUM &&
++			pci_bus_read_dev_vendor_id(bus, devfn + fn, &l, 60*1000) &&
++			(l & 0xffff) == PCI_VENDOR_ID_SONY) {
++			continue;
++		}
++                dev = pci_scan_single_device(bus, devfn + fn);
+ 		if (dev) {
+ 			if (!pci_dev_is_added(dev))
+ 				nr++;
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index d35000669..d6db2497a 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -549,6 +549,8 @@
+ #define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
+ #define PCI_DEVICE_ID_AMD_16H_M30H_NB_F3 0x1583
+ #define PCI_DEVICE_ID_AMD_16H_M30H_NB_F4 0x1584
++#define PCI_DEVICE_ID_AMD_16H_M41H_F3	0x1431
++#define PCI_DEVICE_ID_AMD_16H_M41H_F4	0x1432
+ #define PCI_DEVICE_ID_AMD_17H_DF_F3	0x1463
+ #define PCI_DEVICE_ID_AMD_17H_M10H_DF_F3 0x15eb
+ #define PCI_DEVICE_ID_AMD_17H_M30H_DF_F3 0x1493
+@@ -886,6 +888,30 @@
+ #define PCI_DEVICE_ID_TI_DRA72x		0xb501
+ 
+ #define PCI_VENDOR_ID_SONY		0x104d
++#define PCI_DEVICE_ID_SONY_AEOLIA_ACPI	0x908f
++#define PCI_DEVICE_ID_SONY_AEOLIA_GBE	0x909e
++#define PCI_DEVICE_ID_SONY_AEOLIA_AHCI	0x909f
++#define PCI_DEVICE_ID_SONY_AEOLIA_SDHCI	0x90a0
++#define PCI_DEVICE_ID_SONY_AEOLIA_PCIE	0x90a1
++#define PCI_DEVICE_ID_SONY_AEOLIA_DMAC	0x90a2
++#define PCI_DEVICE_ID_SONY_AEOLIA_MEM	0x90a3
++#define PCI_DEVICE_ID_SONY_AEOLIA_XHCI	0x90a4
++#define PCI_DEVICE_ID_SONY_BELIZE_ACPI	0x90c8
++#define PCI_DEVICE_ID_SONY_BELIZE_GBE	0x90c9
++#define PCI_DEVICE_ID_SONY_BELIZE_AHCI	0x90ca
++#define PCI_DEVICE_ID_SONY_BELIZE_SDHCI	0x90cb
++#define PCI_DEVICE_ID_SONY_BELIZE_PCIE	0x90cc
++#define PCI_DEVICE_ID_SONY_BELIZE_DMAC	0x90cd
++#define PCI_DEVICE_ID_SONY_BELIZE_MEM	0x90ce
++#define PCI_DEVICE_ID_SONY_BELIZE_XHCI	0x90cf
++#define PCI_DEVICE_ID_SONY_BAIKAL_ACPI	0x90d7
++#define PCI_DEVICE_ID_SONY_BAIKAL_GBE	0x90d8
++#define PCI_DEVICE_ID_SONY_BAIKAL_AHCI	0x90d9
++#define PCI_DEVICE_ID_SONY_BAIKAL_SDHCI	0x90da
++#define PCI_DEVICE_ID_SONY_BAIKAL_PCIE	0x90db
++#define PCI_DEVICE_ID_SONY_BAIKAL_DMAC	0x90dc
++#define PCI_DEVICE_ID_SONY_BAIKAL_MEM	0x90dd
++#define PCI_DEVICE_ID_SONY_BAIKAL_XHCI	0x90de
+ 
+ /* Winbond have two vendor IDs! See 0x10ad as well */
+ #define PCI_VENDOR_ID_WINBOND2		0x1050
+diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
+index b7e4c5999..eec316ad4 100644
+--- a/kernel/irq/msi.c
++++ b/kernel/irq/msi.c
+@@ -306,7 +306,7 @@ int msi_domain_prepare_irqs(struct irq_domain *domain, struct device *dev,
+ 	int ret;
+ 
+ 	ret = ops->msi_check(domain, info, dev);
+-	if (ret == 0)
++	if (ret == 0 && ops->msi_prepare)
+ 		ret = ops->msi_prepare(domain, dev, nvec, arg);
+ 
+ 	return ret;

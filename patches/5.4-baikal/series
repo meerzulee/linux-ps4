@@ -1,0 +1,51 @@
+# PS4 Baikal Kernel 5.4 Patch Series
+#
+# Apply order: low number first. Within a directory, files apply
+# alphabetically.
+#
+# Source: extracted from feeRnt/ps4-linux-12xx branch
+#         5.4.247-baikal-dfaus (HEAD 1fdfbd9a4) versus vanilla v5.4.247
+# Generator: scripts/generate-5.4-patches.sh
+#
+# To regenerate from updated upstream:
+#   ./scripts/generate-5.4-patches.sh
+#
+# To temporarily disable a patch, comment its line.
+
+# === 0100: x86 platform glue (Kconfig, head64, MSI, PS4 init, TSC calibration)
+0100-x86-platform/0001-x86-add-ps4-platform-support.patch
+
+# === 0200: PS4 southbridge drivers (Aeolia/Belize/Baikal, ICC, UART, pwrbutton)
+0200-ps4-drivers/0001-drivers-ps4-add-aeolia-belize-baikal.patch
+
+# === 0300: Liverpool GPU (amdgpu ps4_bridge, CIK quirks, connector glue)
+0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch
+0300-gpu-liverpool/0002-amdgpu-dc-drop-mhard-float-for-modern-clang.patch
+
+# === 0400: AHCI internal HDD support
+0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
+
+# === 0500: SDHCI/SDIO host (for MT7668 / 88w8897 WiFi-BT)
+0500-storage-sdio/0001-sdhci-pci-ps4-quirks.patch
+
+# === 0700: sky2 ethernet
+0700-network-sky2/0001-sky2-ps4-quirks.patch
+
+# === 0800: xHCI Aeolia/Baikal USB controller
+0800-usb-aeolia/0001-xhci-aeolia-controller.patch
+
+# === 0900: hwmon (fam15h_power, k10temp)
+0900-hwmon/0001-hwmon-fam15h-k10temp-ps4.patch
+
+# === 1000: AMD IOMMU PS4 quirks
+1000-iommu/0001-amd-iommu-ps4-init.patch
+
+# === 1100: PCI/MSI vendor quirks
+1100-pci-msi/0001-pci-msi-ps4-quirks.patch
+
+# === 1200: misc (.gitignore etc)
+1200-misc/0001-misc-bootparam-and-gitignore.patch
+
+# === 0600: MT7668 WiFi/BT driver tree (HUGE — ~214K lines)
+# Apply LAST so failures here don't block the platform/storage work above.
+0600-wifi-mt7668/0001-mediatek-mt7668-driver-merge.patch

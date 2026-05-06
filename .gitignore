@@ -15,7 +15,10 @@ modules.order
 Module.symvers
 vmlinux
 vmlinux.o
-bzImage
+# Don't ignore checkpoint/boot/bzImage — we deliberately commit the
+# known-working prebuilt kernel there.
+/bzImage
+/output/**/bzImage
 
 # Generated files
 *.orig
@@ -31,3 +34,7 @@ bzImage
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local agent state and scratch
+.claude/
+debug/

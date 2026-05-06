@@ -27,13 +27,16 @@ echo ""
 
 mkdir -p "$TMP_DIR"
 
-# Define repos to clone
+# Define repos to clone (Baikal-only — user hardware is Baikal southbridge)
+# Depth chosen to comfortably cover the PS4-specific patch stack on top of vanilla.
 declare -A REPOS=(
-    ["crashniels-6.15"]="https://github.com/crashniels/linux.git|ps4-linux-6.15.y-baikal|100"
-    ["feeRnt-5.4.247-baikal"]="https://github.com/feeRnt/ps4-linux-12xx.git|ps4-linux-5.4.247-baikal-dfaus|100"
-    ["feeRnt-5.15-belize"]="https://github.com/feeRnt/ps4-linux-12xx.git|ps4-linux-5.15.15-belize|100"
-    ["whitehax0r-5.4-baikal"]="https://github.com/whitehax0r/ps4-linux-baikal.git|main|100"
-    ["ps4boot-5.3-baikal"]="https://github.com/ps4boot/ps4-linux.git|baikal|50"
+    ["crashniels-6.15"]="https://github.com/crashniels/linux.git|ps4-linux-6.15.y-baikal|300"
+    ["feeRnt-5.4.247-baikal"]="https://github.com/feeRnt/ps4-linux-12xx.git|5.4.247-baikal-dfaus|800"
+    # feeRnt experimental 6.x Baikal branches — useful for forward-porting reference
+    ["feeRnt-6.15.4-baikal-crashniels"]="https://github.com/feeRnt/ps4-linux-12xx.git|x_exp__6.15.4-baikal-crashniels|400"
+    ["feeRnt-6.15.4-BaikalLove"]="https://github.com/feeRnt/ps4-linux-12xx.git|x_exp__6.15.4-BaikalLove|400"
+    ["whitehax0r-5.4-baikal"]="https://github.com/whitehax0r/ps4-linux-baikal.git|main|300"
+    ["ps4boot-5.3-baikal"]="https://github.com/ps4boot/ps4-linux.git|baikal|150"
 )
 
 clone_repo() {

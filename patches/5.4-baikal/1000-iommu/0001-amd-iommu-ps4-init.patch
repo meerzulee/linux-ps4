@@ -1,0 +1,44 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] iommu/amd: PS4 init quirks
+
+AMD IOMMU init path needs a small workaround on Liverpool because the
+APU advertises IOMMU caps but the southbridge expects late init ordering.
+
+Extracted from feeRnt/ps4-linux-12xx branch 5.4.247-baikal-dfaus
+(HEAD 1fdfbd9a4) versus vanilla v5.4.247 (kernel.org).
+
+---
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 4a9feff34..988500a7e 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -2442,6 +2442,7 @@ static void __init free_iommu_resources(void)
+ 	free_iommu_all();
+ }
+ 
++#ifndef CONFIG_X86_PS4 // TODO this should detect ps4-ness at runtime
+ /* SB IOAPIC is always on this device in AMD systems */
+ #define IOAPIC_SB_DEVID		((0x00 << 8) | PCI_DEVFN(0x14, 0))
+ 
+@@ -2493,7 +2494,7 @@ static bool __init check_ioapic_information(void)
+ 
+ 	return ret;
+ }
+-
++#endif
+ static void __init free_dma_resources(void)
+ {
+ 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
+@@ -2636,10 +2637,10 @@ static int __init early_amd_iommu_init(void)
+ 	/* Disable any previously enabled IOMMUs */
+ 	if (!is_kdump_kernel() || amd_iommu_disabled)
+ 		disable_iommus();
+-
++/*
+ 	if (amd_iommu_irq_remap)
+ 		amd_iommu_irq_remap = check_ioapic_information();
+-
++*/
+ 	if (amd_iommu_irq_remap) {
+ 		/*
+ 		 * Interrupt remapping enabled, create kmem_cache for the

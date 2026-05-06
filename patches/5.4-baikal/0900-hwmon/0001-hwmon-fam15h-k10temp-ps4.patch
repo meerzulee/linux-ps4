@@ -1,0 +1,34 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] hwmon: fam15h_power/k10temp: recognise PS4 APU
+
+Tiny additions so fam15h_power and k10temp recognise the Liverpool APU
+(family 15h, custom DID) and expose temperature/power readings.
+
+Extracted from feeRnt/ps4-linux-12xx branch 5.4.247-baikal-dfaus
+(HEAD 1fdfbd9a4) versus vanilla v5.4.247 (kernel.org).
+
+---
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+index 267eac00a..c893aa9e4 100644
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -490,6 +490,7 @@ static const struct pci_device_id fam15h_power_id_table[] = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M70H_NB_F4) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F4) },
++        { PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M41H_F4) },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
+diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
+index f96fd8efb..790f1c9bb 100644
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -346,6 +346,7 @@ static const struct pci_device_id k10temp_id_table[] = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M70H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
++        { PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M41H_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_17H_DF_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_17H_M10H_DF_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_17H_M30H_DF_F3) },

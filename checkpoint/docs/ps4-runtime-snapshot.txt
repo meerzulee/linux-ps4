@@ -1,0 +1,75 @@
+=== /etc/fstab ===
+# minimal fstab for first boot
+LABEL=psxitarch  /         ext4  rw,noatime  0 1
+
+=== systemd-analyze ===
+Startup finished in 13.243s (kernel) + 13.722s (userspace) = 26.965s 
+graphical.target reached after 13.721s in userspace.
+
+=== display manager ===
+● lightdm.service - Light Display Manager
+     Loaded: loaded (/usr/lib/systemd/system/lightdm.service; enabled; preset: disabled)
+     Active: active (running) since Mon 2026-03-09 07:21:05 UTC; 1 month 27 days ago
+ Invocation: 97244e431d684c52a3ac86f0105e7496
+       Docs: man:lightdm(1)
+   Main PID: 1025 (lightdm)
+
+=== installed pkgs (count) ===
+902
+
+=== mesa version ===
+mesa-git 22.1-1
+
+=== xfce / gnome / kde ===
+kde-cli-tools 6.6.2-1
+kde-gtk-config 6.6.2-1
+kdeclarative 6.23.0-1
+kdecoration 6.6.2-1
+kded 6.23.0-1
+kdeplasma-addons 6.6.2-1
+kdesu 6.23.0-1
+libblockdev 3.4.0-2
+libblockdev-crypto 3.4.0-2
+libblockdev-fs 3.4.0-2
+
+=== /etc/hostname ===
+archlinux
+Linux archlinux 5.4.247-neocine-1.1 #1 SMP Wed Mar 11 20:23:59 UTC 2026 x86_64 GNU/Linux
+
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+wlan0            UP             192.168.50.125/24 fe80::fc61:2f9e:c842:1c23/64 
+ap0              DORMANT        
+ap1              DORMANT        
+
+               total        used        free      shared  buff/cache   available
+Mem:           6.8Gi       1.2Gi       5.0Gi        17Mi       896Mi       5.6Gi
+Swap:          4.0Gi          0B       4.0Gi
+
+Filesystem     Type  Size  Used Avail Use% Mounted on
+/dev/sda2      ext4  112G  6.4G  100G   6% /
+
+39.270s man-db.service
+ 5.677s dev-sda2.device
+ 4.296s ldconfig.service
+ 2.088s user@1000.service
+ 2.058s systemd-remount-fs.service
+ 1.140s systemd-machine-id-commit.service
+ 1.109s systemd-resolved.service
+ 1.079s systemd-journal-flush.service
+  971ms systemd-timesyncd.service
+  750ms systemd-udev-trigger.service
+  572ms NetworkManager.service
+  501ms systemd-tmpfiles-setup-dev-early.service
+  418ms accounts-daemon.service
+  351ms systemd-journald.service
+  323ms upower.service
+  314ms systemd-udevd.service
+  292ms dev-hugepages.mount
+  287ms dev-mqueue.mount
+  287ms udisks2.service
+  282ms sys-kernel-debug.mount
+  270ms sys-fs-fuse-connections.mount
+  268ms sys-kernel-config.mount
+  246ms systemd-modules-load.service
+  246ms systemd-network-generator.service
+  238ms iwd.service

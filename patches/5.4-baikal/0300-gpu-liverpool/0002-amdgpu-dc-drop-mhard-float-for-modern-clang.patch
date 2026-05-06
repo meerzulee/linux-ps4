@@ -1,0 +1,87 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drm/amd/display: drop -mhard-float for modern Clang
+
+Clang 16+ removed support for the legacy -mhard-float flag on x86_64
+("unsupported option '-mhard-float' for target 'x86_64-pc-linux-gnu'").
+On modern x86_64 toolchains the flag is a no-op anyway because the FPU
+is always present; kernel-side FP usage is protected at runtime by
+kernel_fpu_begin()/kernel_fpu_end() in the C source, not by build flags.
+
+Strip -mhard-float from the five DC Makefiles that reference it
+(calcs, dml, dsc, dcn20, dcn21). -msse is left in place so SSE
+intrinsics in the bandwidth/watermark math still compile.
+
+Note: PS4 Liverpool is GCN1.1 / CIK family and uses DCE rather than
+DCN at runtime, so the dcn1/2 code paths are dead weight here. We
+patch them to compile cleanly rather than disabling DRM_AMD_DC outright
+(DRM_AMD_DC is required for the PS4 ps4_bridge integration).
+
+Hit on Clang 22 against Linux 5.4.247. feeRnt's published builds
+pin Clang 14 in a Docker image where -mhard-float still worked.
+
+---
+diff --git a/drivers/gpu/drm/amd/display/dc/calcs/Makefile b/drivers/gpu/drm/amd/display/dc/calcs/Makefile
+index 26c6d735c..ebc49f38f 100644
+--- a/drivers/gpu/drm/amd/display/dc/calcs/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/calcs/Makefile
+@@ -24,7 +24,7 @@
+ # It calculates Bandwidth and Watermarks values for HW programming
+ #
+ 
+-calcs_ccflags := -mhard-float -msse
++calcs_ccflags := -msse
+ 
+ ifdef CONFIG_CC_IS_GCC
+ ifeq ($(call cc-ifversion, -lt, 0701, y), y)
+diff --git a/drivers/gpu/drm/amd/display/dc/dcn20/Makefile b/drivers/gpu/drm/amd/display/dc/dcn20/Makefile
+index 63f3bddba..68d73b30c 100644
+--- a/drivers/gpu/drm/amd/display/dc/dcn20/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dcn20/Makefile
+@@ -10,7 +10,7 @@ ifdef CONFIG_DRM_AMD_DC_DSC_SUPPORT
+ DCN20 += dcn20_dsc.o
+ endif
+ 
+-CFLAGS_$(AMDDALPATH)/dc/dcn20/dcn20_resource.o := -mhard-float -msse
++CFLAGS_$(AMDDALPATH)/dc/dcn20/dcn20_resource.o := -msse
+ 
+ ifdef CONFIG_CC_IS_GCC
+ ifeq ($(call cc-ifversion, -lt, 0701, y), y)
+diff --git a/drivers/gpu/drm/amd/display/dc/dcn21/Makefile b/drivers/gpu/drm/amd/display/dc/dcn21/Makefile
+index ff50ae71f..24019e41d 100644
+--- a/drivers/gpu/drm/amd/display/dc/dcn21/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dcn21/Makefile
+@@ -3,7 +3,7 @@
+ 
+ DCN21 = dcn21_hubp.o dcn21_hubbub.o dcn21_resource.o
+ 
+-CFLAGS_$(AMDDALPATH)/dc/dcn21/dcn21_resource.o := -mhard-float -msse
++CFLAGS_$(AMDDALPATH)/dc/dcn21/dcn21_resource.o := -msse
+ 
+ ifdef CONFIG_CC_IS_GCC
+ ifeq ($(call cc-ifversion, -lt, 0701, y), y)
+diff --git a/drivers/gpu/drm/amd/display/dc/dml/Makefile b/drivers/gpu/drm/amd/display/dc/dml/Makefile
+index 8df251626..c2b5b5e43 100644
+--- a/drivers/gpu/drm/amd/display/dc/dml/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dml/Makefile
+@@ -24,7 +24,7 @@
+ # It provides the general basic services required by other DAL
+ # subcomponents.
+ 
+-dml_ccflags := -mhard-float -msse
++dml_ccflags := -msse
+ 
+ ifdef CONFIG_CC_IS_GCC
+ ifeq ($(call cc-ifversion, -lt, 0701, y), y)
+diff --git a/drivers/gpu/drm/amd/display/dc/dsc/Makefile b/drivers/gpu/drm/amd/display/dc/dsc/Makefile
+index 970737217..fb9df18fb 100644
+--- a/drivers/gpu/drm/amd/display/dc/dsc/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dsc/Makefile
+@@ -1,7 +1,7 @@
+ #
+ # Makefile for the 'dsc' sub-component of DAL.
+ 
+-dsc_ccflags := -mhard-float -msse
++dsc_ccflags := -msse
+ 
+ ifdef CONFIG_CC_IS_GCC
+ ifeq ($(call cc-ifversion, -lt, 0701, y), y)

@@ -1,0 +1,66 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] misc: bootparam and .gitignore touch-ups
+
+Catch-all for the few remaining vanilla file changes that do not
+belong to a specific subsystem patch.
+
+Extracted from feeRnt/ps4-linux-12xx branch 5.4.247-baikal-dfaus
+(HEAD 1fdfbd9a4) versus vanilla v5.4.247 (kernel.org).
+
+---
+diff --git a/.gitignore b/.gitignore
+index 70580bdd3..df59b49e7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -41,6 +41,7 @@
+ *.so.dbg
+ *.su
+ *.symtypes
++*.symversions
+ *.tab.[ch]
+ *.tar
+ *.xz
+@@ -56,11 +57,14 @@ modules.order
+ /linux
+ /vmlinux
+ /vmlinux.32
++/vmlinux.map
++/vmlinux.symvers
+ /vmlinux-gdb.py
+ /vmlinuz
+ /System.map
+ /Module.markers
+ /modules.builtin.modinfo
++/modules.nsdeps
+ 
+ #
+ # RPM spec file (make rpm-pkg)
+@@ -92,6 +96,10 @@ modules.order
+ !.gitignore
+ !.mailmap
+ 
++# Added
++!.github
++!.dockerignore
++!.Dockerfile*
+ #
+ # Generated include files
+ #
+@@ -107,6 +115,10 @@ patches-*
+ patches
+ series
+ 
++# ctags files
++tags
++TAGS
++
+ # cscope files
+ cscope.*
+ ncscope.*
+@@ -146,3 +158,6 @@ x509.genkey
+ 
+ # Clang's compilation database file
+ /compile_commands.json
++
++# Documentation toolchain
++sphinx_*/
