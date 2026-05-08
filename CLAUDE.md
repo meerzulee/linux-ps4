@@ -41,6 +41,22 @@ The dev environment's safety net (`bzImage-stable`, `rollback-kernel.sh`) is for
 - Don't use `earlyprintk=serial,ttyS0,...` — targets nonexistent legacy 8250 at I/O 0x3F8.
 - Use ArabPixel **v24b** unified payload (not the per-firmware ones).
 
+## Build hygiene — when to clean rebuild
+
+Default to **incremental** (`./build.sh -t 6.x-baikal`, ~2 min). It works the way kbuild expects: `git checkout .` resets tracked files, `git clean -fd` removes untracked, patches re-apply, `make` recompiles only files whose mtime changed. The kernel tree's `.gitignore` keeps `*.o`/`*.ko`/`built-in.a` between runs as a build cache, which is the right behaviour 99% of the time.
+
+**Switch to `./build.sh -t 6.x-baikal -c` (full clean, ~5 min) when:**
+
+- A patch added/removed/edited touches a **header file** (`.h`) — kbuild's dependency tracking can miss transitive `#include` changes, leaving stale `.o` files for callers of the changed header.
+- A patch changes a **`Kconfig`** or **`config/*.config`** entry — `olddefconfig` may not propagate the change through every `.o` that depends on it.
+- A patch is **applied → reverted → reapplied** with the same final content but a different intermediate state (kbuild may keep `.o` from the intermediate).
+- The toolchain (gcc/clang/binutils) was upgraded since the last build.
+- A boot test produces behaviour that doesn't match the source — first thing to rule out is a stale cache.
+
+`-c` deletes `src/<target>/` and `output/<target>/` outright, re-clones vanilla kernel from `BASE_REF`, applies the full patch series, and rebuilds from zero. The bzImage that comes out is bit-identical to a fresh tree's, modulo build timestamp.
+
+For a between-test rebuild that *only* changes a `.c` file: incremental is enough.
+
 ## Reference paths
 
 - `checkpoint/docs/PLAN.md` — global plan and next-session priority list
