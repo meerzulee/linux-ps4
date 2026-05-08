@@ -211,6 +211,66 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## Option A landed but isn't enough (2026-05-09, boot #13)
+
+Built and booted with patch 0006 (skip bpcie per-function MSI domain
+creation, drop nvec=1 clamp).  Patch is confirmed active:
+
+  [ 4.449] baikal_pcie 0000:00:14.4: bpcie: child MSI domains
+                                     intentionally not created on 6.x
+  [ 4.806] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs:
+                                     requested nvec=3 msi_enabled=0
+  [ 4.814] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs
+                                     returning 3 (dev->irq=33)
+
+**Real progress**: bpcie no longer interferes; nvec clamp gone (3
+vectors allocated instead of 1). xhci-aeolia uses the kernel's
+default PCI MSI path. None of bpcie's MSI hooks fire.
+
+**Still broken**: xHCI fires MSIs but they all land as
+APIC_SPURIOUS_VECTOR (0xef). Now we see **five** spurious vectors
+between bus registration and the first Command Aborted, vs two
+before. Command Aborted still happens at exactly the same 14.485 s
+mark.
+
+This means the kernel's *default* PCI MSI path is allocating LAPIC
+vectors but **not actually programming them into xHCI's MSI
+capability** — or programming them with wrong vector data. Vector
+allocation works, message-write step is missing or broken.
+
+That's the fingerprint of **Linux 6.2's per-device MSI architecture**
+expecting a *child* per-device MSI domain to handle the cap
+programming, with the standard x86 vector domain only acting as
+parent. Our child pdevs (xhci, ahci, sdhci, sky2 — accessed via
+`pci_get_slot()` from bpcie_assign_irqs) don't get a default
+per-device MSI domain set up the way a normally-enumerated PCI
+device would.
+
+bpcie's *own* pdev (function 14.4) works fine — its ICC subfuncs
+deliver MSIs correctly. The difference is probably that the kernel's
+PCI bus enumeration creates a per-device MSI domain for it during
+normal probe, but `pci_get_slot()` lookups don't trigger that init.
+
+### Remaining options after boot #13
+
+- **B** — port bpcie to the per-device MSI parent-domain API
+  (msi_create_parent_irq_domain + msi_parent_ops). The architecturally
+  correct fix. ~100–150 LOC. Use a recent simple PCI controller
+  migration (pcie-rcar, pcie-xilinx) as template.
+
+- **C** — figure out why default per-device MSI domain isn't getting
+  installed for our child pdevs. Possibly a small fix if we find the
+  missing init.
+
+- **D** — try `intremap=on` or similar bootargs to force the kernel
+  to enable interrupt remapping. The loader hard-disables AMD-Vi but
+  maybe the kernel can re-enable IR alone. Cheapest test (1-line
+  bootargs change). If it works, MSI_FLAG_MULTI_PCI_MSI may light up
+  through different paths.
+
+Quick-cost ranking: D (minutes) → C (~30–60 min research) →
+B (~2-3 h coding).
+
 ## `pci=nomsi` test refines Option A boundary (2026-05-09)
 
 After identifying Linux 6.2's MSI rework as the root cause, tried
