@@ -1,0 +1,100 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] usb: xhci-aeolia: add Baikal settle delays before USB bring-up
+
+The Baikal xHCI controller takes much longer than mainline xHCI expects
+to be ready for command-queue traffic after its hosting BPCIe glue is up.
+Without an explicit settle window, the first ENABLE_SLOT command issued
+by `xhci_alloc_dev` aborts:
+
+  xhci_aeolia 0000:00:14.7: Error while assigning device slot ID:
+                            Command Aborted
+
+(observed in `checkpoint/docs/uart-boot-2026-05-08-6x-bpcie-non-fatal.log`
+at 14.5s and 26.8s)
+
+This in turn means no USB devices ever enumerate, /dev/sdX never appears,
+and the initramfs cannot find the rootfs partition.
+
+Port the timing fix from rmuxnet/ps4-linux-12xx commit f6cf0e0d
+("ps4/baikal: USB working motherfuckers"):
+
+- Add `msleep(50)` after the SATA PHY init on Baikal, before the first
+  per-controller probe. This matches the ~50 ms gap the working 5.4
+  flow had implicitly via the AHCI bring-up.
+- Add `msleep(20)` between each successful per-controller probe so the
+  internal hub bring-up has time to complete before we touch the next.
+
+Both delays are gated to Baikal via a small `xhci_aeolia_is_baikal`
+helper. Aeolia and Belize behaviour is unchanged.
+
+Source for the fix:
+  rmuxnet/ps4-linux-12xx, branch ps4-baikal-7.0-port,
+  commit f6cf0e0de15d49ca5b54de536dcf6b6865d49a14
+
+Notes for the next iteration:
+
+- rmuxnet's full fix also adds an `xhci_aeolia_setup` retry path that
+  re-reads the cap registers and retries `xhci_gen_setup` once after a
+  20 ms pause if the caps look bogus on first read. Not included here
+  to keep the patch minimal — add only if the msleep(50)/msleep(20)
+  pair is not sufficient.
+- rmuxnet's separate `xhci_aeolia_init_baikal_sata` helper that splits
+  SATA PHY init out of the inline AHCI flow is not picked up either:
+  our existing `ahci_init_one()` inline already runs `bpcie_sata_phy_init`
+  before this point, so the settle gap lands in the same place
+  semantically.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/usb/host/xhci-aeolia.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -12,6 +12,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/acpi.h>
++#include <linux/delay.h>
+ #include <asm/ps4.h>
+ #include "xhci-aeolia.h"
+ #include "../../ps4/aeolia.h"
+@@ -37,6 +38,11 @@
+ 	.reset = xhci_aeolia_setup,
+ };
+
++static bool xhci_aeolia_is_baikal(struct device *dev)
++{
++	return to_pci_dev(dev)->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI;
++}
++
+ static void xhci_aeolia_quirks(struct device *dev, struct xhci_hcd *xhci)
+ {
+ 	/*
+@@ -432,6 +438,15 @@
+ 		}
+ 	}
+
++	/*
++	 * Baikal xHCI needs ~50 ms after SATA PHY init before its command
++	 * queue accepts traffic. Without this, the first ENABLE_SLOT aborts
++	 * with "Command Aborted" and no USB device ever enumerates.
++	 * Source: rmuxnet/ps4-linux-12xx f6cf0e0d.
++	 */
++	if (xhci_aeolia_is_baikal(&dev->dev))
++		msleep(50);
++
+ 	for (idx = 0; idx < NR_DEVICES; idx++) {
+  		if(dev->device != PCI_DEVICE_ID_SONY_AEOLIA_XHCI && idx == 1){ //this is for Belize and Baikal
+ 			continue;
+@@ -439,6 +454,9 @@
+ 		retval = xhci_aeolia_probe_one(dev, idx);
+ 		if (retval)
+ 			goto remove_hcds;
++		/* Let the internal hub settle before we touch the next host. */
++		if (xhci_aeolia_is_baikal(&dev->dev))
++			msleep(20);
+ 	}
+
+ 	return 0;

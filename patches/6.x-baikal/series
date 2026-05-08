@@ -54,6 +54,7 @@
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
+0800-usb-aeolia/0002-xhci-aeolia-baikal-shutdown.patch
 # rmuxnet ps4-baikal-7.0-port commits dcf8b509 + 02fcd65e (Baikal HCD/xHCI
 # setup fixes for the `Error while assigning device slot ID: Command Aborted`
 # failure) need rebasing — they assume helper functions from earlier
@@ -61,7 +62,11 @@
 # 0800 dir for manual port; not in series until rebased.
 # 0800-usb-aeolia/0003-xhci-aeolia-fix-baikal-hcd-setup.patch
 # 0800-usb-aeolia/0004-xhci-aeolia-fix-baikal-xhci-setup.patch
-0800-usb-aeolia/0002-xhci-aeolia-baikal-shutdown.patch
+# Hand-ported from rmuxnet/ps4-linux-12xx f6cf0e0d. Adds two msleep()s
+# in xhci_aeolia_probe so Baikal xHCI gets settle time before
+# command-queue traffic. Targets the `Command Aborted` enable-slot
+# failure that prevents USB enumeration.
+0800-usb-aeolia/0005-xhci-aeolia-baikal-settle-timing.patch
 
 # === 0900: hwmon (fam15h_power, k10temp)
 0900-hwmon/0001-hwmon-fam15h-k10temp-ps4.patch
