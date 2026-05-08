@@ -211,6 +211,55 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## `pci=nomsi` test refines Option A boundary (2026-05-09)
+
+After identifying Linux 6.2's MSI rework as the root cause, tried
+Option D from the fix path list — boot with `pci=nomsi` to force
+legacy IRQ. Result was inconclusive but informative:
+
+  [ 4.574] baikal_pcie 0000:00:14.4: Failed to assign IRQs
+  [ 4.580] baikal_pcie 0000:00:14.4: bpcie glue remove
+  [ 4.585] probe with driver baikal_pcie failed with error -5
+
+`pci=nomsi` is too coarse: it disables MSI globally, but bpcie itself
+needs MSI for its own subfunc IRQ pool (ICC, UART, MSI demuxer). With
+nomsi, bpcie's `pci_alloc_irq_vectors(sc->pdev, ICC+1, BPCIE_NUM_SUBFUNCS,
+PCI_IRQ_MSI)` in `bpcie_glue_init` returns -ENOSPC, bpcie probe
+aborts entirely, every PS4 child driver defers forever, `/init`
+reaches but rootfs lookup loops (same end-state as the
+pre-0004-non-fatal era, different cause).
+
+Side benefit: confirms that `Command Aborted` IS gone with nomsi,
+because xhci-aeolia never even probes when bpcie is dead. So MSI
+delivery genuinely is the issue, just on the **child** path, not
+in bpcie's own IRQ pool.
+
+The actual diagnostic we wanted — keep MSI for bpcie's own use,
+disable it just for child PCI devices — needs a kernel-side patch
+because there's no cmdline knob that scoped.
+
+### Updated Option A boundary
+
+Original framing: "skip bpcie's custom MSI domain on Baikal."
+Refined now with precise scope:
+
+- **Keep** `pci_alloc_irq_vectors` for bpcie's *own* pdev (function
+  14.4 — needs ICC + UART subfuncs).
+- **Skip** the per-function `bpcie_create_irq_domain` loop that runs
+  inside `bpcie_glue_init` for slots 14.0..14.7's pdevs. That's where
+  the broken `dev_set_msi_domain()` calls live.
+- **Skip** the `bpcie_msi_domain_info` setup for child devices.
+- **Skip** the `bpcie_handle_edge_irq` demuxer — never useful in
+  shared-vector mode anyway.
+- xhci-aeolia, ahci, sdhci-pci, sky2 then call the standard PCI MSI
+  path (default kernel domain, which 6.x sets up correctly via the
+  per-device MSI infrastructure for any PCI device).
+- Aeolia/Belize unaffected — apcie's MSI is hardware-demuxed and
+  works differently.
+
+That should be ~30 LOC of removals + a couple of guarding ifs.
+Patch coming next.
+
 ## Root cause: Linux 6.2 reworked MSI domain lookup (2026-05-09)
 
 Web research after the diagnostic boot (#12) found the kernel-side
