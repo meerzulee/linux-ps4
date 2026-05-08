@@ -211,6 +211,58 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## Root cause: Linux 6.2 reworked MSI domain lookup (2026-05-09)
+
+Web research after the diagnostic boot (#12) found the kernel-side
+change that explains the symptom. From Phoronix and LWN:
+
+- "Linux 6.2 Brings A Big Rework To The MSI Subsystem" (Phoronix).
+- "genirq, PCI/MSI: Support for per device MSI and PCI/IMS — Part 3
+  implementation" (Thomas Gleixner / Ahmed Darwish, merged late 2022).
+
+The bulk of the rework landed in **Linux 6.2** and introduced
+per-device MSI interrupt domains. The old API (`pci_msi_create_irq_domain`
++ `dev_set_msi_domain` to attach to a pdev) **still exists** in 6.15
+— `dev_set_msi_domain` writes the legacy `dev->msi_domain` field —
+but PCI MSI core now walks a different lookup path that prefers a
+per-device domain in `dev->dev.msi.data->__domains[]` over the legacy
+single-pointer field.  If only the legacy field is set, the
+allocation falls back to the standard x86 vector domain, which is
+exactly what we observed (xhci IRQ ends up at virq 33 with no bpcie
+hooks fired).
+
+That makes the bpcie code an anachronism on 6.x: the domain is
+created, dev_set_msi_domain marks the device, and then nothing reads
+it.  On 5.4 the same code worked because the lookup walked the
+legacy field directly.
+
+### Fix-path options
+
+A. **Skip bpcie's custom MSI domain on Baikal.** In shared-vector
+   mode (no IOMMU-IR — production case) bpcie_assign_irqs() forces
+   nvec=1 anyway, so the per-subfunc demuxer never had anything to
+   demux to.  Let xhci-aeolia call the standard pci_alloc_irq_vectors
+   straight through the x86 vector domain on Baikal.
+   Aeolia/Belize keep apcie's domain (they actually need hardware
+   MSI demuxing).  Smallest diff.  **Recommended.**
+
+B. Port bpcie to the new per-device MSI parent-domain API
+   (`msi_create_parent_irq_domain` + `msi_parent_ops`).  Correct way
+   forward, big rewrite.
+
+C. Also write into `dev->dev.msi.data->__domains[]` after the legacy
+   `dev_set_msi_domain`.  Minimal, but unclear if 6.x actually
+   accepts a domain installed that way without going through
+   `msi_create_device_irq_domain`.
+
+D. Boot with `nomsi` or `pci=nomsi` in bootargs.  Forces legacy
+   line-based IRQ.  Lower performance, but could be a debug step
+   to confirm the MSI path is the entire issue.
+
+Diagnostic patch (`9001-DEBUG-bpcie-msi-trace.patch`) stays in the
+tree for repeat tests but is **not in series** by default once we
+land the real fix.
+
 ## bpcie MSI domain is NEVER USED on 6.x (2026-05-09, boot #12)
 
 After all the xHCI / settle / IRQ / demuxer patches, we added
