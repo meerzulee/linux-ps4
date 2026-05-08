@@ -27,9 +27,15 @@
 # === 0200: PS4 southbridge drivers (Aeolia/Belize/Baikal, ICC, UART, pwrbutton)
 0200-ps4-drivers/0001-drivers-ps4-add-aeolia-belize-baikal.patch
 0200-ps4-drivers/0002-ps4-bpcie-icc-fix-ioread-iowrite-pointer-types.patch
-# Disabled for A/B test — re-enable once we confirm whether it causes the
-# 6.x kexec triple-fault.
+# Disabled — needs adaptation for 6.x serial8250 (originally caused triple-fault
+# but that may have been the broken bootargs; re-test once we have a clean
+# baseline). Track in checkpoint/docs/research/2026-05-08-6x-breakthrough.md.
 # 0200-ps4-drivers/0003-ps4-bpcie-uart-set-port-type.patch
+# Demote UART init failure to a warning so bpcie_probe completes even when
+# port.type is unset and serial8250 rejects registration. Without this on
+# 6.x, every PS4 child driver defers forever and initramfs can't find the
+# rootfs partition. See patch header for the full diagnosis.
+0200-ps4-drivers/0004-ps4-bpcie-make-uart-failure-non-fatal.patch
 
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch
