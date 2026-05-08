@@ -73,6 +73,12 @@
 # bpcie MSI domain, so command-completion IRQs were never delivered and
 # every ENABLE_SLOT hit TRB_RING_TIMEOUT → Command Aborted.
 0800-usb-aeolia/0006-xhci-aeolia-baikal-irq-via-apcie-assign.patch
+# Hand-port from rmuxnet ps4-baikal-7.0-port HEAD xhci_aeolia_setup. Adds
+# imod_interval=40000 (10ms moderation) + caps validation + retry on
+# -ENOMEM when protocol caps not yet readable. Targets the residual
+# 5-second TRB_RING_TIMEOUT / Command Aborted on Baikal even after
+# 0005 (settle delays) + 0006 (IRQ via apcie).
+0800-usb-aeolia/0007-xhci-aeolia-baikal-setup-imod-and-retry.patch
 
 # === 0900: hwmon (fam15h_power, k10temp)
 0900-hwmon/0001-hwmon-fam15h-k10temp-ps4.patch

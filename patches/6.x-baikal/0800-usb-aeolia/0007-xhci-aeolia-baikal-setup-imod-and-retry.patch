@@ -1,0 +1,159 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] usb: xhci-aeolia: extend Baikal setup with caps validation and retry
+
+After 0005 (settle delays) + 0006 (IRQ via apcie), boot #9 still shows:
+
+  [    7.058] xhci_aeolia 0000:00:14.7: new USB bus registered
+  [   14.484] xhci_aeolia 0000:00:14.7: Error while assigning device
+              slot ID: Command Aborted
+  [   14.504] usb usb1-port1: couldn't allocate usb_device
+
+The 5+ second gap is TRB_RING_TIMEOUT — the kernel's wait for command
+completion. (My 0006 patch turned out to be a semantic no-op: both
+the old and new IRQ paths ended up calling pci_alloc_irq_vectors
+against the same bpcie MSI domain.)
+
+Look at what else rmuxnet does in xhci_aeolia_setup that we don't:
+
+1. xhci->imod_interval = 40000 — bumps interrupt moderation interval
+   to ~10 ms (default 1 ms). Gives the controller time to coalesce
+   command-completion events before firing MSI.
+
+2. Caps-validate-and-retry — if cap registers look bogus (capbase
+   0/~0u, hcs_params bogus, max ports/intrs/scratchpad insane,
+   protocol caps not yet readable), sleep 20 ms before xhci_gen_setup.
+   If xhci_gen_setup returns -ENOMEM and caps still not ready, sleep
+   20 ms and retry once.
+
+Source: rmuxnet/ps4-linux-12xx ps4-baikal-7.0-port HEAD xhci_aeolia_setup
+function (captured 2026-05-08).
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -43,6 +43,80 @@
+ 	return to_pci_dev(dev)->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI;
+ }
+ 
++struct xhci_aeolia_caps {
++	u32 capbase;
++	u32 hcs_params1;
++	u32 hcs_params2;
++	u32 hcc_params;
++	u32 page_size;
++	u32 protocol_cap_off;
++	u32 protocol_port_info;
++};
++
++static void xhci_aeolia_read_caps(struct usb_hcd *hcd,
++				  struct xhci_aeolia_caps *caps)
++{
++	struct xhci_cap_regs __iomem *cap = hcd->regs;
++	struct xhci_op_regs __iomem *op;
++
++	memset(caps, 0, sizeof(*caps));
++	if (!cap)
++		return;
++
++	caps->capbase = readl(&cap->hc_capbase);
++	caps->hcs_params1 = readl(&cap->hcs_params1);
++	caps->hcs_params2 = readl(&cap->hcs_params2);
++	caps->hcc_params = readl(&cap->hcc_params);
++	caps->protocol_cap_off =
++		xhci_find_next_ext_cap(hcd->regs, 0, XHCI_EXT_CAPS_PROTOCOL);
++	if (caps->protocol_cap_off) {
++		struct xhci_protocol_caps __iomem *proto;
++
++		proto = hcd->regs + caps->protocol_cap_off;
++		caps->protocol_port_info = readl(&proto->port_info);
++	}
++
++	op = hcd->regs + HC_LENGTH(caps->capbase);
++	caps->page_size = readl(&op->page_size) & XHCI_PAGE_SIZE_MASK;
++}
++
++static bool xhci_aeolia_protocol_caps_ready(const struct xhci_aeolia_caps *caps)
++{
++	u32 port_off, port_count, max_ports;
++
++	if (!caps->protocol_cap_off)
++		return false;
++
++	port_off = XHCI_EXT_PORT_OFF(caps->protocol_port_info);
++	port_count = XHCI_EXT_PORT_COUNT(caps->protocol_port_info);
++	max_ports = HCS_MAX_PORTS(caps->hcs_params1);
++
++	if (!port_off || !port_count || !max_ports)
++		return false;
++
++	return port_off + port_count - 1 <= max_ports;
++}
++
++static bool xhci_aeolia_caps_suspicious(const struct xhci_aeolia_caps *caps)
++{
++	if (!caps->capbase || caps->capbase == ~0u)
++		return true;
++	if (!caps->hcs_params1 || caps->hcs_params1 == ~0u)
++		return true;
++	if (!caps->hcc_params || caps->hcc_params == ~0u)
++		return true;
++	if (!caps->page_size || caps->page_size == XHCI_PAGE_SIZE_MASK)
++		return true;
++	if (HCS_MAX_PORTS(caps->hcs_params1) > 16)
++		return true;
++	if (HCS_MAX_INTRS(caps->hcs_params1) > 16)
++		return true;
++	if (HCS_MAX_SCRATCHPAD(caps->hcs_params2) > 32)
++		return true;
++
++	return false;
++}
++
+ static void xhci_aeolia_quirks(struct device *dev, struct xhci_hcd *xhci)
+ {
+ 	/*
+@@ -55,7 +129,42 @@
+ /* called during probe() after chip reset completes */
+ static int xhci_aeolia_setup(struct usb_hcd *hcd)
+ {
+-	return xhci_gen_setup(hcd, xhci_aeolia_quirks);
++	struct device *dev = hcd->self.controller;
++	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
++	struct xhci_aeolia_caps caps;
++	int retval;
++
++	/*
++	 * Bump interrupt moderation to ~10 ms so Baikal's xHCI command
++	 * queue has time to coalesce completions before firing MSI.
++	 * Source: rmuxnet/ps4-linux-12xx ps4-baikal-7.0-port branch.
++	 */
++	xhci->imod_interval = 40000;
++
++	if (xhci_aeolia_is_baikal(dev)) {
++		xhci_aeolia_read_caps(hcd, &caps);
++		if (xhci_aeolia_caps_suspicious(&caps) ||
++		    !xhci_aeolia_protocol_caps_ready(&caps))
++			msleep(20);
++	}
++
++	retval = xhci_gen_setup(hcd, xhci_aeolia_quirks);
++	if (!retval)
++		return 0;
++
++	if (retval == -ENOMEM && xhci_aeolia_is_baikal(dev)) {
++		xhci_aeolia_read_caps(hcd, &caps);
++		if (!xhci_aeolia_protocol_caps_ready(&caps)) {
++			dev_warn(dev,
++				 "Baikal xHCI protocol caps not ready, retrying\n");
++			msleep(20);
++			retval = xhci_gen_setup(hcd, xhci_aeolia_quirks);
++			if (!retval)
++				return 0;
++		}
++	}
++
++	return retval;
+ }
+ 
+ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
