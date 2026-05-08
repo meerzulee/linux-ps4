@@ -67,6 +67,12 @@
 # command-queue traffic. Targets the `Command Aborted` enable-slot
 # failure that prevents USB enumeration.
 0800-usb-aeolia/0005-xhci-aeolia-baikal-settle-timing.patch
+# Hand-port from rmuxnet 8f2f907b. Always route xhci-aeolia IRQ through
+# apcie_assign_irqs() (which delegates to bpcie_assign_irqs on Baikal).
+# The previous Baikal-specific pci_alloc_irq_vectors() path bypassed the
+# bpcie MSI domain, so command-completion IRQs were never delivered and
+# every ENABLE_SLOT hit TRB_RING_TIMEOUT → Command Aborted.
+0800-usb-aeolia/0006-xhci-aeolia-baikal-irq-via-apcie-assign.patch
 
 # === 0900: hwmon (fam15h_power, k10temp)
 0900-hwmon/0001-hwmon-fam15h-k10temp-ps4.patch
