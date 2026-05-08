@@ -54,6 +54,13 @@
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
+# rmuxnet ps4-baikal-7.0-port commits dcf8b509 + 02fcd65e (Baikal HCD/xHCI
+# setup fixes for the `Error while assigning device slot ID: Command Aborted`
+# failure) need rebasing — they assume helper functions from earlier
+# rmuxnet commits we didn't extract. Keeping the patch files in the
+# 0800 dir for manual port; not in series until rebased.
+# 0800-usb-aeolia/0003-xhci-aeolia-fix-baikal-hcd-setup.patch
+# 0800-usb-aeolia/0004-xhci-aeolia-fix-baikal-xhci-setup.patch
 0800-usb-aeolia/0002-xhci-aeolia-baikal-shutdown.patch
 
 # === 0900: hwmon (fam15h_power, k10temp)
@@ -61,6 +68,16 @@
 
 # === 1000: AMD IOMMU (lives at drivers/iommu/amd/ in 6.x)
 1000-iommu/0001-amd-iommu-ps4-init.patch
+# c30160e0 (narrowly-gated PS4 quirks) conflicts with 1100-pci-msi/0001
+# on drivers/pci/probe.c — our existing 1100 patch already does the
+# equivalent slot-20 phantom filter. Keeping the staged file for
+# reference, not in series.
+# 1000-iommu/0002-pci-iommu-narrowly-gated-ps4-quirks.patch
+# rmuxnet ps4-baikal-7.0-port commit d5e2c79b — force the Baikal southbridge
+# group (00:14.x) into the IDENTITY iommu domain so coherent DMA allocations
+# use direct low-31-bit memory. Likely fixes the AHCI -ENOMEM seen on
+# 0000:00:14.2 in the 2026-05-08 third boot.
+1000-iommu/0003-iommu-amd-ps4-baikal-coherent-dma.patch
 
 # === 1100: PCI/MSI/IRQ-domain (heavily refactored vs 5.4)
 1100-pci-msi/0001-pci-msi-irqdomain-ps4-quirks.patch
