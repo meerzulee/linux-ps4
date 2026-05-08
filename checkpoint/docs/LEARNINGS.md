@@ -211,6 +211,92 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## The bpcie shared-vector demuxer was broken on every Baikal port (2026-05-09)
+
+After landing four xHCI-side patches in a row that did NOT change the
+"Command Aborted" symptom (msleep 50/20, IRQ-via-apcie, imod_interval
++ caps retry, plus the inline IOMMU coherent-DMA fix), the diagnosis
+finally moved to the bpcie code itself.
+
+The smoking gun was a single line in the boot log:
+
+  [    4.928] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs(3)
+  [    4.934] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs returning 1
+
+`bpcie_assign_irqs` clamps nvec to 1 when MSI_FLAG_MULTI_PCI_MSI is
+not set — which is the case whenever IOMMU-IR is off, which is the
+*production* case on Baikal (ArabPixel's loader explicitly disables
+AMD-Vi IR before kexec). In that mode `bpcie_msi_domain_set_desc`
+ORs `0x1F` into the msi_hwirq:
+
+```c
+arg->msi_hwirq |= 0x1F;     /* shared mode: hwirq | 0x1F */
+```
+
+So the *one* MSI vector that gets allocated for each PCI function
+lands at hwirq `0x14XF` (X is the function number).  No child virqs
+are created at hwirq `0x14E0`, `0x14E1`, `0x14E2` etc.
+
+But `bpcie_handle_edge_irq()` — the irq flow handler installed for
+every virq in the bpcie MSI domain — does this on every interrupt
+for functions 4 / 5 / 7:
+
+```c
+u32 initial_hwirq = desc->irq_data.hwirq & ~0x1fLL;   /* 0x14E0 */
+...
+for (i = 0; i < 32; i++) {
+    if (subfunc_mask & (1 << i)) {
+        unsigned int virq = irq_find_mapping(domain,
+                                             initial_hwirq + i);
+        ...
+        handle_edge_irq(new_desc);
+    }
+}
+```
+
+In shared-vector mode there is NO virq mapped at `initial_hwirq + i`
+for any i ≤ 4.  Every iteration calls `irq_find_mapping()` that
+returns 0; `irq_to_desc(0)` resolves to nothing; the dispatch silently
+does nothing. **The xHCI command-completion MSI is swallowed.** The
+kernel waits TRB_RING_TIMEOUT (5 s) for the command to complete,
+gives up, and reports:
+
+```
+xhci_aeolia 0000:00:14.7: Error while assigning device slot ID:
+                          Command Aborted
+usb usb1-port1: couldn't allocate usb_device
+```
+
+**This explains why USB device enumeration has been broken on every
+6.x-Baikal port that doesn't run with IOMMU-IR enabled.** The bug has
+been there since whitehax0r/feeRnt's tree imported the BPCIe MSI code
+from the original PS4 5.4 squash.
+
+### The fix
+
+`patches/6.x-baikal/0200-ps4-drivers/0005-ps4-bpcie-shared-vector-demux-bypass.patch` —
+detect shared-vector mode at the top of `bpcie_handle_edge_irq()` by
+checking whether the hwirq has all-1s in the bottom 5 bits.  If so,
+bypass the per-subfunc demux entirely and run the standard
+`handle_edge_irq(desc)` against the shared parent virq directly.  The
+registered driver handler (`xhci_irq`, `ahci_irq`, `bpcie_icc_init`'s
+ICC interrupt handler, ...) reads its own status register to decide
+whether the IRQ was for it — which is exactly how `IRQF_SHARED`
+interrupts already work everywhere else in the kernel.
+
+Diagnostic timeline:
+- Boot #4: bpcie cascade fixed by 0004-uart-non-fatal — baseline.
+- Boot #5: 0005 (settle delays) — Command Aborted unchanged.
+- Boot #8: 0006 (IRQ-via-apcie) — semantic no-op, unchanged.
+- Boot #9: 0007 (imod_interval + caps retry) — retry path never
+  triggered (xhci_gen_setup succeeds), unchanged.
+- Boot #10 (clean rebuild): identical state to boot #9, ruling out
+  cache.
+- Diagnosis from boot #10 logs: `bpcie_assign_irqs returning 1`,
+  both xhci controllers on irq 33, two spurious vector-0xef
+  interrupts.  Read bpcie_handle_edge_irq source, found the
+  shared-vector hwirq path lands in dead code.
+
 ## The bpcie cascade is gone (2026-05-08, third boot)
 
 After applying `0004-ps4-bpcie-make-uart-failure-non-fatal.patch`, bpcie_probe completes for the first time on 6.x. The fix path fires verbatim:

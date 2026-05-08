@@ -36,6 +36,12 @@
 # 6.x, every PS4 child driver defers forever and initramfs can't find the
 # rootfs partition. See patch header for the full diagnosis.
 0200-ps4-drivers/0004-ps4-bpcie-make-uart-failure-non-fatal.patch
+# bpcie_handle_edge_irq runs a per-subfunc demux that's broken in
+# shared-vector mode (no IOMMU-IR): no child virqs exist at
+# initial_hwirq + i, so the xHCI command-completion MSI gets swallowed
+# and every ENABLE_SLOT hits TRB_RING_TIMEOUT. Bypass the demux when
+# the hwirq has the 0x1F shared suffix.
+0200-ps4-drivers/0005-ps4-bpcie-shared-vector-demux-bypass.patch
 
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch
