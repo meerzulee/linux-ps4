@@ -37,7 +37,7 @@ The dev environment's safety net (`bzImage-stable`, `rollback-kernel.sh`) is for
 ## Other settled things
 
 - Use **deeWaardt's Baikal Arch tarball** for the rootfs. Pacstrap from CachyOS/modern Arch produces v3 binaries that SIGILL on PS4 Jaguar (no AVX2). Documented in `checkpoint/docs/LEARNINGS.md`.
-- Don't use `keep_bootcon` on Baikal — crashes xhci_aeolia at ~57 s on 5.4 and hard-hangs 6.x.
+- `keep_bootcon` rules: **don't use on 5.4** (crashes xhci_aeolia ~57 s); **DO use on 6.x for diagnosis** with `console=ttyS0` removed and `8250.nr_uarts=0`. Revised 2026-05-08 — see `checkpoint/docs/LEARNINGS.md` ("`keep_bootcon`: nuanced").
 - Don't use `earlyprintk=serial,ttyS0,...` — targets nonexistent legacy 8250 at I/O 0x3F8.
 - Use ArabPixel **v24b** unified payload (not the per-firmware ones).
 

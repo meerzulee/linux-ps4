@@ -1,6 +1,6 @@
 # What we learned getting PS4 Linux to boot
 
-A timeline of dead ends and wins from the 2026-05-06 session, kept here so we don't relearn the same things.
+A timeline of dead ends and wins from the 2026-05-06 → 2026-05-08 sessions, kept here so we don't relearn the same things.
 
 ## TL;DR
 
@@ -123,22 +123,87 @@ earlycon=uart8250,mmio32,0xC890E000,115200n8
 
 Note `mmio32`: every Linux earlycon write transmits a 32-bit dword to the data register. With `regshift=2` the chip select picks the right reg, but the transmitted bytes are still padded with three zero bytes per character (so output looks like `H e l l o` with embedded NULs if you log it raw). Acceptable for debug, ignore the cosmetic spacing.
 
-### Don't add `keep_bootcon` on this hardware
+### `keep_bootcon`: nuanced — kills xhci on **5.4**, but is the diagnostic key on **6.x**
 
-We tried `keep_bootcon` to extend earlycon past the regular console handover so we'd get full-boot UART. **It crashes xhci_aeolia at ~57 seconds.** The BPCIe glue device parents both the UART and the xhci controller (`00:14.7`); constant earlycon writes to UART MMIO appear to overload the bus and the xhci host eventually goes into "not responding" → "HC died" → USB rootfs disappears → ext4 errors → systemd cascade-fails.
+#### On 5.4 (stay away once xhci comes up)
 
-So the **stable** bootargs is **earlycon without `keep_bootcon`**:
+We tried `keep_bootcon` to extend earlycon past the regular console handover so we'd get full-boot UART. **On 5.4 it crashes xhci_aeolia at ~57 seconds.** The BPCIe glue device parents both the UART and the xhci controller (`00:14.7`); constant earlycon writes to UART MMIO appear to overload the bus and the xhci host eventually goes into "not responding" → "HC died" → USB rootfs disappears → ext4 errors → systemd cascade-fails.
+
+So on 5.4 the **stable** bootargs is **earlycon without `keep_bootcon`**:
 
 ```
 earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 console=ttyS0,115200n8 8250.nr_uarts=8 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
 ```
 
-Behavior:
+Behavior on 5.4:
 - 0.000s — earlycon active, UART logs every printk
 - ~1.0s — `console=tty0` registers (HDMI fbcon), earlycon retires automatically (`bootconsole [uart8250] disabled` in dmesg)
 - ~1.0s onward — kernel output goes to HDMI; UART silent; xhci stays alive
 
 `checkpoint/docs/uart-boot-capture-ttyS0E000.log` is a real capture of the ~135-line UART window for reference.
+
+#### On 6.x (REVISED 2026-05-08 — `keep_bootcon` is FINE here, and necessary for diagnosis)
+
+Earlier we noted "On 6.x, appears to cause immediate hang. Don't use." That diagnosis was **wrong**. The actual root cause was `console=ttyS0,115200n8` in the cmdline directing post-bootconsole printks at a phantom legacy 8250 at I/O `0x3F8` — the kernel was running silently, not hanging.
+
+When we drop `console=ttyS0` AND add `keep_bootcon` (and use `8250.nr_uarts=0` to suppress phantom slot allocation), the 6.x kernel boots **cleanly to userspace `/init` at 7.28 s** with 1753 lines of UART output. It only stops at 17 s because the initramfs can't find `LABEL=psxitarch` (storage drivers stuck in deferred-probe — see "The bpcie_uart cascade" below).
+
+**Working 6.x diagnostic bootargs:**
+
+```
+earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
+```
+
+Why this works:
+- `,keep` suffix on `earlycon=` is a syntax mistake — kernel parses it as a clkrate option (`earlycon: [115200n8,keep] unsupported earlycon uart clkrate option`). Use `keep_bootcon` as a **separate** parameter.
+- `console=ttyS0,115200n8` is poisonous when no real `ttyS0` exists yet (phantom legacy 8250). Don't add `console=ttySN` until the BPCIe UART driver actually registers a real ttySN AND we know which N.
+- `8250.nr_uarts=0` skips legacy 8250 slot allocation entirely. The BPCIe UART driver will create its own slot once it registers (assuming it does — see cascade below).
+- `keep_bootcon` is OK on 6.x because xhci-aeolia *isn't even probing* yet (so the "BPCIe bus overload" failure mode that hit 5.4 doesn't manifest until much later, if at all).
+- `initcall_debug` is invaluable — every initcall is logged with name, address and elapsed usec. The last line before silence pinpoints the hung initcall.
+
+## The bpcie_uart cascade (6.x's real blocker, 2026-05-08)
+
+Once we got 6.x UART output past 0.66 s, the actual failure showed up at line 1284 of the boot log:
+
+```
+baikal_pcie 0000:00:14.4: Failed to register serial port 0
+baikal_pcie 0000:00:14.4: bpcie glue remove
+baikal_pcie 0000:00:14.4: probe with driver baikal_pcie failed with error -5
+```
+
+`drivers/ps4/ps4-bpcie.c::bpcie_probe` is a sequence:
+
+```c
+if ((ret = bpcie_glue_init(sc)) < 0) goto free_bars;       // ✅ chip rev printed: 4c0c2021:8d76a398:0000b100
+if ((ret = bpcie_uart_init(sc)) < 0) goto remove_glue;     // ❌ FAILS HERE on 6.x
+if ((ret = bpcie_icc_init(sc)) < 0)  goto remove_uart;     // unreached
+```
+
+`bpcie_uart_init` calls `serial8250_register_8250_port` for each of the two BPCIe UARTs. On 6.x's `serial8250` autoconfig, the port is rejected because no `port.type` is set (we don't carry the `0003-ps4-bpcie-uart-set-port-type.patch` on 6.x). The current bpcie_probe treats this as fatal and tears down the entire southbridge.
+
+**Cascading consequence:** every PS4 child driver that gates on `apcie_status() == 1` defers forever:
+- `amdgpu` defers on `0000:00:01.0` (517 = -EPROBE_DEFER, repeated each retry)
+- `xhci-aeolia` defers on `0000:00:14.7`
+- `ahci` defers on `0000:00:14.2`
+- `sdhci-pci` actually detects the controller (`SDHCI controller found [104d:90da] (rev 0)`) but probe defers anyway
+- `sky2` defers waiting on apcie status
+
+Result: kernel reaches `/init` because nothing in core kernel is broken, but the initramfs spins on `LABEL=psxitarch: Can't lookup blockdev` because the rootfs is on USB ext4 and USB is offline.
+
+### Two ways to fix the cascade
+
+1. **(small change, fast)** Make `bpcie_uart_init` failure non-fatal. UART is debug; it doesn't need to gate ICC, AHCI, XHCI, etc. Patch sketch in PLAN.md "Next-session priority list".
+
+2. **(bigger change, more correct)** Fix the underlying 8250 registration via the `0003-ps4-bpcie-uart-set-port-type.patch` (sets `port.type = PORT_16550A` + `UPF_FIXED_TYPE`). The patch was disabled on 6.x because it triple-faulted at kexec — but that was probably co-occurring with broken bootargs. Worth retrying.
+
+## bootargs cheat sheet (post-2026-05-08)
+
+| Scenario | Bootargs |
+|---|---|
+| **5.4, normal boot** | `earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 console=ttyS0,115200n8 8250.nr_uarts=8 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on` |
+| **6.x, diagnostic boot (KEEP UART alive past 0.66 s)** | `earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on` |
+| **bypass systemd** | append `init=/bin/sh` |
+| **Don't use** | `earlyprintk=...`, `console=ttyS0,...` on 6.x without bpcie UART, `panic=15` (auto-reboot) |
 
 ### When the kernel boot fails silently and the screen shows just `_`
 
@@ -148,7 +213,10 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 
 ## What's still on the to-do list
 
-- Investigate why our self-built bzImages hang. Suspect: Clang 22 / GCC 15 toolchain regressions for old kernels. Prove it by rebuilding 5.4 with Clang-14 and seeing if it boots.
-- Layer kernel modules onto the deeWaardt rootfs so we get WiFi (mt7668) and the rest. Need to either rebuild from feeRnt's source (so version matches `5.4.247-neocine-1.1`, no `-dirty` suffix) or convince feeRnt to ship a modules tarball in their release.
-- Retry our 6.x build with v24b payload — earlier failures were against the old per-firmware payload, which always triple-faulted regardless.
+- ✅ ~~Retry our 6.x build with v24b payload — earlier failures were against the old per-firmware payload, which always triple-faulted regardless.~~ — Done 2026-05-08. v24b boots our 6.x kernel cleanly.
+- 🔥 **Make `bpcie_uart_init` failure non-fatal** in `drivers/ps4/ps4-bpcie.c::bpcie_probe`. ~5 LOC. Unblocks the entire PS4 driver tree on 6.x. See PLAN.md priority #1.
+- 🔥 **Re-enable `0003-ps4-bpcie-uart-set-port-type.patch` on 6.x** with the new clean bootargs and re-test.
+- Apply `research/sky2-storm-fix-extracted.patch` once boot reaches userspace, validate against PLAN.md "Ethernet over Baikal sky2 — broken".
+- Layer kernel modules onto the deeWaardt rootfs so we get WiFi (mt7668) and the rest.
 - Cap Mesa at 25.1 in the rootfs (deeWaardt's tarball is already pinned, but watch out on first `pacman -Syu`).
+- Resolved: ~~Self-built bzImages hang~~ — wasn't a hang, was UART silence. Builds work fine.

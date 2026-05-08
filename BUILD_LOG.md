@@ -20,10 +20,51 @@
 | 6.x patch series | 15 patches, 100 files, 11k lines | crashniels' 6.15-baikal split into per-subsystem patches + bpcie-icc fix + feeRnt's xhci-Baikal-shutdown fix |
 | 6.x patches dry-run | ALL APPLY CLEAN | Sequential apply against vanilla v6.15.4 |
 | 6.x build | **SUCCESS** | bzImage 9.2MB — kernel `6.15.4-Baikal_TESTING_crashniels-dirty`, GCC 15 |
-| 6.x boot test (our build) | **FAILS** at kexec | Hangs identically to our 5.4. Same suspect (toolchain) — needs retest with v24b payload. |
+| 6.x boot test (our build) | **WORKS to `/init`** (2026-05-08) | Reaches userspace at 7.28 s with proper bootargs (`keep_bootcon`, no `console=ttyS0`). Initramfs hangs on `LABEL=psxitarch` because `bpcie_probe` aborts on UART registration failure → all PS4 child drivers defer forever. See "2026-05-08" entry. |
 | 6.x WiFi (mt7668) | NOT YET PORTED | See `patches/6.x-baikal/9000-todo/README.md` |
 | UART access | YES | Serial console wired to PS4. Note: persistent-UART payload's hooks die at kexec; UART silent until in-kernel ps4-bpcie-uart driver registers ttyS0 late in boot. |
 | End-to-end Linux boot | **WORKS** | feeRnt 5.4 prebuilt + v24b payload + better-initramfs + deeWaardt rootfs → systemd up, SSH reachable. See `checkpoint/`. |
+
+---
+
+## 2026-05-08 — 6.x boots to `/init`, real blocker identified
+
+Worked from `research/build/` (clean-room copy of the 6.x-baikal target outside `linux-ps4/`). All 15 patches in `patches/6.x-baikal/series` apply cleanly to vanilla v6.15.4. Build via GCC 16.1.1 + Binutils 2.46.0, 4 min 46 s, zero errors, 1089 cosmetic warnings (mostly a single header-expansion artifact in amdgpu).
+
+**Step 1 — install onto USB:** `research/build/install-to-usb.sh` (mounts `/dev/sda1`, snapshots `bzImage` → `bzImage-prev`, bootstraps `bzImage-stable`, drops in new bzImage and a labeled copy `bzImage-6x-research-20260508-2111`).
+
+**Step 2 — first boot (old bootargs):** Hung at 0.66 s as before. ~120 lines of UART, then silence.
+
+**Step 3 — diagnose silence:** Discovered the UART log was getting `legacy bootconsole [uart8250] disabled`, after which `console=ttyS0,115200n8` directed printk to a phantom legacy 8250 at I/O `0x3F8`. The kernel was running silently, not hanging.
+
+**Step 4 — bootargs update:** `research/build/update-bootargs.sh` to set:
+
+```
+earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
+```
+
+(First attempt used `,keep` suffix on earlycon — kernel rejected it as a clkrate option. `keep_bootcon` as a separate parameter is the right way.)
+
+**Step 5 — second boot, 1753 lines of UART:** Kernel reaches `Run /init` at 7.28 s. All 8 Baikal PCI functions detected with the expected vendor/device IDs (`0x104d:0x90d7..0x90de`), MSI domains created per-function via `bpcie_create_irq_domain`, amdgpu KMS enabled, ALSA HDA listed, sky2/xhci-aeolia/sdhci drivers init. Real blocker found at line 1284 of the boot log:
+
+```
+baikal_pcie 0000:00:14.4: Failed to register serial port 0
+baikal_pcie 0000:00:14.4: bpcie glue remove
+baikal_pcie 0000:00:14.4: probe with driver baikal_pcie failed with error -5
+```
+
+`bpcie_uart_init` calls `serial8250_register_8250_port` which fails in 6.x autoconfig (`port.type` unset → registration rejected). `bpcie_probe` aborts; every dependent driver (amdgpu, xhci-aeolia, ahci, sdhci, sky2) defers forever; initramfs spins on `LABEL=psxitarch: Can't lookup blockdev`.
+
+**Wins:** PS4 patch foundation works on 6.x (`x86_ps4_early_setup`, EMC timer, MSI plumbing, IOMMU bypass via loader). Build pipeline reproduces clean. UART debugging unblocked.
+
+**Next:** Patch `bpcie_probe` to make UART init failure non-fatal (5 LOC) — see PLAN.md priority #1.
+
+**Side wins:**
+- `keep_bootcon` is now confirmed safe on 6.x (was previously thought to crash). LEARNINGS.md updated.
+- `research/build/SUCCESS_BOOT_LOG.txt` — extracted clean 1753-line boot log of the breakthrough.
+- `research/build/SUCCESS_BOOT_NOTES.md` — detailed breakdown.
+- `research/INVESTIGATION_RESULTS.md` finding F1 (loader disables IOMMU on Baikal) confirmed empirically — `AMD-Vi: Using global IVHD EFR:0x0` in dmesg.
+- `ps4-uart/ps4uart.py` patched to surface EACCES vs ENOENT vs EBUSY clearly (was logging only `# [!] Port lost` for any failure). Discovered while diagnosing why the capture wasn't running — user was missing the `uucp` group in the live shell session; `sg uucp -c '...'` is the workaround until next login.
 
 ---
 
