@@ -7,6 +7,7 @@
 | **5.4 prebuilt** (feeRnt Clang-14) | ✅ Boots, KDE, WiFi, SSH |
 | **5.4 our build** (Clang 22 + bpcie-uart patch + mt76 `=y`) | ✅ Boots, KDE, WiFi, SSH. Build pipeline fully validated. |
 | **6.x our build** with proper bootargs (`keep_bootcon`, no `console=ttyS0`) | ✅ **Boots to userspace `/init` at 7.28 s** (1753 lines of UART). All 8 PS4 PCI funcs detected. amdgpu KMS, ALSA, SDHCI, sky2, xhci-aeolia drivers all init. **Hangs in initramfs** at 17 s on `LABEL=psxitarch: Can't lookup blockdev` — PS4 storage drivers stuck in deferred-probe limbo because `bpcie_probe` aborts (see breakthrough below). |
+| **6.x with `0004-ps4-bpcie-make-uart-failure-non-fatal.patch`** | ✅ **bpcie cascade fixed.** New patch fires (`UART init failed (-5); continuing without serial console`). bpcie_probe returns 0. xhci-aeolia probes fully — Belize SATA PHY init, 4 USB buses registered, Blu-ray AHCI claims 6 Gbps. sdhci-pci finds mmc0 ADMA. ICC pwrbutton init runs. Boot reaches `/init` at 54.95 s, but **3 new blockers** prevent rootfs lookup: (1) xhci `Error while assigning device slot ID: Command Aborted` — USB device enumeration fails, no /dev/sdX; (2) ahci 0000:00:14.2 (HDD AHCI) `probe failed -12` (-ENOMEM) at 10.7 s; (3) mmc0 timeout waiting for hardware cmd interrupt. Capture: `checkpoint/docs/uart-boot-2026-05-08-6x-bpcie-non-fatal.log` (2256 lines). |
 | **6.x our build** with old bootargs (`console=ttyS0`) | ⏸ Looked like a hang at 0.66 s, was actually just printk going to a phantom legacy 8250. Kernel was alive the whole time. |
 | **6.x our build** with `0003-ps4-bpcie-uart-set-port-type.patch` enabled | ❌ Triple-faults at kexec (originally), but that triple-fault probably co-occurred with broken bootargs. **Worth retrying on the new clean cmdline.** |
 | **UART late boot via `ttySN`** | ❌ Still broken on 6.x — bpcie_uart_init's `serial8250_register_8250_port` returns -EIO, which abandons the entire bpcie probe. (Earlycon via MMIO works fine, that's how we get UART output.) |
@@ -70,46 +71,39 @@ ssh ps4 'sudo mount /dev/sda1 /mnt/ps4boot &&
 
 ## Next-session priority list
 
-Now that we know the real blocker is `bpcie_probe` aborting on UART registration failure, the cheap path is well-defined.
+Updated 2026-05-08 after the `0004-ps4-bpcie-make-uart-failure-non-fatal.patch` boot. bpcie cascade is fixed; new blockers are USB enumeration, AHCI ENOMEM, and SDHCI command timeouts.
 
-### 1. (highest leverage, ~5 LOC) Make `bpcie_uart_init` failure non-fatal
+### 1. (highest leverage) Cherry-pick rmuxnet's USB/IOMMU patches
 
-In `drivers/ps4/ps4-bpcie.c::bpcie_probe`, change:
+The `Command Aborted` error on xhci device-slot allocation is exactly what rmuxnet's "USB working motherfuckers" line of work targeted. Eight relevant patches are already extracted in `patches/rmuxnet-7.0-baikal/`:
 
-```c
-if ((ret = bpcie_uart_init(sc)) < 0)
-    goto remove_glue;
-```
+- `f6cf0e0d-ps4-baikal-usb-working-motherfuckers.patch` (the headline)
+- `02fcd65e-usb-xhci-aeolia-fix-baikal-xhci-setup.patch`
+- `dcf8b509-usb-xhci-aeolia-fix-baikal-hcd-setup.patch`
+- `df50a074-usb-xhci-aeolia-restore-ps4-irq-assignment.patch`
+- `8f2f907b-usb-xhci-aeolia-define-extra_priv_size-and-enforce-apcie-irq.patch`
+- `7ce79497-xhci-aeolia-bpcie-amdgpu-fix-baikal-usb-sata-phy-null-deref.patch`
+- `c30160e0-pci-iommu-add-narrowly-gated-ps4-quirks.patch`
+- `d5e2c79b-iommu-amd-fix-ps4-baikal-coherent-dma.patch` (likely fixes the AHCI -12 ENOMEM too)
 
-to:
+These were extracted from rmuxnet's 7.0 line and may need rebasing onto 6.15. Plan: try direct apply first, rebase the failures one by one. Stage as `patches/6.x-baikal/0800-usb-aeolia/0003-…` and `1000-iommu/0002-…` when clean.
 
-```c
-if (bpcie_uart_init(sc) < 0)
-    sc_warn("bpcie: UART init failed, continuing without serial console\n");
-```
+### 2. Test sky2 storm fix once USB rootfs is up
 
-Rationale: UART is a debug aid; `serial_line[i] = -1` initialization in `bpcie_uart_init` already supports the "never registered" case in remove/suspend/resume paths. ICC (which is critical) doesn't depend on UART. With this change, the entire PS4 child-driver tree becomes probe-able, and we get to see the next failure mode — likely something in xhci-aeolia or amdgpu, but at least it's progress past `LABEL=psxitarch`.
+`patches/6.x-baikal/0700-network-sky2/0002-sky2-rmuxnet-storm-fix.patch.candidate` is staged. Once we have working storage and Linux boots to a usable shell, we can validate whether ethernet is actually fixed by it.
 
-Drop in as `patches/6.x-baikal/0200-ps4-drivers/0004-ps4-bpcie-make-uart-failure-non-fatal.patch`. Rebuild via `research/build/` or `linux-ps4/build.sh -t 6.x-baikal`. ~10 min round trip.
+### 3. Re-enable `0003-ps4-bpcie-uart-set-port-type.patch` and re-test
 
-### 2. Re-enable `0003-ps4-bpcie-uart-set-port-type.patch` and re-test
+With bootargs no longer poisoned, the patch's earlier "triple-fault at kexec" might have been chained from the broken cmdline. Re-enable in `patches/6.x-baikal/series`, rebuild, boot. If it works on top of #1, we get UART on `ttySN` *and* successful USB enumeration.
 
-Now that bootargs aren't poisoned, the patch's earlier "triple-fault at kexec" might have been chained from the broken cmdline. Re-enable in `patches/6.x-baikal/series`, rebuild, boot. If it works, we get UART on `ttySN` *and* a successful bpcie probe.
+### 4. SDHCI eMMC timeout (low priority)
 
-If it still triple-faults, apply the option-1 workaround and re-test — that proves the triple-fault is independent of bootargs.
-
-### 3. Test sky2 storm fix once boot reaches userspace
-
-`patches/6.x-baikal/0700-network-sky2/0002-sky2-rmuxnet-storm-fix.patch.candidate` is staged. Once we get past `LABEL=psxitarch`, we can validate whether ethernet is actually fixed by it. Drop into `0700-network-sky2/0002-…`, rebuild.
-
-### 4. (after #1 succeeds) Find the next hang
-
-With `initcall_debug` + `keep_bootcon`, the next failure mode will be visible in the UART log. Could be xhci-aeolia probe failure (rmuxnet's "USB working motherfuckers" patches in `patches/rmuxnet-7.0-baikal/` may apply), amdgpu setup, or something deeper. Whatever it is, we'll have UART for it.
+`mmc0: Timeout waiting for hardware cmd interrupt` at 18 s + 28 s. Could be a Baikal SDHCI quirk we're missing, or this CUH model just has no eMMC populated. Not blocking USB-rooted boot.
 
 ### Older items (still relevant, lower priority now)
 
-- (was #6) Real ttyS4 transmit fix in bpcie-uart — this is the same patch as #2 above but for 5.4 too. Now that we understand the cascade, it's clearer that the patch matters for *probe* success, not just for UART output.
-- (was #5) Layer patches one-by-one onto vanilla 6.15.4 — useful if #1 doesn't reveal the next clear hang.
+- Layer patches one-by-one onto vanilla 6.15.4 — useful if #1's cherry-picks don't apply cleanly and we need a control.
+- Build crashniels' kernel as-is — control if our derivative goes off the rails.
 - (was #2) Build crashniels' kernel as-is — useful as a control if our derivative goes off the rails again.
 
 ## Files to consult next session

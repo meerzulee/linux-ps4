@@ -20,10 +20,40 @@
 | 6.x patch series | 15 patches, 100 files, 11k lines | crashniels' 6.15-baikal split into per-subsystem patches + bpcie-icc fix + feeRnt's xhci-Baikal-shutdown fix |
 | 6.x patches dry-run | ALL APPLY CLEAN | Sequential apply against vanilla v6.15.4 |
 | 6.x build | **SUCCESS** | bzImage 9.2MB — kernel `6.15.4-Baikal_TESTING_crashniels-dirty`, GCC 15 |
-| 6.x boot test (our build) | **WORKS to `/init`** (2026-05-08) | Reaches userspace at 7.28 s with proper bootargs (`keep_bootcon`, no `console=ttyS0`). Initramfs hangs on `LABEL=psxitarch` because `bpcie_probe` aborts on UART registration failure → all PS4 child drivers defer forever. See "2026-05-08" entry. |
+| 6.x boot test (our build) | **WORKS, bpcie cascade fixed** (2026-05-08, 3rd boot) | With `0004-ps4-bpcie-make-uart-failure-non-fatal.patch` applied: bpcie_probe returns 0, xhci-aeolia/sdhci/Belize-SATA-PHY all probe successfully, ICC init runs, kernel reaches `/init` at 54.95 s. Three new blockers prevent rootfs lookup: xhci `Error while assigning device slot ID: Command Aborted`, ahci -ENOMEM, mmc0 cmd timeout. See "2026-05-08, 3rd boot" entry. |
 | 6.x WiFi (mt7668) | NOT YET PORTED | See `patches/6.x-baikal/9000-todo/README.md` |
 | UART access | YES | Serial console wired to PS4. Note: persistent-UART payload's hooks die at kexec; UART silent until in-kernel ps4-bpcie-uart driver registers ttyS0 late in boot. |
 | End-to-end Linux boot | **WORKS** | feeRnt 5.4 prebuilt + v24b payload + better-initramfs + deeWaardt rootfs → systemd up, SSH reachable. See `checkpoint/`. |
+
+---
+
+## 2026-05-08 (3rd boot, ~22:25) — bpcie cascade fixed; new blockers in xhci / ahci / sdhci
+
+After writing `patches/6.x-baikal/0200-ps4-drivers/0004-ps4-bpcie-make-uart-failure-non-fatal.patch` (5-line change to `bpcie_probe` to demote UART init failure to a warning), rebuilt at 22:17 and installed onto the USB at 22:25 (kernel 9794560 B). Booted via ArabPixel v24b with the existing `6.x-diagnostic` bootargs (`keep_bootcon`, `initcall_debug`, `8250.nr_uarts=0`, no `console=ttyS0`).
+
+**The new patch fires exactly as written**:
+
+```
+[    4.591198] baikal_pcie 0000:00:14.4: UART init failed (-5); continuing without serial console
+```
+
+**bpcie_probe completes for the first time on 6.x** (`probe of 0000:00:14.4 returned 0 after 296013 usecs`). Every downstream PS4 driver that gates on `apcie_status() == 1` now probes:
+
+- `xhci_aeolia` (0000:00:14.7) — probes fully. Belize SATA PHY init runs to completion (`PHY SET GEN3`, trace length 6). Inline AHCI claims 6 Gbps, 32 cmd slots, 1 port. 4 USB buses registered (1, 2, 3, 4). USB 3.0 SuperSpeed.
+- `sdhci-pci` (0000:00:14.3) — finds mmc0 ADMA controller `[104d:90da]`, probe returns 0.
+- `bpcie_icc_init` runs through cleanly (one non-fatal -EAGAIN from `icc_pwrbutton_init: Failed to enable reset notifications`, expected).
+
+**New blockers** that prevent rootfs lookup:
+
+1. `xhci_aeolia 0000:00:14.7: Error while assigning device slot ID: Command Aborted` (14.5 s and 26.8 s) — xHCI host registers fine, but device enumeration fails. **No /dev/sdX appears, initramfs can't find `LABEL=psxitarch`.** This is the dominant blocker.
+2. `ahci 0000:00:14.2: probe with driver ahci failed with error -12` (10.7 s) — `-ENOMEM` from the dedicated HDD AHCI controller. Likely coherent-DMA related.
+3. `mmc0: Timeout waiting for hardware cmd interrupt` (18 s, 28 s) — SDHCI host up, eMMC device not answering CMD. Could be no eMMC on this CUH model.
+
+Boot reaches `Run /init as init process` at 54.95 s; initramfs spins on `LABEL=psxitarch: Can't lookup blockdev` from 65 s onward.
+
+Capture: `checkpoint/docs/uart-boot-2026-05-08-6x-bpcie-non-fatal.log` (2256 lines, line 15133 onward of the rolling capture).
+
+**Next:** cherry-pick the 8 patches in `patches/rmuxnet-7.0-baikal/` (already extracted from rmuxnet's `ps4-baikal-7.0-port` branch). The "USB working motherfuckers" commit, the SATA-PHY/USB null-deref fix, the IRQ assignment patches, and the AMD IOMMU coherent-DMA patch are direct hits for our blockers 1-2. Stage as `0800-usb-aeolia/0003-…` and `1000-iommu/0002-…` after rebase.
 
 ---
 

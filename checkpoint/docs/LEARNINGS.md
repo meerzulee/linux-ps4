@@ -211,12 +211,35 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## The bpcie cascade is gone (2026-05-08, third boot)
+
+After applying `0004-ps4-bpcie-make-uart-failure-non-fatal.patch`, bpcie_probe completes for the first time on 6.x. The fix path fires verbatim:
+
+```
+[    4.591198] baikal_pcie 0000:00:14.4: UART init failed (-5); continuing without serial console
+[    4.726768] probe of 0000:00:14.4 returned 0 after 296013 usecs
+```
+
+Everything downstream that gates on `apcie_status() == 1` now probes:
+- `xhci-aeolia` (0000:00:14.7) — probes successfully, registers 4 USB buses, USB 3.0 SuperSpeed claimed, Belize SATA PHY init runs to completion (`PHY SET GEN3`), inline AHCI claims 6 Gbps / 32 cmd slots.
+- `sdhci-pci` (0000:00:14.3) — finds mmc0 ADMA controller, probe returns 0.
+- `bpcie_icc_init` runs all the way through (icc_pwrbutton_init has one non-fatal -EAGAIN on reset notifications, expected).
+
+**New blockers** observed in `checkpoint/docs/uart-boot-2026-05-08-6x-bpcie-non-fatal.log`:
+
+1. **`xhci_aeolia 0000:00:14.7: Error while assigning device slot ID: Command Aborted`** at 14.5 s. xHCI host is up but device enumeration fails — no /dev/sdX appears, so initramfs can't find `LABEL=psxitarch`. This is the dominant blocker.
+2. **`ahci 0000:00:14.2: probe with driver ahci failed with error -12`** at 10.7 s. -ENOMEM from the dedicated HDD AHCI controller. Suspect coherent-DMA shape — `iommu-amd-fix-ps4-baikal-coherent-dma.patch` from rmuxnet-7.0-baikal is the likely fix.
+3. **`mmc0: Timeout waiting for hardware cmd interrupt`** at 18 s. SDHCI host registered but no card answer. Could be no eMMC on this model, or a Baikal SDHCI quirk.
+
+Next step: apply rmuxnet's 8 USB/IOMMU patches from `patches/rmuxnet-7.0-baikal/` (already extracted, just need to rebase to 6.15 and stage in our series). See PLAN.md priority #1.
+
 ## What's still on the to-do list
 
-- ✅ ~~Retry our 6.x build with v24b payload — earlier failures were against the old per-firmware payload, which always triple-faulted regardless.~~ — Done 2026-05-08. v24b boots our 6.x kernel cleanly.
-- 🔥 **Make `bpcie_uart_init` failure non-fatal** in `drivers/ps4/ps4-bpcie.c::bpcie_probe`. ~5 LOC. Unblocks the entire PS4 driver tree on 6.x. See PLAN.md priority #1.
-- 🔥 **Re-enable `0003-ps4-bpcie-uart-set-port-type.patch` on 6.x** with the new clean bootargs and re-test.
+- ✅ ~~Retry our 6.x build with v24b payload — earlier failures were against the old per-firmware payload, which always triple-faulted regardless.~~ — Done 2026-05-08.
+- ✅ ~~Make `bpcie_uart_init` failure non-fatal in `drivers/ps4/ps4-bpcie.c::bpcie_probe`. ~5 LOC.~~ — Done 2026-05-08. Patch `0004-…` lands cleanly, bpcie cascade gone.
+- 🔥 **Cherry-pick rmuxnet's xhci/iommu patches** for the `Command Aborted` device-slot allocation and the AHCI -ENOMEM. 8 patches already extracted in `patches/rmuxnet-7.0-baikal/`. See PLAN.md priority #1.
 - Apply `patches/6.x-baikal/0700-network-sky2/0002-sky2-rmuxnet-storm-fix.patch.candidate` once boot reaches userspace, validate against PLAN.md "Ethernet over Baikal sky2 — broken".
+- Re-enable `0003-ps4-bpcie-uart-set-port-type.patch` once USB is up — gives us proper `ttySN` driver-side UART in addition to the working earlycon.
 - Layer kernel modules onto the deeWaardt rootfs so we get WiFi (mt7668) and the rest.
 - Cap Mesa at 25.1 in the rootfs (deeWaardt's tarball is already pinned, but watch out on first `pacman -Syu`).
 - Resolved: ~~Self-built bzImages hang~~ — wasn't a hang, was UART silence. Builds work fine.
