@@ -42,6 +42,11 @@
 # and every ENABLE_SLOT hits TRB_RING_TIMEOUT. Bypass the demux when
 # the hwirq has the 0x1F shared suffix.
 0200-ps4-drivers/0005-ps4-bpcie-shared-vector-demux-bypass.patch
+# DIAGNOSTIC ONLY — REVERT BEFORE COMMIT TO MAIN. Adds dev_info to
+# bpcie_msi_write_msg and pr_info_ratelimited to bpcie_handle_edge_irq.
+# Tells us whether MSI messages are being written (and to what vector)
+# vs whether the parent IRQ ever actually fires.
+0200-ps4-drivers/9001-DEBUG-bpcie-msi-trace.patch
 
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch

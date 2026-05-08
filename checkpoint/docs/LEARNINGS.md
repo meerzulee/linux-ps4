@@ -211,6 +211,54 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## bpcie MSI domain is NEVER USED on 6.x (2026-05-09, boot #12)
+
+After all the xHCI / settle / IRQ / demuxer patches, we added
+diagnostic `pr_info` to four bpcie MSI-path functions:
+`bpcie_assign_irqs`, `bpcie_msi_init`, `bpcie_msi_write_msg`,
+and `bpcie_handle_edge_irq`. Boot #12 shows:
+
+```
+[ 4.929860] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs: requested nvec=3 msi_enabled=0
+[ 4.938093] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs returning 1 (dev->irq=33)
+[ 7.158757] Spurious interrupt (vector 0xef) on CPU#0. Acked
+[ 7.460710] Spurious interrupt (vector 0xef) on CPU#0. Acked
+[14.670647] Error while assigning device slot ID: Command Aborted
+```
+
+**Only `bpcie_assign_irqs` logs. Zero output from `bpcie_msi_init`,
+`bpcie_msi_write_msg`, or `bpcie_handle_edge_irq`.**
+
+That means: the bpcie MSI domain is created (via
+`pci_msi_create_irq_domain` + `dev_set_msi_domain`) but the kernel's
+PCI MSI allocator is **not walking it** when xhci-aeolia calls
+`pci_alloc_irq_vectors`. The IRQ ends up on `irq=33` via some other
+path — almost certainly the standard x86 vector domain. The MSI
+capability gets programmed with a LAPIC vector that the LAPIC then
+delivers as **spurious vector 0xef** (APIC_SPURIOUS_VECTOR) — meaning
+the controller is firing MSIs but the kernel doesn't recognise them
+as belonging to any registered handler. xHCI's command-completion
+interrupt is therefore lost, the kernel hits TRB_RING_TIMEOUT (5 s),
+gives up, and reports Command Aborted.
+
+This is a **6.x infrastructure mismatch**, not a vendor MSI message
+bug. The bpcie code worked on 5.4 because `dev_set_msi_domain` +
+`pci_msi_create_irq_domain` was sufficient there. In 6.x the device's
+PCI MSI domain is looked up via a different mechanism that ignores
+our setting (suspected: `dev->dev.msi.data` chain or the PCI bridge
+walk added in 5.10/5.15/6.0).
+
+Diagnostic patch retained at
+`patches/6.x-baikal/0200-ps4-drivers/9001-DEBUG-bpcie-msi-trace.patch`
+for future re-runs. **Revert before any production-intent build.**
+
+Implication: the previous five patches (0005 settle, 0006 apcie IRQ,
+0007 imod+retry, 0005 demux bypass, 0003 iommu coherent-DMA) are
+correct individually, but none of them help because the MSI never
+reaches the bpcie code path. The actual fix has to be at the domain
+creation level — making 6.x's PCI MSI core honour our
+`dev_set_msi_domain()` association.
+
 ## The bpcie shared-vector demuxer was broken on every Baikal port (2026-05-09)
 
 After landing four xHCI-side patches in a row that did NOT change the
