@@ -11,6 +11,7 @@ USB.
 | [`5.4-normal.txt`](5.4-normal.txt) | Normal boot of our 5.4-baikal kernel. UART via earlycon at 0xC890E000, then handed off to fbcon. `console=ttyS0` is included because BPCIe UART driver registers ttyS0 successfully on 5.4. |
 | [`6.x-diagnostic.txt`](6.x-diagnostic.txt) | The current 6.x-baikal target. Uses `keep_bootcon` to keep MMIO UART alive past tty0 takeover, drops `console=ttyS0` (phantom on 6.x), zeroes `8250.nr_uarts` to skip phantom slot allocation, adds `initcall_debug` for cause-of-hang isolation. **This is what got us to `/init` on 2026-05-08.** |
 | [`6.x-bypass-systemd.txt`](6.x-bypass-systemd.txt) | Same as `6.x-diagnostic.txt` plus `init=/bin/sh` — drops into a busybox shell instead of running systemd. Use when you want to find which userspace service hangs the boot. |
+| [`6.x-nomsi.txt`](6.x-nomsi.txt) | `6.x-diagnostic` + `pci=nomsi`. Forces legacy line-based IRQ instead of MSI for every PCI device. Use to confirm whether xHCI Command Aborted is caused by the bpcie MSI domain bypass (Linux 6.2 rework). If USB enumeration succeeds with this, MSI path is conclusively the whole issue. Slower than MSI in production but a clean diagnostic step. |
 
 ## Why a separate directory
 
