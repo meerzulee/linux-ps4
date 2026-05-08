@@ -43,7 +43,7 @@ baikal_pcie 0000:00:14.4: probe with driver baikal_pcie failed with error -5
 - All 8 Baikal PCI functions detected with correct device IDs (`0x104d:0x90d7..0x90de`).
 - Per-function MSI domains created via `bpcie_create_irq_domain` for funcs 14.0–14.7.
 - HDMI audio (HD-Audio Generic at `0xe4840000`) present in ALSA list.
-- IOMMU disable from loader confirmed (matches our investigation finding F1 in `research/INVESTIGATION_RESULTS.md`).
+- IOMMU disable from loader confirmed (matches our investigation finding F1 in `checkpoint/docs/research/gap-analysis-vs-our-tree.md`).
 
 ## Key facts known about hardware/quirks
 
@@ -100,7 +100,7 @@ If it still triple-faults, apply the option-1 workaround and re-test — that pr
 
 ### 3. Test sky2 storm fix once boot reaches userspace
 
-`research/sky2-storm-fix-extracted.patch` is staged. Once we get past `LABEL=psxitarch`, we can validate whether ethernet is actually fixed by it. Drop into `0700-network-sky2/0002-…`, rebuild.
+`patches/6.x-baikal/0700-network-sky2/0002-sky2-rmuxnet-storm-fix.patch.candidate` is staged. Once we get past `LABEL=psxitarch`, we can validate whether ethernet is actually fixed by it. Drop into `0700-network-sky2/0002-…`, rebuild.
 
 ### 4. (after #1 succeeds) Find the next hang
 
@@ -141,11 +141,13 @@ earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_
 
 To return to working 5.4 baseline: `sudo bash scripts/rollback-to-our-5.4.sh` while USB is on host. Or use `sudo bash scripts/dev/rollback-kernel.sh` to swap `bzImage` ← `bzImage-stable`.
 
-To re-stage `research/build/` outputs onto USB:
+To re-stage outputs onto USB:
 ```
-sudo bash /home/meerzulee/Work/ps4/research/build/install-to-usb.sh   # bzImage
-sudo bash /home/meerzulee/Work/ps4/research/build/update-bootargs.sh  # bootargs.txt
+sudo bash scripts/swap-bzimage.sh output/6.x-baikal/bzImage           # kernel
+sudo bash scripts/dev/update-bootargs.sh 6.x-diagnostic                # bootargs profile
 ```
+
+`scripts/dev/update-bootargs.sh --list` shows all bootargs profiles in `bootargs/`.
 
 ## Current commits
 

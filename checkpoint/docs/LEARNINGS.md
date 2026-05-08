@@ -216,7 +216,7 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - ✅ ~~Retry our 6.x build with v24b payload — earlier failures were against the old per-firmware payload, which always triple-faulted regardless.~~ — Done 2026-05-08. v24b boots our 6.x kernel cleanly.
 - 🔥 **Make `bpcie_uart_init` failure non-fatal** in `drivers/ps4/ps4-bpcie.c::bpcie_probe`. ~5 LOC. Unblocks the entire PS4 driver tree on 6.x. See PLAN.md priority #1.
 - 🔥 **Re-enable `0003-ps4-bpcie-uart-set-port-type.patch` on 6.x** with the new clean bootargs and re-test.
-- Apply `research/sky2-storm-fix-extracted.patch` once boot reaches userspace, validate against PLAN.md "Ethernet over Baikal sky2 — broken".
+- Apply `patches/6.x-baikal/0700-network-sky2/0002-sky2-rmuxnet-storm-fix.patch.candidate` once boot reaches userspace, validate against PLAN.md "Ethernet over Baikal sky2 — broken".
 - Layer kernel modules onto the deeWaardt rootfs so we get WiFi (mt7668) and the rest.
 - Cap Mesa at 25.1 in the rootfs (deeWaardt's tarball is already pinned, but watch out on first `pacman -Syu`).
 - Resolved: ~~Self-built bzImages hang~~ — wasn't a hang, was UART silence. Builds work fine.

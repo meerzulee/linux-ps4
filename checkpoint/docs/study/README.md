@@ -17,6 +17,14 @@ hanging.
 | 5 | [05-uart.md](05-uart.md) | How UART debugging works on PS4: BPCIe BAR2, MMIO32+regshift=2, earlycon, ttySN. Why UART is silent post-kexec. Why `ttyS4` transmit is broken. | If you're going to debug 6.x further, UART is your only window. Know it. |
 | 6 | [06-iteration-loop.md](06-iteration-loop.md) | The dev tools: `test-kernel.sh`, `mark-good.sh`, `rollback-kernel.sh`, `kexec-test.sh`, `wait-for-ssh.sh`. The cost model of each (jailbreak chains spent on failure). | Use the right tool for each test. Pick the cheapest one that gives you the answer you need. |
 | 7 | [07-failure-analysis.md](07-failure-analysis.md) | What we know about the 6.x hang. Hypotheses ranked by probability. Diagnostic experiments ranked by cost. | This is where to start work next session. |
+| 8 | [08-mt7668-port-todo.md](08-mt7668-port-todo.md) | Step-by-step plan for forward-porting the MT7668 vendor WiFi/BT driver from 5.4 to 6.x. | Long-running parallel work between PS4 chains. ~1 day of compile-error fixing. |
+
+## Experiment scripts
+
+For when you're ready to actually test on hardware, executable
+candidate experiments live in
+[`scripts/dev/experiments/`](../../../scripts/dev/experiments/) with
+their own [README](../../../scripts/dev/experiments/README.md).
 
 ## Reference material outside this directory
 
@@ -39,6 +47,18 @@ and study the system end-to-end. Synthesised from:
 - Live PS4 inspection over SSH (cmdline, dmesg, /proc/tty/driver/serial,
   rootfs layout).
 - The dev scripts in `scripts/dev/`.
+
+## Reference material outside this directory
+
+- [`checkpoint/docs/PLAN.md`](../PLAN.md) — current global plan and the next-session priority list.
+- [`checkpoint/docs/LEARNINGS.md`](../LEARNINGS.md) — chronological diagnosis history (what we tried, what didn't work).
+- [`checkpoint/docs/research/`](../research/) — notes on **other people's** PS4 trees (rmuxnet bringup, ArabPixel loader internals, gap analysis vs our patches), and the 2026-05-08 6.x boot breakthrough writeup. Sibling track to this directory.
+- [`BUILD_LOG.md`](../../../BUILD_LOG.md) — chronological build attempts.
+- [`bootargs/`](../../../bootargs/) — canonical bootargs profiles (5.4-normal, 6.x-diagnostic, 6.x-bypass-systemd) as plain text files.
+- [`patches/5.4-baikal/series`](../../../patches/5.4-baikal/series) and [`patches/6.x-baikal/series`](../../../patches/6.x-baikal/series) — apply order with comments explaining each group.
+- [`checkpoint/docs/uart-boot-capture-ttyS0E000.log`](../uart-boot-capture-ttyS0E000.log) — earlier 5.4 UART boot capture, ~135 lines from earlycon to fbcon takeover.
+- [`checkpoint/docs/uart-boot-2026-05-08-6x-keep_bootcon-success.log`](../uart-boot-2026-05-08-6x-keep_bootcon-success.log) — the 6.x boot-to-`/init` capture from 2026-05-08, 1753 lines.
+- [`CLAUDE.md`](../../../CLAUDE.md) — project hard rules (never auto-reboot; USB naming convention; settled design choices).
 
 Where notes contradict reality, trust reality and update the notes.
 Memory and docs go stale fast; PCI IDs and patch line numbers do not.

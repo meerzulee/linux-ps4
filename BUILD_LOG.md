@@ -31,13 +31,13 @@
 
 Worked from `research/build/` (clean-room copy of the 6.x-baikal target outside `linux-ps4/`). All 15 patches in `patches/6.x-baikal/series` apply cleanly to vanilla v6.15.4. Build via GCC 16.1.1 + Binutils 2.46.0, 4 min 46 s, zero errors, 1089 cosmetic warnings (mostly a single header-expansion artifact in amdgpu).
 
-**Step 1 — install onto USB:** `research/build/install-to-usb.sh` (mounts `/dev/sda1`, snapshots `bzImage` → `bzImage-prev`, bootstraps `bzImage-stable`, drops in new bzImage and a labeled copy `bzImage-6x-research-20260508-2111`).
+**Step 1 — install onto USB:** `scripts/swap-bzimage.sh` (mounts `/dev/sda1`, snapshots `bzImage` → `bzImage-prev`, bootstraps `bzImage-stable`, drops in new bzImage and a labeled copy `bzImage-6x-research-20260508-2111`).
 
 **Step 2 — first boot (old bootargs):** Hung at 0.66 s as before. ~120 lines of UART, then silence.
 
 **Step 3 — diagnose silence:** Discovered the UART log was getting `legacy bootconsole [uart8250] disabled`, after which `console=ttyS0,115200n8` directed printk to a phantom legacy 8250 at I/O `0x3F8`. The kernel was running silently, not hanging.
 
-**Step 4 — bootargs update:** `research/build/update-bootargs.sh` to set:
+**Step 4 — bootargs update:** `scripts/dev/update-bootargs.sh` to set:
 
 ```
 earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
@@ -61,9 +61,9 @@ baikal_pcie 0000:00:14.4: probe with driver baikal_pcie failed with error -5
 
 **Side wins:**
 - `keep_bootcon` is now confirmed safe on 6.x (was previously thought to crash). LEARNINGS.md updated.
-- `research/build/SUCCESS_BOOT_LOG.txt` — extracted clean 1753-line boot log of the breakthrough.
-- `research/build/SUCCESS_BOOT_NOTES.md` — detailed breakdown.
-- `research/INVESTIGATION_RESULTS.md` finding F1 (loader disables IOMMU on Baikal) confirmed empirically — `AMD-Vi: Using global IVHD EFR:0x0` in dmesg.
+- `checkpoint/docs/uart-boot-2026-05-08-6x-keep_bootcon-success.log` — extracted clean 1753-line boot log of the breakthrough.
+- `checkpoint/docs/research/2026-05-08-6x-breakthrough.md` — detailed breakdown.
+- `checkpoint/docs/research/gap-analysis-vs-our-tree.md` finding F1 (loader disables IOMMU on Baikal) confirmed empirically — `AMD-Vi: Using global IVHD EFR:0x0` in dmesg.
 - `ps4-uart/ps4uart.py` patched to surface EACCES vs ENOENT vs EBUSY clearly (was logging only `# [!] Port lost` for any failure). Discovered while diagnosing why the capture wasn't running — user was missing the `uucp` group in the live shell session; `sg uucp -c '...'` is the workaround until next login.
 
 ---
