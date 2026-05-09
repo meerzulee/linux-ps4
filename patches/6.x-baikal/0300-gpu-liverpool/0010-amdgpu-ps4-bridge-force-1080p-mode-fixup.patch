@@ -1,0 +1,64 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v24 - ps4_bridge mode_fixup forces 1080p60
+
+v23 confirmed the bridge IS being fully programmed:
+
+  ps4_bridge_pre_enable: cq_exec returned 20  (success)
+  ps4_bridge_enable: MN864729 main seq cq_exec=20  (success)
+  ps4_bridge_enable: END
+
+But DRM was passing mode 1400x1050 (probably from lightdm's X
+server defaults), so the GPU's DP transmitter was programmed to
+output 1400x1050 timing while the MN864729 bridge was configured
+for VIC 16 (1080p60).  Mismatch -> bridge can't decode the signal
+-> HDMI stays dark.
+
+Add ps4_bridge_mode_fixup() which overwrites adjusted_mode with
+the canonical 1920x1080@60Hz timing (mode_1080p struct already
+defined in this file).  Runs from the atomic_check phase via
+drm_bridge_chain_mode_fixup so the rest of the pipeline (encoder,
+crtc) is programmed for 1080p, matching the bridge.
+
+If v24 works:
+- "ps4_bridge_mode_fixup: incoming 1400x1050 -> forcing 1920x1080@60"
+  logged
+- GPU outputs 1920x1080@60 over DP
+- Bridge converts to HDMI 1920x1080@60
+- Monitor lights up
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -780,12 +780,32 @@
+ 	return 0;
+ }
+ 
++/* v24: force the GPU's adjusted mode to 1080p60 regardless of what
++ * userspace requested.  We confirmed in v23 that the bridge IS being
++ * fully programmed for VIC 16 (1080p) but DRM atomic was passing
++ * mode=1400x1050 which the GPU then output -- a mismatch with what the
++ * bridge expected, so HDMI stayed dark.  Overwriting adjusted_mode here
++ * forces the GPU to output 1080p, matching the bridge config. */
++static bool ps4_bridge_mode_fixup(struct drm_bridge *bridge,
++				  const struct drm_display_mode *mode,
++				  struct drm_display_mode *adjusted_mode)
++{
++	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
++	pr_info("ps4_bridge_mode_fixup: incoming %dx%d -> forcing 1920x1080@60\n",
++		mode->hdisplay, mode->vdisplay);
++
++	drm_mode_copy(adjusted_mode, &mode_1080p);
++	mn_bridge->mode = 16;	/* CEA VIC 16 */
++	return true;
++}
++
+ static struct drm_bridge_funcs ps4_bridge_funcs = {
+ 	.pre_enable = ps4_bridge_pre_enable,
+ 	.enable = ps4_bridge_enable,
+ 	.disable = ps4_bridge_disable,
+ 	.post_disable = ps4_bridge_post_disable,
+ 	.attach = ps4_bridge_attach,
++	.mode_fixup = ps4_bridge_mode_fixup,
+ 	.mode_set = ps4_bridge_mode_set,
+ };
+ 

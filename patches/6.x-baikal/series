@@ -107,6 +107,14 @@
 # Default to VIC 16 (1080p60) when CEA match fails. Also widen
 # mode_valid to accept 1920x1080 / 1280x720 even without exact CEA match.
 0300-gpu-liverpool/0008-amdgpu-ps4-bridge-default-vic-16.patch
+# v23: verbose diagnostics on bridge_pre_enable, bridge_enable, detect.
+# Promotes DRM_DEBUG_KMS to pr_info; logs cq_exec return values.
+# Pure diagnostic, no behavior change.
+0300-gpu-liverpool/0009-amdgpu-ps4-bridge-verbose-diagnostics.patch
+# v24: bridge programs for VIC 16 (1080p) but DRM passes 1400x1050 to GPU
+# encoder -> mismatch -> blank. Add mode_fixup that rewrites adjusted_mode
+# with canonical 1920x1080@60Hz so GPU+bridge agree.
+0300-gpu-liverpool/0010-amdgpu-ps4-bridge-force-1080p-mode-fixup.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

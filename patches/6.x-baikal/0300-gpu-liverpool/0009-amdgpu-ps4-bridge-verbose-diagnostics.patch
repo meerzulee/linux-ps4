@@ -1,0 +1,109 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v23 - ps4_bridge verbose diagnostics
+
+After v22, "non-CEA mode -> defaulting to VIC 16" fires correctly,
+no "Failed to configure" errors, but display still dark. Need to
+verify whether bridge_pre_enable + bridge_enable actually run, what
+their cq_exec results are, and what TMONREG reports on detect.
+
+This patch promotes DRM_DEBUG_KMS / DRM_DEBUG calls to pr_info so
+they show up in the boot log without drm.debug=4. Adds:
+- ps4_bridge_pre_enable BEGIN/END + cq_exec return value
+- ps4_bridge_enable BEGIN/END + cq_exec return value for the
+  MN864729 main sequence
+- ps4_bridge_detect TMONREG value and HPD bit
+
+If v23 boot shows:
+- BEGIN/END for both pre_enable and enable -> bridge IS being called
+- cq_exec=N (positive) -> ICC commands worked
+- HPD=1 -> connector status correct
+- AND still no display -> the issue is with what GPU is actually
+  outputting (DP TX programming) or a mode mismatch
+
+If we DON'T see BEGIN/END at lightdm time -> bridge_enable isn't
+being invoked from atomic modeset and we need to hook it manually.
+
+Pure diagnostic, no behavior change.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -309,8 +309,7 @@
+ static void ps4_bridge_pre_enable(struct drm_bridge *bridge)
+ {
+ 	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
+-	DRM_DEBUG_KMS("ps4_bridge_pre_enable\n");
+-	DRM_DEBUG("Enable ps4_bridge_pre_enable\n");
++	pr_info("ps4_bridge_pre_enable: BEGIN (mode=VIC %d)\n", mn_bridge->mode);
+ 	mutex_lock(&mn_bridge->mutex);
+ 	cq_init(&mn_bridge->cq, 4);
+ 
+@@ -369,10 +368,14 @@
+ 	/* Wait AKE busy */
+ 	cq_wait_clear(&mn_bridge->cq, AKESTA, AKESTA_BUSY);
+ 
+-	if (cq_exec(&mn_bridge->cq) < 0) {
+-		DRM_ERROR("failed to run pre-enable sequence");
++	{
++		int rc = cq_exec(&mn_bridge->cq);
++		pr_info("ps4_bridge_pre_enable: cq_exec returned %d\n", rc);
++		if (rc < 0)
++			DRM_ERROR("failed to run pre-enable sequence");
+ 	}
+ 	mutex_unlock(&mn_bridge->mutex);
++	pr_info("ps4_bridge_pre_enable: END\n");
+ }
+ 
+ static void ps4_bridge_enable(struct drm_bridge *bridge)
+@@ -383,7 +386,8 @@
+ 	struct pci_dev *pdev = to_pci_dev(dev->dev);
+ 	u8 dp[3];
+ 
+-	DRM_DEBUG("Enable PS4_BRIDGE_ENABLE\n");
++	pr_info("ps4_bridge_enable: BEGIN (mode=VIC %d, dev=0x%04x)\n",
++		mn_bridge->mode, pdev->device);
+ 	if (!mn_bridge->mode) {
+ 		DRM_ERROR("mode not available\n");
+ 		return;
+@@ -394,8 +398,6 @@
+ 		return;
+ 	}
+ 
+-	DRM_DEBUG_KMS("ps4_bridge_enable (mode: %d)\n", mn_bridge->mode);
+-
+ 	/* Here come the dragons */
+ 
+ 	if(pdev->device == PCI_DEVICE_ID_CUH_11XX)
+@@ -587,8 +589,11 @@
+ 		cq_mask(&mn_bridge->cq, 0x1e00, 0x01, 0x01);
+ 		cq_writereg(&mn_bridge->cq, VMUTECNT, VMUTECNT_LINEWIDTH_90);
+ 		cq_writereg(&mn_bridge->cq, HDCPEN, 0x00);
+-		if (cq_exec(&mn_bridge->cq) < 0) {
+-			DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_enable: MN864729 main seq cq_exec=%d\n", rc);
++			if (rc < 0)
++				DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
+ 		}
+ 		#if 1
+ 		// AUDIO preinit
+@@ -633,7 +638,7 @@
+ 		#endif
+ 		mutex_unlock(&mn_bridge->mutex);
+ 	}
+-
++	pr_info("ps4_bridge_enable: END\n");
+ }
+ 
+ static void ps4_bridge_disable(struct drm_bridge *bridge)
+@@ -737,7 +742,8 @@
+ 	reg = mn_bridge->cq.reply.databuf[3];
+ 	mutex_unlock(&mn_bridge->mutex);
+ 
+-	DRM_DEBUG_KMS("TMONREG=0x%02x\n", reg);
++	pr_info("ps4_bridge_detect: TMONREG=0x%02x HPD=%d\n",
++		reg, !!(reg & TMONREG_HPD));
+ 
+ 	if (reg & TMONREG_HPD)
+ 		return connector_status_connected;
