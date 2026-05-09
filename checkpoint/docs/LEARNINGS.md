@@ -784,3 +784,54 @@ sanitized to `?`.  Auto-prints a signal summary (counts of
 `bpcie_handle_edge_irq`, `Command Aborted`, etc.) so post-boot analysis
 doesn't require digging through 7+ MB of mixed-binary rolling log.  See
 `scripts/dev/README.md` for usage.
+
+## 2026-05-09 — Option D (v8): the bigger reframe
+
+After all 7 Option B variants showed `bpcie_handle_edge_irq=0`, re-reading
+v7 against feeRnt's `x_exp__6.15.4-BaikalLove` snapshot revealed the actual
+problem.  Hypothesis (A)/(B)/(C) above were all wrong framings.  The real
+answer is hardware-architectural:
+
+**PS4 Baikal southbridge does MSI virtualization.** Child PCI funcs do NOT
+fire MSI to LAPIC.  They write a Baikal-magic tuple (`addr=0xFEE00000`,
+`data=<subfunc-index>`) that the southbridge intercepts on the HT link,
+decodes, accumulates into `BPCIE_ACK_READ`, and converts into a single
+real MSI fired on bpcie's (function-4 Glue) own vector pool.  The kernel
+then dispatches `bpcie_handle_edge_irq`, which reads `BPCIE_ACK_READ` and
+demuxes into per-subfunc handlers.
+
+v1–v7 used `x86_vector_msi_compose_msg` which writes a real LAPIC vector
+(e.g. `addr_lo=fee02000 data=0x20`).  The southbridge silently swallows
+that — `0xFEE02000` ≠ its `0xFEE00000` sentinel, and `data=0x20` is out of
+the subfunction-index range.  No LAPIC delivery.  No demuxer.  No driver
+handler. ✗
+
+The smoking gun was in our own v7 source the entire time:
+
+```c
+.irq_compose_msi_msg = x86_vector_msi_compose_msg,  // this seems kinda wrong
+```
+
+That comment was right.
+
+**Option D fix**: faithful port of feeRnt's BaikalLove approach —
+- Custom `bpcie_irq_msi_compose_msg` writing `addr_lo=0xFEE00000` +
+  `data=irq_map[]-derived-index`.
+- New `int irq_map[100]` field in `struct abpcie_dev`, tracking
+  virq → subfunc-index.
+- `bpcie_msi_init` populates next free slot; composer reads it back.
+- Drop `IRQ_DOMAIN_FLAG_MSI_PARENT`, `msi_parent_ops`,
+  `init_dev_msi_info`, AMDVI bus_token override.  Use the legacy 2-level
+  (bpcie → x86_vector) MSI domain since 6.x still supports it for devices
+  whose hardware doesn't speak the per-device MSI rework's assumptions.
+- Keep `pci_msi_create_irq_domain` (BaikalLove uses it).
+- Keep `dev_set_msi_domain` install (BaikalLove uses it).
+
+See `checkpoint/docs/research/2026-05-09-option-d-thesis.md` for the
+full architectural writeup.
+
+This reframes 7 prior iterations: we were not on the wrong side of a
+kernel bug or missing API.  We were wiring up a kernel API that the
+hardware is fundamentally incompatible with.  Lesson for future Claude:
+**when the kernel-side telemetry says everything looks healthy and yet
+nothing works, suspect the silicon.**

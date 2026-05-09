@@ -506,3 +506,29 @@ Full report: `checkpoint/docs/research/2026-05-09-v7-baikallove-result.md`.
 Also added `scripts/dev/boot-capture.sh` — extracts named slices from the
 rolling UART log with auto signal summary.  Documented in
 `scripts/dev/README.md`.
+
+## 2026-05-09 — v8 / Option D building (BaikalLove-faithful)
+
+Architectural pivot away from Option B (per-device MSI parent).  Realized
+PS4 Baikal southbridge does not pass child MSI writes to LAPIC — it
+captures HT writes to `addr=0xFEE00000` and re-emits them as bpcie's own
+MSI.  v1–v7 wrote real LAPIC vectors which the southbridge silently
+dropped.
+
+Changes in this build:
+- Replaced `0007-ps4-bpcie-option-b-msi-parent.patch` with
+  `0007-ps4-bpcie-option-d-baikallove.patch`.
+- Added `int irq_map[100]` to `struct abpcie_dev`.
+- New `bpcie_irq_msi_compose_msg` writing `addr_lo=0xFEE00000` + irq_map
+  index.
+- Removed `IRQ_DOMAIN_FLAG_MSI_PARENT`, `bpcie_msi_parent_ops`,
+  `bpcie_init_dev_msi_info`, AMDVI bus_token override.
+- Kept `pci_msi_create_irq_domain` and `dev_set_msi_domain` install.
+
+Clean rebuild (header file changed, kbuild dependency tracking is fragile
+on transitive #includes).  See
+`checkpoint/docs/research/2026-05-09-option-d-thesis.md` for thesis.
+
+Boot prediction: `bpcie_handle_edge_irq` should fire > 0 times.  If still
+0, next suspect is the `apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask`
+TODO (hardware enable register).
