@@ -1,0 +1,65 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v20 - skip DP link training for Liverpool/Gladius
+
+After v19 made ICC mailbox commands work via polling, the next blocker
+for HDMI display became:
+
+  [drm:amdgpu_atombios_dp_link_train] *ERROR* clock recovery tried 5 times
+  [drm:amdgpu_atombios_dp_link_train] *ERROR* clock recovery failed
+
+amdgpu's standard DP clock-recovery loop never converges on PS4
+hardware.  The reason: the "DP link" between the Liverpool GPU and the
+Panasonic MN864729/MN86471A internal HDMI bridge chip isn't a real
+external DP connection.  It's a fixed-mode internal link that the
+bridge chip programs itself during its enable sequence
+(ps4_bridge_pre_enable / ps4_bridge_enable).  The bridge does NOT
+respond to kernel-driven DPCD-based clock-recovery requests, so the
+training loop times out after 5 voltage-swing retries and amdgpu
+bails out of the modeset before bridge_enable ever runs.
+
+Fix: skip kernel-side DP link training when adev->asic_type is
+CHIP_LIVERPOOL or CHIP_GLADIUS.  The bridge's enable callback is what
+actually programs the link.  Without this, the call chain is:
+
+  encoder_atomic_enable
+    setup_dig_transmitter(ENABLE)
+    amdgpu_atombios_dp_link_train  ← fails 5x, bails out
+    setup_dig_encoder(DP_VIDEO_ON)  ← never reached
+
+With this:
+
+  encoder_atomic_enable
+    setup_dig_transmitter(ENABLE)
+    amdgpu_atombios_dp_link_train  ← early return for Liverpool
+    setup_dig_encoder(DP_VIDEO_ON)
+  bridge_pre_enable                ← finally runs
+  bridge_enable                    ← finally runs, programs MN864729
+
+Builds on 0001 (which added Liverpool/Gladius to dp_get_dp_link_config
+forcing min_lane_num=4) but takes the surgical approach of bypassing
+training entirely rather than trying to make it succeed.
+
+If v20 works:
+- bridge_pre_enable / bridge_enable run
+- HDMI bridge gets programmed
+- Monitor shows console output
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_dp.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_dp.c
+@@ -736,6 +736,15 @@
+ 	struct amdgpu_atombios_dp_link_train_info dp_info;
+ 	u8 tmp;
+ 
++	/* PS4 Liverpool/Gladius: the internal DP link goes from the GPU to a
++	 * Panasonic MN864729/MN86471A bridge chip that handles training
++	 * itself.  Kernel-side DP link training never completes clock
++	 * recovery on this hardware (5x retries → fail), and the bridge's
++	 * pre_enable/enable callbacks are what actually program the link.
++	 * Skip kernel link training so amdgpu modeset can proceed. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		return;
++
+ 	if (!amdgpu_encoder->enc_priv)
+ 		return;
+ 
