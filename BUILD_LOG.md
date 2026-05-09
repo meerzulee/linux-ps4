@@ -616,3 +616,24 @@ Final formula:
   interrupt remapping which was blocking Baikal's HT-MSI delivery)
 
 Full report: checkpoint/docs/research/2026-05-09-v12-MILESTONE.md
+
+## 2026-05-09 — v13: per-subfunc mask (no ICC fix, but boot reached /init)
+
+Added per-subfunc Baikal mask handling to bpcie_msi_unmask/mask
+(0010 patch, 91 lines).  Hypothesis: ICC's MSI was masked at the
+subfunc bit level even though function-level enable was set in
+bpcie_config_msi.
+
+Result: ZERO regressions vs v12 (USB/SATA/amdgpu/ALSA all preserved),
+boot now reaches /init at t=239s — but ICC timeouts unchanged (15).
+The vector 0xE3 "No irq handler" message still fires at t=5.86s.
+
+Concluding ICC needs a different fix — likely related to bpcie MEM
+function 6 setup (icc_init relies on mem_dev BAR5 mapping for SPM
+mailbox region).  Deferring ICC investigation.
+
+Pivot to v14 = enable Baikal GbE in sky2 (PCI ID line commented out
+with "is this broken maybe?" hint).  Goal: get SSH access for better
+remote debugging.
+
+Full report: checkpoint/docs/research/2026-05-09-v13-result.md
