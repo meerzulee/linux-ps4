@@ -643,3 +643,76 @@ itself will need porting to the per-device model — override `info->handler` in
 human eye, but pyserial's buffered writes routinely clobber appended markers when
 the next batch of incoming serial data flushes. Find the boot by content
 signature instead (the `Linux version` line, distinctive new pr_info text).
+
+## Option B v6 — demuxer-leaf-handler override (2026-05-09)
+
+After v5 boot proved the MSI-domain-parent infrastructure works end-to-end (8x
+parent flag set, AMDVI bus_token satisfies x86's gate, multi-MSI permits 32+
+vectors, real CPU-targeted vectors programmed in every MSI cap, zero spurious
+0xef interrupts), the remaining wall in v5 was that `bpcie_handle_edge_irq` —
+bpcie's hardware demuxer that reads `BPCIE_ACK_READ` to identify which
+subfunction fired — was firing **zero times** in the entire boot. Result:
+xhci/sdhci/ahci/even bpcie's own ICC commands all timed out on completion
+interrupts.
+
+v6 added a custom `bpcie_init_dev_msi_info` wrapper that calls
+`msi_parent_init_dev_msi_info` first (kernel helper for non-recursing parent
+delegation), then explicitly overrides `info->handler = bpcie_handle_edge_irq`
+and `info->chip_data = bpcie_dev_for_child_pdev(...)` so the demuxer is wired
+into the per-device child's leaf chain.
+
+**Result on hardware (Boot #19, 2026-05-09 morning):**
+
+- ✅ `bpcie_init_dev_msi_info` fires for each Baikal child pdev that calls
+  `pci_alloc_irq_vectors` (3x in this boot: 14.4 then 14.7 then 14.3).
+- ✅ `bpcie_msi_init` fires 34x (parent-level setup OK).
+- ✅ `bpcie_msi_write_msg` fires for every MSI cap activation. Real vectors
+  programmed (0x20 on CPU 1/2/3 for ICC/xhci/sdhci respectively).
+- ❌ **`bpcie_handle_edge_irq` fires 0 times** — same as v5. Override didn't
+  propagate to leaf handler despite info->handler being set after the helper.
+- ❌ **amdgpu regressed** — `[drm:gfx_v7_0_priv_reg_irq] *ERROR* Illegal
+  register access in command stream` and fence-fallback timeouts on gfx + sdma
+  rings. amdgpu is at 0000:00:01.0 (NOT under bpcie) so these errors suggest
+  the AMDVI bus_token hack on bpcie is corrupting x86_vector_domain's
+  allocation state for *non-Baikal* devices too. amdgpu fence completion
+  isn't arriving, even though gfx_v7_0_priv_reg_irq itself appears to fire.
+
+Why `info->handler` override doesn't reach the leaf isn't yet clear from log
+alone. Hypothesis A: pci_msi_template's leaf uses a code path that ignores
+info->handler (maybe its own `.msi_init` overrides what default would do).
+Hypothesis B: handler IS installed at the leaf but MSI is delivered to a
+different vector / virq than expected. Hypothesis C: hardware ISN'T actually
+firing the MSI despite cap programming — Baikal needs an additional gate
+register to enable interrupt delivery.
+
+Architectural takeaway: **trying to fit Baikal's hardware demuxer into 6.x's
+per-device MSI model may be the wrong shape**. The 5.4 model had bpcie's
+domain be a *single shared domain* that all 8 functions referenced (via
+fwnode-name lookup), with all subfunc hwirqs co-located in that one domain
+so `irq_find_mapping(domain, initial_hwirq + i)` could resolve siblings.
+6.x's per-device model splits each pdev into its own domain → demuxer's
+sibling lookup pattern doesn't translate.
+
+Two viable paths for v7:
+
+  1. **Force legacy PCI MSI path**: remove `IRQ_DOMAIN_FLAG_MSI_PARENT` and
+     `msi_parent_ops` from bpcie's domain. Kernel falls back to
+     `pci_msi_legacy_setup_msi_irqs` which (with our `dev_set_msi_domain`
+     install) routes through bpcie's existing `msi_domain_ops` directly —
+     same as 5.4. But: 6.15's pci_msi_setup_msi_irqs only takes legacy if
+     `!irq_domain_is_hierarchy(domain)` and msi_create_irq_domain always
+     creates hierarchy. May need to manually rebuild the domain without
+     hierarchy flag.
+
+  2. **Single shared domain**: have bpcie create ONE domain instead of 8,
+     install it on all 8 pdevs, and use the original 5.4 hwirq encoding
+     (slot/func/subfunc with 0x1F suffix for shared mode). Demuxer's
+     irq_find_mapping then works because all subfuncs are in the same
+     domain.
+
+(2) is closer to the working 5.4 design. Tracking as next-session priority
+once user-side breaks.
+
+Also: amdgpu regression in v6 means we need to gate the AMDVI bus_token
+trick to apply *only when bpcie's domain is the parent for a Baikal child*,
+not globally. Or find a less invasive way to satisfy x86's gating switch.

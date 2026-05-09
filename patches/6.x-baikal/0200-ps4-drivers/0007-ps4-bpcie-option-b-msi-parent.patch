@@ -77,35 +77,76 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 ---
 --- a/drivers/ps4/ps4-bpcie.c
 +++ b/drivers/ps4/ps4-bpcie.c
-@@ -371,6 +371,27 @@
+@@ -371,6 +371,68 @@
  	#endif
  }
  
 +/*
-+ * Option B v3 (Linux 6.2+ per-device MSI rework):
++ * Option B v6 (Linux 6.2+ per-device MSI rework, Baikal demuxer-aware):
 + *
-+ * Use the kernel-provided helper msi_parent_init_dev_msi_info() which
-+ * walks domain->parent (the next-level-up in the irq_domain hierarchy,
-+ * i.e. x86_vector_domain) and dispatches to its msi_parent_ops.
++ * v3-v5 used the kernel-provided helper msi_parent_init_dev_msi_info()
++ * directly, which delegates to x86_vector_domain's init_dev_msi_info.
++ * That setup correctly programmed each child's MSI cap with a real vector
++ * (verified in UART), but installed the standard handle_edge_irq at each
++ * leaf — which is wrong for Baikal hardware.
 + *
-+ * v2 had a custom wrapper that recursed because it dereferenced
-+ * real_parent->msi_parent_ops — but real_parent IS the MSI parent the
-+ * kernel found (us), not the next-level-up. That self-reference caused
-+ * infinite recursion → stack overflow → kernel hung at exactly the moment
-+ * bpcie's own pdev called pci_alloc_irq_vectors(). The kernel helper
-+ * walks domain->parent explicitly so it doesn't recurse.
++ * Baikal hardware demuxes ALL subfunc MSIs through function 4 (Glue):
++ * when ANY subfunction wants to interrupt, hardware writes BPCIE_ACK_WRITE
++ * on Glue and Glue's MSI fires.  bpcie_handle_edge_irq is what reads
++ * BPCIE_ACK_READ to identify which subfunc fired and dispatch its
++ * handler.  Without our demuxer in the leaf handler chain, function 4's
++ * MSI fires → kernel runs handle_edge_irq → only ONE subfunc handler
++ * gets to run → all 31 other subfuncs are silent.
++ *
++ * Symptom in v5 (Boot #18, 2026-05-09): bpcie_handle_edge_irq fires
++ * 0 times across the whole boot.  Every driver under bpcie (xhci, ahci,
++ * sdhci, even bpcie's own ICC pwrbutton init) times out on its command
++ * completion interrupt, despite MSI caps being correctly programmed.
++ *
++ * Fix: after letting msi_parent_init_dev_msi_info do its job, override
++ * info->handler back to bpcie_handle_edge_irq and set info->chip_data
++ * to the bpcie_dev so the demuxer can glue_read32() the ACK register.
 + */
++static struct bpcie_dev *bpcie_dev_for_child_pdev(struct pci_dev *child)
++{
++	unsigned int sc_devfn = (child->devfn & ~7) | BAIKAL_FUNC_ID_PCIE;
++	struct pci_dev *sc_dev = pci_get_slot(child->bus, sc_devfn);
++	struct bpcie_dev *sc = sc_dev ? pci_get_drvdata(sc_dev) : NULL;
++	if (sc_dev)
++		pci_dev_put(sc_dev);
++	return sc;
++}
++
++static bool bpcie_init_dev_msi_info(struct device *dev,
++				     struct irq_domain *domain,
++				     struct irq_domain *real_parent,
++				     struct msi_domain_info *info)
++{
++	if (!msi_parent_init_dev_msi_info(dev, domain, real_parent, info))
++		return false;
++
++	/* Re-install bpcie's demuxer at the leaf level — Baikal hardware
++	 * routes all subfunc MSIs through function 4, so bpcie_handle_edge_irq
++	 * must run to read BPCIE_ACK_READ and dispatch to the right subfunc. */
++	info->handler = bpcie_handle_edge_irq;
++	info->handler_name = "bpcie-edge";
++	info->chip_data = bpcie_dev_for_child_pdev(to_pci_dev(dev));
++	pr_info("bpcie_init_dev_msi_info: dev=%s installed bpcie demuxer (sc=%p)\n",
++		dev_name(dev), info->chip_data);
++	return true;
++}
++
 +static const struct msi_parent_ops bpcie_msi_parent_ops = {
 +	.supported_flags	= MSI_GENERIC_FLAGS_MASK | MSI_FLAG_PCI_MSIX |
 +				  MSI_FLAG_MULTI_PCI_MSI,
-+	.init_dev_msi_info	= msi_parent_init_dev_msi_info,
++	.init_dev_msi_info	= bpcie_init_dev_msi_info,
 +	.prefix			= "bpcie-",
 +};
 +
  struct irq_domain *bpcie_create_irq_domain(struct bpcie_dev *sc, struct pci_dev *pdev)//similar to hpet_create_irq_domain
  {
  	struct irq_domain *domain, *parent;
-@@ -413,8 +434,32 @@
+@@ -413,8 +475,32 @@
  	if (!domain) {
  		irq_domain_free_fwnode(fn);
  		pr_warn("Failed to initialize Baikal-MSI irqdomain.\n");
@@ -138,7 +179,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  	return domain;
  }
  
-@@ -495,6 +540,16 @@
+@@ -495,6 +581,16 @@
  		if (bpcie_pdev) {
  			struct irq_domain * domain = bpcie_create_irq_domain(sc, bpcie_pdev);
  			if (func == BAIKAL_FUNC_ID_PCIE) sc->irqdomain = domain;

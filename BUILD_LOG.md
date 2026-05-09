@@ -456,3 +456,30 @@ Patch 0006 (Option A) disabled in series — mutually exclusive with 0007.
 
 See `checkpoint/docs/LEARNINGS.md` "Linux 6.2 PCI MSI domain rework" for the full
 diagnostic timeline including why each iteration failed.
+
+## 2026-05-09 morning — Option B v6 (demuxer override) + amdgpu regression
+
+Continued from yesterday's v5. Added custom `bpcie_init_dev_msi_info` wrapper
+to override `info->handler = bpcie_handle_edge_irq` and `info->chip_data`
+after the kernel helper, so bpcie's hardware demuxer would be in the leaf
+chain.
+
+Boot result: wrapper fires for each child pdev, parent-level msi_init runs,
+real MSI vectors get programmed — but `bpcie_handle_edge_irq` STILL fires
+zero times. xhci/sdhci/ahci/ICC all time out on completion interrupts.
+**New regression**: amdgpu at slot 1 also timing out (gfx fence + sdma fence
++ illegal reg access errors), suggesting the `DOMAIN_BUS_AMDVI` bus_token
+hack we put on bpcie is corrupting x86_vector's allocation state for
+non-Baikal devices.
+
+Architectural conclusion: 6.x's per-device MSI model splits each Baikal pdev
+into its own domain → bpcie's subfunc demuxer can't resolve siblings via
+`irq_find_mapping(domain, initial_hwirq + i)` because siblings live in
+different domains. The 5.4 design used ONE shared bpcie domain.
+
+Two paths for v7 (next session, after user input):
+  1. Force legacy PCI MSI path (no parent flag, no parent_ops, kernel falls
+     to pci_msi_legacy_setup_msi_irqs).
+  2. Single shared bpcie domain across all 8 funcs (5.4 model).
+
+See `checkpoint/docs/LEARNINGS.md` "Option B v6" for full diagnostic.
