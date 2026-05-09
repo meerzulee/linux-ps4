@@ -55,14 +55,18 @@
 # domain to be a 6.x-style MSI parent (with msi_parent_ops +
 # IRQ_DOMAIN_FLAG_MSI_PARENT). 0006 + 0007 are mutually exclusive.
 # 0200-ps4-drivers/0006-ps4-bpcie-skip-per-function-msi-domain-on-6.x.patch
-# Option B from checkpoint/docs/LEARNINGS.md. Convert bpcie's
-# per-function MSI domain to a 6.2+ MSI parent so that the
-# kernel's pci_msi_setup_msi_irqs path actually walks it instead
-# of falling through to the default x86 vector domain.
-0200-ps4-drivers/0007-ps4-bpcie-option-b-msi-parent.patch
+# Option E (v9, 2026-05-09): marries Option B v7's MSI ROUTING (parent
+# flag + msi_parent_ops + AMDVI bus_token) with Option D v8's COMPOSER
+# (writes Baikal-magic addr_lo=0xFEE00000 + irq_map[]-derived index
+# instead of the real LAPIC vector that the southbridge silently swallows).
+# Both halves are necessary — v7 had routing without composer, v8 had
+# composer without routing (and v8 was actually a NULL test because of
+# this series-file bug — neither patch applied; see option-d-result.md).
+0200-ps4-drivers/0007-ps4-bpcie-option-e-routing-plus-baikal-composer.patch
 # DIAGNOSTIC ONLY — keep applied while we confirm Option B works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
-0200-ps4-drivers/9001-DEBUG-bpcie-msi-trace.patch
+# v9 has its own pr_info — disabled to avoid hunk conflict
+# 0200-ps4-drivers/9001-DEBUG-bpcie-msi-trace.patch
 
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch

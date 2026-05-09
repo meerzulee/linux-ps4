@@ -532,3 +532,18 @@ on transitive #includes).  See
 Boot prediction: `bpcie_handle_edge_irq` should fire > 0 times.  If still
 0, next suspect is the `apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask`
 TODO (hardware enable register).
+
+## 2026-05-09 — v9 / Option E built and tested
+
+Architecture: v7 (routing scaffolding) + v8 (Baikal-magic composer +
+irq_map[]).  Series file fixed (was referencing deleted option-b file
+which silently skipped, making v8 a NULL test).  Patch
+`0007-ps4-bpcie-option-e-routing-plus-baikal-composer.patch` (288 lines)
+applied cleanly.  Clean build OK.
+
+Hardware result: ALL software signals correct, `bpcie_handle_edge_irq`
+still 0.  Spurious interrupt count = 0 (clean routing).  Failure is
+hardware-level: missing HT-disable register write.  v10 is research +
+implement `apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask`.
+
+Full report: `checkpoint/docs/research/2026-05-09-v9-option-e-result.md`.

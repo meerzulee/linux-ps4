@@ -835,3 +835,41 @@ kernel bug or missing API.  We were wiring up a kernel API that the
 hardware is fundamentally incompatible with.  Lesson for future Claude:
 **when the kernel-side telemetry says everything looks healthy and yet
 nothing works, suspect the silicon.**
+
+## 2026-05-09 — Option E (v9): the routing+composer combo finally worked
+
+Marrying v7's routing (parent flag + msi_parent_ops + AMDVI bus_token)
+with v8's composer (`addr_lo=0xFEE00000` + irq_map[]-derived index)
+produced a CLEAN MSI infrastructure.  All software signals green:
+
+- `bpcie_irq_msi_compose_msg` × 80 (was 0 in all previous iterations)
+- `bpcie_msi_init: registered virq` × 34 (irq_map populated)
+- `bpcie_msi_write_msg` writes `addr_lo=fee00000` with monotonic
+  per-virq subfunc indexes (xhci=0x20, sdhci=0x21, ...)
+- `Spurious interrupt 0xef` count = 0 (vs 2 in v8 — every alloc
+  routed through OUR domain, none leaked to default x86_vector)
+
+Yet `bpcie_handle_edge_irq` STILL fires 0 times.  Because the failure
+is no longer software-side: every kernel-side hypothesis is now ruled
+out by direct positive evidence.  The southbridge is not firing its
+own MSI to LAPIC in response to child device events — it's a hardware
+enable bit that's missing.
+
+The smoking gun has been in our own ps4-bpcie.c line 185 since day 1:
+`//TODO: disable ht. See apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask`
+
+PS4 Baikal southbridge sits behind a Hyper-Transport link.  Until
+HT-style legacy IRQ delivery is disabled at the southbridge, MSIs
+don't propagate.  The FreeBSD orbis driver has a function literally
+named that — we've never implemented its equivalent.
+
+5.4 works because... TBD.  Possibly some other init step leaves HT in
+the right state by accident, OR 5.4's slower MSI activation path
+doesn't trip the same gate.  v10 = research + implement HT disable.
+
+**Lesson for future-Claude.**  When hardware-driver code has a TODO
+comment naming a specific function from a vendor reference driver,
+that comment is a treasure map — investigate it BEFORE assuming the
+problem is somewhere else.  We spent 7 iterations debating Linux 6.2
+MSI rework details when the actual blocker had a TODO marker that
+no one reread until iteration 9.
