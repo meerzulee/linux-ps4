@@ -1,0 +1,83 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: v19 - ICC polling fallback
+
+v18 diagnostics confirmed:
+  STATUS=0x3 (SEND|ACK both set) at every timeout
+  IRQ_MASK=0x3 (IRQs enabled)
+  REPLY full=1 (reply data is in SPM)
+  icc_interrupt never gets called (no entry log)
+
+So the mailbox HW works perfectly -- the southbridge processes our
+request, writes the reply to SPM, sets STATUS bits.  But the MSI
+to fire icc_interrupt never reaches our handler.  Will diagnose
+the MSI delivery issue separately.
+
+Workaround: poll STATUS register from process context after issuing
+each request.  When STATUS shows an event, manually invoke
+icc_interrupt(0, sc) -- it does the right thing whether called from
+IRQ or process context.
+
+Also clears stale STATUS bits before each request.  The southbridge
+seems not to raise a fresh edge if the previous bits are still
+pending unack'd (we missed the IRQ for the prior command).
+
+Cost: ~500us-1ms latency per ICC command (vs the HZ*ICC_TIMEOUT
+wait that previously always failed).  A handful of ICC commands
+per boot, so wall-clock cost is negligible.
+
+Note: the existing ICC_TIMEOUT macro has a trailing-semicolon bug
+("#define ICC_TIMEOUT 15;") that breaks expression-context use.
+Hardcoded 15 in the new poll loop.
+
+If v19 works:
+- "Turn ON BT/WLAN" returns 0 with a real reply
+- icc_pwrbutton_init succeeds
+- ps4_bridge can talk to the HDMI bridge chip
+- HDMI display comes up
+
+---
+--- a/drivers/ps4/ps4-bpcie-icc.c
++++ b/drivers/ps4/ps4-bpcie-icc.c
+@@ -227,14 +227,36 @@
+ 	sc->icc.reply_pending = true;
+ 	spin_unlock_irq(&sc->icc.reply_lock);
+ 
++	/* v19: clear any stale STATUS bits left over from a missed IRQ on a
++	 * previous command, otherwise the southbridge may not raise a fresh
++	 * IRQ for this request. */
++	iowrite32(BPCIE_ICC_SEND | BPCIE_ICC_ACK,
++		  sc->bar2 + BPCIE_REG_ICC_STATUS);
++
+ 	iowrite32(BPCIE_ICC_SEND, sc->bar2 + BPCIE_REG_ICC_DOORBELL);
+ 
+-	if (intr)
+-		ret = wait_event_interruptible_timeout(sc->icc.wq,
+-				!sc->icc.reply_pending, HZ * ICC_TIMEOUT);
+-	else
+-		ret = wait_event_timeout(sc->icc.wq,
+-				!sc->icc.reply_pending, HZ * ICC_TIMEOUT);
++	/* v19: POLL fallback.  Confirmed in v18 that the southbridge sets
++	 * STATUS=0x3 + REPLY full=1 but the IRQ never fires (icc_interrupt
++	 * never gets called).  Until we resolve the MSI delivery, poll the
++	 * STATUS register every ~1ms and run the handler manually when an
++	 * event appears.  Caps at HZ * ICC_TIMEOUT total wait. */
++	{
++		/* hardcode 15s — ICC_TIMEOUT macro has a trailing ; bug (it
++		 * expands to "15;" which is invalid inside an expression). */
++		unsigned long deadline = jiffies + HZ * 15;
++		ret = 0;
++		while (time_before(jiffies, deadline)) {
++			u32 st = ioread32(sc->bar2 + BPCIE_REG_ICC_STATUS);
++			if (st & (BPCIE_ICC_SEND | BPCIE_ICC_ACK)) {
++				icc_interrupt(0, sc);
++			}
++			if (!READ_ONCE(sc->icc.reply_pending)) {
++				ret = 1;
++				break;
++			}
++			usleep_range(500, 1000);
++		}
++	}
+ 
+ 	spin_lock_irq(&sc->icc.reply_lock);
+ 	sc->icc.reply_buffer = NULL;

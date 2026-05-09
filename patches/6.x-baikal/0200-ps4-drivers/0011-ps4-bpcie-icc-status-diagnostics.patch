@@ -1,0 +1,81 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: v18 - ICC STATUS register diagnostics
+
+v17 reverted (pci_irq_vector returned -EINVAL because our per-device
+MSI domain bypasses standard msi_get_virq lookup -- with fallback
+returned virq 0 instead of working virq 3).
+
+v18 is pure diagnostic to determine why ICC commands time out:
+
+  1. icc_interrupt entry log (rate-limited): tells us if the IRQ
+     is actually firing.  If it never fires, the issue is upstream
+     (southbridge MSI generation or routing).
+
+  2. After-init register dump: shows the static state of ICC STATUS,
+     IRQ_MASK, and the actual virq we registered against.
+
+  3. On every ICC timeout: dumps STATUS, IRQ_MASK, and REQ/REPLY
+     EMPTY/FULL bits.  If STATUS has SEND/ACK bits set, the
+     southbridge IS completing requests but IRQ delivery is broken.
+     If REPLY full=1, the data was written but we missed the
+     notification.  If STATUS=0 and REPLY empty/full unchanged from
+     init, the southbridge might not even be processing requests.
+
+Background: in v16 boot log we observed "Turn ON BT/WLAN: ret=-110,
+reply 88 3c 15 40" -- non-zero data was in the reply buffer, but
+icc_interrupt never woke the wait queue.  Either:
+  (a) IRQ fired but our handler saw STATUS=0 (returned IRQ_NONE)
+  (b) IRQ never fired (mailbox completes silently)
+  (c) Reply data is leftover from PS4 OS pre-kexec, and southbridge
+      isn't actually processing our requests at all
+
+Diagnostics will distinguish these.
+
+---
+--- a/drivers/ps4/ps4-bpcie-icc.c
++++ b/drivers/ps4/ps4-bpcie-icc.c
+@@ -151,6 +151,11 @@
+ 	u32 status;
+ 	u32 ret = IRQ_NONE;
+ 
++	/* v18 diag: log every entry so we know if IRQ ever fires */
++	pr_info_ratelimited("icc_interrupt: irq=%d entry status=0x%x\n",
++			    irq,
++			    ioread32(sc->bar2 + BPCIE_REG_ICC_STATUS));
++
+ 	do {
+ 		status = ioread32(sc->bar2 + BPCIE_REG_ICC_STATUS);
+ 
+@@ -234,9 +239,18 @@
+ 	spin_lock_irq(&sc->icc.reply_lock);
+ 	sc->icc.reply_buffer = NULL;
+ 	if (ret < 0 || sc->icc.reply_pending) { /* interrupted or timed out */
++		u32 t_status, t_irqmask, t_rep_empty, t_rep_full, t_req_empty, t_req_full;
++		t_status   = ioread32(sc->bar2 + BPCIE_REG_ICC_STATUS);
++		t_irqmask  = ioread32(sc->bar2 + BPCIE_REG_ICC_IRQ_MASK);
++		t_rep_empty = ioread32(REPLY + BUF_EMPTY);
++		t_rep_full  = ioread32(REPLY + BUF_FULL);
++		t_req_empty = ioread32(REQUEST + BUF_EMPTY);
++		t_req_full  = ioread32(REQUEST + BUF_FULL);
+ 		sc->icc.reply_pending = false;
+ 		spin_unlock_irq(&sc->icc.reply_lock);
+ 		sc_err("icc: interrupted or timeout: ret = %d\n", ret);
++		sc_err("icc: timeout-diag STATUS=0x%x IRQ_MASK=0x%x REQ(empty=%d full=%d) REPLY(empty=%d full=%d)\n",
++		       t_status, t_irqmask, t_req_empty, t_req_full, t_rep_empty, t_rep_full);
+ 		return ret < 0 ? -EINTR : -ETIMEDOUT;
+ 	}
+ 	spin_unlock_irq(&sc->icc.reply_lock);
+@@ -546,6 +560,13 @@
+ 		  sc->bar2 + BPCIE_REG_ICC_IRQ_MASK);
+ 	mutex_unlock(&bcpie_icc_mutex);
+ 
++	/* v18 diag: dump initial register state after enabling IRQs */
++	sc_info("icc init-diag: ICC virq=%d STATUS=0x%x IRQ_MASK=0x%x DOORBELL_off=0x%x STATUS_off=0x%x\n",
++		bpcie_irqnum(sc, BPCIE_SUBFUNC_ICC),
++		ioread32(sc->bar2 + BPCIE_REG_ICC_STATUS),
++		ioread32(sc->bar2 + BPCIE_REG_ICC_IRQ_MASK),
++		BPCIE_REG_ICC_DOORBELL, BPCIE_REG_ICC_STATUS);
++
+ 	ret = icc_i2c_init(sc);
+ 	if (ret) {
+ 		sc_err("icc: i2c init failed: %d\n", ret);

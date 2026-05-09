@@ -66,6 +66,21 @@
 0200-ps4-drivers/0008-ps4-bpcie-southbridge-msi-config.patch
 0200-ps4-drivers/0009-ps4-bpcie-revert-composer-default.patch
 0200-ps4-drivers/0010-ps4-bpcie-per-subfunc-mask.patch
+# v17 ATTEMPT: switched bpcie_irqnum to pci_irq_vector. Result: WORSE.
+# pci_irq_vector returns -EINVAL because our per-device MSI domain
+# bypasses standard msi_get_virq lookup. Fallback to pdev->irq=0 made
+# ICC register at virq 0 instead of virq 3 (the bpcie_msi_init log
+# shows virqs 0..31 ARE allocated for bpcie's 32 MSIs). Reverted in v18.
+#
+# v18: pure diagnostic — dump ICC STATUS register on every timeout AND
+# on icc_interrupt entry. Determines if (a) the IRQ ever fires and
+# (b) what STATUS says when ICC commands time out.
+0200-ps4-drivers/0011-ps4-bpcie-icc-status-diagnostics.patch
+# v19: poll STATUS register after each ICC request and run handler manually.
+# Workaround for the unidentified MSI delivery failure: HW writes reply +
+# sets STATUS bits but icc_interrupt never fires. Fixes ICC commands so
+# HDMI/ps4_bridge can come up. MSI delivery itself still needs diagnosis.
+0200-ps4-drivers/0012-ps4-bpcie-icc-poll-fallback.patch
 # DIAGNOSTIC ONLY — keep applied while we confirm Option B works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
 # v9 has its own pr_info — disabled to avoid hunk conflict
