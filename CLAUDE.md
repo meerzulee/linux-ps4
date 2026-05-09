@@ -41,6 +41,51 @@ The dev environment's safety net (`bzImage-stable`, `rollback-kernel.sh`) is for
 - Don't use `earlyprintk=serial,ttyS0,...` — targets nonexistent legacy 8250 at I/O 0x3F8.
 - Use ArabPixel **v24b** unified payload (not the per-firmware ones).
 
+## 6.x current working config (post-v16, 2026-05-09)
+
+After 16 iterations, the combination that produces a fully booting 6.15.4 with
+USB/SATA/HID/audio/graceful-shutdown working:
+
+**Patches applied** (in `patches/6.x-baikal/series`):
+- `0001..0006` — base bpcie infrastructure
+- `0007-ps4-bpcie-option-e-routing-plus-baikal-composer.patch` — bpcie MSI parent + AMDVI bus_token
+- `0008-ps4-bpcie-southbridge-msi-config.patch` — Aeolia-style southbridge MSI block programming for Baikal
+- `0009-ps4-bpcie-revert-composer-default.patch` — use kernel's standard `x86_vector_msi_compose_msg` (NOT a custom Baikal-magic composer; that was a v9 wrong-turn from research/experimental branches)
+- `0010-ps4-bpcie-per-subfunc-mask.patch` — Baikal per-subfunc MSI mask handling (no behavioral effect for ICC, kept for completeness)
+- `0300-gpu-liverpool/0005-amdgpu-require-msi-for-liverpool.patch` — force MSI for Liverpool/Gladius (PS4 has no INTx routing for GPU)
+- All 0300/0400/0500/0700/0800/0900/1000/1100 base PS4 patches enabled
+
+**Bootargs** (`bootargs/6.x-intremap-off.txt`, install via `update-bootargs.sh 6.x-intremap-off`):
+```
+earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug
+8250.nr_uarts=0 iommu=pt intremap=off panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on
+```
+
+**The `intremap=off` is critical.** Without it: bpcie's HT-MSI delivery range
+(`0xfdf8_xxxxxx`) gets rejected by IOMMU intremap with `INVALID_DEVICE_REQUEST`,
+all child PCI MSIs silently swallowed → no USB/SATA. WITH it: amdgpu's MSI
+delivery loses an optimization layer; need v15 force-MSI patch to keep amdgpu happy.
+
+**Initramfs** (`output/initramfs.cpio.gz` → USB `initramfs.cpio.gz`, NOT
+`boomerang-initramfs.cpio.gz`):
+- Must contain `/lib/firmware/amdgpu/liverpool_{pfp,me,ce,mec,mec2,rlc,sdma,sdma1,uvd,vce}.bin`
+- Without: amdgpu probe at t=115s runs CP without microcode → "Illegal instruction
+  in command stream" cascade → eventually GPU reset / asic atom init failed
+- Working file saved at `checkpoint/initramfs/initramfs-v16-with-liverpool-firmware.cpio.gz`
+- Source firmware at `/tmp/initramfs-extract/lib/firmware/amdgpu/liverpool_*.bin`
+
+**Known broken in this config**:
+- HDMI display (ICC i2c times out → ps4_bridge can't init HDMI bridge chip → "Cannot find any crtc or sizes")
+- GPU reset/recovery (uses ATOM BIOS init via ICC → fails when GPU jobs timeout)
+- Ethernet (sky2 doesn't recognize Baikal GbE chip — needs significant driver work; crashniels also ❌)
+- WiFi/BT (mt7668 driver not yet ported)
+- Suspend (ICC dependency)
+
+**Comparison to crashniels' published 6.15.y status**: we have a strict superset
+of working features (USB ✅, SATA ✅, keyboard with caps LED ✅) except HDMI
+display — they keep intremap on which seems to give them display working but
+lose USB/SATA. Tradeoff between two MSI delivery paths.
+
 ## Build hygiene — when to clean rebuild
 
 Default to **incremental** (`./build.sh -t 6.x-baikal`, ~2 min). It works the way kbuild expects: `git checkout .` resets tracked files, `git clean -fd` removes untracked, patches re-apply, `make` recompiles only files whose mtime changed. The kernel tree's `.gitignore` keeps `*.o`/`*.ko`/`built-in.a` between runs as a build cache, which is the right behaviour 99% of the time.
