@@ -637,3 +637,43 @@ with "is this broken maybe?" hint).  Goal: get SSH access for better
 remote debugging.
 
 Full report: checkpoint/docs/research/2026-05-09-v13-result.md
+
+## 2026-05-09 — v14: sky2 Baikal GbE attempt failed; pivoting to GPU
+
+Uncommented BAIKAL_GBE PCI ID (104d:90d8) in 0700-network-sky2 patch.
+Sky2 module DID see the device this time (vs probe returning -ENODEV
+in v13), but failed at chip-detection:
+
+  sky2 0000:00:14.1: unsupported chip type 0x0
+  sky2 0000:00:14.1: probe with driver sky2 failed with error -95
+
+Plus warning: BAR 0 is only 4 KB but sky2 expects 16 KB.  Suggests
+Baikal GbE registers are accessed via a different BAR or window than
+standard Marvell Yukon expects.  Crashniels has same ❌ on Ethernet —
+this is a deeper problem that needs reverse-engineering, not a
+surface-level fix.
+
+User explored USB-Eth dongle alternative — dongle didn't enumerate
+on PS4 (likely USB power budget; needs keyboard unplugged).
+
+Pivoted to amdgpu GPU acceleration.  Key findings from v14 log:
+- "amdgpu can't find IRQ for PCI INT A" — amdgpu got NO IRQ
+- 16+15+15 illegal instruction events, 13 GPU resets all failed
+- Boot ran systemd userspace (NetworkManager-dispatcher,
+  systemd-homed, alsa-restore, etc.) for ~7 minutes generating spam
+
+GPU situation:
+- ArabPixel payload extracts liverpool_pfp/me/ce/mec/mec2/rlc/sdma
+  firmware to /lib/firmware/amdgpu/ at boot
+- Our gfx_v7_0.c references those firmware files via MODULE_FIRMWARE
+- BUT amdgpu probes at t=115s, real rootfs likely mounts later
+- Plus amdgpu didn't even get an IRQ → all command-completion polls fail
+
+v15 = port rmuxnet c0066db41 "amdgpu: require MSI/MSI-X for PS4
+Liverpool IRQs" — eliminates INTx fallback for Liverpool/Gladius
+ASICs, force MSI.  Expectation: amdgpu gets a real LAPIC vector,
+IRQ delivery works, command completion notifications arrive, GPU
+reset/recovery loops stop.  May unblock display init too if the
+cascade was IRQ-driven.
+
+Boot log: checkpoint/uart-logs/2026-05-09_1950-v14-baikal-gbe.log

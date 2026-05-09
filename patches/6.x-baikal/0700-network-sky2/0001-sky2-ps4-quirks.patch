@@ -25,14 +25,13 @@ index e2a9aae8b..a71c80bf6 100644
  #include "sky2.h"
  
  #define DRV_NAME		"sky2"
-@@ -134,6 +139,10 @@ static const struct pci_device_id sky2_id_table[] = {
+@@ -134,6 +139,9 @@ static const struct pci_device_id sky2_id_table[] = {
  	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL, 0x4380) }, /* 88E8057 */
  	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL, 0x4381) }, /* 88E8059 */
  	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL, 0x4382) }, /* 88E8079 */
 +	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_AEOLIA_GBE) },
 +	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BELIZE_GBE) },
-+	// is this broken maybe?
-+	// { PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) }, /* v14: try the Baikal GbE 0x90d8 */
  	{ 0 }
  };
  
