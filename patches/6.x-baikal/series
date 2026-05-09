@@ -24,6 +24,13 @@
 # === 0100: x86 platform (Kconfig, head64, bootparam, PS4 init, TSC calib)
 0100-x86-platform/0001-x86-add-ps4-platform-support.patch
 
+# === 0150: ACPI OSL fixes (PS4-specific)
+# v35: Revert SCI install from request_threaded_irq to request_irq.
+# This is the ROOT CAUSE of the HDMI display being broken in 6.x.
+# 6.x's IRQF_ONESHOT shared-add gets rejected on PS4 IRQ9 -> ACPI mutex
+# init incomplete -> ATOM BIOS broken -> amdgpu PLL programming dead.
+0150-acpi/0001-acpi-osl-ps4-revert-sci-to-request-irq.patch
+
 # === 0200: PS4 southbridge drivers (Aeolia/Belize/Baikal, ICC, UART, pwrbutton)
 0200-ps4-drivers/0001-drivers-ps4-add-aeolia-belize-baikal.patch
 0200-ps4-drivers/0002-ps4-bpcie-icc-fix-ioread-iowrite-pointer-types.patch
@@ -139,6 +146,14 @@
 # to stabilize before the MN864729 tries to lock. Without the delay, the
 # cq_wait_set steps for DP lane status silently no-op on unstable signal.
 0300-gpu-liverpool/0015-amdgpu-ps4-bridge-msleep-settle.patch
+# Option C: skip DPMS_ON for Liverpool. setup_dig_transmitter via ATOM is
+# broken (ACPI mutex issue) and reprograms GPU TX with garbage values.
+# Leaving it untouched preserves BIOS-default DP TX state which the bridge
+# can lock to.
+0300-gpu-liverpool/0016-amdgpu-skip-dpms-on-liverpool-option-c.patch
+# v33: also skip ATOM PLL/timing in mode_set - Option C alone wasn't
+# enough because mode_set's set_pll/set_dtd_timing also use broken ATOM.
+0300-gpu-liverpool/0017-amdgpu-dce-v8-skip-atom-pll-on-liverpool.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

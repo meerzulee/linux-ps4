@@ -1,0 +1,47 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v33 - skip ATOM PLL/timing in mode_set for Liverpool
+
+Option C (skip DPMS_ON only) didn't restore backlight. mode_set ALSO
+calls amdgpu_atombios_crtc_set_pll + set_dtd_timing which use broken
+ATOM BIOS on PS4 6.x (ACPI mutex acquire fails).  Those ATOM calls
+program the GPU's PLL/timing with garbage, destroying the BIOS-default
+DP TX state and breaking the bridge's HDMI signal.
+
+Skip ATOM PLL/timing programming in mode_set for Liverpool.  Only
+do_set_base (fb scanout update) and cursor_reset run -- those write
+GPU registers directly without ATOM.  GPU PLL stays in BIOS-default
+state which the bridge can lock to.
+
+Combined with 0016 (skip DPMS_ON), no ATOM BIOS calls happen during
+the modeset chain on Liverpool. fbcon writes still hit VRAM which
+BIOS-default DP TX is scanning out.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -2553,6 +2553,8 @@
+ {
+ 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
+ 
++	struct amdgpu_device *adev = drm_to_adev(crtc->dev);
++
+ 	if (!amdgpu_crtc->adjusted_clock) {
+ 		/* v28: PS4 ATOM BIOS sometimes returns 0 from
+ 		 * AdjustDisplayPll (we see "ACPI Error: AE_BAD_PARAMETER"
+@@ -2568,6 +2570,16 @@
+ 		amdgpu_crtc->adjusted_clock = adjusted_mode->clock;
+ 	}
+ 
++	/* v33: skip ATOM-BIOS PLL/timing on Liverpool/Gladius - ATOM is broken
++	 * on PS4 6.x (ACPI mutex acquire fails), would corrupt GPU state. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool - skipping ATOM PLL/timing, only set_base\n");
++		dce_v8_0_crtc_do_set_base(crtc, old_fb, x, y, 0);
++		dce_v8_0_cursor_reset(crtc);
++		amdgpu_crtc->hw_mode = *adjusted_mode;
++		return 0;
++	}
++
+ 	amdgpu_atombios_crtc_set_pll(crtc, adjusted_mode);
+ 	amdgpu_atombios_crtc_set_dtd_timing(crtc, adjusted_mode);
+ 	dce_v8_0_crtc_do_set_base(crtc, old_fb, x, y, 0);

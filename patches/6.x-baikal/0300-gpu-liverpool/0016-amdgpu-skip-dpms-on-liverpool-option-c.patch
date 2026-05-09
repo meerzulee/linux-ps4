@@ -1,0 +1,48 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: Option C - skip DPMS_ON for Liverpool/Gladius
+
+Tests if the GPU TX reprogramming during encoder commit is what kills
+the bridge.  In v26 (mode_set failed), backlight was on - because
+encoder_commit returned early before setup_dig_transmitter ENABLE ran.
+Now mode_set succeeds (v28+ fallback), encoder_commit fires, GPU TX
+gets reprogrammed via broken ATOM BIOS, bridge sees garbage signal,
+loses lock.
+
+Skip dce_v8_0_encoder_commit's DPMS_ON call for Liverpool/Gladius.
+GPU TX stays in BIOS-default state (whatever PS4 OS left it) which
+appears to be compatible with bridge.  fb0 still gets pixel data
+written via crtc_set_base.  If BIOS-default DP TX mirrors VRAM,
+content might appear.
+
+If Option C works:
+- Backlight on (bridge keeps signal)
+- Maybe content visible (if BIOS-default TX still operational)
+- Confirms ATOM BIOS calls during encoder_commit are the culprit
+
+If still no display: deeper amdgpu/ATOM debugging needed.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -3372,6 +3372,21 @@
+ 	struct drm_device *dev = encoder->dev;
+ 	struct amdgpu_device *adev = drm_to_adev(dev);
+ 
++	/* Option C: skip DPMS_ON for Liverpool/Gladius. amdgpu_atombios_encoder_dpms
++	 * eventually calls setup_dig_transmitter(ENABLE) via ATOM BIOS, but ATOM
++	 * BIOS is broken on PS4 in 6.x (ACPI mutex acquire fails). The
++	 * setup_dig_transmitter call therefore reprograms the GPU's DP TX with
++	 * garbage values, putting the bridge into a state it can't lock to.
++	 * Skipping leaves GPU TX in whatever state PS4 OS / BIOS left it -
++	 * which (per v26 observation) keeps the bridge HDMI signal alive (backlight
++	 * on). Whether actual content appears depends on whether BIOS-default DP
++	 * TX is configured to mirror VRAM. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		pr_info("dce_v8_0_encoder_commit: skipping DPMS_ON for Liverpool/Gladius\n");
++		amdgpu_atombios_scratch_regs_lock(adev, false);
++		return;
++	}
++
+ 	/* need to call this here as we need the crtc set up */
+ 	amdgpu_atombios_encoder_dpms(encoder, DRM_MODE_DPMS_ON);
+ 	amdgpu_atombios_scratch_regs_lock(adev, false);
