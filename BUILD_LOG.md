@@ -483,3 +483,26 @@ Two paths for v7 (next session, after user input):
   2. Single shared bpcie domain across all 8 funcs (5.4 model).
 
 See `checkpoint/docs/LEARNINGS.md` "Option B v6" for full diagnostic.
+
+## 2026-05-09 afternoon — Option B v7 (BaikalLove insights) + boot-capture.sh
+
+After surveying every branch in rmuxnet/ps4-linux-12xx and feeRnt/ps4-linux-12xx
+(see `checkpoint/docs/research/2026-05-09-bpcie-msi-shape-index.md`),
+applied 3 targeted changes from feeRnt's `x_exp__6.15.4-BaikalLove`:
+
+1. msi_create_irq_domain → pci_msi_create_irq_domain
+2. bpcie_msi_prepare: init_irq_alloc_info + arg->type = X86_IRQ_ALLOC_TYPE_PCI_MSI
+   (was memset(arg, 0))
+3. bpcie_msi_domain_info: add .handler_name = "edge"
+
+Boot result (slice: `checkpoint/uart-logs/2026-05-09_1436-v7-baikallove.log`):
+
+- amdgpu fence regression from v6 GONE (cleaner GPU init)
+- bpcie_handle_edge_irq still 0 fires
+- Same xhci/sdhci/ahci/ICC command timeouts
+
+Full report: `checkpoint/docs/research/2026-05-09-v7-baikallove-result.md`.
+
+Also added `scripts/dev/boot-capture.sh` — extracts named slices from the
+rolling UART log with auto signal summary.  Documented in
+`scripts/dev/README.md`.

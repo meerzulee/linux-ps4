@@ -716,3 +716,71 @@ once user-side breaks.
 Also: amdgpu regression in v6 means we need to gate the AMDVI bus_token
 trick to apply *only when bpcie's domain is the parent for a Baikal child*,
 not globally. Or find a less invasive way to satisfy x86's gating switch.
+
+## Option B v7 — BaikalLove insights (2026-05-09 afternoon)
+
+After surveying 30+ branches across rmuxnet/ps4-linux-12xx and
+feeRnt/ps4-linux-12xx (index in `research/2026-05-09-bpcie-msi-shape-index.md`),
+feeRnt's `x_exp__6.15.4-BaikalLove` turned out to be active engineering notes
+on this exact problem: comments in source literally describe our diagnosis
+path (`dev_set_msi_domain` "missing in 6.15-baikal; seems important",
+`msi_create_irq_domain` vs `pci_msi_create_irq_domain` "the latter lacks a few
+info flags", `handler_name = "edge"` "Seems important now").
+
+v7 lifted three minimal targeted changes from BaikalLove:
+
+1. `msi_create_irq_domain` → `pci_msi_create_irq_domain`. The PCI variant
+   adds `MSI_FLAG_ACTIVATE_EARLY` (re-compose with real vector at alloc
+   time, not at request_irq time), `MSI_FLAG_FREE_MSI_DESCS`,
+   `MSI_FLAG_DEV_SYSFS`, `IRQCHIP_ONESHOT_SAFE`, sets
+   `bus_token = DOMAIN_BUS_PCI_MSI`, and runs
+   `pci_msi_domain_update_dom_ops/chip_ops` to fill PCI defaults.
+2. `bpcie_msi_prepare`: `init_irq_alloc_info(arg, NULL)` +
+   `arg->type = X86_IRQ_ALLOC_TYPE_PCI_MSI` (was `memset(arg, 0)` — wiped
+   the alloc type field).
+3. `bpcie_msi_domain_info`: add `.handler_name = "edge"`.
+
+Boot result (full report:
+`research/2026-05-09-v7-baikallove-result.md`, slice:
+`uart-logs/2026-05-09_1436-v7-baikallove.log`):
+
+  - ✅ amdgpu fence regression introduced in v6 is gone (v7 boots GPU
+    cleanly).  v6's `DOMAIN_BUS_AMDVI` bus_token isn't what caused the
+    regression — it was likely the missing `MSI_FLAG_ACTIVATE_EARLY` /
+    chip ops setup that `pci_msi_create_irq_domain` provides.
+  - ❌ `bpcie_handle_edge_irq` still fires 0 times.  Same as v3/v4/v5/v6.
+  - All Baikal subfunctions still time out on completion interrupts
+    (xhci ENABLE_SLOT, sdhci cmd, ata1 IDENTIFY, ICC pwrbutton).
+
+v7 lifted one bug (`memset(arg, 0)`) and one regression (amdgpu), but the
+fundamental wall is unchanged.  We have now comprehensively confirmed the
+MSI infrastructure is set up correctly across the parent → bpcie →
+x86_vector hierarchy:
+
+- vectors are real (no 0xef spurious in second-wave activation),
+- programmed to the right CPU LAPIC (`addr_lo=fee0X000`),
+- bpcie_msi_init/write_msg fire,
+- `init_dev_msi_info` propagates to child domains.
+
+Yet no MSI fires through to `bpcie_handle_edge_irq`.
+
+Three hypotheses for v8 to disprove with instrumentation:
+
+  (A) The leaf irq_data's handler is silently overridden after we set
+      `info->handler = bpcie_handle_edge_irq`.  Check by adding a `pr_info`
+      to the standard `handle_edge_irq` and seeing if THAT fires for
+      Baikal hwirq.
+  (B) The hardware MSI fires but to a different vector or CPU than we
+      expect.  Check by dumping `desc->irq_count` for Baikal virqs.
+  (C) The hardware doesn't fire MSI at all — Baikal needs an additional
+      enable register we're not writing.
+
+v8 must instrument before changing more code.
+
+Also added `scripts/dev/boot-capture.sh` (this commit) — records byte
+offset of the rolling UART log at start, slices that excerpt at stop into
+a clean named file under `checkpoint/uart-logs/` with non-printable bytes
+sanitized to `?`.  Auto-prints a signal summary (counts of
+`bpcie_handle_edge_irq`, `Command Aborted`, etc.) so post-boot analysis
+doesn't require digging through 7+ MB of mixed-binary rolling log.  See
+`scripts/dev/README.md` for usage.
