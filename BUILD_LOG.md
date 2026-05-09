@@ -677,3 +677,46 @@ reset/recovery loops stop.  May unblock display init too if the
 cascade was IRQ-driven.
 
 Boot log: checkpoint/uart-logs/2026-05-09_1950-v14-baikal-gbe.log
+
+## 2026-05-09 — v15: amdgpu force-MSI for Liverpool — partial GPU win
+
+Hand-adapted port of rmuxnet c0066db41 to our 6.15.4 amdgpu_irq.c
+(rmuxnet's patch had context drift since they're on a different
+kernel version).  0005-amdgpu-require-msi-for-liverpool.patch (101
+lines) under 0300-gpu-liverpool/ — adds amdgpu_irq_is_ps4_asic()
+helper plus a CHIP_LIVERPOOL/CHIP_GLADIUS branch in amdgpu_irq_init
+that forces PCI_IRQ_MSI|PCI_IRQ_MSIX (no INTx fallback).
+
+Hardware result (boot 2026-05-09 20:24, 26 patches applied=0 fail):
+- amdgpu now gets MSI (no more "can't find IRQ for PCI INT A" trip
+  through INTx fallback that has no routing on PS4)
+- Early-boot GPU reset loop ELIMINATED — first ~5 min of boot has
+  zero "GPU reset" / "asic atom init failed" events
+- v12 milestone preserved: bpcie_msi_init=68, USB enum=8, no
+  Spurious 0xef, no Command Aborted/Timeout, no panics
+- Boot reached SYSTEMD USERSPACE (confirmed by user via UART logs
+  showing systemd-hostnamed etc.)
+
+But GPU still hits illegal-instruction errors (7+11+28 total
+across CP/RLC/SDMA) because Liverpool firmware (extracted by
+ArabPixel payload to /lib/firmware/amdgpu/liverpool_*.bin) isn't
+available at amdgpu probe time (~t=115s) — rootfs not mounted yet.
+amdgpu starts CP without microcode → every command rejected.
+
+Later (~t=366s, after systemd is up):
+- amdgpu_job_timedout fires (job submission times out)
+- drm_sched_job_timedout → amdgpu_device_gpu_recover
+- gmc_v7_0_suspend (during reset prep)
+- asic atom init failed
+- GPU reset(2) failed
+
+Recovery path fails because ATOM BIOS init needs ICC i2c (which is
+the SAME ICC that's failing for ps4_bridge/display).  So the real
+post-v15 bottleneck for GPU is ICC, not the IRQ allocation.
+
+Next candidate paths:
+- Investigate ICC (would unlock display + GPU recovery)
+- Get firmware into initramfs so amdgpu probe finds CP microcode
+- Both together → GPU acceleration likely works
+
+Boot log: checkpoint/uart-logs/2026-05-09_2024-v15-amdgpu-force-msi.log

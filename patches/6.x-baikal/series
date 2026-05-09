@@ -76,6 +76,7 @@
 0300-gpu-liverpool/0002-radeon-add-liverpool-cik-support.patch
 0300-gpu-liverpool/0003-amdkfd-cik-ps4-quirks.patch
 0300-gpu-liverpool/0004-drm-bridge-and-pciids.patch
+0300-gpu-liverpool/0005-amdgpu-require-msi-for-liverpool.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

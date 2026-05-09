@@ -1,0 +1,101 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v15 - require MSI/MSI-X for PS4 Liverpool IRQs
+
+Port of rmuxnet c0066db41 to our 6.15.4 amdgpu_irq.c.  The original
+patch had context drift (rmuxnet's tree is on a different kernel
+version), so this is the same logical change, hand-adapted to our
+exact source.
+
+Why: PS4 has NO ACPI _PRT entries describing INTx routing for the
+GPU at 0000:00:01.0.  amdgpu's default behavior (try MSI, fall back
+to INTx if MSI fails) ends up with INTx → "can't find IRQ for PCI
+INT A; please try using pci=biosirq" → no IRQ → all command-
+completion polls time out → endless GPU resets → "asic atom init
+failed".
+
+Fix: for CHIP_LIVERPOOL and CHIP_GLADIUS ASICs, require MSI/MSI-X
+explicitly (PCI_IRQ_MSI | PCI_IRQ_MSIX, no INTx).  If MSI alloc
+fails, return error rather than silently falling back to INTx.
+
+Expected effect:
+- amdgpu gets a real LAPIC vector
+- IRQ delivery to amdgpu_irq_handler works
+- GPU command completion notifications arrive
+- Ring submissions complete instead of timing out
+- "Illegal instruction in command stream" errors stop (these were
+  caused by the GPU's CP retrying state-init commands after timeout
+  with stale ring state)
+
+Reference:
+  rmuxnet c0066db41 ("amdgpu: require MSI/MSI-X for PS4 Liverpool IRQs")
+  research/rmuxnet-12xx-current/
+---
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_irq.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_irq.c
+@@ -257,6 +257,17 @@
+ 	pci_write_config_word(adev->pdev, adev->pdev->msix_cap + PCI_MSIX_FLAGS, ctrl);
+ }
+ 
++
++/* v15 (rmuxnet c0066db41): PS4 Liverpool/Gladius have no INTx routing,
++ * so amdgpu MUST use MSI/MSI-X.  Without this, amdgpu probe falls back
++ * to INTx, fails to find an IRQ ("can't find IRQ for PCI INT A"), and
++ * every command-completion poll times out → endless GPU resets. */
++static bool amdgpu_irq_is_ps4_asic(struct amdgpu_device *adev)
++{
++	return adev->asic_type == CHIP_LIVERPOOL ||
++	       adev->asic_type == CHIP_GLADIUS;
++}
++
+ /**
+  * amdgpu_irq_init - initialize interrupt handling
+  *
+@@ -271,6 +282,7 @@
+ int amdgpu_irq_init(struct amdgpu_device *adev)
+ {
+ 	unsigned int irq, flags;
++	bool ps4_asic = amdgpu_irq_is_ps4_asic(adev);
+ 	int r;
+ 
+ 	spin_lock_init(&adev->irq.lock);
+@@ -278,19 +290,37 @@
+ 	/* Enable MSI if not disabled by module parameter */
+ 	adev->irq.msi_enabled = false;
+ 
+-	if (!amdgpu_msi_ok(adev))
++	if (ps4_asic) {
++		if (!amdgpu_msi_ok(adev)) {
++			dev_err(adev->dev,
++				"PS4: INTx is not supported for Liverpool/Gladius; MSI/MSI-X required\n");
++			return -EINVAL;
++		}
++		flags = PCI_IRQ_MSI | PCI_IRQ_MSIX;
++	} else if (!amdgpu_msi_ok(adev)) {
+ 		flags = PCI_IRQ_INTX;
+-	else
++	} else {
+ 		flags = PCI_IRQ_ALL_TYPES;
++	}
+ 
+ 	/* we only need one vector */
++	dev_dbg(adev->dev, "irq allocation flags=0x%x\n", flags);
+ 	r = pci_alloc_irq_vectors(adev->pdev, 1, 1, flags);
+ 	if (r < 0) {
+ 		dev_err(adev->dev, "Failed to alloc msi vectors\n");
+ 		return r;
+ 	}
+ 
+-	if (amdgpu_msi_ok(adev)) {
++	if (ps4_asic) {
++		adev->irq.msi_enabled = pci_dev_msi_enabled(adev->pdev);
++		if (!adev->irq.msi_enabled) {
++			dev_err(adev->dev,
++				"PS4: INTx is not supported for Liverpool/Gladius; MSI/MSI-X required\n");
++			pci_free_irq_vectors(adev->pdev);
++			return -ENODEV;
++		}
++		dev_dbg(adev->dev, "using MSI/MSI-X.\n");
++	} else if (amdgpu_msi_ok(adev)) {
+ 		adev->irq.msi_enabled = true;
+ 		dev_dbg(adev->dev, "using MSI/MSI-X.\n");
+ 	}
