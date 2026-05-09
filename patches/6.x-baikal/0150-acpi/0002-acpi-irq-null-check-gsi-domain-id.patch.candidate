@@ -1,0 +1,36 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH CANDIDATE] acpi/irq: NULL check acpi_get_gsi_domain_id
+
+Defensive: drivers/acpi/irq.c:32 calls acpi_get_gsi_domain_id(gsi)
+without NULL-checking the function pointer.  On PS4 (no IOAPIC entries
+in MADT), the x86 boot code never calls acpi_set_irq_model() so this
+function pointer stays NULL.  Calling NULL function = page fault.
+
+Currently this isn't crashing on PS4 because acpi_gsi_to_irq is only
+called from acpi_os_install_interrupt_handler which fails earlier
+(request_irq failure due to no irq desc - separate v40 patch).
+
+But if a future kernel change causes acpi_gsi_to_irq to be called
+in another context, the NULL deref would crash.  Add defensive NULL
+check.
+
+NOT IN SERIES (the .candidate suffix excludes it).  Apply if needed.
+
+---
+--- a/drivers/acpi/irq.c
++++ b/drivers/acpi/irq.c
+@@ -28,9 +28,12 @@ EXPORT_SYMBOL_GPL(acpi_irq_get);
+ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+ {
+ 	struct irq_domain *d;
++	struct fwnode_handle *fwnode = NULL;
++
++	if (acpi_get_gsi_domain_id)
++		fwnode = acpi_get_gsi_domain_id(gsi);
+
+-	d = irq_find_matching_fwnode(acpi_get_gsi_domain_id(gsi),
+-					DOMAIN_BUS_ANY);
++	d = irq_find_matching_fwnode(fwnode, DOMAIN_BUS_ANY);
+ 	*irq = irq_find_mapping(d, gsi);
+ 	/*
+ 	 * *irq == 0 means no mapping, that should be reported as a
