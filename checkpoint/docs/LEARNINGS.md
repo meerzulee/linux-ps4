@@ -582,3 +582,64 @@ Next step: apply rmuxnet's 8 USB/IOMMU patches from `patches/rmuxnet-7.0-baikal/
 - Layer kernel modules onto the deeWaardt rootfs so we get WiFi (mt7668) and the rest.
 - Cap Mesa at 25.1 in the rootfs (deeWaardt's tarball is already pinned, but watch out on first `pacman -Syu`).
 - Resolved: ~~Self-built bzImages hang~~ — wasn't a hang, was UART silence. Builds work fine.
+
+## Linux 6.2 PCI MSI domain rework — the bpcie modernization saga (2026-05-09)
+
+After 0005 (shared-vector demux bypass) didn't move xHCI's Command Aborted, debug
+logging showed `bpcie_msi_init`, `bpcie_msi_write_msg`, and `bpcie_handle_edge_irq`
+were never being called. Diagnosis pointed at Linux 6.2's per-device MSI domain
+rework (Thomas Gleixner / Ahmed Darwish, late 2022): the legacy
+`pci_msi_create_irq_domain()` + `dev_set_msi_domain()` API still exists in 6.15
+but the kernel's PCI MSI core now walks `dev->dev.msi.data->__domains[]` for the
+actual lookup; the legacy `dev->msi_domain` field is left orphaned for any device
+that wasn't also installed through `msi_create_device_irq_domain()`.
+
+### Options tried before the right shape clicked
+
+| Option | What it tried | Result |
+|---|---|---|
+| **A** (skip bpcie domain on 6.x) | Don't call `bpcie_create_irq_domains()`; let children fall through to default x86 vector. | Boot OK, but every Baikal child PCI MSI delivered as `Spurious interrupt (vector 0xef)` on the LAPIC → xHCI `Command Aborted`. The kernel didn't know how to route MSIs through bpcie's hardware demuxer. |
+| **B v1** (parent flag + parent_ops only) | Set `IRQ_DOMAIN_FLAG_MSI_PARENT` and provide `msi_parent_ops` with a delegating `init_dev_msi_info`. | Parent flag set 8x. But `bpcie_init_dev_msi_info` never fired — kernel never walked our parent. |
+| **C** (per-device default MSI domain) | Considered; would have required reading 6.15's PCI MSI core to find a different injection point. | Skipped in favour of B. |
+| **D** (`intremap=on` bootargs) | Force kernel to enable AMD-Vi + IR despite ArabPixel's loader hard-disabling it at `*(0xfc000018) &= ~1`. | IR enabled, but `irq_remapping_get_ir_irq_domain()` returned NULL for slot-20 devices — bpcie's parent lookup still got x86_vector, not an IR domain. |
+| **D + revert A** | Combine D with the original bpcie domain creation (un-skip A). | Same dead end. |
+
+### The real bug: bpcie never installed its domain on any pdev
+
+While writing Option B v1, I grepped for `dev_set_msi_domain` in `drivers/ps4/`
+and found **zero references**. bpcie creates per-function MSI domains in a loop
+(`bpcie_create_irq_domains`) but doesn't install any of them on the corresponding
+`pci_dev` via `dev_set_msi_domain()`. This was a latent bug from the 5.4 → 6.x
+port: under 5.4 the legacy fwnode-based PCI MSI lookup walked the irq_domain_list
+and matched our `"Baikal-MSI"` name implicitly; in 6.2+ that lookup was replaced
+by `dev->msi.domain` field-only, so the install became no longer optional.
+
+### Option B iterations
+
+| Version | Change | Boot result |
+|---|---|---|
+| **v1** | Parent flag + custom `init_dev_msi_info` wrapper | Parent flag set 8x, wrapper never called → MSI still as 0xef spurious. |
+| **v2** | v1 + `dev_set_msi_domain(&bpcie_pdev->dev, domain)` install | **Hung at 4.63 s**, immediately after the 8th parent-flag log line. Root cause: our wrapper called `real_parent->msi_parent_ops->init_dev_msi_info(...)` but `real_parent` IS the MSI parent the kernel found (us), so `msi_parent_ops` resolved to OUR ops → infinite recursion → stack overflow. (Notably: USB keyboard worked from this boot — likely the legacy fallback path was already firing for child pdevs before bpcie's own pdev hit the recursion.) |
+| **v3** | Replace recursing wrapper with kernel helper `msi_parent_init_dev_msi_info()` (walks `domain->parent` explicitly to x86_vector). | Boot reached `/init` at 7.36 s. But `WARNING ... x86_init_dev_msi_info+0xbd` fired: x86's gating switch on `real_parent->bus_token` only accepts `DOMAIN_BUS_ANY` (when domain == real_parent — for x86_vector itself), `DOMAIN_BUS_DMAR`, and `DOMAIN_BUS_AMDVI`. Our domain had default `DOMAIN_BUS_ANY` but is not x86_vector, so WARN tripped and returned false → all child MSI allocs returned `-EPROBE_DEFER` → `LABEL=psxitarch: Can't lookup blockdev` loop. |
+| **v4** | Add `irq_domain_update_bus_token(domain, DOMAIN_BUS_AMDVI)` after marking parent. | x86's WARN gone. But now bpcie itself failed: `baikal_pcie 0000:00:14.4: Failed to assign IRQs` followed by `probe with driver baikal_pcie failed with error -5`. Cause: our `parent_ops.supported_flags` had `MSI_GENERIC_FLAGS_MASK | MSI_FLAG_PCI_MSIX` but **not** `MSI_FLAG_MULTI_PCI_MSI`. The kernel ANDs the per-device child info's flags with our supported_flags, so multi-MSI was masked out. bpcie's own pdev needs ≥ `BPCIE_SUBFUNC_ICC+1 = 5` vectors → `pci_alloc_irq_vectors` returned -ENOSPC → bpcie probe fails → all downstream drivers defer. |
+| **v5** | Add `MSI_FLAG_MULTI_PCI_MSI` to `parent_ops.supported_flags`. | Pending hardware test (this commit). |
+
+### Caveat carried forward in v3+
+
+The per-device child domain inherits the standard PCI MSI handler
+(`handle_edge_irq` via x86 vector) instead of `bpcie_handle_edge_irq`. The
+subfunction demuxer's sibling-lookup pattern
+(`irq_find_mapping(desc->irq_data.domain, initial_hwirq + i)`) doesn't translate
+to the per-device model where each pdev has its own domain. This is *fine for
+xHCI single-vector MSI* (the one MSI vector lands on `xhci_irq` directly without
+needing demuxing) but if SDHCI/AHCI/sky2 end up needing the demuxer, the demuxer
+itself will need porting to the per-device model — override `info->handler` in
+`init_dev_msi_info` AND rework the sibling lookup to walk
+`dev->parent`'s `msi.data->__domains[]`. Track as follow-up.
+
+### Marker pattern for finding boot sessions in UART log
+
+`echo "===SESSION-MARKER-..." | sudo tee -a logs/ps4_uart_*.log` works for the
+human eye, but pyserial's buffered writes routinely clobber appended markers when
+the next batch of incoming serial data flushes. Find the boot by content
+signature instead (the `Linux version` line, distinctive new pr_info text).

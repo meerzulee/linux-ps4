@@ -422,3 +422,37 @@ CONFIG_BT_MTKSDIO=m
 - Build #1 FAILED - missing bc dependency
 - Build #2 FAILED - bpcie-icc type errors
 - Added sed fix to build.sh for bpcie-icc
+
+---
+
+## 2026-05-09 — Option B (bpcie MSI parent modernization)
+
+After A→D dead ends in the previous session, started Option B: convert bpcie's
+per-function MSI domain into a Linux 6.2-style MSI parent.
+
+Built and hardware-tested 5 iterations:
+
+- **v1** — parent flag + `msi_parent_ops` only. Boot OK but `init_dev_msi_info`
+  never fired (the kernel never walked our domain).
+- **v2** — added missing `dev_set_msi_domain(&bpcie_pdev->dev, domain)` install
+  in `bpcie_create_irq_domains` loop. Kernel hung at 4.63 s — our wrapper
+  recursed into itself because `real_parent->msi_parent_ops` is OUR ops.
+  USB keyboard worked from this boot, suggesting xHCI MSI was already being
+  routed correctly via legacy fallback before bpcie's own pdev hit recursion.
+- **v3** — replaced wrapper with kernel helper `msi_parent_init_dev_msi_info`.
+  No more recursion. Boot reached `/init` at 7.36 s. WARN at
+  `x86_init_dev_msi_info+0xbd` because our domain has `bus_token=DOMAIN_BUS_ANY`
+  but isn't `x86_vector_domain` itself (x86's gating switch only accepts
+  ANY/DMAR/AMDVI). All child MSI allocs returned `-EPROBE_DEFER`.
+- **v4** — `irq_domain_update_bus_token(domain, DOMAIN_BUS_AMDVI)` to satisfy
+  x86's gate. WARN gone, but `baikal_pcie 0000:00:14.4: Failed to assign IRQs`
+  — bpcie's own ICC alloc needed multi-MSI but our `supported_flags` ANDed it
+  out from the per-device child info.
+- **v5** — added `MSI_FLAG_MULTI_PCI_MSI` to `supported_flags`. Built (md5
+  `69ae16d8…`). Pending hardware test (this commit).
+
+Patch: `patches/6.x-baikal/0200-ps4-drivers/0007-ps4-bpcie-option-b-msi-parent.patch`.
+Patch 0006 (Option A) disabled in series — mutually exclusive with 0007.
+
+See `checkpoint/docs/LEARNINGS.md` "Linux 6.2 PCI MSI domain rework" for the full
+diagnostic timeline including why each iteration failed.

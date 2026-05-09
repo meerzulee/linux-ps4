@@ -49,8 +49,18 @@
 # Re-enabled after D+revertA test (boot #14) confirmed forcing IR
 # does not give bpcie_create_irq_domain an IR parent to inherit from
 # either — neither layer of breakage is unwound by intremap=on.
-0200-ps4-drivers/0006-ps4-bpcie-skip-per-function-msi-domain-on-6.x.patch
-# DIAGNOSTIC ONLY — keep applied while we confirm 0006 works on hw.
+#
+# 2026-05-09: DISABLED in favor of Option B (0007), which keeps
+# bpcie_create_irq_domains() running and instead modernises bpcie's
+# domain to be a 6.x-style MSI parent (with msi_parent_ops +
+# IRQ_DOMAIN_FLAG_MSI_PARENT). 0006 + 0007 are mutually exclusive.
+# 0200-ps4-drivers/0006-ps4-bpcie-skip-per-function-msi-domain-on-6.x.patch
+# Option B from checkpoint/docs/LEARNINGS.md. Convert bpcie's
+# per-function MSI domain to a 6.2+ MSI parent so that the
+# kernel's pci_msi_setup_msi_irqs path actually walks it instead
+# of falling through to the default x86 vector domain.
+0200-ps4-drivers/0007-ps4-bpcie-option-b-msi-parent.patch
+# DIAGNOSTIC ONLY — keep applied while we confirm Option B works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
 0200-ps4-drivers/9001-DEBUG-bpcie-msi-trace.patch
 

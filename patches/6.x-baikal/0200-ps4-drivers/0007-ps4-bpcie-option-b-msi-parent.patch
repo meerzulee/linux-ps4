@@ -1,0 +1,157 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: Option B v3 - bpcie domain as 6.x MSI parent
+
+Linux 6.2 reworked PCI MSI domain lookup so that dev_set_msi_domain()
+only takes effect when the installed domain is itself marked as an
+MSI parent (IRQ_DOMAIN_FLAG_MSI_PARENT) and provides msi_parent_ops::
+init_dev_msi_info.  The kernel's PCI MSI core now follows this path:
+
+  pci_msi_setup_msi_irqs()                       drivers/pci/msi/irqdomain.c
+   └─ dev_get_msi_domain(&dev->dev)              # lookup
+      └─ irq_domain_is_hierarchy(domain)
+         └─ msi_domain_alloc_irqs_all_locked(...)
+            └─ ... eventually
+               msi_create_device_irq_domain() {
+                 if (!irq_domain_is_msi_parent(parent))   <-- BAILS if not parent
+                     return false;
+                 if (!pops->init_dev_msi_info(...))       <-- BAILS without parent ops
+                     goto fail;
+               }
+
+Three things were broken on Baikal under 6.x:
+
+  (1) bpcie's per-function MSI domain was not marked as an MSI parent
+      → kernel rejected it.
+  (2) bpcie did not provide msi_parent_ops → kernel had no way to
+      construct per-device child domains for xhci/sdhci/ahci/sky2 etc.
+  (3) bpcie never called dev_set_msi_domain() on any Baikal pdev — so
+      even after (1)+(2), child PCI devices wouldn't find the parent
+      via dev_get_msi_domain() and would fall back to the default x86
+      vector domain.  This was a latent bug from the 5.4 → 6.x port:
+      under 5.4 the legacy fwnode-based PCI MSI lookup walked the
+      irq_domain_list and matched our "Baikal-MSI" name; in 6.2+ that
+      lookup was replaced by dev->msi.domain field-only, so the
+      install became no longer optional.
+
+History:
+  v1 - parent flag + parent_ops only.  Boot test: marked domain as
+       MSI parent 8x, but bpcie_init_dev_msi_info never fired.  Kernel
+       still routed via default x86 vector → 0xef spurious.
+  v2 - v1 + dev_set_msi_domain() install in bpcie_create_irq_domains().
+       Boot test: hung at exactly 4.63s, right after the 8th
+       "marked ... as MSI parent" log line, with serial silence after.
+       Cause: our custom init_dev_msi_info wrapper recursed because it
+       called real_parent->msi_parent_ops->init_dev_msi_info — but
+       real_parent IS the MSI parent the kernel found (us), so
+       msi_parent_ops is OUR ops, and we called ourselves until stack
+       overflow took down the kernel.  USB keyboard worked from the v2
+       boot, suggesting xHCI MSIs were being delivered (likely via the
+       legacy fallback path before bpcie's own pdev hit the recursion).
+  v3 - replace the recursing wrapper with the kernel-provided helper
+       msi_parent_init_dev_msi_info().  The helper walks domain->parent
+       explicitly (the next level UP in the irq_domain hierarchy, i.e.
+       x86_vector_domain) and dispatches to its msi_parent_ops, which
+       avoids the self-reference loop.
+
+Caveat — minimum-viable shape:
+
+  This patch installs the standard PCI MSI handler (handle_edge_irq via
+  x86 vector inheritance) on the per-device child domain rather than
+  bpcie_handle_edge_irq.  Reason: the bpcie subfunction demuxer relies
+  on irq_find_mapping(desc->irq_data.domain, initial_hwirq + i) to
+  walk sibling subfunctions in the SAME domain.  In the new per-device
+  model each pdev has its own domain, so that lookup pattern no longer
+  resolves siblings.
+
+  This is fine for xHCI single-vector MSI (no demuxing needed — the
+  one MSI vector lands on xhci_irq directly).  If SDHCI/AHCI/sky2/etc.
+  end up needing the demuxer for IRQ delivery on Baikal, the demuxer
+  itself will need porting to the per-device model (override info->handler
+  in init_dev_msi_info AND rework the sibling lookup to walk dev->parent's
+  msi.data->__domains[]).  Track as follow-up.
+
+Diagnostic: pr_info() in bpcie_create_irq_domain so we can confirm in UART
+that the MSI parent flag is set on each Baikal function's domain.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -371,6 +371,27 @@
+ 	#endif
+ }
+ 
++/*
++ * Option B v3 (Linux 6.2+ per-device MSI rework):
++ *
++ * Use the kernel-provided helper msi_parent_init_dev_msi_info() which
++ * walks domain->parent (the next-level-up in the irq_domain hierarchy,
++ * i.e. x86_vector_domain) and dispatches to its msi_parent_ops.
++ *
++ * v2 had a custom wrapper that recursed because it dereferenced
++ * real_parent->msi_parent_ops — but real_parent IS the MSI parent the
++ * kernel found (us), not the next-level-up. That self-reference caused
++ * infinite recursion → stack overflow → kernel hung at exactly the moment
++ * bpcie's own pdev called pci_alloc_irq_vectors(). The kernel helper
++ * walks domain->parent explicitly so it doesn't recurse.
++ */
++static const struct msi_parent_ops bpcie_msi_parent_ops = {
++	.supported_flags	= MSI_GENERIC_FLAGS_MASK | MSI_FLAG_PCI_MSIX |
++				  MSI_FLAG_MULTI_PCI_MSI,
++	.init_dev_msi_info	= msi_parent_init_dev_msi_info,
++	.prefix			= "bpcie-",
++};
++
+ struct irq_domain *bpcie_create_irq_domain(struct bpcie_dev *sc, struct pci_dev *pdev)//similar to hpet_create_irq_domain
+ {
+ 	struct irq_domain *domain, *parent;
+@@ -413,8 +434,32 @@
+ 	if (!domain) {
+ 		irq_domain_free_fwnode(fn);
+ 		pr_warn("Failed to initialize Baikal-MSI irqdomain.\n");
++		return NULL;
+ 	}
+ 
++	/*
++	 * Option B: mark this domain as a 6.x MSI parent so that the kernel's
++	 * pci_msi_setup_msi_irqs path will walk it instead of falling through
++	 * to the default x86 vector domain (which would deliver MSIs as
++	 * APIC_SPURIOUS_VECTOR (0xef) on the LAPIC and lose them).
++	 */
++	domain->flags |= IRQ_DOMAIN_FLAG_MSI_PARENT;
++	domain->msi_parent_ops = &bpcie_msi_parent_ops;
++	/*
++	 * Option B v4: x86's x86_init_dev_msi_info() (the kernel helper we
++	 * delegate to via msi_parent_init_dev_msi_info) gates on
++	 * real_parent->bus_token: only DOMAIN_BUS_ANY (which requires
++	 * domain == real_parent — for x86_vector itself), DOMAIN_BUS_DMAR,
++	 * and DOMAIN_BUS_AMDVI are accepted; everything else WARN()s and
++	 * returns false (causing all child MSI allocs to fail with
++	 * -EPROBE_DEFER).  Pretend to be AMDVI — semantically the closest
++	 * (AMD platform, intermediate MSI-routing parent) and architecturally
++	 * the role bpcie plays between x86_vector and Baikal child PCI devs.
++	 */
++	irq_domain_update_bus_token(domain, DOMAIN_BUS_AMDVI);
++	pr_info("bpcie_create_irq_domain: marked %s as MSI parent (flags=0x%x bus_token=AMDVI)\n",
++		domain->name, domain->flags);
++
+ 	return domain;
+ }
+ 
+@@ -495,6 +540,16 @@
+ 		if (bpcie_pdev) {
+ 			struct irq_domain * domain = bpcie_create_irq_domain(sc, bpcie_pdev);
+ 			if (func == BAIKAL_FUNC_ID_PCIE) sc->irqdomain = domain;
++			/*
++			 * Option B (continued): install the domain on this pdev so that
++			 * the 6.x PCI MSI core (pci_msi_setup_msi_irqs →
++			 * dev_get_msi_domain) actually finds it. Without this the
++			 * domain is marked MSI parent but unreachable; the kernel
++			 * falls back to the default x86 vector domain and MSIs are
++			 * delivered as APIC_SPURIOUS_VECTOR (0xef).
++			 */
++			if (domain)
++				dev_set_msi_domain(&bpcie_pdev->dev, domain);
+ 			pci_dev_put(bpcie_pdev);
+ 		} else
+ 			sc_err("cannot find bpcie func %d device", func);
