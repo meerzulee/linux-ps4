@@ -1,0 +1,2681 @@
+ugen0.5: <Kingston, DataTraveler 3.0, E0D55EA573F0194049CD0236>(VID=0x0951 PID=0x1666 depth=1 port=4 speed=4) at usbus0?
+umass1: <Kingston DataTraveler 3.0, class 0/0, rev 3.20/1.10, addr 4> on usbus0?
+umass1: sim_unit:0x00000001 device_unit:0x00000001?
+umass1:  SCSI over Bulk-Only; quirks = 0x0000?
+umass1:3:1:-1: Attached to scbus3?
+(probe0:umass-sim1:1:0:0): REPORT LUNS. CDB: a0 0 0 0 0 0 0 0 0 10 0 0 ?
+(probe0:umass-sim1:1:0:0): CAM status: SCSI Status Error?
+(probe0:umass-sim1:1:0:0): SCSI status: Check Condition?
+(probe0:umass-sim1:1:0:0): SCSI sense: ILLEGAL REQUEST asc:20,0 (Invalid command operation code)?
+da1 at umass-sim1 bus 1 scbus3 target 0 lun 0?
+da1: <Kingston DataTraveler 3.0 0000> Removable Direct Access SCSI-6 device ?
+da1: 400.000MB/s transfers?
+da1: 118240MB (242155520 512 byte sectors: 255H 63S/T 15073C)?
+?
+DBG AutoMounter(checkSpecAndHub 494):?
+	device(/dev/da1) is SUPER_SPEED.?
+DBG AutoMounter(checkSpecAndHub 504):?
+	deviceFilePath[/dev/da1] is connected to the USB port in general?
+WARNING AutoMounter(bool AutoMounter::DevctlReader::UsbStartupHandler::isStartUp() 76):?
+	fake implementation.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_connection(void **) 360):?
+	Notify PsmEvent OnUsbStorageInserted?
+MSG AutoMounter(int32_t AutoMounter::Util::checkFsFormat(const char *, uint32_t *) 888):?
+	device(/dev/da1) has unknown format(0).?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_mountFileSystem(std::string, bool, std::string &, uint32_t *, uint64_t *, uint64_t *, uint64_t *) 542):?
+	/dev/da1 has unknown format.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 763): _mountFileSystem(deviceFilePath, false, mountPoint, &fsFormatType, &space, &freeSpace, &availableSpace) returned 0x80f4001c.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_acquireEncryptDevice(std::string, uint32_t *, uint32_t *, std::string &, uint64_t *) 592):?
+	device(/dev/da1) is not qualified for encrypt device. ng_capability(0x2)?
+verify_metadata: sceSblExternalHDDVerifyMetadata(0) failed 800f0435?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::checkEncryption(std::string, bool *) 347):?
+	sceFsExternalStorageVerifyMetadata(/dev/da1) returned 0x80020050. device is not encrypted.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 795): _acquireEncryptDevice(deviceFilePath, &encryptDeviceFormat, &encryptDeviceStatus, encryptDeviceFilePath, &encryptDeviceId) returned 0x80f4001a.?
+DBG AutoMounter(notifyMount 435):?
+	eventArg.additionalFeatures[0x2000].?
+MSG AutoMounter(int32_t AutoMounter::DevctlReader::handleCreateUsbDevice(const char *) 174): AutoMounter::UsbHandler::requestMount(deviceFilePath.c_str(), true) returned 0x80f4001a.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_mount(void **) 270):?
+	Notify PsmEvent OnUsbStorageMounted?
+?
+DBG AutoMounter(checkSpecAndHub 494):?
+	device(/dev/da1) is SUPER_SPEED.?
+DBG AutoMounter(checkSpecAndHub 504):?
+	deviceFilePath[/dev/da1] is connected to the USB port in general?
+WARNING AutoMounter(bool AutoMounter::DevctlReader::UsbStartupHandler::isStartUp() 76):?
+	fake implementation.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_connection(void **) 360):?
+	Notify PsmEvent OnUsbStorageInserted?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::tryExfatMount(std::string, bool, std::string &, uint64_t *, uint64_t *, uint64_t *) 129):?
+	device(/dev/da1p1) is mounted to /mnt/usb0 with exfat.?
+DBG AutoMounter(notifyMount 435):?
+	eventArg.additionalFeatures[0x2040].?
+MSG AutoMounterMelUtil(void sceAutomounterMelUtil::callbackMountAll(void **) 279):?
+		device(/dev/da1p1): exfat(mediaType=0x1001) is mounted at /mnt/usb0.?
+callbackUsbStorageMountInternal()[374]: [MediaEvent] callbackUsbStorageMountInternal() devNum=0?
+callbackUsbStorageMountInternal()[377]: [MediaEvent] callbackUsbStorageMountInternal() locked.?
+MSG AutoMounterWrapper(void callbackUsbMount(SceUsbStorageEventDatas *, void *) 102):?
+	DeviceId=0x2ad6881c?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_mount(void **) 270):?
+	Notify PsmEvent OnUsbStorageMounted?
+?
+[SceLncUtil] blockAppSuspend: name={SceSaveData}, appId={0x60000100}, refCount={1}?
+[SceLncUtil] unblockAppSuspend: name={SceSaveData}, appId={0x60000100}, refCount={0}?
+DBG AutoMounter(checkSpecAndHub 494):?
+	device(/dev/da1) is SUPER_SPEED.?
+DBG AutoMounter(checkSpecAndHub 504):?
+	deviceFilePath[/dev/da1] is connected to the USB port in general?
+WARNING AutoMounter(bool AutoMounter::DevctlReader::UsbStartupHandler::isStartUp() 76):?
+	fake implementation.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_connection(void **) 360):?
+	Notify PsmEvent OnUsbStorageInserted?
+MSG AutoMounter(int32_t AutoMounter::Util::checkFsFormat(const char *, uint32_t *) 888):?
+	device(/dev/da1p2) has unknown format(0).?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_mountFileSystem(std::string, bool, std::string &, uint32_t *, uint64_t *, uint64_t *, uint64_t *) 542):?
+	/dev/da1p2 has unknown format.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 763): _mountFileSystem(deviceFilePath, false, mountPoint, &fsFormatType, &space, &freeSpace, &availableSpace) returned 0x80f4001c.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_acquireEncryptDevice(std::string, uint32_t *, uint32_t *, std::string &, uint64_t *) 592):?
+	device(/dev/da1p2) is not qualified for encrypt device. ng_capability(0x12)?
+verify_metadata: sceSblExternalHDDVerifyMetadata(0) failed 800f0435?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::checkEncryption(std::string, bool *) 347):?
+	sceFsExternalStorageVerifyMetadata(/dev/da1p2) returned 0x80020050. device is not encrypted.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 795): _acquireEncryptDevice(deviceFilePath, &encryptDeviceFormat, &encryptDeviceStatus, encryptDeviceFilePath, &encryptDeviceId) returned 0x80f4001a.?
+DBG AutoMounter(notifyMount 435):?
+	eventArg.additionalFeatures[0x2000].?
+MSG AutoMounter(int32_t AutoMounter::DevctlReader::handleCreateUsbDevice(const char *) 174): AutoMounter::UsbHandler::requestMount(deviceFilePath.c_str(), true) returned 0x80f4001a.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_mount(void **) 270):?
+	Notify PsmEvent OnUsbStorageMounted?
+D/88391:?
+D/88391:AZIF00003?
+[UIProcess] malloc stats freeSize:38827616 (93%) inuseSize:3115424 peakSize:4065280 [pid:0x3a]?
+[SceLncService] launchApp(AZIF00003)?
+[SceLncService] category={gde} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={0}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_MINI_APP} [] appVer={0.98}?
+[SceLncService] mem_mode = {NORMAL}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDirCheck()?
+[SceLncService] PrepareProcessLaunchDirCheck() returned?
+[SceSystemStateMgr] Power Mode Change: FULL_GAME?
+[ScePatchChecker] (*) check (title_id='AZIF00003', app_version='0.98', check_option=0): status=0, trigger=1 userId=0xffffffff return 0x80412883?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   0 NA  0 18  800  673  609  800  800    711  711     673 1400   1375   NA  NA   3 05b/975  05d/962  00710fa0?
+[SceLncService] PrepareProcessLaunchDir()?
+[ScePatchChecker] check (title_id='AZIF00003', app_version='0.98', check_option=0): status=0, dl_status=0, trigger=1 userId=0xffffffff return 0x80412883?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [ContentAreaScene : ContentAreaScene] -> [SplashScreen : SplashScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [SplashScreen : SplashScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : ActiveUserChanged : From : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : ActiveUserChanged : To   : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[BGFT] [571] GameStartBoot(AZIF00003, 7) start?
+[BGFT] [573] GameStartBoot(AZIF00003, 7) end?
+[PFS] mount [0x00000188a8f97f13] finished 1 1 1 1 0 1 1?
+[PFS] mount [0x00000188a8735f13] finished 1 0 0 1 0 1 1?
+[BGFT] [606] GameWillStart(AZIF00003, 7) start?
+[BGFT] [608] GameWillStart(AZIF00003, 7) end?
+[SceLncService] PrepareProcessLaunchDir() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp AZIF00003?
+[Sy[score App]  ExpandCpuSetMode : disable?
+[Syscore App] processSpawn(pid, 0x60000f0c, 0x10f0c130, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/AZIF00003_000, titleId = AZIF00003?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /mnt/sandbox/pfsmnt/AZIF00003-app0-patch0-union/eboot.bin?
+[Syscore App] new pid=0x46[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+KERNEL] dmem_start_app_process pid: 70, map=0xfffffe6e07c85638, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0xm46?
+[AppMgr Trace]: New Process, pid=0x46, created.?
+[AppMgr Trace]: New App, appId=0x60000f0c, created?
+[Syscore App]  ExpandCpuSetMode : disable?
+DBG: Process 70 untraced!?
+<70> EXEC /app0/eboot.bin [system], [AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/91cGSXCBo6/priv/mms/app.db] flags[0x10000002] result[0x0, 0]?
+[AppDb] AppInfoDbInitializeDaemon()[54]: [File:Open] AppInfoDbInitializeDaemon() call DbAccessor::Init() path[/91cGSXCBo6/priv/mms/app.db] result[0x0, 0].?
+[SL] AppFocusChanged [NPXS20001] -> [AZIF00003]?
+[AppDb] AppInfoDbTerminateDaemon()[67]: [File:Close] AppInfoDbTerminateDaemon() call DbAccessor::Terminate().?
+[AppDb] Terminate()[768]: [File:Close] DbAccessor::Terminate() call dbutil::Connection::Close().?
+[VCS]checkFocusStatus() [LNC->VCS] Focus Change. appType = 4(MINI_APP). appId = 0x60000f0c.?
+vm#0, dmem#0  <189078 msec>?
+[GoldHEN] <Plugins Loader> Started successfully?
+[GoldHEN] <Plugins Loader> Config parser failed to parse config: /data/GoldHEN/plugins.ini?
+(../game_patch/source/main.cpp:354) [GoldHEN] <game_patch\Ver.0x00000110> module_start?
+(../game_patch/source/main.cpp:355) [GoldHEN] Plugin Author(s): illusion?
+(../game_patch/source/main.cpp:356) Commit: caacf01174654235459d48ab9d0b9e00a588b300 Branch: main Build: 188 (Release)?
+(../game_patch/source/main.cpp:356) Built: May 27 2023 @ 04:49:25?
+(../game_patch/source/main.cpp:356) GoldHEN SDK Ver: 0x00000100?
+(../game_patch/source/main.cpp:356) GoldHEN System SDK Ver: 0xffffffff?
+(../game_patch/source/main.cpp:324) numModules: 5?
+(../game_patch/source/main.cpp:328) ret 0x0?
+(../game_patch/source/main.cpp:329) module 0?
+(../game_patch/source/main.cpp:330) name: eboot.bin?
+(../game_patch/source/main.cpp:331) start: 0x400000?
+(../game_patch/source/main.cpp:332) size: 49152 (0xc000)?
+(../game_patch/source/main.cpp:365) Module start: 0x400000 0xc000?
+(../game_patch/source/main.cpp:371) process info?
+(../game_patch/source/main.cpp:371) pid: 70?
+(../game_patch/source/main.cpp:371) name: eboot.bin?
+(../game_patch/source/main.c?pp:371) path: /app0/eboot.bin?
+(../game_patch/source/main.cpp:371) titleid: AZIF00003?
+(../game_patch/source/main.cpp:371) contentid: IV0000-AZIF00003_00-PAYLOADGUEST0000?
+(../game_patch/source/main.cpp:371) version: 0.98?
+(../game_patch/source/main.cpp:371) base_address: 0x400000?
+(../game_patch/source/main.cpp:130) file /data/GoldHEN/patches/xml/AZIF00003.xml not found?
+[32m[Info ] src/ChainLauncher.c:22: Loading "/app0/guest.elf"?[0m?
+[SceLncService] tryLockSuspendBl[ock: appId={0x60000f0c}?
+[Syscore App] Kill for LoadExec(0x46)?
+KERNEL] dmem_handle_vmspace_exited pid: 70, ptype=1, 0xfffffe6e07c85638->pt_loaded is TRUE?
+[KERNEL] dmem_handle_vmspace_exited map #0 0xfffffe6e07c85638?
+[KERNEL] dmem_handle_vmspace_exited pid: 70, app_maps_count[1], 1 -> 0?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x46?
+[Syscore App] Kill for LoadExec(0x46) => 0?
+[Syscore App] process delete event : pid=0x46?
+[AppMgr Trace]: pid=0x46, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited, ready for next spawn?
+[AppMgr] Executing next spawn?
+[Syscore App]  ExpandCpuSetMode : disable?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[Syscore App] processSpawn(pid, 0x60000f0c, 0x10f0c140, appParam, processParam, 1, 1, 1, param, debug, 1)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/AZIF00003_000, titleId = AZIF00003?
+[Syscore App] processParam: elfPath = /app0/guest.elf, fullPath = /mnt/sandbox/pfsmnt/AZIF00003-app0-patch0-union/eboot.bin?
+[Syscore App] new pid=0x47[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[KERNEL] dmem_start_app_process pid: 71, map=0xfffffe6e07c853c0, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0xm47?
+[SceLncService] unlockSuspendBlock: appId={0x60000f0c}?
+DBG: Process 71 untraced!?
+<71> EXEC /app0/guest.elf [system], vm#0, dmem#0  <189575 msec>?
+[GoldHEN] <Plugins Loader> Started successfully?
+[GoldHEN] <Plugins Loader> Config parser failed to parse config: /data/GoldHEN/plugins.ini?
+(../game_patch/source/main.cpp:354) [GoldHEN] <game_patch\Ver.0x00000110> module_start?
+(../game_patch/source/main.cpp:355) [GoldHEN] Plugin Author(s): illusion?
+(../game_patch/source/main.cpp:356) Commit: caacf01174654235459d48ab9d0b9e00a588b300 Branch: main Build: 188 (Release)?
+(../game_?patch/source/main.cpp:356) Built: May 27 2023 @ 04:49:25?
+(../game_patch/source/main.cpp:356) GoldHEN SDK Ver: 0x00000100?
+(../game_patch/source/main.cpp:356) GoldHEN System SDK Ver: 0xffffffff?
+(../game_patch/source/main.cpp:324) numModules: 5?
+(../game_patch/source/main.cpp:328) ret 0x0?
+(../game_patch/source/main.cpp:329) module 0?
+(../game_patch/source/main.cpp:330) name: guest.elf?
+(../game_patch/source/main.cpp:331) start: 0x400000?
+(../game_patch/source/main.cpp:332) size: 851968 (0xd0000)?
+(../game_patch/source/main.cpp:365) Module start: 0x400000 0xd0000?
+(../game_patch/source/main.cpp:371) process info?
+(../game_patch/source/main.cpp:371) pid: 71?
+(../game_patch/source/main.cpp:371) name: guest.elf?
+(../game_patch/source/main.cpp:371) path: /app0/guest.elf?
+(../game_patch/source/main.cpp:371) titleid: AZIF00003?
+(../game_patch/source/main.cpp:371) contentid: IV0000-AZIF00003_00-PAYLOADGUEST0000?
+(../game_patch/source/main.cpp:371) version: 0.98?
+(../game_patch/source/main.cpp:371) base_address: 0x400000?
+(../game_patch/source/main.cpp:130) file /data/GoldHEN/patches/xml/AZIF00003.xml not found?
+error: 0x80020002**** Base Mode ****?
+[36m[Debug] src/App.cpp:29: Initialize Language...?[0m?
+?[36m[Debug] src/App.cpp:31: Initialize Controller...?[0m?
+[mbus] onNewClie?nt. clientNum 10 over 8?
+[36m[Debug] src/App.cpp:33: Initialize Graphics...?[0m?
+?[36m[Debug] src/Graphics.cpp:89: Handle is 1309737216 (0x4e110100)?[0m?
+?[36m[Debug] src/Graphics.cpp:181: DirectMemOff: 0x200000?[0m?
+?[36m[Debug] src/Graphics.cpp:182: DirectMemAllocationSize: 0xc000000?[0m?
+?[36m[Debug] src/Graphics.cpp:183: alignment: 2097152 (0x00200000)?[0m?
+?[36m[Debug] src/Graphics.cpp:188: VideoMem: 0x200200000?[0m?
+?[36m[Debug] src/Graphics.cpp:109: Allocating framebuffer...?[0m?
+?[36m[Debug] src/Graphics.cpp:237: handle: 1309737216 (0x4e110100)?[0m?
+?[36m[Debug] src/Graphics.cpp:239: flipArgLog: 0x2000041a0?[0m?
+?[36m[Debug] src/Graphics.cpp:240: FrameBuffers: 0x2000042c0?[0m?
+?[36m[Debug] src/Graphics.cpp:255: sceVideoOutRegisterBuffers: 0x00000000?[0m?
+?[36m[Debug] src/App.cpp:35: Initialize Resource...?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/App.cpp:43: Initialize the Main View...?[0m?
+?[36m[Debug] src/PayloadsView.cpp:186: GeneratePayloads is called!?[0m?
+?[36m[Debug] src/PayloadsView.cpp:212: Cleanup payload list...?[0m?
+?[36m[Debug] src/PayloadsView.cpp:206: GeneratePayloads: Refreshed?[0m?
+?[36m[Debug] src/PayloadsView.cpp:252: PayloadsView: End of constructor?[0m?
+?[36m[[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [SplashScreen : SplashScreenScene] -> [AppScreen : ApplicationScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [AppScreen : ApplicationScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[SceShellUI] I/PSM.UI : [NoDraw] : ClearFrameBuffer=False?
+Debug] src/App.cpp:119: Application: RUN?[0m?
+?[36m[Debug] src/PayloadsView.cpp:319: Loading: /data/payloads/linux-1024mb.bin?[0m?
+[GoldHEN] <binloader> accepted a new payload?
+[GoldHEN] <binloader> TCP Mode?
+?[36m[[DGeboug] lsdHEN] <rbci/nloPayaloadder> spayVilewoa.cpp:1d 8r6: GeneecraetiePaved yloa[sidsz ies: 2 cal83l84e0d !?[-0 m?
+b?[uf36m[Debugf] er_ssrci/zePa: yl2o90ad8sVi1ew.c6 p-p :ip: 1227.0.0.121: Cle]an?
+up p[ayloaGdo list.ld..?[H0Em?N]
+ <binlo?[3ade6r>m [fDoeubug] snrdc/ aPanydloads Viejw.cpap:206:il Gebnreorkeatn target epPrayoloacds:es Refress hed?[0m[?p
+id: 46]?
+[GoldHEN] <binloader> launching payload... [format: BIN]?
+[GoldHEN] <binloader> payload launched?
+kernel_init()?
+Kernel base = ffffffff9f71c000?
+Direct map base = fffffe6e00000000?
+Testing global variable access (write protection)...?
+OK.?
+Kernel interface initialized?
+Installing sys_kexec to system call #153?
+kexec_init() successful?
+?
+sys_kexec invoked?
+========================================?
+PS4 Linux Payloads AIO?
+FW 12.02 (1202)?
+VRAM 1024 MB?
+Southbridge: Baikal?
+========================================?
+sys_kexec(0x200d98000, 9798656, 0x2016f4000, 4079858, "earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 iommu=pt intremap=off panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on")?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_pfp.bin ?
+Copying PFP firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_me.bin ?
+Copying ME firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_ce.bin ?
+Copying CE firmware?
+NOP handler at 0x7f0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec.bin ?
+Copying MEC firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec2.bin ?
+Copying MEC2 firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_rlc.bin ?
+Copying RLC firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma.bin ?
+Copying SDMA firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma1.bin ?
+Copying SDMA1 firmware?
+?
+kexec parameters:?
+    Kernel image size:   9798656 bytes?
+    Initramfs size:      4174594 bytes (4079858 from user)?
+    Kernel command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 iommu=pt intremap=off panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on?
+    Kernel image buffer: 0xfffffe6e3f000000?
+    Initramfs buffer:    0xffffffffffffffff?
+kernel_hook_install(0xffffff807ac8912d, 0xffffffff9fb63ad0)?
+  Using 64bit absolute jump?
+******************************************************?
+kexec successfully armed. Please shut down the system.?
+******************************************************?
+?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[KE]sceCameraDevKill::2685 ERROR: sceCameraProcConfigStop 0x802e0006 i=0 handle=257 piCod=43n?
+text.ccC:o1ntext.74c (ca:189 (ajjmContextClmeCanup) - Codec oOpusnt eS[KxIELtKRNEL]  CldmeEeman_nchouapdn)dl e- er_v mIwsanpacses _ntoaentxitedc  eppid r:o p27718e,r5 3ptl2yyp w aesu= n1,nr oe0xtgf ispfrtfffe6eoe0pr7eecdr8.l53c0->p?yt 
+_ldCoeaodnsetdtexr t.is TRocUyc:eEd1.?8?
+9C
+ [oK(nEatRejxmNCt.oncEL] dmemc:_t1h8ex9at C(ndllaeej_vmspacema_enxiuCtoepd n)mt -ex atpCC #0lo 0dxeeffffffacfn Opffuufsfffp C)E fLfT- f C?Eod
+nec[cKER oNOdEL]ep rdu mswasem  _SnhIoatLnK  dlep_Ervmospace_expnitceeordld epriyd : 7w u1an,sr aep gp_nimsaotp ts_pcerorouednt.p[?e1], r
+lC1 -> 0?yo 
+untenxrte.cc:gi189 (ajmContestxtCleeanup)r - Codec Oepdu.?s Dec
+oder was noCt poronperly utnreextgist.ered.?cc:
+174 (ajmContextCoCnleatneuxtp) -. Iccn:stance18 3440697  was( anotj promperly destCroyedo.?
+ntContexextt.cCc:1l89 (eajmContextaCleannuup)p - Codec )Opus Deco d-er wa s nCoot prdoperely unc regisOtpusered. C?
+ELT Encoder Cwaso ntenxtot .pcc:18r9o (ajpmeCronlytextCleanup) - u Cnroedec gCiELP8ste rDeecoder was d.not ?
+pCroperly uonnteregxti.stccere:1d.?
+8Con9text.c c:1(a89j (mCajmoContextCleannteupxt) - CodCec lCELP8 Eeanncoder was notu prop) p-erly  unreCgodiecster ed.?
+OpContuext.cs Cc:EL1T8 D9e (cajmCoontedxtCleearn wup) -a Cs nodeotc CEL P(p1ro6) Decpodeer wars not lypr operlyu nregunregisteisred.te?
+rContexted.c.c:191?
+ (ajmContextClCeanuop) - More ncodetcexst were not p.ropercly ucnreg:18istered...9?
+ (ajmContextCleanup) - Codec MPEG4 AAC Encoder was not properColy nutextnr.cc:17egi4 (ajmsteCroented.xtCl?
+eanup) - InstaContext.cc:174 (ajmContextCleanup) - Instance 114689 was not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec AC3 nEcnec 163o90 wdas not perroperly was d noetst royed.?pr
+oContextp.cc:189 (ajemrClontextCleanyu upnr)e - Cgiodec MsP3 Detcoerdeedr was n.?o
+tCo pronperltyext .unregicc:s17t4e (red.aj?mC
+ontCoentexxttC.clc:189 (ajmContextCleeaanup)n - uCp)odec ATR AC9 D-eco Idnesrt awncas en ot 1properl63y 8un42r ewgistered.?
+as not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec DTS Encoder was not properly unregistered.?
+[SceSysCore mini] killall timeout 5[sec]...?
+[SceSysCore mini] forcibly unmount 4 nullfses?
+[SceSysCore mini] forcibly unmount /mnt/usb0?
+[SceSysCore mini[REGMGR] 000006 ...?
+] sceKernelPollE[ventFlag(reboot_flag): failed 80020010?
+[SceSysCore mini] call reboot(4000)?
+REGMGR] (    197.339 sec) 010006 ...?
+[REGMGR] (   0.011774 sec) 010007 ...?
+[REGMGR] 000108 ...?
+Waiting (max 60 seconds) for system process `SceVnlru' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon0' to stop...SD Manual Tuning done. MaxPassWindowSize=22, TunePoint=20 CORE_CTRL=0x184094?
+done?
+Waiting (max 60 seconds) for system process `SceBufdaemon2' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon1' to stop...done?
+?Waiting (
+max 60 seSycnconids) fnor syg stedm proicess `SceSsyncer' tok stops..., vnodes remaining...1 0 0 sched_sync: flush softdep (iter=2)?
+sched_sync: flush softdep (iter=1)?
+done?
+All buffers synced.?
+[PFS] umount[0x00000188a8735f13] finished 0?
+[PFS] umount[0x00000188a8f97f13] finished 0?
+Uptime: 3m23s?
+icc post sync:Thermal alert LED off?
+[REGMGR] 000007 @2@ ...?
+icc08-4001 0802?
+icc:failed to disabled reset button notification: 0005?
+icc:disabled thermal notification?
+eth0: link state changed to DOWN?
+ICC: howto:00004000 depth:2 cause:00 hand:01?
+ICC: Shutdown.?
+hook_icc_query_nowait called?
+ICC 05-00 polling?
+Fixing ACPI tables at 0xe0000 (0xfffffe6e000e0000)?
+RSDT at 0xe0024?
+XSDT at 0xe0088?
+FACP at 0xe016c?
+FACS at 0xe012c?
+DSDT at 0xe0430?
+APIC at 0xe0298?
+MCFG at 0xe0304?
+SSDT at 0xe0730?
+ACPI tables fixed?
+kexec: Waiting for secondary CPUs...?
+kexec: Secondary CPUs quiesced?
+kexec: Setting up GDT...?
+kexec: Relocating stub...?
+kexec: Setting up boot params...?
+kexec: Cleaning up hardware...?
+Current sb_id: 3?
+?
+SB_BAIKAL constant: 3?
+?
+kexec: Detected Baikal Southbridge, disabling IOMMU...?
+kexec: Reconfiguring VRAM...?
+kexec: Resetting GPU...?
+kexec: About to relocate and jump to kernel?
+[    0.000000] ps4: x86_ps4_early_setup: PS4 early setup?
+[    0.000000] Linux version 6.15.4-Baikal_TESTING_crashniels-dirty (meerzulee@cachynator) (gcc (GCC) 16.1.1 20260430, GNU ld (GNU Binutils) 2.46.0) #7 SMP PREEMPT_DYNAMIC Sat May  9 22:54:19 +06 2026?
+[    0.000000] Command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 iommu=pt intremap=off panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on?
+[    0.000000] KERNEL supported cpus:?
+[    0.000000]   AMD AuthenticAMD?
+[    0.000000] BIOS-provided physical RAM map:?
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000007fff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000008000-0x000000000007ffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000080000-0x0000000000099fff] usable?
+[    0.000000] BIOS-e820: [mem 0x000000000009a000-0x00000000000bffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000effff] ACPI data?
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000003fffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000400000-0x000000000047ffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000480000-0x000000000067ffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000680000-0x00000000006fffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000700000-0x000000007efe7fff] usable?
+[    0.000000] BIOS-e820: [mem 0x000000007efe8000-0x000000007efeffff] ACPI NVS?
+[    0.000000] BIOS-e820: [mem 0x000000007eff0000-0x000000007effffff] ACPI data?
+[    0.000000] BIOS-e820: [mem 0x000000007f000000-0x000000007fffffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000080000000-0x00000000fbffffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000013fffffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000140000000-0x000000027effffff] usable?
+[    0.000000] earlycon: uart8250 at MMIO32 0x00000000c890e000 (options '115200n8')?
+[    0.000000] printk: legacy bootconsole [uart8250] enabled?
+[    0.000000] printk: debug: skip boot console de-registration.?
+[    0.000000] printk: debug: ignoring loglevel setting.?
+[    0.000000] NX (Execute Disable) protection: active?
+[    0.000000] APIC: Static calls initialized?
+[    0.000000] SMBIOS 2.1 present.?
+[    0.000000] DMI:  , BIOS unde Wed 09/22/2021 16:2?
+[    0.000000] DMI: Memory slots populated: 1/1?
+[    0.000000] ps4: EMC timer started in 41815 TSC ticks?
+[    0.000000] ps4: Calibrated TSC frequency: 1594133760 kHz?
+[    0.000000] tsc: Detected 1594.134 MHz processor?
+[    0.001421] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved?
+[    0.008246] e820: remove [mem 0x000a0000-0x000fffff] usable?
+[    0.013930] last_pfn = 0x27f000 max_arch_pfn = 0x400000000?
+[    0.019517] MTRR map: 6 entries (3 fixed + 3 variable; max 20), built from 9 variable MTRRs?
+[    0.028018] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  ?
+[    0.035401] e820: update [mem 0x80000000-0x13fffffff] usable ==> reserved?
+[    0.042330] last_pfn = 0x80000 max_arch_pfn = 0x400000000?
+[    0.056433] Using GB pages for direct mapping?
+[    0.062398] RAMDISK: [mem 0x11000000-0x113fbfff]?
+[    0.067109] ACPI: Early table checksum verification disabled?
+[    0.072868] ACPI: RSDP 0x00000000000E0000 000024 (v02 SIE   )?
+[    0.078722] ACPI: XSDT 0x00000000000E0088 00004C (v01 SIE    ORBIS    20121218 INTL 20110211)?
+[    0.087409] ACPI: FACP 0x00000000000E016C 0000F4 (v04 SIE    ORBIS    20130205 INTL 20110211)?
+[    0.096095] ACPI: DSDT 0x00000000000E0430 00018C (v02 SIE    ORBIS    20121002 INTL 20110211)?
+[    0.104779] ACPI: FACS 0x00000000000E012C 000040?
+[    0.109479] ACPI: FACS 0x00000000000E012C 000040?
+[    0.114179] ACPI: APIC 0x00000000000E0298 00006C (v02 SIE    ORBIS    20120725 INTL 20110211)?
+[    0.122861] ACPI: MCFG 0x00000000000E0304 00003C (v01 SIE    ORBIS    20120725 INTL 20110211)?
+[    0.131543] ACPI: SSDT 0x00000000000E0730 001944 (v01 AMD    POWERNOW 00000001 AMD  00000001)?
+[    0.140226] ACPI: IVRS 0x00000000000E2074 000054 (v01 F0F    PS4KEXEC 20161225 KEXC 20161225)?
+[    0.148907] ACPI: Reserving FACP table memory at [mem 0xe016c-0xe025f]?
+[    0.155547] ACPI: Reserving DSDT table memory at [mem 0xe0430-0xe05bb]?
+[    0.162187] ACPI: Reserving FACS table memory at [mem 0xe012c-0xe016b]?
+[    0.168827] ACPI: Reserving FACS table memory at [mem 0xe012c-0xe016b]?
+[    0.175467] ACPI: Reserving APIC table memory at [mem 0xe0298-0xe0303]?
+[    0.182106] ACPI: Reserving MCFG table memory at [mem 0xe0304-0xe033f]?
+[    0.188745] ACPI: Reserving SSDT table memory at [mem 0xe0730-0xe2073]?
+[    0.195385] ACPI: Reserving IVRS table memory at [mem 0xe2074-0xe20c7]?
+[    0.202102] No NUMA configuration found?
+[    0.206000] Faking a node at [mem 0x0000000000000000-0x000000027effffff]?
+[    0.212823] NODE_DATA(0) allocated [mem 0x27effa800-0x27effdfff]?
+[    0.218978] Zone ranges:?
+[    0.221548]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]?
+[    0.227837]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]?
+[    0.234126]   Normal   [mem 0x0000000100000000-0x000000027effffff]?
+[    0.240414] Movable zone start for each node?
+[    0.244753] Early memory node ranges?
+[    0.248384]   node   0: [mem 0x0000000000001000-0x0000000000007fff]?
+[    0.254760]   node   0: [mem 0x0000000000080000-0x0000000000099fff]?
+[    0.261135]   node   0: [mem 0x0000000000100000-0x00000000003fffff]?
+[    0.267509]   node   0: [mem 0x0000000000480000-0x000000000067ffff]?
+[    0.273884]   node   0: [mem 0x0000000000700000-0x000000007efe7fff]?
+[    0.280259]   node   0: [mem 0x000000007f000000-0x000000007fffffff]?
+[    0.286634]   node   0: [mem 0x0000000140000000-0x000000027effffff]?
+[    0.293011] Initmem setup node 0 [mem 0x0000000000001000-0x000000027effffff]?
+[    0.300188] On node 0, zone DMA: 1 pages in unavailable ranges?
+[    0.306129] On node 0, zone DMA: 120 pages in unavailable ranges?
+[    0.312259] On node 0, zone DMA: 102 pages in unavailable ranges?
+[    0.318386] On node 0, zone DMA: 128 pages in unavailable ranges?
+[    0.324549] On node 0, zone DMA: 128 pages in unavailable ranges?
+[    0.341005] On node 0, zone DMA32: 24 pages in unavailable ranges?
+[    0.373548] On node 0, zone Normal: 4096 pages in unavailable ranges?
+[    0.380928] ACPI: No IOAPIC entries present?
+[    0.385181] ACPI: Using ACPI for processor (LAPIC) configuration information?
+[    0.392365] CPU topo: Max. logical packages:   1?
+[    0.397059] CPU topo: Max. logical dies:       1?
+[    0.401752] CPU topo: Max. dies per package:   1?
+[    0.406457] CPU topo: Max. threads per core:   1?
+[    0.411152] CPU topo: Num. cores per package:     8?
+[    0.416110] CPU topo: Num. threads per package:   8?
+[    0.421069] CPU topo: Allowing 8 present CPUs plus 0 hotplug CPUs?
+[    0.427295] [mem 0xfc000000-0xffffffff] available for PCI devices?
+[    0.433497] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns?
+[    0.444128] setup_percpu: NR_CPUS:8 nr_cpumask_bits:8 nr_cpu_ids:8 nr_node_ids:1?
+[    0.452329] percpu: Embedded 42 pages/cpu s131544 r8192 d32296 u262144?
+[    0.458990] pcpu-alloc: s131544 r8192 d32296 u262144 alloc=1*2097152?
+[    0.465457] pcpu-alloc: [0] 0 1 2 3 4 5 6 7 ?
+[    0.469845] Kernel command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 iommu=pt intremap=off panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on?
+[    0.488977] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes?
+[    0.498329] Dentry cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)?
+[    0.507410] Inode-cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)?
+[    0.515481] software IO TLB: area num 8.?
+[    0.548906] Fallback order for Node 0: 0 ?
+[    0.548925] Built 1 zonelists, mobility grouping on.  Total pages: 1830409?
+[    0.559996] Policy zone: Normal?
+[    0.563190] mem auto-init: stack:off, heap alloc:off, heap free:off?
+[    0.607351] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=8, Nodes=1?
+[    0.615065] Dynamic Preempt: voluntary?
+[    0.618968] rcu: Preemptible hierarchical RCU implementation.?
+[    0.624814] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.?
+[    0.632631] NR_IRQS: 4352, nr_irqs: 128, preallocated irqs: 0?
+[    0.638538] rcu: srcu_init: Setting srcu_struct sizes based on contention.?
+[    0.645592] call_irq_handler: 0.49 No irq handler for vector?
+[    0.651380] Console: colour dummy device 80x25?
+[    0.655903] printk: legacy console [tty0] enabled?
+[    0.660729] ACPI: Core revision 20240827?
+[    0.664787] ACPI: setting ELCR to 0200 (from ffff)?
+[    0.669679] Failed to register legacy timer interrupt?
+[    0.674818] APIC: Switch to symmetric I/O mode setup?
+[    0.679877] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x16fa7f9cd22, max_idle_ns: 440795282679 ns?
+[    0.690606] Calibrating delay loop (skipped), value calculated using timer frequency.. 3188.26 BogoMIPS (lpj=1594134)?
+[    0.691597] Last level iTLB entries: 4KB 512, 2MB 8, 4MB 4?
+[    0.691597] Last level dTLB entries: 4KB 512, 2MB 256, 4MB 128, 1GB 0?
+[    0.691597] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization?
+[    0.691597] Spectre V2 : Mitigation: Retpolines?
+[    0.691597] Spectre V2 : Spectre v2 / SpectreRSB: Filling RSB on context switch and VMEXIT?
+[    0.691597] RETBleed: Mitigation: untrained return thunk?
+[    0.691597] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl?
+[    0.691597] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'?
+[    0.691597] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'?
+[    0.691597] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'?
+[    0.691597] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256?
+[    0.691597] x86/fpu: Enabled xstate features 0x7, context size is 832 bytes, using 'standard' format.?
+[    0.691597] Freeing SMP alternatives memory: 52K?
+[    0.691597] pid_max: default: 32768 minimum: 301?
+[    0.691597] Mount-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)?
+[    0.691597] Mountpoint-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)?
+[    0.691597] smpboot: CPU0: AMD DG1401SNF87ID (family: 0x16, model: 0x1a, stepping: 0x0)?
+[    0.692211] calling  init_hw_perf_events+0x0/0x640 @ 1?
+[    0.692601] Performance Events: AMD PMU driver.?
+[    0.693602] ... version:                0?
+[    0.694600] ... bit width:              48?
+[    0.695600] ... generic registers:      4?
+[    0.697600] ... value mask:             0000ffffffffffff?
+[    0.698600] ... max period:             00007fffffffffff?
+[    0.699600] ... fixed-purpose events:   0?
+[    0.700600] ... event mask:             000000000000000f?
+[    0.701774] initcall init_hw_perf_events+0x0/0x640 returned 0 after 9000 usecs?
+[    0.702603] calling  do_init_real_mode+0x0/0x20 @ 1?
+[    0.703647] initcall do_init_real_mode+0x0/0x20 returned 0 after 0 usecs?
+[    0.704601] calling  init_sigframe_size+0x0/0x40 @ 1?
+[    0.705601] signal: max sigframe size: 1776?
+[    0.706600] initcall init_sigframe_size+0x0/0x40 returned 0 after 1000 usecs?
+[    0.707601] calling  cache_ap_register+0x0/0x50 @ 1?
+[    0.708601] initcall cache_ap_register+0x0/0x50 returned 0 after 0 usecs?
+[    0.709602] calling  bp_init_aperfmperf+0x0/0x280 @ 1?
+[    0.710601] initcall bp_init_aperfmperf+0x0/0x280 returned 0 after 0 usecs?
+[    0.711601] calling  save_microcode_in_initrd+0x0/0x150 @ 1?
+[    0.712617] initcall save_microcode_in_initrd+0x0/0x150 returned -22 after 0 usecs?
+[    0.713601] calling  register_nmi_cpu_backtrace_handler+0x0/0x20 @ 1?
+[    0.714601] initcall register_nmi_cpu_backtrace_handler+0x0/0x20 returned 0 after 0 usecs?
+[    0.715601] calling  spawn_ksoftirqd+0x0/0x60 @ 1?
+[    0.716659] initcall spawn_ksoftirqd+0x0/0x60 returned 0 after 0 usecs?
+[    0.717601] calling  init_signal_sysctls+0x0/0x30 @ 1?
+[    0.718611] initcall init_signal_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.719601] calling  init_umh_sysctls+0x0/0x30 @ 1?
+[    0.720604] initcall init_umh_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.721601] calling  kthreads_init+0x0/0x30 @ 1?
+[    0.722602] initcall kthreads_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.723602] calling  migration_init+0x0/0x40 @ 1?
+[    0.724601] initcall migration_init+0x0/0x40 returned 0 after 0 usecs?
+[    0.725601] calling  printk_set_kthreads_ready+0x0/0x40 @ 1?
+[    0.726602] initcall printk_set_kthreads_ready+0x0/0x40 returned 0 after 0 usecs?
+[    0.727601] calling  srcu_bootup_announce+0x0/0x80 @ 1?
+[    0.728601] rcu: Hierarchical SRCU implementation.?
+[    0.729600] rcu: 	Max phase no-delay instances is 400.?
+[    0.730600] initcall srcu_bootup_announce+0x0/0x80 returned 0 after 2000 usecs?
+[    0.731601] calling  rcu_spawn_gp_kthread+0x0/0x220 @ 1?
+[    0.732743] initcall rcu_spawn_gp_kthread+0x0/0x220 returned 0 after 0 usecs?
+[    0.733601] calling  check_cpu_stall_init+0x0/0x20 @ 1?
+[    0.734601] initcall check_cpu_stall_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.735602] calling  rcu_sysrq_init+0x0/0x30 @ 1?
+[    0.736601] initcall rcu_sysrq_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.737601] calling  tmigr_init+0x0/0x150 @ 1?
+[    0.738608] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level?
+[    0.739604] initcall tmigr_init+0x0/0x150 returned 0 after 1000 usecs?
+[    0.740601] calling  cpu_stop_init+0x0/0x90 @ 1?
+[    0.741660] initcall cpu_stop_init+0x0/0x90 returned 0 after 0 usecs?
+[    0.742601] calling  irq_work_init_threads+0x0/0x10 @ 1?
+[    0.743600] initcall irq_work_init_threads+0x0/0x10 returned 0 after 0 usecs?
+[    0.744601] calling  static_call_init+0x0/0xa0 @ 1?
+[    0.748278] initcall static_call_init+0x0/0xa0 returned 0 after 2000 usecs?
+[    0.748601] calling  jump_label_init_module+0x0/0x20 @ 1?
+[    0.749602] initcall jump_label_init_module+0x0/0x20 returned 0 after 0 usecs?
+[    0.750601] calling  init_zero_pfn+0x0/0x40 @ 1?
+[    0.751601] initcall init_zero_pfn+0x0/0x40 returned 0 after 0 usecs?
+[    0.752602] calling  init_fs_inode_sysctls+0x0/0x30 @ 1?
+[    0.753604] initcall init_fs_inode_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.754601] calling  init_fs_locks_sysctls+0x0/0x30 @ 1?
+[    0.755603] initcall init_fs_locks_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.756601] calling  init_fs_sysctls+0x0/0x30 @ 1?
+[    0.757603] initcall init_fs_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.758601] calling  init_security_keys_sysctls+0x0/0x30 @ 1?
+[    0.759606] initcall init_security_keys_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.760601] calling  dynamic_debug_init+0x0/0x230 @ 1?
+[    0.761864] initcall dynamic_debug_init+0x0/0x230 returned 0 after 0 usecs?
+[    0.762772] smp: Bringing up secondary CPUs ...?
+[    0.763913] smpboot: x86: Booting SMP configuration:?
+[    0.764607] .... node  #0, CPUs:      #1 #2 #3 #4 #5 #6 #7?
+[    0.775704] smp: Brought up 1 node, 8 CPUs?
+[    0.777601] smpboot: Total of 8 processors activated (25506.14 BogoMIPS)?
+[    0.780818] Memory: 7081636K/7321636K available (21565K kernel code, 2022K rwdata, 7100K rodata, 1588K init, 2344K bss, 235752K reserved, 0K cma-reserved)?
+[    0.782708] devtmpfs: initialized?
+[    0.784953] calling  setup_split_lock_delayed_work+0x0/0x90 @ 1?
+[    0.785608] initcall setup_split_lock_delayed_work+0x0/0x90 returned 0 after 0 usecs?
+[    0.786602] calling  ipc_ns_init+0x0/0x50 @ 1?
+[    0.787622] initcall ipc_ns_init+0x0/0x50 returned 0 after 0 usecs?
+[    0.788607] calling  init_mmap_min_addr+0x0/0x40 @ 1?
+[    0.789604] initcall init_mmap_min_addr+0x0/0x40 returned 0 after 0 usecs?
+[    0.790601] calling  pci_realloc_setup_params+0x0/0x70 @ 1?
+[    0.791606] initcall pci_realloc_setup_params+0x0/0x70 returned 0 after 0 usecs?
+[    0.792603] calling  inet_frag_wq_init+0x0/0x50 @ 1?
+[    0.793650] initcall inet_frag_wq_init+0x0/0x50 returned 0 after 0 usecs?
+[    0.794653] calling  e820__register_nvs_regions+0x0/0x40 @ 1?
+[    0.795602] initcall e820__register_nvs_regions+0x0/0x40 returned 0 after 0 usecs?
+[    0.796601] calling  cpufreq_register_tsc_scaling+0x0/0x40 @ 1?
+[    0.797601] initcall cpufreq_register_tsc_scaling+0x0/0x40 returned 0 after 0 usecs?
+[    0.798601] calling  reboot_init+0x0/0x30 @ 1?
+[    0.799605] initcall reboot_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.800601] calling  wq_sysfs_init+0x0/0x20 @ 1?
+[    0.801633] initcall wq_sysfs_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.802603] calling  ksysfs_init+0x0/0xa0 @ 1?
+[    0.803621] initcall ksysfs_init+0x0/0xa0 returned 0 after 0 usecs?
+[    0.804601] calling  schedutil_gov_init+0x0/0x20 @ 1?
+[    0.805601] initcall schedutil_gov_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.806601] calling  rcu_set_runtime_mode+0x0/0x20 @ 1?
+[    0.807602] initcall rcu_set_runtime_mode+0x0/0x20 returned 0 after 0 usecs?
+[    0.808601] calling  init_jiffies_clocksource+0x0/0x20 @ 1?
+[    0.809602] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns?
+[    0.810602] initcall init_jiffies_clocksource+0x0/0x20 returned 0 after 1000 usecs?
+[    0.811601] calling  posixtimer_init+0x0/0xa0 @ 1?
+[    0.812605] posixtimers hash table entries: 4096 (order: 4, 65536 bytes, linear)?
+[    0.813614] initcall posixtimer_init+0x0/0xa0 returned 0 after 1000 usecs?
+[    0.814601] calling  futex_init+0x0/0xa0 @ 1?
+[    0.815603] futex hash table entries: 2048 (order: 5, 131072 bytes, linear)?
+[    0.816625] initcall futex_init+0x0/0xa0 returned 0 after 1000 usecs?
+[    0.817601] calling  cgroup_wq_init+0x0/0x30 @ 1?
+[    0.818606] initcall cgroup_wq_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.819601] calling  cgroup1_wq_init+0x0/0x30 @ 1?
+[    0.820606] initcall cgroup1_wq_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.821603] calling  init_events_core_sysctls+0x0/0x30 @ 1?
+[    0.822608] initcall init_events_core_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.823601] calling  init_callchain_sysctls+0x0/0x30 @ 1?
+[    0.824604] initcall init_callchain_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.825601] calling  fsnotify_init+0x0/0x60 @ 1?
+[    0.826612] initcall fsnotify_init+0x0/0x60 returned 0 after 0 usecs?
+[    0.827601] calling  filelock_init+0x0/0x120 @ 1?
+[    0.828616] initcall filelock_init+0x0/0x120 returned 0 after 0 usecs?
+[    0.829601] calling  init_misc_binfmt+0x0/0x40 @ 1?
+[    0.830602] initcall init_misc_binfmt+0x0/0x40 returned 0 after 0 usecs?
+[    0.831601] calling  init_script_binfmt+0x0/0x20 @ 1?
+[    0.832601] initcall init_script_binfmt+0x0/0x20 returned 0 after 0 usecs?
+[    0.833601] calling  init_elf_binfmt+0x0/0x20 @ 1?
+[    0.834601] initcall init_elf_binfmt+0x0/0x20 returned 0 after 0 usecs?
+[    0.835601] calling  init_compat_elf_binfmt+0x0/0x20 @ 1?
+[    0.836601] initcall init_compat_elf_binfmt+0x0/0x20 returned 0 after 0 usecs?
+[    0.837602] calling  configfs_init+0x0/0xc0 @ 1?
+[    0.838613] initcall configfs_init+0x0/0xc0 returned 0 after 0 usecs?
+[    0.839602] calling  debugfs_init+0x0/0xe0 @ 1?
+[    0.840601] initcall debugfs_init+0x0/0xe0 returned -1 after 0 usecs?
+[    0.841601] calling  register_xor_blocks+0x0/0xa0 @ 1?
+[    0.842601] initcall register_xor_blocks+0x0/0xa0 returned 0 after 0 usecs?
+[    0.843601] calling  prandom_state_selftest+0x0/0x110 @ 1?
+[    0.844602] prandom: seed boundary self test passed?
+[    0.846982] prandom: 100 self tests passed?
+[    0.847601] initcall prandom_state_selftest+0x0/0x110 returned 0 after 3000 usecs?
+[    0.848601] calling  iommu_init+0x0/0x30 @ 1?
+[    0.849605] initcall iommu_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.850601] calling  component_debug_init+0x0/0x30 @ 1?
+[    0.851601] initcall component_debug_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.852601] calling  cpufreq_core_init+0x0/0x90 @ 1?
+[    0.853606] initcall cpufreq_core_init+0x0/0x90 returned 0 after 0 usecs?
+[    0.854602] calling  cpufreq_gov_performance_init+0x0/0x20 @ 1?
+[    0.855601] initcall cpufreq_gov_performance_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.856602] calling  cpuidle_init+0x0/0x30 @ 1?
+[    0.857610] initcall cpuidle_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.858601] calling  sock_init+0x0/0xb0 @ 1?
+[    0.859649] initcall sock_init+0x0/0xb0 returned 0 after 0 usecs?
+[    0.860602] calling  net_inuse_init+0x0/0x30 @ 1?
+[    0.861605] initcall net_inuse_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.862601] calling  sock_struct_check+0x0/0x10 @ 1?
+[    0.863601] initcall sock_struct_check+0x0/0x10 returned 0 after 0 usecs?
+[    0.864601] calling  init_default_flow_dissectors+0x0/0x60 @ 1?
+[    0.865602] initcall init_default_flow_dissectors+0x0/0x60 returned 0 after 0 usecs?
+[    0.866601] calling  netlink_proto_init+0x0/0x130 @ 1?
+[    0.867741] NET: Registered PF_NETLINK/PF_ROUTE protocol family?
+[    0.868624] initcall netlink_proto_init+0x0/0x130 returned 0 after 1000 usecs?
+[    0.869603] calling  genl_init+0x0/0x40 @ 1?
+[    0.870610] initcall genl_init+0x0/0x40 returned 0 after 0 usecs?
+[    0.871650] calling  irq_sysfs_init+0x0/0xf0 @ 1?
+[    0.873607] initcall irq_sysfs_init+0x0/0xf0 returned 0 after 0 usecs?
+[    0.874601] calling  audit_init+0x0/0x190 @ 1?
+[    0.875604] audit: initializing netlink subsys (disabled)?
+[    0.876627] initcall audit_init+0x0/0x190 returned 0 after 1000 usecs?
+[    0.876627] audit: type=2000 audit(0.186:1): state=initialized audit_enabled=0 res=1?
+[    0.877602] calling  bdi_class_init+0x0/0x40 @ 1?
+[    0.879609] initcall bdi_class_init+0x0/0x40 returned 0 after 0 usecs?
+[    0.880601] calling  mm_sysfs_init+0x0/0x30 @ 1?
+[    0.881604] initcall mm_sysfs_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.882601] calling  init_per_zone_wmark_min+0x0/0x30 @ 1?
+[    0.883610] initcall init_per_zone_wmark_min+0x0/0x30 returned 0 after 0 usecs?
+[    0.884601] calling  pcibus_class_init+0x0/0x20 @ 1?
+[    0.885608] initcall pcibus_class_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.886603] calling  pci_driver_init+0x0/0x30 @ 1?
+[    0.887631] initcall pci_driver_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.888601] calling  backlight_class_init+0x0/0x60 @ 1?
+[    0.889608] initcall backlight_class_init+0x0/0x60 returned 0 after 0 usecs?
+[    0.890601] calling  tty_class_init+0x0/0x20 @ 1?
+[    0.891608] initcall tty_class_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.893601] calling  vtconsole_class_init+0x0/0xa0 @ 1?
+[    0.894631] initcall vtconsole_class_init+0x0/0xa0 returned 0 after 0 usecs?
+[    0.895603] calling  iommu_dev_init+0x0/0x20 @ 1?
+[    0.896608] initcall iommu_dev_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.897601] calling  devlink_class_init+0x0/0x40 @ 1?
+[    0.898609] initcall devlink_class_init+0x0/0x40 returned 0 after 0 usecs?
+[    0.899601] calling  software_node_init+0x0/0x30 @ 1?
+[    0.900604] initcall software_node_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.901601] calling  regmap_initcall+0x0/0x20 @ 1?
+[    0.902601] initcall regmap_initcall+0x0/0x20 returned 0 after 0 usecs?
+[    0.903602] calling  i2c_init+0x0/0xa0 @ 1?
+[    0.904629] i2c-core: driver [dummy] registered?
+[    0.905605] initcall i2c_init+0x0/0xa0 returned 0 after 1000 usecs?
+[    0.906601] calling  thermal_init+0x0/0x140 @ 1?
+[    0.907607] thermal_sys: Registered thermal governor 'step_wise'?
+[    0.907618] initcall thermal_init+0x0/0x140 returned 0 after 0 usecs?
+[    0.910601] calling  init_ladder+0x0/0x30 @ 1?
+[    0.911618] cpuidle: using governor ladder?
+[    0.913600] initcall init_ladder+0x0/0x30 returned 0 after 2000 usecs?
+[    0.914601] calling  init_menu+0x0/0x20 @ 1?
+[    0.916610] cpuidle: using governor menu?
+[    0.917601] initcall init_menu+0x0/0x20 returned 0 after 1000 usecs?
+[    0.918601] calling  pcc_init+0x0/0xa0 @ 1?
+[    0.919605] initcall pcc_init+0x0/0xa0 returned -19 after 0 usecs?
+[    0.920601] calling  amd_postcore_init+0x0/0x130 @ 1?
+[    0.922623] initcall amd_postcore_init+0x0/0x130 returned 0 after 1000 usecs?
+[    0.923603] calling  kobject_uevent_init+0x0/0x20 @ 1?
+[    0.924606] initcall kobject_uevent_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.925649] calling  init_x86_sysctl+0x0/0x30 @ 1?
+[    0.926609] initcall init_x86_sysctl+0x0/0x30 returned 0 after 0 usecs?
+[    0.927603] calling  boot_params_ksysfs_init+0x0/0x2b0 @ 1?
+[    0.928608] initcall boot_params_ksysfs_init+0x0/0x2b0 returned 0 after 0 usecs?
+[    0.929601] calling  sbf_init+0x0/0xf0 @ 1?
+[    0.930601] initcall sbf_init+0x0/0xf0 returned 0 after 0 usecs?
+[    0.931601] calling  arch_kdebugfs_init+0x0/0x200 @ 1?
+[    0.932602] initcall arch_kdebugfs_init+0x0/0x200 returned 0 after 0 usecs?
+[    0.933601] calling  xfd_update_static_branch+0x0/0x30 @ 1?
+[    0.934601] initcall xfd_update_static_branch+0x0/0x30 returned 0 after 0 usecs?
+[    0.935601] calling  mtrr_if_init+0x0/0x60 @ 1?
+[    0.936603] initcall mtrr_if_init+0x0/0x60 returned 0 after 0 usecs?
+[    0.937601] calling  ffh_cstate_init+0x0/0x50 @ 1?
+[    0.938604] initcall ffh_cstate_init+0x0/0x50 returned 0 after 0 usecs?
+[    0.939601] calling  kcmp_cookies_init+0x0/0x40 @ 1?
+[    0.940610] initcall kcmp_cookies_init+0x0/0x40 returned 0 after 0 usecs?
+[    0.941602] calling  cryptomgr_init+0x0/0x20 @ 1?
+[    0.942602] initcall cryptomgr_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.943601] calling  crc32_x86_init+0x0/0xd0 @ 1?
+[    0.944781] initcall crc32_x86_init+0x0/0xd0 returned 0 after 0 usecs?
+[    0.945601] calling  acpi_pci_init+0x0/0x40 @ 1?
+[    0.946602] initcall acpi_pci_init+0x0/0x40 returned 0 after 0 usecs?
+[    0.947601] calling  serial_base_init+0x0/0x60 @ 1?
+[    0.948642] initcall serial_base_init+0x0/0x60 returned 0 after 0 usecs?
+[    0.949602] calling  iommu_dma_init+0x0/0x30 @ 1?
+[    0.951607] initcall iommu_dma_init+0x0/0x30 returned 0 after 1000 usecs?
+[    0.952601] calling  dmi_id_init+0x0/0x370 @ 1?
+[    0.953635] initcall dmi_id_init+0x0/0x370 returned 0 after 0 usecs?
+[    0.954601] calling  pci_arch_init+0x0/0x80 @ 1?
+[    0.955614] PCI: ECAM [mem 0xf8000000-0xfbffffff] (base 0xf8000000) for domain 0000 [bus 00-3f]?
+[    0.956620] PCI: Using configuration type 1 for base access?
+[    0.957604] initcall pci_arch_init+0x0/0x80 returned 0 after 2000 usecs?
+[    0.958649] calling  init_vdso_image_64+0x0/0x20 @ 1?
+[    0.959618] initcall init_vdso_image_64+0x0/0x20 returned 0 after 0 usecs?
+[    0.960603] calling  init_vdso_image_32+0x0/0x20 @ 1?
+[    0.961619] initcall init_vdso_image_32+0x0/0x20 returned 0 after 0 usecs?
+[    0.962601] calling  mtrr_init_finalize+0x0/0x40 @ 1?
+[    0.963602] initcall mtrr_init_finalize+0x0/0x40 returned 0 after 0 usecs?
+[    0.964601] calling  blake2s_mod_init+0x0/0x70 @ 1?
+[    0.965683] initcall blake2s_mod_init+0x0/0x70 returned 0 after 0 usecs?
+[    0.966601] calling  uid_cache_init+0x0/0xe0 @ 1?
+[    0.967609] initcall uid_cache_init+0x0/0xe0 returned 0 after 0 usecs?
+[    0.968601] calling  pid_namespace_sysctl_init+0x0/0x20 @ 1?
+[    0.969607] initcall pid_namespace_sysctl_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.970601] calling  param_sysfs_init+0x0/0x50 @ 1?
+[    0.971605] initcall param_sysfs_init+0x0/0x50 returned 0 after 0 usecs?
+[    0.972601] calling  user_namespace_sysctl_init+0x0/0xc0 @ 1?
+[    0.973621] initcall user_namespace_sysctl_init+0x0/0xc0 returned 0 after 0 usecs?
+[    0.974601] calling  pm_sysrq_init+0x0/0x20 @ 1?
+[    0.975610] initcall pm_sysrq_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.976605] calling  crash_save_vmcoreinfo_init+0x0/0x680 @ 1?
+[    0.977666] initcall crash_save_vmcoreinfo_init+0x0/0x680 returned 0 after 0 usecs?
+[    0.978601] calling  crash_notes_memory_init+0x0/0x50 @ 1?
+[    0.979605] initcall crash_notes_memory_init+0x0/0x50 returned 0 after 0 usecs?
+[    0.980601] calling  crash_hotplug_init+0x0/0x30 @ 1?
+[    0.981601] initcall crash_hotplug_init+0x0/0x30 returned 64 after 0 usecs?
+[    0.982601] calling  cgroup_sysfs_init+0x0/0x20 @ 1?
+[    0.983607] initcall cgroup_sysfs_init+0x0/0x20 returned 0 after 0 usecs?
+[    0.984601] calling  user_namespaces_init+0x0/0x50 @ 1?
+[    0.985606] initcall user_namespaces_init+0x0/0x50 returned 0 after 0 usecs?
+[    0.986601] calling  oom_init+0x0/0x60 @ 1?
+[    0.988629] initcall oom_init+0x0/0x60 returned 0 after 0 usecs?
+[    0.989603] calling  init_user_buckets+0x0/0x30 @ 1?
+[    0.990601] initcall init_user_buckets+0x0/0x30 returned 0 after 0 usecs?
+[    0.991602] calling  init_vm_util_sysctls+0x0/0x30 @ 1?
+[    0.992606] initcall init_vm_util_sysctls+0x0/0x30 returned 0 after 0 usecs?
+[    0.993601] calling  default_bdi_init+0x0/0x30 @ 1?
+[    0.994639] initcall default_bdi_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.995603] calling  cgwb_init+0x0/0x30 @ 1?
+[    0.996608] initcall cgwb_init+0x0/0x30 returned 0 after 0 usecs?
+[    0.997601] calling  percpu_enable_async+0x0/0x10 @ 1?
+[    0.998601] initcall percpu_enable_async+0x0/0x10 returned 0 after 0 usecs?
+[    0.999601] calling  kcompactd_init+0x0/0x90 @ 1?
+[    1.000626] initcall kcompactd_init+0x0/0x90 returned 0 after 0 usecs?
+[    1.001603] calling  init_user_reserve+0x0/0x40 @ 1?
+[    1.002601] initcall init_user_reserve+0x0/0x40 returned 0 after 0 usecs?
+[    1.003602] calling  init_admin_reserve+0x0/0x40 @ 1?
+[    1.004601] initcall init_admin_reserve+0x0/0x40 returned 0 after 0 usecs?
+[    1.005601] calling  init_reserve_notifier+0x0/0x10 @ 1?
+[    1.006601] initcall init_reserve_notifier+0x0/0x10 returned 0 after 0 usecs?
+[    1.007601] calling  swap_init_sysfs+0x0/0x70 @ 1?
+[    1.008607] initcall swap_init_sysfs+0x0/0x70 returned 0 after 0 usecs?
+[    1.009601] calling  swapfile_init+0x0/0xd0 @ 1?
+[    1.010602] initcall swapfile_init+0x0/0xd0 returned 0 after 0 usecs?
+[    1.011601] calling  hugetlb_init+0x0/0x4e0 @ 1?
+[    1.012604] HugeTLB: allocation took 0ms with hugepage_allocation_threads=2?
+[    1.013654] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages?
+[    1.014601] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page?
+[    1.015650] initcall hugetlb_init+0x0/0x4e0 returned 0 after 3000 usecs?
+[    1.016602] calling  ksm_init+0x0/0x1d0 @ 1?
+[    1.018646] initcall ksm_init+0x0/0x1d0 returned 0 after 0 usecs?
+[    1.019603] calling  memory_tier_init+0x0/0xc0 @ 1?
+[    1.020628] initcall memory_tier_init+0x0/0xc0 returned 0 after 0 usecs?
+[    1.021602] calling  numa_init_sysfs+0x0/0x70 @ 1?
+[    1.022606] initcall numa_init_sysfs+0x0/0x70 returned 0 after 0 usecs?
+[    1.023601] calling  hugepage_init+0x0/0x340 @ 1?
+[    1.024911] initcall hugepage_init+0x0/0x340 returned 0 after 0 usecs?
+[    1.025603] calling  mem_cgroup_init+0x0/0xb0 @ 1?
+[    1.026602] initcall mem_cgroup_init+0x0/0xb0 returned 0 after 0 usecs?
+[    1.027601] calling  mem_cgroup_swap_init+0x0/0x30 @ 1?
+[    1.028604] initcall mem_cgroup_swap_init+0x0/0x30 returned 0 after 0 usecs?
+[    1.030601] calling  init_msg_buckets+0x0/0x30 @ 1?
+[    1.031601] initcall init_msg_buckets+0x0/0x30 returned 0 after 0 usecs?
+[    1.032601] calling  seqiv_module_init+0x0/0x20 @ 1?
+[    1.033601] initcall seqiv_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.034601] calling  rsa_init+0x0/0x60 @ 1?
+[    1.035603] initcall rsa_init+0x0/0x60 returned 0 after 0 usecs?
+[    1.036602] calling  crypto_cmac_module_init+0x0/0x20 @ 1?
+[    1.037601] initcall crypto_cmac_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.038601] calling  hmac_module_init+0x0/0x20 @ 1?
+[    1.039601] initcall hmac_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.040601] calling  crypto_null_mod_init+0x0/0x60 @ 1?
+[    1.041604] initcall crypto_null_mod_init+0x0/0x60 returned 0 after 0 usecs?
+[    1.042601] calling  md5_mod_init+0x0/0x20 @ 1?
+[    1.043602] initcall md5_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.044601] calling  sha1_generic_mod_init+0x0/0x20 @ 1?
+[    1.045602] initcall sha1_generic_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.046602] calling  sha256_generic_mod_init+0x0/0x20 @ 1?
+[    1.047604] initcall sha256_generic_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.048601] calling  sha512_generic_mod_init+0x0/0x20 @ 1?
+[    1.049603] initcall sha512_generic_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.050601] calling  sha3_generic_mod_init+0x0/0x20 @ 1?
+[    1.051607] initcall sha3_generic_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.052602] calling  wp512_mod_init+0x0/0x20 @ 1?
+[    1.053604] initcall wp512_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.054601] calling  blake2b_mod_init+0x0/0x20 @ 1?
+[    1.055608] initcall blake2b_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.056601] calling  crypto_ecb_module_init+0x0/0x20 @ 1?
+[    1.057601] initcall crypto_ecb_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.058601] calling  crypto_cbc_module_init+0x0/0x20 @ 1?
+[    1.059601] initcall crypto_cbc_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.060601] calling  lrw_module_init+0x0/0x20 @ 1?
+[    1.061601] initcall lrw_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.062601] calling  xts_module_init+0x0/0x20 @ 1?
+[    1.063601] initcall xts_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.064601] calling  crypto_ctr_module_init+0x0/0x20 @ 1?
+[    1.065601] initcall crypto_ctr_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.066601] calling  crypto_gcm_module_init+0x0/0x70 @ 1?
+[    1.067602] initcall crypto_gcm_module_init+0x0/0x70 returned 0 after 0 usecs?
+[    1.068602] calling  crypto_ccm_module_init+0x0/0x20 @ 1?
+[    1.069601] initcall crypto_ccm_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.070601] calling  cryptd_init+0x0/0x120 @ 1?
+[    1.071627] cryptd: max_cpu_qlen set to 1000?
+[    1.072603] initcall cryptd_init+0x0/0x120 returned 0 after 1000 usecs?
+[    1.073601] calling  des_generic_mod_init+0x0/0x20 @ 1?
+[    1.074605] initcall des_generic_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.075601] calling  aes_init+0x0/0x20 @ 1?
+[    1.076602] initcall aes_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.077601] calling  arc4_init+0x0/0x20 @ 1?
+[    1.078603] initcall arc4_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.079601] calling  deflate_mod_init+0x0/0x20 @ 1?
+[    1.080603] initcall deflate_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.081601] calling  crc32c_mod_init+0x0/0x30 @ 1?
+[    1.082605] initcall crc32c_mod_init+0x0/0x30 returned 0 after 0 usecs?
+[    1.083602] calling  crc32_mod_init+0x0/0x30 @ 1?
+[    1.084606] initcall crc32_mod_init+0x0/0x30 returned 0 after 0 usecs?
+[    1.085601] calling  crypto_authenc_module_init+0x0/0x20 @ 1?
+[    1.086601] initcall crypto_authenc_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.087601] calling  crypto_authenc_esn_module_init+0x0/0x20 @ 1?
+[    1.088601] initcall crypto_authenc_esn_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.089601] calling  xxhash_mod_init+0x0/0x20 @ 1?
+[    1.090603] initcall xxhash_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.091601] calling  prng_mod_init+0x0/0x20 @ 1?
+[    1.092603] initcall prng_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.093601] calling  drbg_init+0x0/0x90 @ 1?
+[    1.094619] initcall drbg_init+0x0/0x90 returned 0 after 0 usecs?
+[    1.095601] calling  ghash_mod_init+0x0/0x20 @ 1?
+[    1.096603] initcall ghash_mod_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.097602] calling  essiv_module_init+0x0/0x20 @ 1?
+[    1.098601] initcall essiv_module_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.099602] calling  ecdh_init+0x0/0x70 @ 1?
+[    1.100609] initcall ecdh_init+0x0/0x70 returned 0 after 0 usecs?
+[    1.101601] calling  init_bio+0x0/0xb0 @ 1?
+[    1.102630] initcall init_bio+0x0/0xb0 returned 0 after 0 usecs?
+[    1.103601] calling  blk_ioc_init+0x0/0x50 @ 1?
+[    1.104607] initcall blk_ioc_init+0x0/0x50 returned 0 after 0 usecs?
+[    1.105601] calling  blk_mq_init+0x0/0x130 @ 1?
+[    1.106603] initcall blk_mq_init+0x0/0x130 returned 0 after 0 usecs?
+[    1.107601] calling  genhd_device_init+0x0/0x50 @ 1?
+[    1.108627] initcall genhd_device_init+0x0/0x50 returned 0 after 0 usecs?
+[    1.109604] calling  blkcg_punt_bio_init+0x0/0x30 @ 1?
+[    1.110636] initcall blkcg_punt_bio_init+0x0/0x30 returned 0 after 0 usecs?
+[    1.111604] calling  raid6_select_algo+0x0/0x2e0 @ 1?
+[    1.129603] raid6: sse2x4   gen()  4048 MB/s?
+[    1.147603] raid6: sse2x2   gen()  3944 MB/s?
+[    1.165601] raid6: sse2x1   gen()  3188 MB/s?
+[    1.166601] raid6: using algorithm sse2x4 gen() 4048 MB/s?
+[    1.184602] raid6: .... xor() 2019 MB/s, rmw enabled?
+[    1.185602] raid6: using ssse3x2 recovery algorithm?
+[    1.186603] initcall raid6_select_algo+0x0/0x2e0 returned 0 after 74000 usecs?
+[    1.187601] calling  sg_pool_init+0x0/0xf0 @ 1?
+[    1.188618] initcall sg_pool_init+0x0/0xf0 returned 0 after 0 usecs?
+[    1.189601] calling  leds_init+0x0/0x50 @ 1?
+[    1.190618] initcall leds_init+0x0/0x50 returned 0 after 0 usecs?
+[    1.191602] calling  pci_slot_init+0x0/0x40 @ 1?
+[    1.192605] initcall pci_slot_init+0x0/0x40 returned 0 after 0 usecs?
+[    1.193601] calling  fbmem_init+0x0/0x80 @ 1?
+[    1.194641] initcall fbmem_init+0x0/0x80 returned 0 after 0 usecs?
+[    1.195602] calling  acpi_init+0x0/0x480 @ 1?
+[    1.196635] ACPI: Added _OSI(Module Device)?
+[    1.197602] ACPI: Added _OSI(Processor Device)?
+[    1.198602] ACPI: Added _OSI(Processor Aggregator Device)?
+[    1.201469] ACPI: 2 ACPI AML tables successfully acquired and loaded?
+[    1.206697] ACPI: OSL: SCI (IRQ9) allocation failed?
+[    1.207603] ACPI Error: AE_NOT_ACQUIRED, Unable to install System Control Interrupt handler (20240827/evevent-96)?
+[    1.208601] ACPI: Unable to start the ACPI Interpreter?
+[    1.209602] ACPI Error: Could not remove SCI handler (20240827/evmisc-251)?
+[    1.210924] initcall acpi_init+0x0/0x480 returned -19 after 14000 usecs?
+[    1.211603] calling  pnp_init+0x0/0x20 @ 1?
+[    1.212620] initcall pnp_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.213602] calling  misc_init+0x0/0xa0 @ 1?
+[    1.214612] initcall misc_init+0x0/0xa0 returned 0 after 0 usecs?
+[    1.215602] calling  iommu_subsys_init+0x0/0x110 @ 1?
+[    1.216601] iommu: Default domain type: Passthrough (set via kernel command line)?
+[    1.217603] initcall iommu_subsys_init+0x0/0x110 returned 0 after 1000 usecs?
+[    1.218601] calling  cn_init+0x0/0xd0 @ 1?
+[    1.219611] initcall cn_init+0x0/0xd0 returned 0 after 0 usecs?
+[    1.220601] calling  dax_core_init+0x0/0xe0 @ 1?
+[    1.221658] initcall dax_core_init+0x0/0xe0 returned 0 after 0 usecs?
+[    1.222602] calling  dma_buf_init+0x0/0xa0 @ 1?
+[    1.224618] initcall dma_buf_init+0x0/0xa0 returned 0 after 1000 usecs?
+[    1.225603] calling  init_scsi+0x0/0x80 @ 1?
+[    1.227648] SCSI subsystem initialized?
+[    1.228601] initcall init_scsi+0x0/0x80 returned 0 after 2000 usecs?
+[    1.229618] calling  ata_init+0x0/0x2d0 @ 1?
+[    1.230638] libata version 3.00 loaded.?
+[    1.231601] initcall ata_init+0x0/0x2d0 returned 0 after 1000 usecs?
+[    1.232601] calling  phy_init+0x0/0x1f0 @ 1?
+[    1.233655] initcall phy_init+0x0/0x1f0 returned 0 after 0 usecs?
+[    1.234602] calling  usb_common_init+0x0/0x30 @ 1?
+[    1.235601] initcall usb_common_init+0x0/0x30 returned 0 after 0 usecs?
+[    1.236601] calling  usb_init+0x0/0x160 @ 1?
+[    1.237651] usbcore: registered new interface driver usbfs?
+[    1.238624] usbcore: registered new interface driver hub?
+[    1.239624] usbcore: registered new device driver usb?
+[    1.240602] initcall usb_init+0x0/0x160 returned 0 after 3000 usecs?
+[    1.241601] calling  serio_init+0x0/0x30 @ 1?
+[    1.242617] initcall serio_init+0x0/0x30 returned 0 after 0 usecs?
+[    1.243601] calling  input_init+0x0/0xf0 @ 1?
+[    1.244613] initcall input_init+0x0/0xf0 returned 0 after 0 usecs?
+[    1.245601] calling  cec_devnode_init+0x0/0xb0 @ 1?
+[    1.246601] cec: Failed to create debugfs cec dir?
+[    1.247617] initcall cec_devnode_init+0x0/0xb0 returned 0 after 1000 usecs?
+[    1.248601] calling  power_supply_class_init+0x0/0x20 @ 1?
+[    1.249614] initcall power_supply_class_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.250603] calling  hwmon_init+0x0/0xd0 @ 1?
+[    1.251609] initcall hwmon_init+0x0/0xd0 returned 0 after 0 usecs?
+[    1.252601] calling  mmc_init+0x0/0x40 @ 1?
+[    1.253638] initcall mmc_init+0x0/0x40 returned 0 after 0 usecs?
+[    1.254602] calling  dmi_init+0x0/0x120 @ 1?
+[    1.255617] initcall dmi_init+0x0/0x120 returned 0 after 0 usecs?
+[    1.256601] calling  ras_init+0x0/0x20 @ 1?
+[    1.257601] initcall ras_init+0x0/0x20 returned -19 after 0 usecs?
+[    1.258601] calling  nvmem_init+0x0/0x20 @ 1?
+[    1.259617] initcall nvmem_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.260602] calling  init_soundcore+0x0/0x80 @ 1?
+[    1.261609] initcall init_soundcore+0x0/0x80 returned 0 after 0 usecs?
+[    1.262601] calling  alsa_sound_init+0x0/0xa0 @ 1?
+[    1.263617] Advanced Linux Sound Architecture Driver Initialized.?
+[    1.264601] initcall alsa_sound_init+0x0/0xa0 returned 0 after 1000 usecs?
+[    1.266601] calling  alsa_seq_device_init+0x0/0x80 @ 1?
+[    1.267622] initcall alsa_seq_device_init+0x0/0x80 returned 0 after 0 usecs?
+[    1.268602] calling  hda_bus_init+0x0/0x20 @ 1?
+[    1.269617] initcall hda_bus_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.270602] calling  proto_init+0x0/0x20 @ 1?
+[    1.271606] initcall proto_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.272602] calling  net_dev_init+0x0/0x320 @ 1?
+[    1.273834] initcall net_dev_init+0x0/0x320 returned 0 after 0 usecs?
+[    1.274602] calling  neigh_init+0x0/0x20 @ 1?
+[    1.275603] initcall neigh_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.276601] calling  fib_notifier_init+0x0/0x20 @ 1?
+[    1.277603] initcall fib_notifier_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.278601] calling  netdev_genl_init+0x0/0x40 @ 1?
+[    1.279622] initcall netdev_genl_init+0x0/0x40 returned 0 after 0 usecs?
+[    1.280601] calling  page_pool_user_init+0x0/0x20 @ 1?
+[    1.281602] initcall page_pool_user_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.282601] calling  ethnl_init+0x0/0x60 @ 1?
+[    1.283660] initcall ethnl_init+0x0/0x60 returned 0 after 0 usecs?
+[    1.284601] calling  nexthop_init+0x0/0x40 @ 1?
+[    1.285608] initcall nexthop_init+0x0/0x40 returned 0 after 0 usecs?
+[    1.286602] calling  bt_init+0x0/0xc0 @ 1?
+[    1.288601] Bluetooth: Core ver 2.22?
+[    1.289612] NET: Registered PF_BLUETOOTH protocol family?
+[    1.290601] Bluetooth: HCI device and connection manager initialized?
+[    1.291604] Bluetooth: HCI socket layer initialized?
+[    1.292603] Bluetooth: L2CAP socket layer initialized?
+[    1.293604] Bluetooth: SCO socket layer initialized?
+[    1.294601] initcall bt_init+0x0/0xc0 returned 0 after 6000 usecs?
+[    1.295601] calling  wireless_nlevent_init+0x0/0x40 @ 1?
+[    1.296604] initcall wireless_nlevent_init+0x0/0x40 returned 0 after 0 usecs?
+[    1.297601] calling  rfkill_init+0x0/0x110 @ 1?
+[    1.299626] initcall rfkill_init+0x0/0x110 returned 0 after 1000 usecs?
+[    1.300604] calling  pci_subsys_init+0x0/0x70 @ 1?
+[    1.301602] PCI: Probing PCI hardware?
+[    1.302602] PCI: root bus 00: using default resources?
+[    1.303601] PCI: Probing PCI hardware (bus 00)?
+[    1.304639] PCI host bridge to bus 0000:00?
+[    1.305604] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]?
+[    1.306602] pci_bus 0000:00: root bus resource [mem 0x00000000-0xffffffffff]?
+[    1.307602] pci_bus 0000:00: No busn resource found for root bus, will use [bus 00-ff]?
+[    1.308617] pci 0000:00:00.0: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.309602] pci 0000:00:00.0: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.310603] pci 0000:00:00.0: [1022:1436] type 00 class 0x060000 conventional PCI endpoint?
+[    1.311722] pci 0000:00:00.2: [1022:1437] type 00 class 0x080600 conventional PCI endpoint?
+[    1.312726] pci 0000:00:01.0: [1002:9923] type 00 class 0x030000 PCIe Root Complex Integrated Endpoint?
+[    1.314621] pci 0000:00:01.0: BAR 0 [mem 0xe0000000-0xe3ffffff 64bit pref]?
+[    1.315605] pci 0000:00:01.0: BAR 2 [mem 0xe4000000-0xe47fffff 64bit pref]?
+[    1.316602] pci 0000:00:01.0: BAR 4 [io  0x6000-0x60ff]?
+[    1.317602] pci 0000:00:01.0: BAR 5 [mem 0xe4800000-0xe483ffff]?
+[    1.318602] pci 0000:00:01.0: ROM [mem 0x00000000-0x0001ffff pref]?
+[    1.319606] pci 0000:00:01.0: enabling Extended Tags?
+[    1.320609] pci 0000:00:01.0: calling  quirk_no_pm_reset+0x0/0x20 @ 1?
+[    1.321602] pci 0000:00:01.0: quirk_no_pm_reset+0x0/0x20 took 0 usecs?
+[    1.322602] pci 0000:00:01.0: calling  screen_info_fixup_lfb+0x0/0x170 @ 1?
+[    1.323602] pci 0000:00:01.0: screen_info_fixup_lfb+0x0/0x170 took 0 usecs?
+[    1.324601] pci 0000:00:01.0: calling  pci_fixup_video+0x0/0xc0 @ 1?
+[    1.325604] pci 0000:00:01.0: Video device with shadowed ROM at [mem 0x000c0000-0x000dffff]?
+[    1.326601] pci 0000:00:01.0: pci_fixup_video+0x0/0xc0 took 976 usecs?
+[    1.327622] pci 0000:00:01.0: supports D1 D2?
+[    1.328601] pci 0000:00:01.0: PME# supported from D1 D2 D3hot?
+[    1.329698] pci 0000:00:01.1: [1002:9921] type 00 class 0x040300 PCIe Root Complex Integrated Endpoint?
+[    1.330622] pci 0000:00:01.1: BAR 0 [mem 0xe4840000-0xe4843fff 64bit]?
+[    1.331608] pci 0000:00:01.1: enabling Extended Tags?
+[    1.332627] pci 0000:00:01.1: supports D1 D2?
+[    1.333702] pci 0000:00:02.0: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.334602] pci 0000:00:02.0: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.335603] pci 0000:00:02.0: [1022:1438] type 00 class 0x060000 conventional PCI endpoint?
+[    1.336729] pci 0000:00:14.0: [104d:90d7] type 00 class 0x088000 PCIe Endpoint?
+[    1.338638] pci 0000:00:14.0: BAR 0 [mem 0xfdf8000000-0xfdf9ffffff 64bit]?
+[    1.339603] pci 0000:00:14.0: BAR 2 [io  0x1000-0x13ff]?
+[    1.340795] pci 0000:00:14.1: [104d:90d8] type 00 class 0x088001 PCIe Endpoint?
+[    1.341642] pci 0000:00:14.1: BAR 0 [mem 0xc2000000-0xc2000fff 64bit]?
+[    1.342791] pci 0000:00:14.2: [104d:90d9] type 00 class 0x088002 PCIe Endpoint?
+[    1.343642] pci 0000:00:14.2: BAR 0 [mem 0xc4000000-0xc4007fff 64bit]?
+[    1.344792] pci 0000:00:14.3: [104d:90da] type 00 class 0x088003 PCIe Endpoint?
+[    1.345642] pci 0000:00:14.3: BAR 0 [mem 0xc6000000-0xc6000fff 64bit]?
+[    1.346790] pci 0000:00:14.4: [104d:90db] type 00 class 0x088004 PCIe Endpoint?
+[    1.347642] pci 0000:00:14.4: BAR 0 [mem 0xc8000000-0xc8001fff 64bit]?
+[    1.348604] pci 0000:00:14.4: BAR 2 [mem 0xc8800000-0xc89fffff 64bit]?
+[    1.349604] pci 0000:00:14.4: BAR 4 [mem 0xc9000000-0xc91fffff 64bit]?
+[    1.350785] pci 0000:00:14.5: [104d:90dc] type 00 class 0x088005 PCIe Endpoint?
+[    1.351642] pci 0000:00:14.5: BAR 0 [mem 0xca000000-0xca000fff 64bit]?
+[    1.352604] pci 0000:00:14.5: BAR 2 [mem 0xca800000-0xca800fff 64bit]?
+[    1.354611] pci 0000:00:14.6: [104d:90dd] type 00 class 0x088006 PCIe Endpoint?
+[    1.355641] pci 0000:00:14.6: BAR 0 [mem 0xcc000000-0xcc000fff 64bit]?
+[    1.356604] pci 0000:00:14.6: BAR 2 [mem 0x80000000-0xbfffffff 64bit]?
+[    1.358603] pci 0000:00:14.6: BAR 4 [mem 0xcd000000-0xcd0fffff]?
+[    1.359603] pci 0000:00:14.6: BAR 5 [mem 0xcd400000-0xcd43ffff]?
+[    1.360784] pci 0000:00:14.7: [104d:90de] type 00 class 0x088007 PCIe Endpoint?
+[    1.361642] pci 0000:00:14.7: BAR 0 [mem 0xce000000-0xce3fffff 64bit]?
+[    1.362604] pci 0000:00:14.7: BAR 2 [mem 0xce800000-0xce80ffff 64bit]?
+[    1.363604] pci 0000:00:14.7: BAR 4 [mem 0xcf000000-0xcf7fffff 64bit]?
+[    1.365707] pci 0000:00:18.0: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.366602] pci 0000:00:18.0: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.367602] pci 0000:00:18.0: [1022:142e] type 00 class 0x060000 conventional PCI endpoint?
+[    1.368699] pci 0000:00:18.1: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.369602] pci 0000:00:18.1: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.370602] pci 0000:00:18.1: [1022:142f] type 00 class 0x060000 conventional PCI endpoint?
+[    1.372696] pci 0000:00:18.2: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.373602] pci 0000:00:18.2: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.374603] pci 0000:00:18.2: [1022:1430] type 00 class 0x060000 conventional PCI endpoint?
+[    1.375696] pci 0000:00:18.3: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.376602] pci 0000:00:18.3: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.377602] pci 0000:00:18.3: [1022:1431] type 00 class 0x060000 conventional PCI endpoint?
+[    1.378702] pci 0000:00:18.4: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.379602] pci 0000:00:18.4: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.380602] pci 0000:00:18.4: [1022:1432] type 00 class 0x060000 conventional PCI endpoint?
+[    1.381695] pci 0000:00:18.5: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.382602] pci 0000:00:18.5: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.383602] pci 0000:00:18.5: [1022:1433] type 00 class 0x060000 conventional PCI endpoint?
+[    1.384695] pci 0000:00:18.6: calling  quirk_mmio_always_on+0x0/0x10 @ 1?
+[    1.385602] pci 0000:00:18.6: quirk_mmio_always_on+0x0/0x10 took 0 usecs?
+[    1.386602] pci 0000:00:18.6: [1022:1434] type 00 class 0x060000 conventional PCI endpoint?
+[    1.387699] pci_bus 0000:00: busn_res: [bus 00-ff] end is updated to 00?
+[    1.391112] PCI: pci_cache_line_size set to 64 bytes?
+[    1.391644] e820: reserve RAM buffer [mem 0x00008000-0x0000ffff]?
+[    1.392602] e820: reserve RAM buffer [mem 0x0009a000-0x0009ffff]?
+[    1.393601] e820: reserve RAM buffer [mem 0x00680000-0x006fffff]?
+[    1.394601] e820: reserve RAM buffer [mem 0x7efe8000-0x7fffffff]?
+[    1.396601] e820: reserve RAM buffer [mem 0x27f000000-0x27fffffff]?
+[    1.397602] initcall pci_subsys_init+0x0/0x70 returned 0 after 96000 usecs?
+[    1.398601] calling  vsprintf_init_hashval+0x0/0x20 @ 1?
+[    1.399601] initcall vsprintf_init_hashval+0x0/0x20 returned 0 after 0 usecs?
+[    1.400601] calling  vga_arb_device_init+0x0/0xa0 @ 1?
+[    1.401629] pci 0000:00:01.0: vgaarb: setting as boot VGA device?
+[    1.402597] pci 0000:00:01.0: vgaarb: bridge control possible?
+[    1.402597] pci 0000:00:01.0: vgaarb: VGA device added: decodes=io+mem,owns=io+mem,locks=none?
+[    1.402610] vgaarb: loaded?
+[    1.403601] initcall vga_arb_device_init+0x0/0xa0 returned 0 after 2000 usecs?
+[    1.404602] calling  acpi_wmi_init+0x0/0x80 @ 1?
+[    1.405601] initcall acpi_wmi_init+0x0/0x80 returned -19 after 0 usecs?
+[    1.406663] calling  nmi_warning_debugfs+0x0/0x30 @ 1?
+[    1.407602] initcall nmi_warning_debugfs+0x0/0x30 returned 0 after 0 usecs?
+[    1.408601] calling  hpet_late_init+0x0/0x310 @ 1?
+[    1.409601] initcall hpet_late_init+0x0/0x310 returned -19 after 0 usecs?
+[    1.410601] calling  init_amd_nbs+0x0/0x280 @ 1?
+[    1.411618] initcall init_amd_nbs+0x0/0x280 returned 0 after 0 usecs?
+[    1.412601] calling  amd_smn_init+0x0/0x1d0 @ 1?
+[    1.413601] initcall amd_smn_init+0x0/0x1d0 returned 0 after 0 usecs?
+[    1.414601] calling  iomem_init_inode+0x0/0x90 @ 1?
+[    1.415625] initcall iomem_init_inode+0x0/0x90 returned 0 after 0 usecs?
+[    1.416601] calling  clocksource_done_booting+0x0/0x50 @ 1?
+[    1.417661] clocksource: Switched to clocksource tsc-early?
+[    1.423198] initcall clocksource_done_booting+0x0/0x50 returned 0 after 5600 usecs?
+[    1.430917] calling  secretmem_init+0x0/0x40 @ 1?
+[    1.435646] initcall secretmem_init+0x0/0x40 returned 0 after 18 usecs?
+[    1.442307] calling  init_fs_stat_sysctls+0x0/0x40 @ 1?
+[    1.447559] initcall init_fs_stat_sysctls+0x0/0x40 returned 0 after 10 usecs?
+[    1.454749] calling  init_fs_exec_sysctls+0x0/0x30 @ 1?
+[    1.459989] initcall init_fs_exec_sysctls+0x0/0x30 returned 0 after 2 usecs?
+[    1.467086] calling  init_pipe_fs+0x0/0x70 @ 1?
+[    1.471638] initcall init_pipe_fs+0x0/0x70 returned 0 after 21 usecs?
+[    1.478118] calling  init_fs_namei_sysctls+0x0/0x30 @ 1?
+[    1.483450] initcall init_fs_namei_sysctls+0x0/0x30 returned 0 after 6 usecs?
+[    1.490641] calling  init_fs_dcache_sysctls+0x0/0x50 @ 1?
+[    1.496063] initcall init_fs_dcache_sysctls+0x0/0x50 returned 0 after 7 usecs?
+[    1.503338] calling  init_fs_namespace_sysctls+0x0/0x30 @ 1?
+[    1.509024] initcall init_fs_namespace_sysctls+0x0/0x30 returned 0 after 2 usecs?
+[    1.516564] calling  cgroup_writeback_init+0x0/0x30 @ 1?
+[    1.521898] initcall cgroup_writeback_init+0x0/0x30 returned 0 after 7 usecs?
+[    1.529085] calling  inotify_user_setup+0x0/0xd0 @ 1?
+[    1.534156] initcall inotify_user_setup+0x0/0xd0 returned 0 after 9 usecs?
+[    1.541079] calling  eventpoll_init+0x0/0x130 @ 1?
+[    1.545881] initcall eventpoll_init+0x0/0x130 returned 0 after 7 usecs?
+[    1.552537] calling  anon_inode_init+0x0/0x70 @ 1?
+[    1.557348] initcall anon_inode_init+0x0/0x70 returned 0 after 16 usecs?
+[    1.564095] calling  proc_locks_init+0x0/0x30 @ 1?
+[    1.568895] initcall proc_locks_init+0x0/0x30 returned 0 after 3 usecs?
+[    1.575550] calling  backing_aio_init+0x0/0x50 @ 1?
+[    1.580439] initcall backing_aio_init+0x0/0x50 returned 0 after 3 usecs?
+[    1.587184] calling  init_fs_coredump_sysctls+0x0/0x30 @ 1?
+[    1.592785] initcall init_fs_coredump_sysctls+0x0/0x30 returned 0 after 7 usecs?
+[    1.600238] calling  init_vm_drop_caches_sysctls+0x0/0x30 @ 1?
+[    1.606100] initcall init_vm_drop_caches_sysctls+0x0/0x30 returned 0 after 3 usecs?
+[    1.613820] calling  iomap_dio_init+0x0/0x30 @ 1?
+[    1.618546] initcall iomap_dio_init+0x0/0x30 returned 0 after 17 usecs?
+[    1.625203] calling  iomap_ioend_init+0x0/0x30 @ 1?
+[    1.630111] initcall iomap_ioend_init+0x0/0x30 returned 0 after 24 usecs?
+[    1.636948] calling  proc_cmdline_init+0x0/0x40 @ 1?
+[    1.641925] initcall proc_cmdline_init+0x0/0x40 returned 0 after 3 usecs?
+[    1.648758] calling  proc_consoles_init+0x0/0x30 @ 1?
+[    1.653822] initcall proc_consoles_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.660743] calling  proc_cpuinfo_init+0x0/0x30 @ 1?
+[    1.665717] initcall proc_cpuinfo_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.672551] calling  proc_devices_init+0x0/0x30 @ 1?
+[    1.677526] initcall proc_devices_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.684359] calling  proc_interrupts_init+0x0/0x30 @ 1?
+[    1.689600] initcall proc_interrupts_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.696698] calling  proc_loadavg_init+0x0/0x30 @ 1?
+[    1.701674] initcall proc_loadavg_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.708506] calling  proc_meminfo_init+0x0/0x30 @ 1?
+[    1.713480] initcall proc_meminfo_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.720312] calling  proc_stat_init+0x0/0x30 @ 1?
+[    1.725023] initcall proc_stat_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.731590] calling  proc_uptime_init+0x0/0x30 @ 1?
+[    1.736477] initcall proc_uptime_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.743221] calling  proc_version_init+0x0/0x30 @ 1?
+[    1.748195] initcall proc_version_init+0x0/0x30 returned 0 after 2 usecs?
+[    1.755027] calling  proc_softirqs_init+0x0/0x30 @ 1?
+[    1.760092] initcall proc_softirqs_init+0x0/0x30 returned 0 after 1 usecs?
+[    1.767013] calling  vmcore_init+0x0/0x4e0 @ 1?
+[    1.771545] initcall vmcore_init+0x0/0x4e0 returned 0 after 0 usecs?
+[    1.777935] calling  proc_kmsg_init+0x0/0x30 @ 1?
+[    1.782646] initcall proc_kmsg_init+0x0/0x30 returned 0 after 4 usecs?
+[    1.789213] calling  proc_page_init+0x0/0x60 @ 1?
+[    1.793926] initcall proc_page_init+0x0/0x60 returned 0 after 4 usecs?
+[    1.800494] calling  init_ramfs_fs+0x0/0x20 @ 1?
+[    1.805113] initcall init_ramfs_fs+0x0/0x20 returned 0 after 1 usecs?
+[    1.811591] calling  init_hugetlbfs_fs+0x0/0x130 @ 1?
+[    1.816679] initcall init_hugetlbfs_fs+0x0/0x130 returned 0 after 26 usecs?
+[    1.823693] calling  dynamic_debug_init_control+0x0/0x90 @ 1?
+[    1.829469] initcall dynamic_debug_init_control+0x0/0x90 returned 0 after 4 usecs?
+[    1.837100] calling  acpi_event_init+0x0/0x40 @ 1?
+[    1.841896] initcall acpi_event_init+0x0/0x40 returned 0 after 0 usecs?
+[    1.848551] calling  pnp_system_init+0x0/0x20 @ 1?
+[    1.853364] initcall pnp_system_init+0x0/0x20 returned 0 after 16 usecs?
+[    1.860111] calling  pnpacpi_init+0x0/0x70 @ 1?
+[    1.864642] pnp: PnP ACPI: disabled?
+[    1.868195] initcall pnpacpi_init+0x0/0x70 returned 0 after 3554 usecs?
+[    1.874851] calling  chr_dev_init+0x0/0x90 @ 1?
+[    1.884174] initcall chr_dev_init+0x0/0x90 returned 0 after 4791 usecs?
+[    1.890835] calling  hwrng_modinit+0x0/0xa0 @ 1?
+[    1.895550] initcall hwrng_modinit+0x0/0xa0 returned 0 after 91 usecs?
+[    1.902122] calling  firmware_class_init+0x0/0x40 @ 1?
+[    1.907275] initcall firmware_class_init+0x0/0x40 returned 0 after 1 usecs?
+[    1.914284] calling  sysctl_core_init+0x0/0x40 @ 1?
+[    1.919197] initcall sysctl_core_init+0x0/0x40 returned 0 after 26 usecs?
+[    1.926031] calling  eth_offload_init+0x0/0x20 @ 1?
+[    1.930918] initcall eth_offload_init+0x0/0x20 returned 0 after 0 usecs?
+[    1.937669] calling  ipv4_offload_init+0x0/0xc0 @ 1?
+[    1.942643] initcall ipv4_offload_init+0x0/0xc0 returned 0 after 1 usecs?
+[    1.949474] calling  inet_init+0x0/0x2c0 @ 1?
+[    1.953852] NET: Registered PF_INET protocol family?
+[    1.959141] IP idents hash table entries: 131072 (order: 8, 1048576 bytes, linear)?
+[    1.970988] tcp_listen_portaddr_hash hash table entries: 4096 (order: 4, 65536 bytes, linear)?
+[    1.979721] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)?
+[    1.987648] TCP established hash table entries: 65536 (order: 7, 524288 bytes, linear)?
+[    1.995992] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)?
+[    2.004157] TCP: Hash tables configured (established 65536 bind 65536)?
+[    2.010934] UDP hash table entries: 4096 (order: 6, 262144 bytes, linear)?
+[    2.017953] UDP-Lite hash table entries: 4096 (order: 6, 262144 bytes, linear)?
+[    2.025485] initcall inet_init+0x0/0x2c0 returned 0 after 71655 usecs?
+[    2.032064] calling  af_unix_init+0x0/0xb0 @ 1?
+[    2.036603] NET: Registered PF_UNIX/PF_LOCAL protocol family?
+[    2.042386] initcall af_unix_init+0x0/0xb0 returned 0 after 5787 usecs?
+[    2.049043] calling  ipv6_offload_init+0x0/0xc0 @ 1?
+[    2.054018] initcall ipv6_offload_init+0x0/0xc0 returned 0 after 2 usecs?
+[    2.060852] calling  init_sunrpc+0x0/0x80 @ 1?
+[    2.065612] RPC: Registered named UNIX socket transport module.?
+[    2.071651] RPC: Registered udp transport module.?
+[    2.076444] RPC: Registered tcp transport module.?
+[    2.081237] RPC: Registered tcp-with-tls transport module.?
+[    2.086827] RPC: Registered tcp NFSv4.1 backchannel transport module.?
+[    2.093390] initcall init_sunrpc+0x0/0x80 returned 0 after 28096 usecs?
+[    2.100052] calling  pcibios_assign_resources+0x0/0xd0 @ 1?
+[    2.105670] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]?
+[    2.111354] pci_bus 0000:00: resource 5 [mem 0x00000000-0xffffffffff]?
+[    2.117922] initcall pcibios_assign_resources+0x0/0xd0 returned 0 after 12275 usecs?
+[    2.125730] calling  pci_apply_final_quirks+0x0/0x110 @ 1?
+[    2.131261] pci 0000:00:01.1: calling  quirk_gpu_hda+0x0/0x20 @ 1?
+[    2.137546] pci 0000:00:01.1: D0 power state depends on 0000:00:01.0?
+[    2.144026] pci 0000:00:01.1: quirk_gpu_hda+0x0/0x20 took 6395 usecs?
+[    2.150515] pci 0000:00:02.0: CLS mismatch (64 != 512), using 64 bytes?
+[    2.157227] initcall pci_apply_final_quirks+0x0/0x110 returned 0 after 25991 usecs?
+[    2.164946] calling  acpi_reserve_resources+0x0/0x100 @ 1?
+[    2.170455] initcall acpi_reserve_resources+0x0/0x100 returned 0 after 3 usecs?
+[    2.177821] calling  populate_rootfs+0x0/0x50 @ 1?
+[    2.182627] initcall populate_rootfs+0x0/0x50 returned 0 after 9 usecs?
+[    2.182942] Trying to unpack rootfs image as initramfs...?
+[    2.189284] calling  pci_iommu_init+0x0/0x40 @ 1?
+[    2.189295] ACPI Error: AE_BAD_PARAMETER, Thread 1074757632 could not acquire Mutex [ACPI_MTX_Tables] (0x2) (20240827/utmutex-252)?
+[    2.211497] ACPI Error: Mutex [ACPI_MTX_Tables] (0x2) is not acquired, cannot release (20240827/utmutex-289)?
+[    2.221543] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)?
+[    2.228117] software IO TLB: mapped [mem 0x000000007afe8000-0x000000007efe8000] (64MB)?
+[    2.236199] initcall pci_iommu_init+0x0/0x40 returned 0 after 46907 usecs?
+[    2.243199] calling  ia32_binfmt_init+0x0/0x30 @ 1?
+[    2.248102] initcall ia32_binfmt_init+0x0/0x30 returned 0 after 7 usecs?
+[    2.254854] calling  amd_ibs_init+0x0/0x370 @ 1?
+[    2.259479] LVT offset 0 assigned for vector 0x400?
+[    2.265667] perf: AMD IBS detected (0x000000ff)?
+[    2.270291] initcall amd_ibs_init+0x0/0x370 returned 0 after 10814 usecs?
+[    2.277133] calling  amd_iommu_pc_init+0x0/0x230 @ 1?
+[    2.282203] initcall amd_iommu_pc_init+0x0/0x230 returned -19 after 0 usecs?
+[    2.289313] calling  msr_init+0x0/0x60 @ 1?
+[    2.293518] initcall msr_init+0x0/0x60 returned 0 after 18 usecs?
+[    2.299652] calling  kvm_x86_init+0x0/0x30 @ 1?
+[    2.304193] initcall kvm_x86_init+0x0/0x30 returned 0 after 2 usecs?
+[    2.310595] calling  svm_init+0x0/0xb0 @ 1?
+[    2.311962] Freeing initrd memory: 4080K?
+[    2.314841] kvm_amd: TSC scaling supported?
+[    2.322982] kvm_amd: Nested Virtualization enabled?
+[    2.327864] kvm_amd: Nested Paging enabled?
+[    2.332038] kvm_amd: LBR virtualization supported?
+[    2.368617] initcall svm_init+0x0/0xb0 returned 0 after 53824 usecs?
+[    2.375024] calling  register_kernel_offset_dumper+0x0/0x20 @ 1?
+[    2.381064] initcall register_kernel_offset_dumper+0x0/0x20 returned 0 after 1 usecs?
+[    2.388960] calling  i8259A_init_ops+0x0/0x30 @ 1?
+[    2.393758] initcall i8259A_init_ops+0x0/0x30 returned 0 after 0 usecs?
+[    2.400414] calling  init_tsc_clocksource+0x0/0xc0 @ 1?
+[    2.405659] initcall init_tsc_clocksource+0x0/0xc0 returned 0 after 5 usecs?
+[    2.412758] calling  add_rtc_cmos+0x0/0xa0 @ 1?
+[    2.417333] platform rtc_cmos: registered platform RTC device (no PNP device found)?
+[    2.425147] initcall add_rtc_cmos+0x0/0xa0 returned 0 after 7858 usecs?
+[    2.431806] calling  i8237A_init_ops+0x0/0x50 @ 1?
+[    2.436605] initcall i8237A_init_ops+0x0/0x50 returned -19 after 1 usecs?
+[    2.443439] calling  umwait_init+0x0/0xa0 @ 1?
+[    2.447882] initcall umwait_init+0x0/0xa0 returned -19 after 0 usecs?
+[    2.454362] calling  msr_init+0x0/0xc0 @ 1?
+[    2.459880] initcall msr_init+0x0/0xc0 returned 0 after 1341 usecs?
+[    2.466188] calling  cpuid_init+0x0/0xc0 @ 1?
+[    2.471411] initcall cpuid_init+0x0/0xc0 returned 0 after 867 usecs?
+[    2.477807] calling  ioapic_init_ops+0x0/0x20 @ 1?
+[    2.482605] initcall ioapic_init_ops+0x0/0x20 returned 0 after 0 usecs?
+[    2.489261] calling  audit_classes_init+0x0/0xc0 @ 1?
+[    2.494329] initcall audit_classes_init+0x0/0xc0 returned 0 after 4 usecs?
+[    2.501252] calling  twofish_glue_init+0x0/0x20 @ 1?
+[    2.506239] initcall twofish_glue_init+0x0/0x20 returned 0 after 12 usecs?
+[    2.513160] calling  twofish_3way_init+0x0/0x70 @ 1?
+[    2.518138] initcall twofish_3way_init+0x0/0x70 returned 0 after 6 usecs?
+[    2.524970] calling  twofish_init+0x0/0x50 @ 1?
+[    2.529515] initcall twofish_init+0x0/0x50 returned 0 after 15 usecs?
+[    2.535993] calling  des3_ede_x86_init+0x0/0x80 @ 1?
+[    2.540978] initcall des3_ede_x86_init+0x0/0x80 returned 0 after 11 usecs?
+[    2.547899] calling  blowfish_init+0x0/0x80 @ 1?
+[    2.552529] initcall blowfish_init+0x0/0x80 returned 0 after 10 usecs?
+[    2.559096] calling  chacha_simd_mod_init+0x0/0x90 @ 1?
+[    2.564454] initcall chacha_simd_mod_init+0x0/0x90 returned 0 after 117 usecs?
+[    2.571732] calling  aesni_init+0x0/0x280 @ 1?
+[    2.576281] initcall aesni_init+0x0/0x280 returned 0 after 107 usecs?
+[    2.582760] calling  sha1_ssse3_mod_init+0x0/0xb0 @ 1?
+[    2.587922] initcall sha1_ssse3_mod_init+0x0/0xb0 returned 0 after 12 usecs?
+[    2.595020] calling  sha256_ssse3_mod_init+0x0/0xc0 @ 1?
+[    2.600371] initcall sha256_ssse3_mod_init+0x0/0xc0 returned 0 after 24 usecs?
+[    2.607647] calling  sha512_ssse3_mod_init+0x0/0x90 @ 1?
+[    2.613000] initcall sha512_ssse3_mod_init+0x0/0x90 returned 0 after 24 usecs?
+[    2.620277] calling  poly1305_simd_mod_init+0x0/0xc0 @ 1?
+[    2.625779] initcall poly1305_simd_mod_init+0x0/0xc0 returned 0 after 87 usecs?
+[    2.633145] calling  curve25519_mod_init+0x0/0x40 @ 1?
+[    2.638295] initcall curve25519_mod_init+0x0/0x40 returned 0 after 0 usecs?
+[    2.645304] calling  iosf_mbi_init+0x0/0x30 @ 1?
+[    2.649970] initcall iosf_mbi_init+0x0/0x30 returned 0 after 47 usecs?
+[    2.656537] calling  proc_execdomains_init+0x0/0x30 @ 1?
+[    2.661870] initcall proc_execdomains_init+0x0/0x30 returned 0 after 6 usecs?
+[    2.669058] calling  register_warn_debugfs+0x0/0x30 @ 1?
+[    2.674386] initcall register_warn_debugfs+0x0/0x30 returned 0 after 0 usecs?
+[    2.681571] calling  cpuhp_sysfs_init+0x0/0xf0 @ 1?
+[    2.686514] initcall cpuhp_sysfs_init+0x0/0xf0 returned 0 after 58 usecs?
+[    2.693348] calling  ioresources_init+0x0/0x50 @ 1?
+[    2.698237] initcall ioresources_init+0x0/0x50 returned 0 after 4 usecs?
+[    2.704984] calling  proc_modules_init+0x0/0x30 @ 1?
+[    2.709961] initcall proc_modules_init+0x0/0x30 returned 0 after 3 usecs?
+[    2.716794] calling  timer_sysctl_init+0x0/0x30 @ 1?
+[    2.721776] initcall timer_sysctl_init+0x0/0x30 returned 0 after 7 usecs?
+[    2.728613] calling  timekeeping_init_ops+0x0/0x20 @ 1?
+[    2.733852] initcall timekeeping_init_ops+0x0/0x20 returned 0 after 0 usecs?
+[    2.740950] calling  init_clocksource_sysfs+0x0/0x30 @ 1?
+[    2.746418] initcall init_clocksource_sysfs+0x0/0x30 returned 0 after 50 usecs?
+[    2.753789] calling  init_timer_list_procfs+0x0/0x40 @ 1?
+[    2.759210] initcall init_timer_list_procfs+0x0/0x40 returned 0 after 2 usecs?
+[    2.766487] calling  alarmtimer_init+0x0/0x90 @ 1?
+[    2.771300] initcall alarmtimer_init+0x0/0x90 returned 0 after 16 usecs?
+[    2.778047] calling  init_posix_timers+0x0/0x50 @ 1?
+[    2.783024] initcall init_posix_timers+0x0/0x50 returned 0 after 2 usecs?
+[    2.789858] calling  clockevents_init_sysfs+0x0/0xe0 @ 1?
+[    2.795457] initcall clockevents_init_sysfs+0x0/0xe0 returned 0 after 183 usecs?
+[    2.802913] calling  proc_dma_init+0x0/0x30 @ 1?
+[    2.807535] initcall proc_dma_init+0x0/0x30 returned 0 after 2 usecs?
+[    2.814015] calling  kallsyms_init+0x0/0x30 @ 1?
+[    2.818637] initcall kallsyms_init+0x0/0x30 returned 0 after 2 usecs?
+[    2.825116] calling  pid_namespaces_init+0x0/0x60 @ 1?
+[    2.830282] initcall pid_namespaces_init+0x0/0x60 returned 0 after 12 usecs?
+[    2.837384] calling  ikconfig_init+0x0/0x50 @ 1?
+[    2.842007] initcall ikconfig_init+0x0/0x50 returned 0 after 2 usecs?
+[    2.848486] calling  audit_watch_init+0x0/0x40 @ 1?
+[    2.853373] initcall audit_watch_init+0x0/0x40 returned 0 after 1 usecs?
+[    2.860117] calling  audit_fsnotify_init+0x0/0x50 @ 1?
+[    2.865275] initcall audit_fsnotify_init+0x0/0x50 returned 0 after 5 usecs?
+[    2.872289] calling  audit_tree_init+0x0/0x90 @ 1?
+[    2.877089] initcall audit_tree_init+0x0/0x90 returned 0 after 3 usecs?
+[    2.883746] calling  seccomp_sysctl_init+0x0/0x30 @ 1?
+[    2.888907] initcall seccomp_sysctl_init+0x0/0x30 returned 0 after 5 usecs?
+[    2.895918] calling  utsname_sysctl_init+0x0/0x30 @ 1?
+[    2.901077] initcall utsname_sysctl_init+0x0/0x30 returned 0 after 8 usecs?
+[    2.908088] calling  perf_event_sysfs_init+0x0/0x90 @ 1?
+[    2.913603] initcall perf_event_sysfs_init+0x0/0x90 returned 0 after 185 usecs?
+[    2.920973] calling  system_trusted_keyring_init+0x0/0x70 @ 1?
+[    2.926834] Initialise system trusted keyrings?
+[    2.931375] initcall system_trusted_keyring_init+0x0/0x70 returned 0 after 4540 usecs?
+[    2.939364] calling  kswapd_init+0x0/0x90 @ 1?
+[    2.943931] initcall kswapd_init+0x0/0x90 returned 0 after 122 usecs?
+[    2.950417] calling  extfrag_debug_init+0x0/0x60 @ 1?
+[    2.955480] initcall extfrag_debug_init+0x0/0x60 returned 0 after 0 usecs?
+[    2.962400] calling  mm_compute_batch_init+0x0/0x20 @ 1?
+[    2.967727] initcall mm_compute_batch_init+0x0/0x20 returned 0 after 0 usecs?
+[    2.974919] calling  slab_proc_init+0x0/0x30 @ 1?
+[    2.979629] initcall slab_proc_init+0x0/0x30 returned 0 after 3 usecs?
+[    2.986197] calling  workingset_init+0x0/0xb0 @ 1?
+[    2.990994] workingset: timestamp_bits=40 max_order=21 bucket_order=0?
+[    2.997561] initcall workingset_init+0x0/0xb0 returned 0 after 6567 usecs?
+[    3.004486] calling  proc_vmalloc_init+0x0/0x40 @ 1?
+[    3.009465] initcall proc_vmalloc_init+0x0/0x40 returned 0 after 5 usecs?
+[    3.016299] calling  slab_debugfs_init+0x0/0x60 @ 1?
+[    3.021276] initcall slab_debugfs_init+0x0/0x60 returned 0 after 2 usecs?
+[    3.028110] calling  procswaps_init+0x0/0x30 @ 1?
+[    3.032822] initcall procswaps_init+0x0/0x30 returned 0 after 2 usecs?
+[    3.039389] calling  fcntl_init+0x0/0x50 @ 1?
+[    3.043747] initcall fcntl_init+0x0/0x50 returned 0 after 3 usecs?
+[    3.049961] calling  proc_filesystems_init+0x0/0x30 @ 1?
+[    3.055290] initcall proc_filesystems_init+0x0/0x30 returned 0 after 2 usecs?
+[    3.062477] calling  start_dirtytime_writeback+0x0/0x50 @ 1?
+[    3.068164] initcall start_dirtytime_writeback+0x0/0x50 returned 0 after 5 usecs?
+[    3.075704] calling  dio_init+0x0/0x50 @ 1?
+[    3.079884] initcall dio_init+0x0/0x50 returned 0 after 2 usecs?
+[    3.085919] calling  dnotify_init+0x0/0xd0 @ 1?
+[    3.090458] initcall dnotify_init+0x0/0xd0 returned 0 after 8 usecs?
+[    3.096851] calling  fanotify_user_setup+0x0/0x190 @ 1?
+[    3.102103] initcall fanotify_user_setup+0x0/0x190 returned 0 after 13 usecs?
+[    3.109293] calling  aio_setup+0x0/0xd0 @ 1?
+[    3.113595] initcall aio_setup+0x0/0xd0 returned 0 after 37 usecs?
+[    3.119812] calling  mbcache_init+0x0/0x50 @ 1?
+[    3.124348] initcall mbcache_init+0x0/0x50 returned 0 after 6 usecs?
+[    3.130740] calling  init_grace+0x0/0x20 @ 1?
+[    3.135097] initcall init_grace+0x0/0x20 returned 0 after 3 usecs?
+[    3.141310] calling  init_devpts_fs+0x0/0x40 @ 1?
+[    3.146025] initcall init_devpts_fs+0x0/0x40 returned 0 after 9 usecs?
+[    3.152592] calling  ext4_init_fs+0x0/0x1a0 @ 1?
+[    3.157279] initcall ext4_init_fs+0x0/0x1a0 returned 0 after 67 usecs?
+[    3.163850] calling  journal_init+0x0/0x160 @ 1?
+[    3.168483] initcall journal_init+0x0/0x160 returned 0 after 13 usecs?
+[    3.175052] calling  init_fat_fs+0x0/0x70 @ 1?
+[    3.179499] initcall init_fat_fs+0x0/0x70 returned 0 after 5 usecs?
+[    3.185801] calling  init_vfat_fs+0x0/0x20 @ 1?
+[    3.190332] initcall init_vfat_fs+0x0/0x20 returned 0 after 1 usecs?
+[    3.196722] calling  init_exfat_fs+0x0/0x90 @ 1?
+[    3.201347] initcall init_exfat_fs+0x0/0x90 returned 0 after 6 usecs?
+[    3.207828] calling  init_iso9660_fs+0x0/0x90 @ 1?
+[    3.212643] initcall init_iso9660_fs+0x0/0x90 returned 0 after 17 usecs?
+[    3.219389] calling  init_nfs_fs+0x0/0x130 @ 1?
+[    3.224080] initcall init_nfs_fs+0x0/0x130 returned 0 after 160 usecs?
+[    3.230652] calling  init_nfs_v3+0x0/0x20 @ 1?
+[    3.235097] initcall init_nfs_v3+0x0/0x20 returned 0 after 0 usecs?
+[    3.241397] calling  init_nlm+0x0/0x90 @ 1?
+[    3.245600] initcall init_nlm+0x0/0x90 returned 0 after 26 usecs?
+[    3.251726] calling  init_nls_cp437+0x0/0x20 @ 1?
+[    3.256436] initcall init_nls_cp437+0x0/0x20 returned 0 after 0 usecs?
+[    3.263004] calling  init_nls_cp850+0x0/0x20 @ 1?
+[    3.267712] initcall init_nls_cp850+0x0/0x20 returned 0 after 0 usecs?
+[    3.274278] calling  init_nls_iso8859_1+0x0/0x20 @ 1?
+[    3.279339] initcall init_nls_iso8859_1+0x0/0x20 returned 0 after 0 usecs?
+[    3.286261] calling  init_nls_iso8859_15+0x0/0x20 @ 1?
+[    3.291412] initcall init_nls_iso8859_15+0x0/0x20 returned 0 after 0 usecs?
+[    3.298421] calling  init_nls_utf8+0x0/0x30 @ 1?
+[    3.303041] initcall init_nls_utf8+0x0/0x30 returned 0 after 1 usecs?
+[    3.309519] calling  init_ntfs_fs+0x0/0xf0 @ 1?
+[    3.314050] ntfs3: Warning: Activated 64 bits per cluster. Windows does not support this?
+[    3.322304] initcall init_ntfs_fs+0x0/0xf0 returned 0 after 8254 usecs?
+[    3.328963] calling  init_ufs_fs+0x0/0x90 @ 1?
+[    3.333410] initcall init_ufs_fs+0x0/0x90 returned 0 after 4 usecs?
+[    3.339714] calling  init_autofs_fs+0x0/0x30 @ 1?
+[    3.344490] initcall init_autofs_fs+0x0/0x30 returned 0 after 68 usecs?
+[    3.351152] calling  fuse_init+0x0/0x170 @ 1?
+[    3.355507] fuse: init (API version 7.43)?
+[    3.359685] initcall fuse_init+0x0/0x170 returned 0 after 4176 usecs?
+[    3.366168] calling  cuse_init+0x0/0xb0 @ 1?
+[    3.370507] initcall cuse_init+0x0/0xb0 returned 0 after 72 usecs?
+[    3.376725] calling  init_udf_fs+0x0/0x80 @ 1?
+[    3.381173] initcall init_udf_fs+0x0/0x80 returned 0 after 5 usecs?
+[    3.387476] calling  ipc_init+0x0/0x30 @ 1?
+[    3.391681] initcall ipc_init+0x0/0x30 returned 0 after 28 usecs?
+[    3.397810] calling  ipc_sysctl_init+0x0/0x30 @ 1?
+[    3.402624] initcall ipc_sysctl_init+0x0/0x30 returned 0 after 16 usecs?
+[    3.409369] calling  init_mqueue_fs+0x0/0xd0 @ 1?
+[    3.414121] initcall init_mqueue_fs+0x0/0xd0 returned 0 after 43 usecs?
+[    3.420782] calling  key_proc_init+0x0/0x70 @ 1?
+[    3.425406] initcall key_proc_init+0x0/0x70 returned 0 after 4 usecs?
+[    3.431886] calling  jent_mod_init+0x0/0xc0 @ 1?
+[    3.472258] initcall jent_mod_init+0x0/0xc0 returned 0 after 35753 usecs?
+[    3.479097] calling  af_alg_init+0x0/0x40 @ 1?
+[    3.483542] NET: Registered PF_ALG protocol family?
+[    3.488424] initcall af_alg_init+0x0/0x40 returned 0 after 4882 usecs?
+[    3.494991] calling  algif_hash_init+0x0/0x20 @ 1?
+[    3.499789] initcall algif_hash_init+0x0/0x20 returned 0 after 0 usecs?
+[    3.506444] calling  algif_skcipher_init+0x0/0x20 @ 1?
+[    3.511596] initcall algif_skcipher_init+0x0/0x20 returned 0 after 0 usecs?
+[    3.518606] calling  rng_init+0x0/0x20 @ 1?
+[    3.522786] initcall rng_init+0x0/0x20 returned 0 after 0 usecs?
+[    3.528823] calling  calibrate_xor_blocks+0x0/0x130 @ 1?
+[    3.534150] xor: automatically using best checksumming function   avx       ?
+[    3.541333] initcall calibrate_xor_blocks+0x0/0x130 returned 0 after 7182 usecs?
+[    3.548787] calling  asymmetric_key_init+0x0/0x20 @ 1?
+[    3.553941] Key type asymmetric registered?
+[    3.558114] initcall asymmetric_key_init+0x0/0x20 returned 0 after 4174 usecs?
+[    3.565390] calling  x509_key_init+0x0/0x20 @ 1?
+[    3.570011] Asymmetric key parser 'x509' registered?
+[    3.574982] initcall x509_key_init+0x0/0x20 returned 0 after 4971 usecs?
+[    3.581728] calling  blkdev_init+0x0/0x30 @ 1?
+[    3.586186] initcall blkdev_init+0x0/0x30 returned 0 after 15 usecs?
+[    3.592578] calling  proc_genhd_init+0x0/0x50 @ 1?
+[    3.597382] initcall proc_genhd_init+0x0/0x50 returned 0 after 6 usecs?
+[    3.604041] calling  bsg_init+0x0/0x70 @ 1?
+[    3.608228] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)?
+[    3.615766] initcall bsg_init+0x0/0x70 returned 0 after 7547 usecs?
+[    3.622069] calling  deadline_init+0x0/0x20 @ 1?
+[    3.626691] io scheduler mq-deadline registered?
+[    3.631308] initcall deadline_init+0x0/0x20 returned 0 after 4617 usecs?
+[    3.638052] calling  kyber_init+0x0/0x20 @ 1?
+[    3.642407] io scheduler kyber registered?
+[    3.646492] initcall kyber_init+0x0/0x20 returned 0 after 4085 usecs?
+[    3.652972] calling  blake2s_mod_init+0x0/0x10 @ 1?
+[    3.657858] initcall blake2s_mod_init+0x0/0x10 returned 0 after 0 usecs?
+[    3.664603] calling  chacha20poly1305_init+0x0/0x10 @ 1?
+[    3.669935] initcall chacha20poly1305_init+0x0/0x10 returned 0 after 0 usecs?
+[    3.677121] calling  curve25519_init+0x0/0x10 @ 1?
+[    3.681919] initcall curve25519_init+0x0/0x10 returned 0 after 0 usecs?
+[    3.688574] calling  percpu_counter_startup+0x0/0x60 @ 1?
+[    3.694217] initcall percpu_counter_startup+0x0/0x60 returned 0 after 227 usecs?
+[    3.701673] calling  phy_core_init+0x0/0x50 @ 1?
+[    3.706301] initcall phy_core_init+0x0/0x50 returned 0 after 8 usecs?
+[    3.712786] calling  pcie_portdrv_init+0x0/0x50 @ 1?
+[    3.717823] initcall pcie_portdrv_init+0x0/0x50 returned 0 after 61 usecs?
+[    3.724746] calling  pci_proc_init+0x0/0x80 @ 1?
+[    3.729418] initcall pci_proc_init+0x0/0x80 returned 0 after 52 usecs?
+[    3.735989] calling  vesafb_driver_init+0x0/0x20 @ 1?
+[    3.741067] initcall vesafb_driver_init+0x0/0x20 returned 0 after 17 usecs?
+[    3.748079] calling  simplefb_driver_init+0x0/0x20 @ 1?
+[    3.753331] initcall simplefb_driver_init+0x0/0x20 returned 0 after 13 usecs?
+[    3.760519] calling  ged_driver_init+0x0/0x20 @ 1?
+[    3.765329] initcall ged_driver_init+0x0/0x20 returned 0 after 13 usecs?
+[    3.772076] calling  acpi_button_driver_init+0x0/0x60 @ 1?
+[    3.777582] initcall acpi_button_driver_init+0x0/0x60 returned 0 after 1 usecs?
+[    3.784950] calling  acpi_video_init+0x0/0xa0 @ 1?
+[    3.789750] initcall acpi_video_init+0x0/0xa0 returned 0 after 0 usecs?
+[    3.796405] calling  acpi_processor_driver_init+0x0/0xc0 @ 1?
+[    3.802176] initcall acpi_processor_driver_init+0x0/0xc0 returned 0 after 0 usecs?
+[    3.809806] calling  acpi_thermal_init+0x0/0x80 @ 1?
+[    3.814924] initcall acpi_thermal_init+0x0/0x80 returned -19 after 144 usecs?
+[    3.822119] calling  acpi_pad_init+0x0/0xa0 @ 1?
+[    3.826755] initcall acpi_pad_init+0x0/0xa0 returned 0 after 14 usecs?
+[    3.833324] calling  gpio_clk_driver_init+0x0/0x20 @ 1?
+[    3.838583] initcall gpio_clk_driver_init+0x0/0x20 returned 0 after 13 usecs?
+[    3.845773] calling  gated_fixed_clk_driver_init+0x0/0x20 @ 1?
+[    3.851645] initcall gated_fixed_clk_driver_init+0x0/0x20 returned 0 after 13 usecs?
+[    3.859456] calling  n_null_init+0x0/0x20 @ 1?
+[    3.863900] initcall n_null_init+0x0/0x20 returned 0 after 0 usecs?
+[    3.870202] calling  pty_init+0x0/0x340 @ 1?
+[    3.904271] initcall pty_init+0x0/0x340 returned 0 after 29802 usecs?
+[    3.910766] calling  sysrq_init+0x0/0x70 @ 1?
+[    3.915129] initcall sysrq_init+0x0/0x70 returned 0 after 6 usecs?
+[    3.921344] calling  serial8250_init+0x0/0x110 @ 1?
+[    3.926234] initcall serial8250_init+0x0/0x110 returned -19 after 0 usecs?
+[    3.933157] calling  exar_pci_driver_init+0x0/0x20 @ 1?
+[    3.938444] initcall exar_pci_driver_init+0x0/0x20 returned 0 after 47 usecs?
+[    3.945636] calling  serial_pci_driver_init+0x0/0x20 @ 1?
+[    3.951129] initcall serial_pci_driver_init+0x0/0x20 returned 0 after 76 usecs?
+[    3.958502] calling  pericom8250_pci_driver_init+0x0/0x20 @ 1?
+[    3.964396] initcall pericom8250_pci_driver_init+0x0/0x20 returned 0 after 34 usecs?
+[    3.972206] calling  init_lqasc+0x0/0x40 @ 1?
+[    3.976583] initcall init_lqasc+0x0/0x40 returned 0 after 22 usecs?
+[    3.982886] calling  random_sysctls_init+0x0/0x30 @ 1?
+[    3.988048] initcall random_sysctls_init+0x0/0x30 returned 0 after 10 usecs?
+[    3.995149] calling  nvram_module_init+0x0/0x90 @ 1?
+[    4.000212] Non-volatile memory driver v1.3?
+[    4.004477] initcall nvram_module_init+0x0/0x90 returned 0 after 4353 usecs?
+[    4.011578] calling  amd_rng_mod_init+0x0/0x1c0 @ 1?
+[    4.016565] initcall amd_rng_mod_init+0x0/0x1c0 returned -19 after 12 usecs?
+[    4.023665] calling  agp_init+0x0/0x30 @ 1?
+[    4.027843] Linux agpgart interface v0.103?
+[    4.032016] initcall agp_init+0x0/0x30 returned 0 after 4173 usecs?
+[    4.038317] calling  agp_amd64_mod_init+0x0/0x30 @ 1?
+[    4.043442] probe of 0000:00:00.0 returned 19 after 20 usecs?
+[    4.049235] probe of 0000:00:00.2 returned 19 after 15 usecs?
+[    4.055023] probe of 0000:00:01.0 returned 19 after 13 usecs?
+[    4.060806] probe of 0000:00:01.1 returned 19 after 13 usecs?
+[    4.066588] probe of 0000:00:02.0 returned 19 after 11 usecs?
+[    4.072373] probe of 0000:00:14.0 returned 19 after 15 usecs?
+[    4.078160] probe of 0000:00:14.1 returned 19 after 15 usecs?
+[    4.083945] probe of 0000:00:14.2 returned 19 after 15 usecs?
+[    4.089734] probe of 0000:00:14.3 returned 19 after 18 usecs?
+[    4.095521] probe of 0000:00:14.4 returned 19 after 15 usecs?
+[    4.101311] probe of 0000:00:14.5 returned 19 after 16 usecs?
+[    4.107097] probe of 0000:00:14.6 returned 19 after 15 usecs?
+[    4.112882] probe of 0000:00:14.7 returned 19 after 16 usecs?
+[    4.118667] probe of 0000:00:18.0 returned 19 after 15 usecs?
+[    4.124448] probe of 0000:00:18.1 returned 19 after 11 usecs?
+[    4.130230] probe of 0000:00:18.2 returned 19 after 11 usecs?
+[    4.136014] probe of 0000:00:18.3 returned 19 after 12 usecs?
+[    4.141795] probe of 0000:00:18.4 returned 19 after 11 usecs?
+[    4.147575] probe of 0000:00:18.5 returned 19 after 11 usecs?
+[    4.153357] probe of 0000:00:18.6 returned 19 after 11 usecs?
+[    4.159149] initcall agp_amd64_mod_init+0x0/0x30 returned -19 after 115769 usecs?
+[    4.166694] calling  drm_core_init+0x0/0x90 @ 1?
+[    4.171449] initcall drm_core_init+0x0/0x90 returned 0 after 134 usecs?
+[    4.178109] calling  drm_buddy_module_init+0x0/0x50 @ 1?
+[    4.183441] initcall drm_buddy_module_init+0x0/0x50 returned 0 after 4 usecs?
+[    4.190629] calling  drm_display_helper_module_init+0x0/0x10 @ 1?
+[    4.196756] initcall drm_display_helper_module_init+0x0/0x10 returned 0 after 0 usecs?
+[    4.204740] calling  drm_sched_fence_slab_init+0x0/0x50 @ 1?
+[    4.210426] initcall drm_sched_fence_slab_init+0x0/0x50 returned 0 after 3 usecs?
+[    4.217969] calling  amdgpu_init+0x0/0x80 @ 1?
+[    4.222414] [drm] amdgpu kernel modesetting enabled.?
+[    4.227519] probe of 0000:00:01.0 returned 517 after 22 usecs?
+[    4.233431] initcall amdgpu_init+0x0/0x80 returned 0 after 11020 usecs?
+[    4.240090] calling  cn_proc_init+0x0/0x40 @ 1?
+[    4.244622] initcall cn_proc_init+0x0/0x40 returned 0 after 2 usecs?
+[    4.251011] calling  topology_sysfs_init+0x0/0x40 @ 1?
+[    4.256356] initcall topology_sysfs_init+0x0/0x40 returned 0 after 195 usecs?
+[    4.263545] calling  cacheinfo_sysfs_init+0x0/0x40 @ 1?
+[    4.269708] initcall cacheinfo_sysfs_init+0x0/0x40 returned 0 after 923 usecs?
+[    4.277000] calling  devcoredump_init+0x0/0x20 @ 1?
+[    4.281899] initcall devcoredump_init+0x0/0x20 returned 0 after 13 usecs?
+[    4.288733] calling  brd_init+0x0/0xf0 @ 1?
+[    4.293243] brd: module loaded?
+[    4.296362] initcall brd_init+0x0/0xf0 returned 0 after 3452 usecs?
+[    4.302667] calling  loop_init+0x0/0xe0 @ 1?
+[    4.309375] loop: module loaded?
+[    4.312580] initcall loop_init+0x0/0xe0 returned 0 after 5647 usecs?
+[    4.318972] calling  at24_init+0x0/0x50 @ 1?
+[    4.323259] i2c-core: driver [at24] registered?
+[    4.327791] initcall at24_init+0x0/0x50 returned 0 after 4552 usecs?
+[    4.334181] calling  init_sd+0x0/0x100 @ 1?
+[    4.338384] initcall init_sd+0x0/0x100 returned 0 after 26 usecs?
+[    4.344512] calling  init_sr+0x0/0x50 @ 1?
+[    4.348614] initcall init_sr+0x0/0x50 returned 0 after 13 usecs?
+[    4.354650] calling  init_sg+0x0/0x1e0 @ 1?
+[    4.358847] initcall init_sg+0x0/0x1e0 returned 0 after 21 usecs?
+[    4.364976] calling  ahci_pci_driver_init+0x0/0x20 @ 1?
+[    4.370254] probe of 0000:00:14.2 returned 517 after 13 usecs?
+[    4.376164] initcall ahci_pci_driver_init+0x0/0x20 returned 0 after 5949 usecs?
+[    4.383534] calling  apcie_driver_init+0x0/0x20 @ 1?
+[    4.388545] initcall apcie_driver_init+0x0/0x20 returned 0 after 36 usecs?
+[    4.395468] calling  bpcie_driver_init+0x0/0x20 @ 1?
+[    4.400462] baikal_pcie 0000:00:14.4: bpcie_probe()?
+[    4.405471] baikal_pcie 0000:00:14.4: bpcie glue probe?
+[    4.410732] baikal_pcie 0000:00:14.4: Baikal chip revision: 4c0c2021:8d76a398:0000b100?
+[    4.418807] pci 0000:00:14.0: bpcie_create_irq_domain?
+[    4.423959] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.428757] baikal_pcie 0000:00:14.4: no parent ?
+[    4.433473] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.443402] pci 0000:00:14.1: bpcie_create_irq_domain?
+[    4.448554] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.453349] baikal_pcie 0000:00:14.4: no parent ?
+[    4.458058] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.467987] pci 0000:00:14.2: bpcie_create_irq_domain?
+[    4.473136] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.477933] baikal_pcie 0000:00:14.4: no parent ?
+[    4.482642] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.492573] pci 0000:00:14.3: bpcie_create_irq_domain?
+[    4.497722] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.502518] baikal_pcie 0000:00:14.4: no parent ?
+[    4.507226] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.517156] baikal_pcie 0000:00:14.4: bpcie_create_irq_domain?
+[    4.523014] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.527808] baikal_pcie 0000:00:14.4: no parent ?
+[    4.532517] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.542446] pci 0000:00:14.5: bpcie_create_irq_domain?
+[    4.547600] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.552395] baikal_pcie 0000:00:14.4: no parent ?
+[    4.557103] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.567032] pci 0000:00:14.6: bpcie_create_irq_domain?
+[    4.572180] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.576976] baikal_pcie 0000:00:14.4: no parent ?
+[    4.581688] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.591619] pci 0000:00:14.7: bpcie_create_irq_domain?
+[    4.596769] baikal_pcie 0000:00:14.4: devid = 164?
+[    4.601565] baikal_pcie 0000:00:14.4: no parent ?
+[    4.606273] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    4.616219] bpcie_init_dev_msi_info: dev=0000:00:14.4 installed bpcie demuxer (sc=(____ptrval____))?
+[    4.626016] bpcie_msi_init: virq=0 hwirq=0x0 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.636221] bpcie_msi_init: registered virq=0 irq_map[0]?
+[    4.641637] bpcie_msi_init: virq=1 hwirq=0x1 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.651834] bpcie_msi_init: registered virq=1 irq_map[1]?
+[    4.657246] bpcie_msi_init: virq=2 hwirq=0x2 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.667442] bpcie_msi_init: registered virq=2 irq_map[2]?
+[    4.672855] bpcie_msi_init: virq=3 hwirq=0x3 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.683050] bpcie_msi_init: registered virq=3 irq_map[3]?
+[    4.688462] bpcie_msi_init: virq=4 hwirq=0x4 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.698659] bpcie_msi_init: registered virq=4 irq_map[4]?
+[    4.704072] bpcie_msi_init: virq=5 hwirq=0x5 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.714267] bpcie_msi_init: registered virq=5 irq_map[5]?
+[    4.719680] bpcie_msi_init: virq=6 hwirq=0x6 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.729875] bpcie_msi_init: registered virq=6 irq_map[6]?
+[    4.735288] bpcie_msi_init: virq=7 hwirq=0x7 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.745483] bpcie_msi_init: registered virq=7 irq_map[7]?
+[    4.750899] bpcie_msi_init: virq=8 hwirq=0x8 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.761093] bpcie_msi_init: registered virq=8 irq_map[8]?
+[    4.766505] bpcie_msi_init: virq=9 hwirq=0x9 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.776701] bpcie_msi_init: registered virq=9 irq_map[9]?
+[    4.782113] bpcie_msi_init: virq=10 hwirq=0xa domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.792397] bpcie_msi_init: registered virq=10 irq_map[10]?
+[    4.797990] bpcie_msi_init: virq=11 hwirq=0xb domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.808274] bpcie_msi_init: registered virq=11 irq_map[11]?
+[    4.813863] bpcie_msi_init: virq=12 hwirq=0xc domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.824147] bpcie_msi_init: registered virq=12 irq_map[12]?
+[    4.829737] bpcie_msi_init: virq=13 hwirq=0xd domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.840022] bpcie_msi_init: registered virq=13 irq_map[13]?
+[    4.845613] bpcie_msi_init: virq=14 hwirq=0xe domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.855896] bpcie_msi_init: registered virq=14 irq_map[14]?
+[    4.861486] bpcie_msi_init: virq=15 hwirq=0xf domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.871770] bpcie_msi_init: registered virq=15 irq_map[15]?
+[    4.877359] bpcie_msi_init: virq=16 hwirq=0x10 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.887731] bpcie_msi_init: registered virq=16 irq_map[16]?
+[    4.893321] bpcie_msi_init: virq=17 hwirq=0x11 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.903694] bpcie_msi_init: registered virq=17 irq_map[17]?
+[    4.909283] bpcie_msi_init: virq=18 hwirq=0x12 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.919657] bpcie_msi_init: registered virq=18 irq_map[18]?
+[    4.925246] bpcie_msi_init: virq=19 hwirq=0x13 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.935619] bpcie_msi_init: registered virq=19 irq_map[19]?
+[    4.941208] bpcie_msi_init: virq=20 hwirq=0x14 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.951580] bpcie_msi_init: registered virq=20 irq_map[20]?
+[    4.957169] bpcie_msi_init: virq=21 hwirq=0x15 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.967540] bpcie_msi_init: registered virq=21 irq_map[21]?
+[    4.973130] bpcie_msi_init: virq=22 hwirq=0x16 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.983502] bpcie_msi_init: registered virq=22 irq_map[22]?
+[    4.989090] bpcie_msi_init: virq=23 hwirq=0x17 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.999463] bpcie_msi_init: registered virq=23 irq_map[23]?
+[    5.005053] bpcie_msi_init: virq=24 hwirq=0x18 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.015425] bpcie_msi_init: registered virq=24 irq_map[24]?
+[    5.021015] bpcie_msi_init: virq=25 hwirq=0x19 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.031389] bpcie_msi_init: registered virq=25 irq_map[25]?
+[    5.036979] bpcie_msi_init: virq=26 hwirq=0x1a domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.047351] bpcie_msi_init: registered virq=26 irq_map[26]?
+[    5.052946] bpcie_msi_init: virq=27 hwirq=0x1b domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.063318] bpcie_msi_init: registered virq=27 irq_map[27]?
+[    5.068908] bpcie_msi_init: virq=28 hwirq=0x1c domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.079282] bpcie_msi_init: registered virq=28 irq_map[28]?
+[    5.084874] bpcie_msi_init: virq=29 hwirq=0x1d domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.095245] bpcie_msi_init: registered virq=29 irq_map[29]?
+[    5.100834] bpcie_msi_init: virq=30 hwirq=0x1e domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.111208] bpcie_msi_init: registered virq=30 irq_map[30]?
+[    5.116797] bpcie_msi_init: virq=31 hwirq=0x1f domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    5.127169] bpcie_msi_init: registered virq=31 irq_map[31]?
+[    5.132793] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=0 hwirq=0x0 (____ptrval____)?
+[    5.143798] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee00000 data=000000ef?
+[    5.153127] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=1 hwirq=0x1 (____ptrval____)?
+[    5.164124] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee00000 data=000000ef?
+[    5.173442] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=2 hwirq=0x2 (____ptrval____)?
+[    5.184436] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee00000 data=000000ef?
+[    5.193756] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=3 hwirq=0x3 (____ptrval____)?
+[    5.204752] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee00000 data=000000ef?
+[    5.214070] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=4 hwirq=0x4 (____ptrval____)?
+[    5.225063] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee00000 data=000000ef?
+[    5.234383] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=5 hwirq=0x5 (____ptrval____)?
+[    5.245376] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee00000 data=000000ef?
+[    5.254694] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=6 hwirq=0x6 (____ptrval____)?
+[    5.265687] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee00000 data=000000ef?
+[    5.275005] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=7 hwirq=0x7 (____ptrval____)?
+[    5.285997] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=000000ef?
+[    5.295325] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=8 hwirq=0x8 (____ptrval____)?
+[    5.306326] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee00000 data=000000ef?
+[    5.315647] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=9 hwirq=0x9 (____ptrval____)?
+[    5.326641] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee00000 data=000000ef?
+[    5.335959] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=10 hwirq=0xa (____ptrval____)?
+[    5.347041] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee00000 data=000000ef?
+[    5.356448] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=11 hwirq=0xb (____ptrval____)?
+[    5.367529] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee00000 data=000000ef?
+[    5.376937] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=12 hwirq=0xc (____ptrval____)?
+[    5.388018] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee00000 data=000000ef?
+[    5.397426] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=13 hwirq=0xd (____ptrval____)?
+[    5.408509] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee00000 data=000000ef?
+[    5.417915] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=14 hwirq=0xe (____ptrval____)?
+[    5.428997] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee00000 data=000000ef?
+[    5.438405] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=15 hwirq=0xf (____ptrval____)?
+[    5.449488] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=000000ef?
+[    5.458896] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=16 hwirq=0x10 (____ptrval____)?
+[    5.470068] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee00000 data=000000ef?
+[    5.479477] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=17 hwirq=0x11 (____ptrval____)?
+[    5.490647] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee00000 data=000000ef?
+[    5.500053] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=18 hwirq=0x12 (____ptrval____)?
+[    5.511223] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee00000 data=000000ef?
+[    5.520630] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=19 hwirq=0x13 (____ptrval____)?
+[    5.531801] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee00000 data=000000ef?
+[    5.541208] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=20 hwirq=0x14 (____ptrval____)?
+[    5.552378] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee00000 data=000000ef?
+[    5.561787] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=21 hwirq=0x15 (____ptrval____)?
+[    5.572957] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee00000 data=000000ef?
+[    5.582365] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=22 hwirq=0x16 (____ptrval____)?
+[    5.593536] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee00000 data=000000ef?
+[    5.602942] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=23 hwirq=0x17 (____ptrval____)?
+[    5.614111] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=000000ef?
+[    5.623518] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=24 hwirq=0x18 (____ptrval____)?
+[    5.634688] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee00000 data=000000ef?
+[    5.644096] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=25 hwirq=0x19 (____ptrval____)?
+[    5.655265] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee00000 data=000000ef?
+[    5.664672] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=26 hwirq=0x1a (____ptrval____)?
+[    5.675845] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee00000 data=000000ef?
+[    5.685254] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=27 hwirq=0x1b (____ptrval____)?
+[    5.696424] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee00000 data=000000ef?
+[    5.705832] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=28 hwirq=0x1c (____ptrval____)?
+[    5.717001] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee00000 data=000000ef?
+[    5.726407] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=29 hwirq=0x1d (____ptrval____)?
+[    5.737580] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee00000 data=000000ef?
+[    5.746987] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=30 hwirq=0x1e (____ptrval____)?
+[    5.758158] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee00000 data=000000ef?
+[    5.767565] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=31 hwirq=0x1f (____ptrval____)?
+[    5.778735] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=000000ef?
+[    5.788231] baikal_pcie 0000:00:14.4: dev->irq=0?
+[    5.792979] probe of 0000:00:14.4:0 returned 0 after 14 usecs?
+[    5.798868] probe of 0000:00:14.4:0.0 returned 0 after 9 usecs?
+[    5.804868] baikal_pcie 0000:00:14.4: Failed to register serial port 0?
+[    5.811529] baikal_pcie 0000:00:14.4: UART init failed (-5); continuing without serial console?
+[    5.820324] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000020) mask=0x0 irq=3 hwirq=0x3 (____ptrval____)?
+[    5.821302] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee00000 data=00000020?
+[    5.821302] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000020) mask=0x0 irq=3 hwirq=0x3 (____ptrval____)?
+[    5.821302] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee00000 data=00000020?
+[    5.860955] baikal_pcie 0000:00:14.4: icc init-diag: ICC virq=3 STATUS=0x0 IRQ_MASK=0x3 DOORBELL_off=0x108004 STATUS_off=0x108014?
+[    5.872863] i2c i2c-0: adapter [icc] registered?
+[    5.877602] call_irq_handler: 0.227 No irq handler for vector?
+[    5.883478] icc_interrupt: irq=0 entry status=0x2?
+[    5.899158] call_irq_handler: 0.227 No irq handler for vector?
+[    5.905032] icc_interrupt: irq=0 entry status=0x1?
+[    5.909848] Turn ON BT/WLAN: ret=20, reply 00 00 00 00?
+[    5.910004] call_irq_handler: 0.227 No irq handler for vector?
+[    5.921101] icc_interrupt: irq=0 entry status=0x3?
+[    5.925917] usb0 status: ret=20, reply 00 00 01 00?
+[    5.925921] USB is already turned ON!?
+[    5.930871] input: Power Button as /devices/pci0000:00/0000:00:14.4/input/input0?
+[    5.942261] call_irq_handler: 0.227 No irq handler for vector?
+[    5.948130] icc_interrupt: irq=0 entry status=0x2?
+[    5.955121] call_irq_handler: 0.227 No irq handler for vector?
+[    5.960988] icc_interrupt: irq=0 entry status=0x1?
+[    5.965826] icc: not ready?
+[    5.968584] baikal_pcie 0000:00:14.4: icc_pwrbutton_init: Failed to enable reset notifications (-11)?
+[    5.978010] call_irq_handler: 0.227 No irq handler for vector?
+[    5.983878] icc_interrupt: irq=0 entry status=0x2?
+[    5.995138] call_irq_handler: 0.227 No irq handler for vector?
+[    6.001011] icc_interrupt: irq=0 entry status=0x1?
+[    6.005839] ret=46, reply 00 00 03 00 00 00 15 00?
+[    6.010752] call_irq_handler: 0.227 No irq handler for vector?
+[    6.016622] icc_interrupt: irq=0 entry status=0x3?
+[    6.021437] ret=20, reply 00 00 01 02 10 00 00 00?
+[    6.026380] call_irq_handler: 0.227 No irq handler for vector?
+[    6.032248] icc_interrupt: irq=0 entry status=0x2?
+[    6.037065] ret=20, reply 00 00 00 00 00 00 00 00?
+[    6.041893] probe of 0000:00:14.4 returned 0 after 1641439 usecs?
+[    6.048050] initcall bpcie_driver_init+0x0/0x20 returned 0 after 1647605 usecs?
+[    6.055418] calling  wg_mod_init+0x0/0x70 @ 1?
+[    6.059900] wireguard: WireGuard 1.0.0 loaded. See www.wireguard.com for information.?
+[    6.067885] wireguard: Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.?
+[    6.077634] initcall wg_mod_init+0x0/0x70 returned 0 after 17773 usecs?
+[    6.084290] calling  blackhole_netdev_init+0x0/0x80 @ 1?
+[    6.089632] initcall blackhole_netdev_init+0x0/0x80 returned 0 after 12 usecs?
+[    6.096910] calling  fixed_mdio_bus_init+0x0/0xd0 @ 1?
+[    6.102088] probe of Fixed MDIO bus returned 0 after 8 usecs?
+[    6.108061] initcall fixed_mdio_bus_init+0x0/0xd0 returned 0 after 6000 usecs?
+[    6.115339] calling  phy_module_init+0x0/0x20 @ 1?
+[    6.120398] initcall phy_module_init+0x0/0x20 returned 0 after 263 usecs?
+[    6.127234] calling  sky2_init_module+0x0/0x30 @ 1?
+[    6.132119] sky2: driver version 1.30?
+[    6.135885] resource: resource sanity check: requesting [mem 0x00000000c2000000-0x00000000c2003fff], which spans more than 0000:00:14.1 [mem 0xc2000000-0xc2000fff 64bit]?
+[    6.151311] caller sky2_probe+0x153/0x2f0 mapping multiple BARs?
+[    6.157353] sky2 0000:00:14.1: unsupported chip type 0x0?
+[    6.162779] sky2 0000:00:14.1: probe with driver sky2 failed with error -95?
+[    6.169883] probe of 0000:00:14.1 returned 95 after 34022 usecs?
+[    6.175952] initcall sky2_init_module+0x0/0x30 returned 0 after 43832 usecs?
+[    6.183053] calling  uio_init+0x0/0xe0 @ 1?
+[    6.187240] initcall uio_init+0x0/0xe0 returned 0 after 10 usecs?
+[    6.193365] calling  uio_pdrv_genirq_init+0x0/0x20 @ 1?
+[    6.198619] initcall uio_pdrv_genirq_init+0x0/0x20 returned 0 after 15 usecs?
+[    6.205808] calling  uio_dmem_genirq_init+0x0/0x20 @ 1?
+[    6.211061] initcall uio_dmem_genirq_init+0x0/0x20 returned 0 after 14 usecs?
+[    6.218249] calling  uio_pci_driver_init+0x0/0x20 @ 1?
+[    6.223433] initcall uio_pci_driver_init+0x0/0x20 returned 0 after 34 usecs?
+[    6.230537] calling  cdrom_init+0x0/0x20 @ 1?
+[    6.234899] initcall cdrom_init+0x0/0x20 returned 0 after 8 usecs?
+[    6.241112] calling  xhci_hcd_init+0x0/0x30 @ 1?
+[    6.245731] initcall xhci_hcd_init+0x0/0x30 returned 0 after 0 usecs?
+[    6.252208] calling  xhci_pci_init+0x0/0x60 @ 1?
+[    6.256862] initcall xhci_pci_init+0x0/0x60 returned 0 after 33 usecs?
+[    6.263431] calling  xhci_aeolia_init+0x0/0x40 @ 1?
+[    6.268342] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs(3)?
+[    6.273945] bpcie_init_dev_msi_info: dev=0000:00:14.7 installed bpcie demuxer (sc=(____ptrval____))?
+[    6.283199] bpcie_msi_init: virq=32 hwirq=0x0 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    6.293487] bpcie_msi_init: registered virq=32 irq_map[32]?
+[    6.299081] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=32 hwirq=0x0 (____ptrval____)?
+[    6.310174] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee00000 data=000000ef?
+[    6.319508] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs returning 1?
+[    6.325898] xhci_aeolia 0000:00:14.7: version 3.0?
+[    6.330706] xhci_aeolia 0000:00:14.7: Belize SATA PHY init?
+[    7.336331] xhci_aeolia 0000:00:14.7: PHY SET GEN3?
+[    7.341215] xhci_aeolia 0000:00:14.7: Belize SATA PHY Trace length : 6?
+[    8.347955] xhci_aeolia 0000:00:14.7: Align 90=0x00?
+[    8.353009] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x16fa7f9cd22, max_idle_ns: 440795282679 ns?
+[    8.353015] xhci_aeolia 0000:00:14.7: AHCI vers 0001.0300, 32 command slots, 6 Gbps, ATA mode?
+[    8.371894] xhci_aeolia 0000:00:14.7: 1/1 ports implemented (port mask 0x1)?
+[    8.378990] xhci_aeolia 0000:00:14.7: flags: ncq sntf pm clo only pmp pio slum part ccc apst ?
+[    8.387749] clocksource: Switched to clocksource tsc?
+[    8.387799] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee01000, 00000020) mask=0x0 irq=32 hwirq=0x0 (____ptrval____)?
+[    8.396640] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee01000 data=00000020?
+[    8.412643] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee01000, 00000020) mask=0x0 irq=32 hwirq=0x0 (____ptrval____)?
+[    8.420642] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee01000 data=00000020?
+[    8.434135] scsi host0: ahci?
+[    8.437192] ata1: SATA max UDMA/133 abar m65536@0xce800000 port 0xce800100 irq 32 lpm-pol 0?
+[    8.496743] xhci_aeolia_probe_one 0, controller is 90de?
+[    8.502149] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    8.507766] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 1?
+[    8.531839] xhci_aeolia 0000:00:14.7: hcc params 0x0228f66c hci version 0x100 quirks 0x0004000000010010?
+[    8.541433] xhci_aeolia 0000:00:14.7: irq 32, io mem 0xce000000?
+[    8.547503] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    8.553100] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 2?
+[    8.581734] xhci_aeolia 0000:00:14.7: Host supports USB 3.0 SuperSpeed?
+[    8.588557] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.15?
+[    8.596987] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    8.604354] usb usb1: Product: xHCI Host Controller?
+[    8.609328] usb usb1: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    8.617664] usb usb1: SerialNumber: 0000:00:14.7?
+[    8.622775] hub 1-0:1.0: USB hub found?
+[    8.626633] hub 1-0:1.0: 2 ports detected?
+[    8.630851] probe of 1-0:1.0 returned 0 after 8081 usecs?
+[    8.636304] probe of usb1 returned 0 after 13610 usecs?
+[    8.641630] usb usb2: We don't know the algorithms for LPM for this host, disabling LPM.?
+[    8.649961] usb usb2: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.15?
+[    8.658401] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    8.665768] usb usb2: Product: xHCI Host Controller?
+[    8.670744] usb usb2: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    8.679089] usb usb2: SerialNumber: 0000:00:14.7?
+[    8.684075] hub 2-0:1.0: USB hub found?
+[    8.687931] hub 2-0:1.0: 2 ports detected?
+[    8.692287] probe of 2-0:1.0 returned 0 after 8214 usecs?
+[    8.697784] probe of usb2 returned 0 after 13776 usecs?
+[    8.723727] xhci_aeolia_probe_one 2, controller is 90de?
+[    8.729132] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    8.734736] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 3?
+[    8.742674] xhci_aeolia 0000:00:14.7: hcc params 0x0220f06c hci version 0x100 quirks 0x0004000000010010?
+[    8.752270] xhci_aeolia 0000:00:14.7: irq 32, io mem 0xcf000000?
+[    8.758345] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    8.763940] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 4?
+[    8.792723] xhci_aeolia 0000:00:14.7: Host supports USB 3.0 SuperSpeed?
+[    8.799636] usb usb3: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.15?
+[    8.808078] usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    8.815442] usb usb3: Product: xHCI Host Controller?
+[    8.820417] usb usb3: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    8.828757] usb usb3: SerialNumber: 0000:00:14.7?
+[    8.833912] hub 3-0:1.0: USB hub found?
+[    8.837770] hub 3-0:1.0: 1 port detected?
+[    8.841969] probe of 3-0:1.0 returned 0 after 8060 usecs?
+[    8.847462] probe of usb3 returned 0 after 13630 usecs?
+[    8.852779] usb usb4: We don't know the algorithms for LPM for this host, disabling LPM.?
+[    8.861113] usb usb4: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.15?
+[    8.869552] usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    8.876917] usb usb4: Product: xHCI Host Controller?
+[    8.881889] usb usb4: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    8.890226] usb usb4: SerialNumber: 0000:00:14.7?
+[    8.895401] hub 4-0:1.0: USB hub found?
+[    8.899300] usb 1-1: new high-speed USB device number 2 using xhci_aeolia?
+[    8.899332] hub 4-0:1.0: 1 port detected?
+[    8.906669] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)?
+[    8.910396] probe of 4-0:1.0 returned 0 after 15007 usecs?
+[    8.922117] probe of usb4 returned 0 after 26816 usecs?
+[    8.947762] probe of 0000:00:14.7 returned 0 after 2679431 usecs?
+[    8.953959] initcall xhci_aeolia_init+0x0/0x40 returned 0 after 2685642 usecs?
+[    8.961247] calling  uas_init+0x0/0x60 @ 1?
+[    8.965721] usbcore: registered new interface driver uas?
+[    8.971152] initcall uas_init+0x0/0x60 returned 0 after 5725 usecs?
+[    8.977460] calling  usb_storage_driver_init+0x0/0x40 @ 1?
+[    8.983014] usbcore: registered new interface driver usb-storage?
+[    8.989140] initcall usb_storage_driver_init+0x0/0x40 returned 0 after 6173 usecs?
+[    8.996771] calling  i8042_init+0x0/0x600 @ 1?
+[    9.001266] i8042: PNP: No PS/2 controller found.?
+[    9.006080] initcall i8042_init+0x0/0x600 returned 0 after 4867 usecs?
+[    9.012664] calling  serport_init+0x0/0x30 @ 1?
+[    9.017200] initcall serport_init+0x0/0x30 returned 0 after 0 usecs?
+[    9.023609] calling  input_leds_init+0x0/0x20 @ 1?
+[    9.028466] usb usb3-port1: over-current condition?
+[    9.028522] initcall input_leds_init+0x0/0x20 returned 0 after 97 usecs?
+[    9.040156] calling  mousedev_init+0x0/0x90 @ 1?
+[    9.040652] usb 1-1: New USB device found, idVendor=1a40, idProduct=0101, bcdDevice= 1.00?
+[    9.045081] mousedev: PS/2 mouse device common for all mice?
+[    9.053134] usb 1-1: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[    9.058803] initcall mousedev_init+0x0/0x90 returned 0 after 14018 usecs?
+[    9.058813] calling  joydev_init+0x0/0x20 @ 1?
+[    9.066091] usb 1-1: Product: USB2.0 HUB?
+[    9.072911] initcall joydev_init+0x0/0x20 returned 0 after 1 usecs?
+[    9.072918] calling  evdev_init+0x0/0x20 @ 1?
+[    9.073037] initcall evdev_init+0x0/0x20 returned 0 after 113 usecs?
+[    9.098390] calling  atkbd_init+0x0/0x30 @ 1?
+[    9.102795] initcall atkbd_init+0x0/0x30 returned 0 after 47 usecs?
+[    9.109100] calling  xpad_driver_init+0x0/0x20 @ 1?
+[    9.114039] usbcore: registered new interface driver xpad?
+[    9.119544] initcall xpad_driver_init+0x0/0x20 returned 0 after 5555 usecs?
+[    9.126556] calling  uinput_misc_init+0x0/0x20 @ 1?
+[    9.131649] initcall uinput_misc_init+0x0/0x20 returned 0 after 198 usecs?
+[    9.132571] hub 1-1:1.0: USB hub found?
+[    9.138583] calling  i2c_dev_init+0x0/0xa0 @ 1?
+[    9.142541] hub 1-1:1.0: 4 ports detected?
+[    9.146951] i2c_dev: i2c /dev entries driver?
+[    9.151555] probe of 1-1:1.0 returned 0 after 18990 usecs?
+[    9.155572] i2c_dev: adapter [icc] registered as minor 0?
+[    9.160956] probe of 1-1 returned 0 after 83429 usecs?
+[    9.166301] initcall i2c_dev_init+0x0/0xa0 returned 0 after 19350 usecs?
+[    9.166323] usb 2-2: new SuperSpeed USB device number 2 using xhci_aeolia?
+[    9.171458] calling  i2c_slave_eeprom_driver_init+0x0/0x20 @ 1?
+[    9.191073] i2c-core: driver [i2c-slave-eeprom] registered?
+[    9.194012] usb 2-2: New USB device found, idVendor=0951, idProduct=1666, bcdDevice= 1.10?
+[    9.196672] initcall i2c_slave_eeprom_driver_init+0x0/0x20 returned 0 after 5618 usecs?
+[    9.196682] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=4?
+[    9.196690] calling  fam15h_power_driver_init+0x0/0x20 @ 1?
+[    9.196773] probe of 0000:00:18.4 returned 0 after 50 usecs?
+[    9.205022] usb 2-2: Product: DataTraveler 3.0?
+[    9.205056] initcall fam15h_power_driver_init+0x0/0x20 returned 0 after 8359 usecs?
+[    9.213095] usb 2-2: Manufacturer: Kingston?
+[    9.213102] calling  k8temp_driver_init+0x0/0x20 @ 1?
+[    9.213109] usb 2-2: SerialNumber: E0D55EA573F0194049CD0236?
+[    9.213154] initcall k8temp_driver_init+0x0/0x20 returned 0 after 40 usecs?
+[    9.221149] probe of 2-2:1.0 returned 19 after 12 usecs?
+[    9.225977] calling  k10temp_driver_init+0x0/0x20 @ 1?
+[    9.226051] probe of 0000:00:18.3 returned 0 after 53 usecs?
+[    9.231696] usb-storage 2-2:1.0: USB Mass Storage device detected?
+[    9.236250] initcall k10temp_driver_init+0x0/0x20 returned 0 after 10266 usecs?
+[    9.236363] usb usb4-port1: over-current condition?
+[    9.244352] scsi host1: usb-storage 2-2:1.0?
+[    9.248210] calling  dm_init+0x0/0x60 @ 1?
+[    9.253394] probe of 2-2:1.0 returned 0 after 21712 usecs?
+[    9.259159] device-mapper: ioctl: 4.49.0-ioctl (2025-01-17) initialised: dm-devel@lists.linux.dev?
+[    9.266065] probe of 2-2 returned 0 after 45386 usecs?
+[    9.271290] initcall dm_init+0x0/0x60 returned 0 after 12333 usecs?
+[    9.271299] calling  dm_bufio_init+0x0/0x150 @ 1?
+[    9.339709] initcall dm_bufio_init+0x0/0x150 returned 0 after 149 usecs?
+[    9.346466] calling  dm_crypt_init+0x0/0x20 @ 1?
+[    9.351089] initcall dm_crypt_init+0x0/0x20 returned 0 after 0 usecs?
+[    9.357567] calling  dm_snapshot_init+0x0/0x210 @ 1?
+[    9.362552] initcall dm_snapshot_init+0x0/0x210 returned 0 after 9 usecs?
+[    9.369388] calling  btsdio_driver_init+0x0/0x20 @ 1?
+[    9.374468] initcall btsdio_driver_init+0x0/0x20 returned 0 after 17 usecs?
+[    9.381486] calling  btmrvl_sdio_init_module+0x0/0x40 @ 1?
+[    9.387031] initcall btmrvl_sdio_init_module+0x0/0x40 returned 0 after 37 usecs?
+[    9.394490] calling  amd_pstate_init+0x0/0x2a0 @ 1?
+[    9.399378] amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled?
+[    9.406943] initcall amd_pstate_init+0x0/0x2a0 returned -19 after 7565 usecs?
+[    9.414145] calling  sdhci_drv_init+0x0/0x30 @ 1?
+[    9.418857] sdhci: Secure Digital Host Controller Interface driver?
+[    9.425155] sdhci: Copyright(c) Pierre Ossman?
+[    9.429606] initcall sdhci_drv_init+0x0/0x30 returned 0 after 10750 usecs?
+[    9.436530] calling  sdhci_uhs2_mod_init+0x0/0x10 @ 1?
+[    9.441682] initcall sdhci_uhs2_mod_init+0x0/0x10 returned 0 after 0 usecs?
+[    9.448694] calling  sdhci_driver_init+0x0/0x20 @ 1?
+[    9.453959] initcall sdhci_driver_init+0x0/0x20 returned 0 after 286 usecs?
+[    9.454078] sdhci-pci 0000:00:14.3: SDHCI controller found [104d:90da] (rev 0)?
+[    9.461019] calling  dmi_sysfs_init+0x0/0xb0 @ 1?
+[    9.468466] bpcie_init_dev_msi_info: dev=0000:00:14.3 installed bpcie demuxer (sc=(____ptrval____))?
+[    9.473292] initcall dmi_sysfs_init+0x0/0xb0 returned 0 after 178 usecs?
+[    9.482382] bpcie_msi_init: virq=33 hwirq=0x0 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    9.489103] calling  sysfb_init+0x0/0x180 @ 1?
+[    9.489122] bpcie_msi_init: registered virq=33 irq_map[33]?
+[    9.489150] initcall sysfb_init+0x0/0x180 returned -22 after 21 usecs?
+[    9.499427] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=33 hwirq=0x0 (____ptrval____)?
+[    9.503856] calling  hid_init+0x0/0x50 @ 1?
+[    9.503885] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee00000 data=000000ef?
+[    9.509510] hid: raw HID events driver (C) Jiri Kosina?
+[    9.516527] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee02000, 00000020) mask=0x0 irq=33 hwirq=0x0 (____ptrval____)?
+[    9.526945] initcall hid_init+0x0/0x50 returned 0 after 17480 usecs?
+[    9.517512] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee02000 data=00000020?
+[    9.531126] calling  uhid_misc_init+0x0/0x20 @ 1?
+[    9.517512] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee02000, 00000020) mask=0x0 irq=33 hwirq=0x0 (____ptrval____)?
+[    9.540577] initcall uhid_misc_init+0x0/0x20 returned 0 after 135 usecs?
+[    9.517512] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee02000 data=00000020?
+[    9.603907] calling  hid_generic_init+0x0/0x20 @ 1?
+[    9.608851] initcall hid_generic_init+0x0/0x20 returned 0 after 56 usecs?
+[    9.608878] mmc0: SDHCI controller on PCI [0000:00:14.3] using ADMA?
+[    9.615691] calling  ps_init+0x0/0x20 @ 1?
+[    9.615752] probe of 0000:00:14.3 returned 0 after 161689 usecs?
+[    9.622121] initcall ps_init+0x0/0x20 returned 0 after 34 usecs?
+[    9.626667] usb 1-1.3: new low-speed USB device number 3 using xhci_aeolia?
+[    9.632219] calling  sony_init+0x0/0x50 @ 1?
+[    9.649541] initcall sony_init+0x0/0x50 returned 0 after 27 usecs?
+[    9.655766] calling  wiimote_hid_driver_init+0x0/0x20 @ 1?
+[    9.661304] initcall wiimote_hid_driver_init+0x0/0x20 returned 0 after 27 usecs?
+[    9.668763] calling  hid_init+0x0/0x60 @ 1?
+[    9.672981] usbcore: registered new interface driver usbhid?
+[    9.678682] usbhid: USB HID core driver?
+[    9.682606] initcall hid_init+0x0/0x60 returned 0 after 9664 usecs?
+[    9.688928] calling  wmi_bmof_driver_init+0x0/0x20 @ 1?
+[    9.694173] Driver 'wmi-bmof' was unable to register with bus_type 'wmi' because the bus was not initialized.?
+[    9.704283] initcall wmi_bmof_driver_init+0x0/0x20 returned -22 after 10110 usecs?
+[    9.711922] calling  snd_ctl_led_init+0x0/0x140 @ 1?
+[    9.716944] initcall snd_ctl_led_init+0x0/0x140 returned 0 after 42 usecs?
+[    9.723890] calling  alsa_hwdep_init+0x0/0x70 @ 1?
+[    9.725984] mmc0: new UHS-I speed SDR104 SDIO card at address 0001?
+[    9.728720] initcall alsa_hwdep_init+0x0/0x70 returned 0 after 14 usecs?
+[    9.741758] calling  alsa_timer_init+0x0/0x200 @ 1?
+[    9.746884] initcall alsa_timer_init+0x0/0x200 returned 0 after 235 usecs?
+[    9.753815] calling  snd_hrtimer_init+0x0/0xf0 @ 1?
+[    9.758705] initcall snd_hrtimer_init+0x0/0xf0 returned 0 after 1 usecs?
+[    9.765452] calling  alsa_pcm_init+0x0/0x70 @ 1?
+[    9.770076] initcall alsa_pcm_init+0x0/0x70 returned 0 after 3 usecs?
+[    9.776555] calling  alsa_mixer_oss_init+0x0/0x50 @ 1?
+[    9.781708] initcall alsa_mixer_oss_init+0x0/0x50 returned 0 after 0 usecs?
+[    9.788719] calling  alsa_pcm_oss_init+0x0/0x90 @ 1?
+[    9.793694] initcall alsa_pcm_oss_init+0x0/0x90 returned 0 after 0 usecs?
+[    9.800528] calling  alsa_seq_init+0x0/0x50 @ 1?
+[    9.805273] initcall alsa_seq_init+0x0/0x50 returned 0 after 124 usecs?
+[    9.811952] calling  generic_driver_init+0x0/0x20 @ 1?
+[    9.817122] initcall generic_driver_init+0x0/0x20 returned 0 after 15 usecs?
+[    9.824227] calling  realtek_driver_init+0x0/0x20 @ 1?
+[    9.829399] initcall realtek_driver_init+0x0/0x20 returned 0 after 14 usecs?
+[    9.829436] usb 1-1.3: New USB device found, idVendor=04f3, idProduct=152e, bcdDevice=1c.02?
+[    9.836499] calling  cmedia_driver_init+0x0/0x20 @ 1?
+[    9.836520] initcall cmedia_driver_init+0x0/0x20 returned 0 after 13 usecs?
+[    9.845013] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0?
+[    9.850065] calling  analog_driver_init+0x0/0x20 @ 1?
+[    9.857067] usb 1-1.3: Product: Gaming KB?
+[    9.857089] initcall analog_driver_init+0x0/0x20 returned 0 after 13 usecs?
+[    9.864521] usb 1-1.3: Manufacturer: Gaming KB?
+[    9.885206] calling  sigmatel_driver_init+0x0/0x20 @ 1?
+[    9.890462] initcall sigmatel_driver_init+0x0/0x20 returned 0 after 14 usecs?
+[    9.897652] calling  si3054_driver_init+0x0/0x20 @ 1?
+[    9.902762] initcall si3054_driver_init+0x0/0x20 returned 0 after 23 usecs?
+[    9.909777] calling  cirrus_driver_init+0x0/0x20 @ 1?
+[    9.914871] initcall cirrus_driver_init+0x0/0x20 returned 0 after 19 usecs?
+[    9.921886] calling  ca0110_driver_init+0x0/0x20 @ 1?
+[    9.926964] initcall ca0110_driver_init+0x0/0x20 returned 0 after 14 usecs?
+[    9.933977] calling  ca0132_driver_init+0x0/0x20 @ 1?
+[    9.939057] initcall ca0132_driver_init+0x0/0x20 returned 0 after 14 usecs?
+[    9.946067] calling  conexant_driver_init+0x0/0x20 @ 1?
+[    9.950488] input: Gaming KB Gaming KB as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.0/0003:04F3:152E.0001/input/input1?
+[    9.951325] initcall conexant_driver_init+0x0/0x20 returned 0 after 16 usecs?
+[    9.970641] calling  via_driver_init+0x0/0x20 @ 1?
+[    9.975463] initcall via_driver_init+0x0/0x20 returned 0 after 23 usecs?
+[    9.982214] calling  hdmi_driver_init+0x0/0x20 @ 1?
+[    9.987126] initcall hdmi_driver_init+0x0/0x20 returned 0 after 25 usecs?
+[    9.993970] calling  azx_driver_init+0x0/0x20 @ 1?
+[    9.998830] snd_hda_intel 0000:00:01.1: can't find IRQ for PCI INT B; please try using pci=biosirq?
+[    9.999302] hid-generic 0003:04F3:152E.0001: input,hidraw0: USB HID v1.11 Keyboard [Gaming KB Gaming KB] on usb-0000:00:14.7-1.3/input0?
+[   10.008052] probe of 0000:00:01.1 returned 0 after 9259 usecs?
+[   10.020387] probe of 0003:04F3:152E.0001 returned 0 after 70207 usecs?
+[   10.026295] initcall azx_driver_init+0x0/0x20 returned 0 after 27527 usecs?
+[   10.032808] probe of 1-1.3:1.0 returned 0 after 86912 usecs?
+[   10.039805] calling  sock_diag_init+0x0/0x40 @ 1?
+[   10.050360] initcall sock_diag_init+0x0/0x40 returned 0 after 173 usecs?
+[   10.051967] input: Gaming KB Gaming KB Consumer Control as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input2?
+[   10.057134] calling  netlink_diag_init+0x0/0x20 @ 1?
+[   10.071037] input: Gaming KB Gaming KB System Control as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input3?
+[   10.075765] initcall netlink_diag_init+0x0/0x20 returned 0 after 0 usecs?
+[   10.089472] input: Gaming KB Gaming KB Keyboard as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input4?
+[   10.096078] calling  gre_offload_init+0x0/0x50 @ 1?
+[   10.109244] input: Gaming KB Gaming KB as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input5?
+[   10.113914] initcall gre_offload_init+0x0/0x50 returned 0 after 1 usecs?
+[   10.126359] hid-generic 0003:04F3:152E.0002: input,hiddev96,hidraw1: USB HID v1.11 Keyboard [Gaming KB Gaming KB] on usb-0000:00:14.7-1.3/input1?
+[   10.132803] calling  sysctl_ipv4_init+0x0/0x60 @ 1?
+[   10.146010] probe of 0003:04F3:152E.0002 returned 0 after 94741 usecs?
+[   10.146181] initcall sysctl_ipv4_init+0x0/0x60 returned 0 after 164 usecs?
+[   10.149468] probe of hdaudioC0D0 returned 0 after 2798 usecs?
+[   10.149913] input: HD-Audio Generic HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:01.1/sound/card0/input6?
+[   10.150043] input: HD-Audio Generic HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:01.1/sound/card0/input7?
+[   10.150917] probe of 1-1.3:1.1 returned 0 after 105367 usecs?
+[   10.157475] calling  inet_diag_init+0x0/0x90 @ 1?
+[   10.164430] probe of 1-1.3 returned 0 after 299674 usecs?
+[   10.170232] initcall inet_diag_init+0x0/0x90 returned 0 after 66 usecs?
+[   10.212033] calling  tcp_diag_init+0x0/0x20 @ 1?
+[   10.216656] initcall tcp_diag_init+0x0/0x20 returned 0 after 0 usecs?
+[   10.223135] calling  udp_diag_init+0x0/0x40 @ 1?
+[   10.227755] initcall udp_diag_init+0x0/0x40 returned 0 after 0 usecs?
+[   10.234234] calling  cubictcp_register+0x0/0x60 @ 1?
+[   10.239218] initcall cubictcp_register+0x0/0x60 returned 0 after 1 usecs?
+[   10.246053] calling  unix_diag_init+0x0/0x20 @ 1?
+[   10.250761] initcall unix_diag_init+0x0/0x20 returned 0 after 0 usecs?
+[   10.257326] calling  inet6_init+0x0/0x370 @ 1?
+[   10.261824] NET: Registered PF_INET6 protocol family?
+[   10.267553] scsi 1:0:0:0: Direct-Access     Kingston DataTraveler 3.0 0000 PQ: 0 ANSI: 6?
+[   10.267740] Segment Routing with IPv6?
+[   10.275935] probe of 1:0:0:0 returned 19 after 11 usecs?
+[   10.279563] In-situ OAM (IOAM) with IPv6?
+[   10.285016] sd 1:0:0:0: Attached scsi generic sg0 type 0?
+[   10.286198] sd 1:0:0:0: [sda] 242155520 512-byte logical blocks: (124 GB/115 GiB)?
+[   10.286661] sd 1:0:0:0: [sda] Write Protect is off?
+[   10.286667] sd 1:0:0:0: [sda] Mode Sense: 23 00 00 00?
+[   10.286893] sd 1:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA?
+[   10.288925] initcall inet6_init+0x0/0x370 returned 0 after 27147 usecs?
+[   10.327919] calling  packet_init+0x0/0x80 @ 1?
+[   10.332370] NET: Registered PF_PACKET protocol family?
+[   10.337519] initcall packet_init+0x0/0x80 returned 0 after 5154 usecs?
+[   10.344090] calling  packet_diag_init+0x0/0x20 @ 1?
+[   10.348976] initcall packet_diag_init+0x0/0x20 returned 0 after 0 usecs?
+[   10.355723] calling  rfcomm_init+0x0/0xe0 @ 1?
+[   10.360304] Bluetooth: RFCOMM TTY layer initialized?
+[   10.365282] Bluetooth: RFCOMM socket layer initialized?
+[   10.370518] Bluetooth: RFCOMM ver 1.11?
+[   10.374340] initcall rfcomm_init+0x0/0xe0 returned 0 after 14173 usecs?
+[   10.380999] calling  bnep_init+0x0/0x70 @ 1?
+[   10.385265] Bluetooth: BNEP (Ethernet Emulation) ver 1.3?
+[   10.390677] Bluetooth: BNEP filters: protocol multicast?
+[   10.396003] Bluetooth: BNEP socket layer initialized?
+[   10.401061] initcall bnep_init+0x0/0x70 returned 0 after 15796 usecs?
+[   10.407552] calling  hidp_init+0x0/0x30 @ 1?
+[   10.411818] Bluetooth: HIDP (Human Interface Emulation) ver 1.2?
+[   10.417862] Bluetooth: HIDP socket layer initialized?
+[   10.422924] initcall hidp_init+0x0/0x30 returned 0 after 11106 usecs?
+[   10.429419] calling  init_rpcsec_gss+0x0/0x70 @ 1?
+[   10.434241] initcall init_rpcsec_gss+0x0/0x70 returned 0 after 21 usecs?
+[   10.440991] calling  init_kerberos_module+0x0/0x40 @ 1?
+[   10.446237] initcall init_kerberos_module+0x0/0x40 returned 0 after 3 usecs?
+[   10.453341] calling  handshake_init+0x0/0x90 @ 1?
+[   10.458077] initcall handshake_init+0x0/0x90 returned 0 after 22 usecs?
+[   10.464746] calling  mcheck_init_device+0x0/0x120 @ 1?
+[   10.464861] usb 1-1.4: new low-speed USB device number 4 using xhci_aeolia?
+[   10.474816] ata1.00: ATA-8: TOSHIBA MQ01ABD050, AX0G1A, max UDMA/100?
+[   10.477240] initcall mcheck_init_device+0x0/0x120 returned 0 after 7335 usecs?
+[   10.484089] ata1.00: 976773168 sectors, multi 16: LBA48 NCQ (depth 32), AA?
+[   10.490819] calling  kernel_do_mounts_initrd_sysctls_init+0x0/0x30 @ 1?
+[   10.500341] ata1.00: configured for UDMA/100?
+[   10.504449] initcall kernel_do_mounts_initrd_sysctls_init+0x0/0x30 returned 0 after 6 usecs?
+[   10.504459] calling  mcheck_late_init+0x0/0x60 @ 1?
+[   10.504695] scsi 0:0:0:0: Direct-Access     ATA      TOSHIBA MQ01ABD0 1A   PQ: 0 ANSI: 5?
+[   10.508762]  sda: sda1 sda2?
+[   10.508840] initcall mcheck_late_init+0x0/0x60 returned 0 after 2 usecs?
+[   10.508851] calling  severities_debugfs_init+0x0/0x40 @ 1?
+[   10.509096] sd 1:0:0:0: [sda] Attached SCSI removable disk?
+[   10.509423] probe of 0:0:0:0 returned 19 after 8 usecs?
+[   10.509548] sd 0:0:0:0: Attached scsi generic sg1 type 0?
+[   10.509711] sd 0:0:0:0: [sdb] 976773168 512-byte logical blocks: (500 GB/466 GiB)?
+[   10.509717] sd 0:0:0:0: [sdb] 4096-byte physical blocks?
+[   10.509745] sd 0:0:0:0: [sdb] Write Protect is off?
+[   10.509750] sd 0:0:0:0: [sdb] Mode Sense: 00 3a 00 00?
+[   10.509796] sd 0:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA?
+[   10.509878] sd 0:0:0:0: [sdb] Preferred minimum I/O size 4096 bytes?
+[   10.517372] initcall severities_debugfs_init+0x0/0x40 returned 0 after 1 usecs?
+[   10.517381] calling  microcode_init+0x0/0x190 @ 1?
+[   10.517490] probe of 1:0:0:0 returned 0 after 232502 usecs?
+[   10.522284] microcode: Current revision: 0x0701a001?
+[   10.623570] initcall microcode_init+0x0/0x190 returned 0 after 101289 usecs?
+[   10.630682] calling  cpu_init_debugfs+0x0/0xd0 @ 1?
+[   10.635572] initcall cpu_init_debugfs+0x0/0xd0 returned 0 after 2 usecs?
+[   10.642319] calling  sld_mitigate_sysctl_init+0x0/0x30 @ 1?
+[   10.647921] initcall sld_mitigate_sysctl_init+0x0/0x30 returned 0 after 4 usecs?
+[   10.655391] calling  hpet_insert_resource+0x0/0x30 @ 1?
+[   10.660633] initcall hpet_insert_resource+0x0/0x30 returned 1 after 1 usecs?
+[   10.667736] calling  start_sync_check_timer+0x0/0x60 @ 1?
+[   10.673155] initcall start_sync_check_timer+0x0/0x60 returned 0 after 0 usecs?
+[   10.680437] calling  update_mp_table+0x0/0x4f0 @ 1?
+[   10.681016] usb 1-1.4: New USB device found, idVendor=0000, idProduct=3825, bcdDevice= 1.00?
+[   10.685323] initcall update_mp_table+0x0/0x4f0 returned 0 after 0 usecs?
+[   10.685330] calling  lapic_insert_resource+0x0/0x50 @ 1?
+[   10.685348] usb 1-1.4: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[   10.685357] initcall lapic_insert_resource+0x0/0x50 returned 0 after 0 usecs?
+[   10.685366] usb 1-1.4: Product:  USB OPTICAL MOUSE?
+[   10.685375] calling  print_ipi_mode+0x0/0x40 @ 1?
+[   10.730150] IPI shorthand broadcast: enabled?
+[   10.734503] initcall print_ipi_mode+0x0/0x40 returned 0 after 4353 usecs?
+[   10.734750] input:  USB OPTICAL MOUSE as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.4/1-1.4:1.0/0003:0000:3825.0003/input/input8?
+[   10.741337] calling  print_ICs+0x0/0x1c0 @ 1?
+[   10.741345] initcall print_ICs+0x0/0x1c0 returned 0 after 0 usecs?
+[   10.741649] hid-generic 0003:0000:3825.0003: input,hidraw2: USB HID v1.11 Mouse [ USB OPTICAL MOUSE] on usb-0000:00:14.7-1.4/input0?
+[   10.753417] calling  create_tlb_single_page_flush_ceiling+0x0/0x30 @ 1?
+[   10.757778] probe of 0003:0000:3825.0003 returned 0 after 23323 usecs?
+[   10.763978] initcall create_tlb_single_page_flush_ceiling+0x0/0x30 returned 0 after 2 usecs?
+[   10.763988] calling  pat_memtype_list_init+0x0/0x40 @ 1?
+[   10.776041] probe of 1-1.4:1.0 returned 0 after 43377 usecs?
+[   10.782681] initcall pat_memtype_list_init+0x0/0x40 returned 0 after 0 usecs?
+[   10.782731] probe of 1-1.4 returned 0 after 97160 usecs?
+[   10.789257] calling  create_init_pkru_value+0x0/0x40 @ 1?
+[   10.826686] initcall create_init_pkru_value+0x0/0x40 returned 0 after 0 usecs?
+[   10.833965] calling  kernel_panic_sysctls_init+0x0/0x30 @ 1?
+[   10.839720] initcall kernel_panic_sysctls_init+0x0/0x30 returned 0 after 68 usecs?
+[   10.847416] calling  kernel_panic_sysfs_init+0x0/0x30 @ 1?
+[   10.852946] initcall kernel_panic_sysfs_init+0x0/0x30 returned 0 after 12 usecs?
+[   10.860411] calling  kernel_exit_sysctls_init+0x0/0x30 @ 1?
+[   10.866020] initcall kernel_exit_sysctls_init+0x0/0x30 returned 0 after 6 usecs?
+[   10.873488] calling  kernel_exit_sysfs_init+0x0/0x30 @ 1?
+[   10.878916] initcall kernel_exit_sysfs_init+0x0/0x30 returned 0 after 3 usecs?
+[   10.886201] calling  param_sysfs_builtin_init+0x0/0x170 @ 1?
+[   10.908090] initcall param_sysfs_builtin_init+0x0/0x170 returned 0 after 16191 usecs?
+[   10.916002] calling  reboot_ksysfs_init+0x0/0x70 @ 1?
+[   10.921204] initcall reboot_ksysfs_init+0x0/0x70 returned 0 after 104 usecs?
+[   10.928329] calling  sched_core_sysctl_init+0x0/0x30 @ 1?
+[   10.934219] initcall sched_core_sysctl_init+0x0/0x30 returned 0 after 425 usecs?
+[   10.941686] calling  sched_fair_sysctl_init+0x0/0x30 @ 1?
+[   10.947410] initcall sched_fair_sysctl_init+0x0/0x30 returned 0 after 281 usecs?
+[   10.954868] calling  sched_rt_sysctl_init+0x0/0x30 @ 1?
+[   10.960114] initcall sched_rt_sysctl_init+0x0/0x30 returned 0 after 5 usecs?
+[   10.967224] calling  sched_dl_sysctl_init+0x0/0x30 @ 1?
+[   10.972470] initcall sched_dl_sysctl_init+0x0/0x30 returned 0 after 3 usecs?
+[   10.979570] calling  sched_clock_init_late+0x0/0x90 @ 1?
+[   10.984901] sched_clock: Marking stable (10294297583, 690597303)->(15223686615, -4238791729)?
+[   10.993679] initcall sched_clock_init_late+0x0/0x90 returned 0 after 8779 usecs?
+[   11.001136] calling  sched_init_debug+0x0/0x270 @ 1?
+[   11.006118] initcall sched_init_debug+0x0/0x270 returned 0 after 5 usecs?
+[   11.012951] calling  cpu_latency_qos_init+0x0/0x40 @ 1?
+[   11.018394] initcall cpu_latency_qos_init+0x0/0x40 returned 0 after 203 usecs?
+[   11.025676] calling  printk_late_init+0x0/0x150 @ 1?
+[   11.030666] initcall printk_late_init+0x0/0x150 returned 0 after 14 usecs?
+[   11.037592] calling  init_srcu_module_notifier+0x0/0x30 @ 1?
+[   11.043282] initcall init_srcu_module_notifier+0x0/0x30 returned 0 after 1 usecs?
+[   11.050824] calling  swiotlb_create_default_debugfs+0x0/0xa0 @ 1?
+[   11.056951] initcall swiotlb_create_default_debugfs+0x0/0xa0 returned 0 after 0 usecs?
+[   11.064936] calling  tk_debug_sleep_time_init+0x0/0x30 @ 1?
+[   11.070530] initcall tk_debug_sleep_time_init+0x0/0x30 returned 0 after 0 usecs?
+[   11.077985] calling  kernel_acct_sysctls_init+0x0/0x30 @ 1?
+[   11.083584] initcall kernel_acct_sysctls_init+0x0/0x30 returned 0 after 3 usecs?
+[   11.091043] calling  kexec_core_sysctl_init+0x0/0x30 @ 1?
+[   11.096463] initcall kexec_core_sysctl_init+0x0/0x30 returned 0 after 4 usecs?
+[   11.103739] calling  bpf_rstat_kfunc_init+0x0/0x10 @ 1?
+[   11.108982] initcall bpf_rstat_kfunc_init+0x0/0x10 returned 0 after 0 usecs?
+[   11.116082] calling  kernel_delayacct_sysctls_init+0x0/0x30 @ 1?
+[   11.122125] initcall kernel_delayacct_sysctls_init+0x0/0x30 returned 0 after 2 usecs?
+[   11.130022] calling  taskstats_init+0x0/0x40 @ 1?
+[   11.134753] registered taskstats version 1?
+[   11.138929] initcall taskstats_init+0x0/0x40 returned 0 after 4197 usecs?
+[   11.145764] calling  load_system_certificate_list+0x0/0x40 @ 1?
+[   11.151737] Loading compiled-in X.509 certificates?
+[   11.156622] initcall load_system_certificate_list+0x0/0x40 returned 0 after 4885 usecs?
+[   11.164700] calling  vmstat_late_init+0x0/0x20 @ 1?
+[   11.169592] initcall vmstat_late_init+0x0/0x20 returned 0 after 4 usecs?
+[   11.176344] calling  fault_around_debugfs+0x0/0x30 @ 1?
+[   11.181585] initcall fault_around_debugfs+0x0/0x30 returned 0 after 0 usecs?
+[   11.188687] calling  slab_sysfs_init+0x0/0x100 @ 1?
+[   11.200012] initcall slab_sysfs_init+0x0/0x100 returned 0 after 6434 usecs?
+[   11.207046] calling  max_swapfiles_check+0x0/0x10 @ 1?
+[   11.212200] initcall max_swapfiles_check+0x0/0x10 returned 0 after 0 usecs?
+[   11.219211] calling  hugetlb_vmemmap_init+0x0/0x70 @ 1?
+[   11.224465] initcall hugetlb_vmemmap_init+0x0/0x70 returned 0 after 11 usecs?
+[   11.231655] calling  mempolicy_sysfs_init+0x0/0x270 @ 1?
+[   11.236993] initcall mempolicy_sysfs_init+0x0/0x270 returned 0 after 9 usecs?
+[   11.244183] calling  memory_tier_late_init+0x0/0x620 @ 1?
+[   11.249725] Demotion targets for Node 0: null?
+[   11.254171] initcall memory_tier_late_init+0x0/0x620 returned 0 after 4566 usecs?
+[   11.261717] calling  split_huge_pages_debugfs+0x0/0x30 @ 1?
+[   11.267314] initcall split_huge_pages_debugfs+0x0/0x30 returned 0 after 0 usecs?
+[   11.274768] calling  check_early_ioremap_leak+0x0/0x50 @ 1?
+[   11.280364] initcall check_early_ioremap_leak+0x0/0x50 returned 0 after 0 usecs?
+[   11.287819] calling  mg_debugfs_init+0x0/0x30 @ 1?
+[   11.292615] initcall mg_debugfs_init+0x0/0x30 returned 0 after 0 usecs?
+[   11.299271] calling  init_btrfs_fs+0x0/0x80 @ 1?
+[   11.304862] Btrfs loaded, zoned=no, fsverity=no?
+[   11.309492] initcall init_btrfs_fs+0x0/0x80 returned 0 after 5597 usecs?
+[   11.316247] calling  init_root_keyring+0x0/0x20 @ 1?
+[   11.321257] initcall init_root_keyring+0x0/0x20 returned 0 after 33 usecs?
+[   11.328187] calling  crypto_algapi_init+0x0/0x20 @ 1?
+[   11.333272] initcall crypto_algapi_init+0x0/0x20 returned 0 after 8 usecs?
+[   11.340200] calling  blk_timeout_init+0x0/0x20 @ 1?
+[   11.345091] initcall blk_timeout_init+0x0/0x20 returned 0 after 0 usecs?
+[   11.351840] calling  depot_debugfs_init+0x0/0x50 @ 1?
+[   11.356913] initcall depot_debugfs_init+0x0/0x50 returned 0 after 0 usecs?
+[   11.363839] calling  pci_resource_alignment_sysfs_init+0x0/0x20 @ 1?
+[   11.370239] initcall pci_resource_alignment_sysfs_init+0x0/0x20 returned 0 after 5 usecs?
+[   11.378493] calling  pci_sysfs_init+0x0/0x80 @ 1?
+[   11.383304] initcall pci_sysfs_init+0x0/0x80 returned 0 after 99 usecs?
+[   11.389967] calling  clk_debug_init+0x0/0x120 @ 1?
+[   11.394773] initcall clk_debug_init+0x0/0x120 returned 0 after 0 usecs?
+[   11.401434] calling  sync_state_resume_initcall+0x0/0x20 @ 1?
+[   11.407262] initcall sync_state_resume_initcall+0x0/0x20 returned 0 after 12 usecs?
+[   11.414997] calling  deferred_probe_initcall+0x0/0x90 @ 1?
+[   11.420891] amdgpu 0000:00:01.0: can't find IRQ for PCI INT A; please try using pci=biosirq?
+[   11.429467] [drm] initializing kernel modesetting (LIVERPOOL 0x1002:0x9923 0x1002:0x9923 0x00).?
+[   11.438397] [drm] register mmio base: 0xE4800000?
+[   11.443105] [drm] register mmio size: 262144?
+[   11.447873] amdgpu 0000:00:01.0: amdgpu: detected ip block number 0 <cik_common>?
+[   11.455437] amdgpu 0000:00:01.0: amdgpu: detected ip block number 1 <gmc_v7_0>?
+[   11.462802] amdgpu 0000:00:01.0: amdgpu: detected ip block number 2 <cik_ih>?
+[   11.469988] amdgpu 0000:00:01.0: amdgpu: detected ip block number 3 <dce_v8_0>?
+[   11.477353] amdgpu 0000:00:01.0: amdgpu: detected ip block number 4 <gfx_v7_0>?
+[   11.484718] amdgpu 0000:00:01.0: amdgpu: detected ip block number 5 <cik_sdma>?
+[   11.492145] ACPI Error: AE_BAD_PARAMETER, Thread 1085865984 could not acquire Mutex [ACPI_MTX_Tables] (0x2) (20240827/utmutex-252)?
+[   11.504118] ACPI Error: Mutex [ACPI_MTX_Tables] (0x2) is not acquired, cannot release (20240827/utmutex-289)?
+[   11.549856] amdgpu 0000:00:01.0: amdgpu: Fetched VBIOS from ROM BAR?
+[   11.556248] amdgpu: ATOM BIOS: 113-Starsha2-018?
+[   11.561237] amdgpu 0000:00:01.0: vgaarb: deactivate vga console?
+[   11.567305] amdgpu 0000:00:01.0: amdgpu: Trusted Memory Zone (TMZ) feature not supported?
+[   11.575784] i2c_dev: adapter [AMDGPU i2c bit bus 0x90] registered as minor 1?
+[   11.583000] i2c i2c-1: adapter [AMDGPU i2c bit bus 0x90] registered?
+[   11.589569] i2c_dev: adapter [AMDGPU i2c bit bus 0x91] registered as minor 2?
+[   11.596775] i2c i2c-2: adapter [AMDGPU i2c bit bus 0x91] registered?
+[   11.603171] stackdepot: allocating hash table of 524288 entries via kvcalloc?
+[   11.614436] [drm] vm size is 64 GB, 2 levels, block size is 10-bit, fragment size is 9-bit?
+[   11.622920] amdgpu 0000:00:01.0: amdgpu: VRAM: 1024M 0x0000000F00000000 - 0x0000000F3FFFFFFF (1024M used)?
+[   11.632678] amdgpu 0000:00:01.0: amdgpu: GART: 512M 0x0000000000000000 - 0x000000001FFFFFFF?
+[   11.641206] [drm] Detected VRAM RAM=1024M, BAR=1024M?
+[   11.646266] [drm] RAM width 64bits UNKNOWN?
+[   11.650806] [drm] amdgpu: 1024M of VRAM memory ready?
+[   11.655873] [drm] amdgpu: 3461M of GTT memory ready.?
+[   11.660977] [drm] GART: num cpu pages 131072, num gpu pages 131072?
+[   11.667288] amdgpu 0000:00:01.0: amdgpu: Done gart?
+[   11.672187] amdgpu 0000:00:01.0: amdgpu: Done init?
+[   11.677097] [drm] PCIE GART of 512M enabled (table at 0x0000000F00100000).?
+[   11.684957] amdgpu: ps4_bridge: forcing bridge init at attach (mode=VIC 16)?
+[   11.692277] call_irq_handler: 0.227 No irq handler for vector?
+[   11.692908] icc_interrupt: irq=0 entry status=0x2?
+[   11.703282] call_irq_handler: 0.227 No irq handler for vector?
+[   11.703621] icc_interrupt: irq=0 entry status=0x2?
+[   12.527631] call_irq_handler: 0.227 No irq handler for vector?
+[   12.527803] icc_interrupt: irq=0 entry status=0x1?
+[   12.538596] call_irq_handler: 0.227 No irq handler for vector?
+[   12.539370] icc_interrupt: irq=0 entry status=0x2?
+[   12.662626] call_irq_handler: 0.227 No irq handler for vector?
+[   12.662814] icc_interrupt: irq=0 entry status=0x1?
+[   12.673609] call_irq_handler: 0.227 No irq handler for vector?
+[   12.674370] icc_interrupt: irq=0 entry status=0x2?
+[   12.752612] call_irq_handler: 0.227 No irq handler for vector?
+[   12.753248] icc_interrupt: irq=0 entry status=0x1?
+[   12.763317] [drm] AMDGPU Display Connectors?
+[   12.767580] [drm] Connector 0:?
+[   12.770691] [drm]   HDMI-A-1?
+[   12.773626] [drm]   HPD1?
+[   12.776208] [drm]   DDC: 0x194c 0x194c 0x194d 0x194d 0x194e 0x194e 0x194f 0x194f?
+[   12.783748] [drm]   Encoders:?
+[   12.786770] [drm]     DFP1: INTERNAL_UNIPHY?
+[   12.799818] amdgpu 0000:00:01.0: amdgpu: SE 2, SH per SE 1, CU per SH 9, active_cu_number 16?
+[   12.808582] amdgpu 0000:00:01.0: amdgpu: Runtime PM not available?
+[   12.815251] i2c_dev: adapter [card0-HDMI-A-1] registered as minor 3?
+[   12.821673] i2c i2c-3: adapter [card0-HDMI-A-1] registered?
+[   12.827287] [drm] Initialized amdgpu 3.63.0 for 0000:00:01.0 on minor 0?
+[   12.834578] call_irq_handler: 0.227 No irq handler for vector?
+[   12.835477] icc_interrupt: irq=0 entry status=0x2?
+[   12.850733] call_irq_handler: 0.227 No irq handler for vector?
+[   12.851640] icc_interrupt: irq=0 entry status=0x2?
+[   12.861432] amdgpu: ps4_bridge_get_modes?
+[   12.868426] fbcon: amdgpudrmfb (fb0) is primary device?
+[   12.868711] call_irq_handler: 0.227 No irq handler for vector?
+[   12.869611] icc_interrupt: irq=0 entry status=0x2?
+[   16.076737] Console: switching to colour frame buffer device 240x67?
+[   16.107457] amdgpu 0000:00:01.0: [drm] fb0: amdgpudrmfb frame buffer device?
+[   16.114783] probe of 0000:00:01.0 returned 0 after 4694128 usecs?
+[   16.121006] ahci 0000:00:14.2: version 3.0?
+[   16.125251] ahci 0000:00:14.2: probe with driver ahci failed with error -12?
+[   16.132419] probe of 0000:00:14.2 returned 12 after 11433 usecs?
+[   16.138640] initcall deferred_probe_initcall+0x0/0x90 returned 0 after 4718126 usecs?
+[   16.146609] calling  init_netconsole+0x0/0x250 @ 1?
+[   16.151570] printk: legacy console [netcon0] enabled?
+[   16.156669] netconsole: network logging started?
+[   16.161311] initcall init_netconsole+0x0/0x250 returned 0 after 9754 usecs?
+[   16.168354] calling  dm_init_init+0x0/0x540 @ 1?
+[   16.172999] initcall dm_init_init+0x0/0x540 returned 0 after 0 usecs?
+[   16.179507] calling  firmware_memmap_init+0x0/0x40 @ 1?
+[   16.184916] initcall firmware_memmap_init+0x0/0x40 returned 0 after 138 usecs?
+[   16.190013] amdgpu: ps4_bridge_get_modes?
+[   16.192230] calling  bpf_kfunc_init+0x0/0x10 @ 1?
+[   16.202914] initcall bpf_kfunc_init+0x0/0x10 returned 0 after 0 usecs?
+[   16.209514] calling  init_subsystem+0x0/0x10 @ 1?
+[   16.214244] initcall init_subsystem+0x0/0x10 returned 0 after 0 usecs?
+[   16.220837] calling  xdp_metadata_init+0x0/0x10 @ 1?
+[   16.225835] initcall xdp_metadata_init+0x0/0x10 returned 0 after 0 usecs?
+[   16.232696] calling  tcp_congestion_default+0x0/0x20 @ 1?
+[   16.238137] initcall tcp_congestion_default+0x0/0x20 returned 0 after 1 usecs?
+[   16.245442] calling  inet_blackhole_dev_init+0x0/0x30 @ 1?
+[   16.251028] initcall inet_blackhole_dev_init+0x0/0x30 returned 0 after 57 usecs?
+[   16.258540] calling  udp_tunnel_nic_init_module+0x0/0x80 @ 1?
+[   16.264405] initcall udp_tunnel_nic_init_module+0x0/0x80 returned 0 after 60 usecs?
+[   16.272166] calling  ip_auto_config+0x0/0xf40 @ 1?
+[   16.277105] initcall ip_auto_config+0x0/0xf40 returned 0 after 112 usecs?
+[   16.284063] calling  pci_mmcfg_late_insert_resources+0x0/0xb0 @ 1?
+[   16.290314] initcall pci_mmcfg_late_insert_resources+0x0/0xb0 returned 0 after 4 usecs?
+[   16.298420] calling  clk_disable_unused+0x0/0x110 @ 1?
+[   16.303603] clk: Disabling unused clocks?
+[   16.307674] initcall clk_disable_unused+0x0/0x110 returned 0 after 4076 usecs?
+[   16.314993] calling  alsa_sound_last_init+0x0/0x70 @ 1?
+[   16.320264] ALSA device list:?
+[   16.323333]   #0: HD-Audio Generic at 0xe4840000 irq 34?
+[   16.328707] initcall alsa_sound_last_init+0x0/0x70 returned 0 after 8444 usecs?
+[   41.116663] ata1.00: exception Emask 0x0 SAct 0x400000 SErr 0x0 action 0x6 frozen?
+[   41.125762] ata1.00: failed command: READ FPDMA QUEUED?
+[   41.132400] ata1.00: cmd 60/08:b0:00:00:00/00:00:00:00:00/40 tag 22 ncq dma 4096 in?
+[   41.132400]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)?
+[   41.150554] ata1.00: status: { DRDY }?
+[   41.155728] ata1: hard resetting link?
+[   41.618744] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)?
+[   46.738745] ata1.00: qc timeout after 5000 msecs (cmd 0xec)?
+[   46.745920] ata1.00: failed to IDENTIFY (I/O error, err_mask=0x4)?
+[   46.753590] ata1.00: revalidation failed (errno=-5)?
+[   46.760028] ata1: hard resetting link?
+[   47.226747] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)?
+[   57.490749] ata1.00: qc timeout after 10000 msecs (cmd 0xec)?
+[   57.497990] ata1.00: failed to IDENTIFY (I/O error, err_mask=0x4)?
+[   57.505643] ata1.00: revalidation failed (errno=-5)?
+[   57.512055] ata1: limiting SATA link speed to 1.5 Gbps?
+[   57.518734] ata1: hard resetting link?
+[   57.986749] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)?
+[   74.942705] random: crng init done?
+[   88.210763] ata1.00: qc timeout after 30000 msecs (cmd 0xec)?
+[   88.217976] ata1.00: failed to IDENTIFY (I/O error, err_mask=0x4)?
+[   88.225614] ata1.00: revalidation failed (errno=-5)?
+[   88.232011] ata1.00: disable device?
+[   88.698746] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)?
+[   88.706519] ata1: EH complete?
+[   88.713142] sd 0:0:0:0: [sdb] tag#0 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=77s?
+[   88.724435] sd 0:0:0:0: [sdb] tag#0 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[   88.733594] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0?
+[   88.743293] Buffer I/O error on dev sdb, logical block 0, async page read?
+[   88.751817] sd 0:0:0:0: [sdb] tag#23 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[   88.763364] sd 0:0:0:0: [sdb] tag#23 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[   88.772667] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0?
+[   88.782394] Buffer I/O error on dev sdb, logical block 0, async page read?
+[   88.792940]  sdb: unable to read partition table?
+[   88.801327] sd 0:0:0:0: [sdb] Attached SCSI disk?
+[   88.809773] probe of 0:0:0:0 returned 0 after 78300294 usecs?
+[   88.818217] Freeing unused kernel image (initmem) memory: 1588K?
+[   88.825974] Write protecting the kernel read-only data: 30720k?
+[   88.835776] Freeing unused kernel image (text/rodata gap) memory: 960K?
+[   88.845371] Freeing unused kernel image (rodata/data gap) memory: 1092K?
+[   88.853749] rodata_test: all tests were successful?
+[   88.860730] Run /init as init process?
+[   88.866050]   with arguments:?
+[   88.870579]     /init?
+[   88.874325]   with environment:?
+[   88.878981]     HOME=/?
+[   88.882799]     TERM=linux?
+[   98.922796] sd 0:0:0:0: [sdb] tag#1 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[   98.932618] sd 0:0:0:0: [sdb] tag#1 CDB: opcode=0x28 28 00 3a 38 5f 80 00 00 08 00?
+[   98.940362] I/O error, dev sdb, sector 976772992 op 0x0:(READ) flags 0x80700 phys_seg 1 prio class 0?
+[   98.949878] sd 0:0:0:0: [sdb] tag#2 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[   98.959712] sd 0:0:0:0: [sdb] tag#2 CDB: opcode=0x28 28 00 3a 38 5f 80 00 00 08 00?
+[   98.967462] I/O error, dev sdb, sector 976772992 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0?
+[   98.976457] Buffer I/O error on dev sdb, logical block 122096624, async page read?
+[   98.984295] sd 0:0:0:0: [sdb] tag#3 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[   98.994091] sd 0:0:0:0: [sdb] tag#3 CDB: opcode=0x28 28 00 00 00 00 00 00 00 10 00?
+[   99.001835] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x80700 phys_seg 1 prio class 0?
+[   99.010610] sd 0:0:0:0: [sdb] tag#24 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[   99.020534] sd 0:0:0:0: [sdb] tag#24 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[   99.028369] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0?
+[   99.036648] Buffer I/O error on dev sdb, logical block 0, async page read?
+[   99.695028] EXT4-fs (sda2): recovery complete?
+[   99.700658] EXT4-fs (sda2): mounted filesystem 116ef654-f297-4253-98fc-1ca455c1d9fe r/w with ordered data mode. Quota mode: disabled.?
+[   99.948378] systemd[1]: System time advanced to timestamp on /var/lib/systemd/timesync/clock: Fri 2026-05-08 14:02:58 UTC?
+[   99.999012] systemd[1]: systemd 259.3-1-arch running in system mode (+PAM +AUDIT -SELINUX +APPARMOR -IMA +IPE +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP -SYSVINIT +LIBARCHIVE)?
+[  100.034595] systemd[1]: Detected architecture x86-64.?
+[  100.053680] systemd[1]: Hostname set to <archlinux>.?
+[  100.125470] systemd[1]: bpf-restrict-fs: BPF LSM hook not enabled in the kernel, BPF LSM not supported.?
+[  100.716487] zram_generator::generator[200]: modprobe "zram" failed, ignoring: code exit status: 1?
+[  100.726402] (generato[183]: /usr/lib/systemd/system-generators/zram-generator failed with exit status 1.?
+[  101.156212] systemd[1]: Queued start job for default target Graphical Interface.?
+[  102.004593] systemd[1]: Created slice Slice /system/dirmngr.?
+[  102.016374] systemd[1]: Created slice Slice /system/getty.?
+[  102.027891] systemd[1]: Created slice Slice /system/gpg-agent.?
+[  102.039831] systemd[1]: Created slice Slice /system/gpg-agent-browser.?
+[  102.052360] systemd[1]: Created slice Slice /system/gpg-agent-extra.?
+[  102.064853] systemd[1]: Created slice Slice /system/gpg-agent-ssh.?
+[  102.076919] systemd[1]: Created slice Slice /system/keyboxd.?
+[  102.088627] systemd[1]: Created slice Slice /system/modprobe.?
+[  102.100306] systemd[1]: Created slice Slice /system/systemd-zram-setup.?
+[  102.112683] systemd[1]: Created slice User and Session Slice.?
+[  102.119141] systemd[1]: Started Forward Password Requests to Wall Directory Watch.?
+[  102.128096] systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.?
+[  102.138028] systemd[1]: Expecting device /dev/zram0...?
+[  102.143550] systemd[1]: Reached target Login Prompts.?
+[  102.155724] systemd[1]: Reached target Image Downloads.?
+[  102.167317] systemd[1]: Reached target Local Integrity Protected Volumes.?
+[  102.185138] systemd[1]: Reached target Remote Encrypted Volumes.?
+[  102.202175] systemd[1]: Reached target Remote File Systems.?
+[  102.212114] systemd[1]: Reached target Remote Integrity Protected Volumes.?
+[  102.223748] systemd[1]: Reached target Remote Verity Protected Volumes.?
+[  102.241074] systemd[1]: Reached target Slice Units.?
+[  102.251422] systemd[1]: Reached target Local Verity Protected Volumes.?
+[  102.266914] systemd[1]: Listening on Device-mapper event daemon FIFOs.?
+[  102.284223] systemd[1]: Listening on Query the User Interactively for a Password.?
+[  102.307763] systemd[1]: Listening on Process Core Dump Socket.?
+[  102.322389] systemd[1]: Listening on Credential Encryption/Decryption.?
+[  102.339522] systemd[1]: Listening on Factory Reset Management.?
+[  102.360555] systemd[1]: Listening on Journal Audit Socket.?
+[  102.372691] systemd[1]: Listening on Journal Socket (/dev/log).?
+[  102.386555] systemd[1]: Listening on Journal Sockets.?
+[  102.397460] systemd[1]: Listening on DDI File System Mounter Socket.?
+[  102.416292] systemd[1]: Listening on Console Output Muting Service Socket.?
+[  102.428215] systemd[1]: Listening on Network Management Resolve Hook Socket.?
+[  102.443470] systemd[1]: Listening on Network Management Varlink Socket.?
+[  102.455736] systemd[1]: Listening on Network Management Netlink Socket.?
+[  102.469984] systemd[1]: Listening on Namespace Resource Manager Socket.?
+[  102.482303] systemd[1]: TPM PCR Measurements skipped, unmet condition check ConditionSecurity=measured-uki?
+[  102.494337] systemd[1]: Make TPM PCR Policy skipped, unmet condition check ConditionSecurity=measured-uki?
+[  102.509495] systemd[1]: Listening on Disk Repartitioning Service Socket.?
+[  102.521529] systemd[1]: Listening on Resolve Monitor Varlink Socket.?
+[  102.535773] systemd[1]: Listening on Resolve Service Varlink Socket.?
+[  102.552106] systemd[1]: Listening on udev Control Socket.?
+[  102.567579] systemd[1]: Listening on udev Kernel Socket.?
+[  102.582748] systemd[1]: Listening on udev Varlink Socket.?
+[  102.594705] systemd[1]: Listening on User Database Manager Socket.?
+[  102.613212] systemd[1]: Mounting Huge Pages File System...?
+[  102.636135] systemd[1]: Mounting POSIX Message Queue File System...?
+[  102.647546] systemd[1]: Kernel Debug File System skipped, unmet condition check ConditionPathExists=/sys/kernel/debug?
+[  102.660983] systemd[1]: Kernel Trace File System skipped, unmet condition check ConditionPathExists=/sys/kernel/tracing?
+[  102.674278] systemd[1]: Create List of Static Device Nodes skipped, unmet condition check ConditionFileNotEmpty=/lib/modules/6.15.4-Baikal_TESTING_crashniels-dirty/modules.devname?
+[  102.693281] systemd[1]: Load Kernel Module configfs skipped, unmet condition check ConditionKernelModuleLoaded=!configfs?
+[  102.713373] systemd[1]: Mounting Kernel Configuration File System...?
+[  102.725258] systemd[1]: Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm?
+[  102.748828] systemd[1]: Starting Load Kernel Module efi_pstore...?
+[  102.760019] systemd[1]: Load Kernel Module fuse skipped, unmet condition check ConditionKernelModuleLoaded=!fuse?
+[  102.779531] systemd[1]: Mounting FUSE Control File System...?
+[  102.791193] systemd[1]: Clear SysFail Entry If The Boot Is Successful skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/LoaderEntrySysFail-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f?
+[  102.811942] systemd[1]: File System Check on Root Device skipped, unmet condition check ConditionPathIsReadWrite=!/?
+[  102.824883] systemd[1]: Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67?
+[  102.845514] systemd[1]: systemd-journald.service: unit configures an IP firewall, but the local system does not support BPF/cgroup firewalling.?
+[  102.862738] systemd[1]: systemd-journald.service: (This warning is only shown for the first unit using IP firewalling.)?
+[  102.882655] systemd[1]: Starting Journal Service...?
+[  102.908062] systemd[1]: Starting Load Kernel Modules...?
+[  102.925513] systemd[1]: Starting Generate Network Units from Kernel Command Line...?
+[  102.938751] systemd[1]: TPM PCR Machine ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki?
+[  102.951910] systemd[1]: TPM NvPCR Product ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki?
+[  102.972443] systemd[1]: Starting Remount Root and Kernel File Systems...?
+[  102.998896] systemd-journald[421]: Collecting audit messages is enabled.?
+[  103.003032] systemd[1]: Starting Create Static Device Nodes in /dev gracefully...?
+[  103.018484] sd 0:0:0:0: [sdb] tag#25 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[  103.018498] sd 0:0:0:0: [sdb] tag#25 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[  103.018503] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x80700 phys_seg 1 prio class 0?
+[  103.018566] sd 0:0:0:0: [sdb] tag#26 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[  103.018573] sd 0:0:0:0: [sdb] tag#26 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[  103.018576] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0?
+[  103.018582] Buffer I/O error on dev sdb, logical block 0, async page read?
+[  103.101623] systemd[1]: Early TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-uki?
+[  103.116074] EXT4-fs (sda2): re-mounted 116ef654-f297-4253-98fc-1ca455c1d9fe.?
+[  103.121680] systemd[1]: Starting Load udev Rules from Credentials...?
+[  103.162717] systemd[1]: Starting Coldplug All udev Devices...?
+[  103.182300] systemd[1]: Starting Virtual Console Setup...?
+[  103.381287] systemd[1]: Mounted Huge Pages File System.?
+[  103.398705] systemd[1]: Mounted POSIX Message Queue File System.?
+[  103.416826] systemd[1]: Mounted Kernel Configuration File System.?
+[  103.434725] systemd[1]: Started Journal Service.?
+[  103.445158] audit: type=1130 audit(1778248981.708:2): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-journald comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.469411] audit: type=1130 audit(1778248981.732:3): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@efi_pstore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.491181] audit: type=1131 audit(1778248981.732:4): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@efi_pstore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.536633] audit: type=1130 audit(1778248981.799:5): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-modules-load comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.562168] audit: type=1130 audit(1778248981.825:6): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-network-generator comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.587902] audit: type=1130 audit(1778248981.851:7): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-remount-fs comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.613359] audit: type=1130 audit(1778248981.876:8): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-udev-load-credentials comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.640302] audit: type=1130 audit(1778248981.903:9): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-vconsole-setup comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.756796] systemd-journald[421]: Received client request to flush runtime journal.?
+[  103.810371] audit: type=1130 audit(1778248982.073:10): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  103.832208] audit: type=1131 audit(1778248982.073:11): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  105.648518] sd 0:0:0:0: [sdb] tag#6 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[  105.658374] sd 0:0:0:0: [sdb] tag#6 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[  105.666183] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x80700 phys_seg 1 prio class 0?
+[  105.675272] sd 0:0:0:0: [sdb] tag#7 UNKNOWN(0x2003) Result: hostbyte=0x04 driverbyte=DRIVER_OK cmd_age=0s?
+[  105.685118] sd 0:0:0:0: [sdb] tag#7 CDB: opcode=0x28 28 00 00 00 00 00 00 00 08 00?
+[  105.692936] I/O error, dev sdb, sector 0 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0?
+[  105.701277] Buffer I/O error on dev sdb, logical block 0, async page read?
+[  192.328949] kauditd_printk_skb: 18 callbacks suppressed?
+[  192.328961] audit: type=1130 audit(1778249070.592:30): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=plymouth-read-write comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  192.354157] audit: type=1130 audit(1778249070.617:31): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-boot-update comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  192.374268] audit: type=1130 audit(1778249070.637:32): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-userdb-load-credentials comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  192.634355] audit: type=1130 audit(1778249070.897:33): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-tmpfiles-setup comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  192.682387] audit: type=1127 audit(1778249070.945:34): pid=687 uid=0 auid=4294967295 ses=4294967295 msg=' comm="systemd-update-utmp" exe="/usr/lib/systemd/systemd-update-utmp" hostname=? addr=? terminal=? res=success'?
+[  192.702347] audit: type=1130 audit(1778249070.965:35): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-update-utmp comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  192.942389] audit: type=1130 audit(1778249071.205:36): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=dbus-broker comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  193.059623] audit: type=1130 audit(1778249071.322:37): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=alsa-restore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  193.106805] audit: type=1130 audit(1778249071.370:38): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-homed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  193.132675] audit: type=1130 audit(1778249071.396:39): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-homed-activate comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  195.008015] call_irq_handler: 11 callbacks suppressed?
+[  195.008029] call_irq_handler: 0.227 No irq handler for vector?
+[  195.019053] icc_interrupt: 11 callbacks suppressed?
+[  195.019058] icc_interrupt: irq=0 entry status=0x3?
+[  195.028783] amdgpu: ps4_bridge_get_modes?
+[  195.036495] call_irq_handler: 0.227 No irq handler for vector?
+[  195.042372] icc_interrupt: irq=0 entry status=0x2?
+[  195.047197] amdgpu: ps4_bridge_get_modes?
+[  197.454224] call_irq_handler: 0.227 No irq handler for vector?
+[  197.460170] icc_interrupt: irq=0 entry status=0x2?
+[  197.479574] amdgpu: ps4_bridge: non-CEA mode (1400x1050), defaulting to VIC 16 (1080p60)?
+[  197.488044] call_irq_handler: 0.227 No irq handler for vector?
+[  197.493927] icc_interrupt: irq=0 entry status=0x3?
+[  197.499856] call_irq_handler: 0.227 No irq handler for vector?
+[  197.505742] icc_interrupt: irq=0 entry status=0x2?
+[  199.967869] icc_interrupt: irq=0 entry status=0x1?
+[  199.967878] call_irq_handler: 0.227 No irq handler for vector?
+[  199.973627] icc_interrupt: irq=0 entry status=0x2?
+[  199.978545] call_irq_handler: 0.227 No irq handler for vector?
+[  200.072869] call_irq_handler: 0.227 No irq handler for vector?
+[  200.073180] icc_interrupt: irq=0 entry status=0x1?
+[  200.083813] call_irq_handler: 0.227 No irq handler for vector?
+[  200.084658] icc_interrupt: irq=0 entry status=0x2?
+[  200.692811] call_irq_handler: 0.227 No irq handler for vector?
+[  200.693371] icc_interrupt: irq=0 entry status=0x1?
+[  200.777399] kauditd_printk_skb: 11 callbacks suppressed?
+[  200.777411] audit: type=1103 audit(1778249079.040:51): pid=853 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_env,pam_permit acct="lightdm" exe="/usr/bin/lightdm" hostname=? addr=? terminal=:0 res=success'?
+[  200.910654] call_irq_handler: 0.227 No irq handler for vector?
+[  200.911553] icc_interrupt: irq=0 entry status=0x2?
+[  200.921408] amdgpu: ps4_bridge_get_modes?
+[  200.927539] call_irq_handler: 0.227 No irq handler for vector?
+[  200.928453] icc_interrupt: irq=0 entry status=0x2?
+[  200.938274] amdgpu: ps4_bridge_get_modes?
+[  201.016002] audit: type=1130 audit(1778249079.279:52): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=user-runtime-dir@966 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  201.124270] audit: type=1101 audit(1778249079.387:53): pid=902 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="lightdm" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=success'?
+[  201.148573] audit: type=1103 audit(1778249079.387:54): pid=902 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=? acct="lightdm" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=failed'?
+[  201.169069] audit: type=1006 audit(1778249079.387:55): pid=902 uid=0 old-auid=4294967295 auid=966 tty=(none) old-ses=4294967295 ses=1 res=1?
+[  201.181848] audit: type=1300 audit(1778249079.387:55): arch=c000003e syscall=1 success=yes exit=3 a0=a a1=7ffe0612d670 a2=3 a3=0 items=0 ppid=1 pid=902 auid=966 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=1 comm="(systemd)" exe="/usr/lib/systemd/systemd-executor" key=(null)?
+[  201.208957] audit: type=1327 audit(1778249079.387:55): proctitle="(systemd)"?
+[  201.216156] audit: type=1105 audit(1778249079.395:56): pid=902 uid=0 auid=966 ses=1 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_umask,pam_systemd,pam_env acct="lightdm" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=success'?
+[  202.712228] audit: type=1130 audit(1778249080.975:57): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=user@966 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[  202.751145] audit: type=1105 audit(1778249081.014:58): pid=853 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:session_open grantors=pam_unix,pam_systemd acct="lightdm" exe="/usr/bin/lightdm" hostname=? addr=? terminal=:0 res=success'?
+[  223.353227] kauditd_printk_skb: 1 callbacks suppressed?
+[  223.353236] audit: type=1131 audit(1778249101.616:60): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-hostnamed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?

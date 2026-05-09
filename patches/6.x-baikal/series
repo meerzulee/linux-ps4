@@ -101,6 +101,12 @@
 # pre_enable/enable never fires from the modeset path. Force-call them
 # from ps4_bridge_register at attach time with hardcoded 1080p60 VIC.
 0300-gpu-liverpool/0007-amdgpu-force-ps4-bridge-init-at-attach.patch
+# v22: DRM atomic does call ps4_bridge_mode_set + bridge_enable (when
+# lightdm starts) but drm_match_cea_mode returns 0 for the mode passed,
+# so mn_bridge->mode=0 and bridge_enable bails "mode not available".
+# Default to VIC 16 (1080p60) when CEA match fails. Also widen
+# mode_valid to accept 1920x1080 / 1280x720 even without exact CEA match.
+0300-gpu-liverpool/0008-amdgpu-ps4-bridge-default-vic-16.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
