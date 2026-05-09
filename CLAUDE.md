@@ -41,6 +41,41 @@ The dev environment's safety net (`bzImage-stable`, `rollback-kernel.sh`) is for
 - Don't use `earlyprintk=serial,ttyS0,...` — targets nonexistent legacy 8250 at I/O 0x3F8.
 - Use ArabPixel **v24b** unified payload (not the per-firmware ones).
 
+## 6.x v40 candidate fix (UNTESTED, 2026-05-10 overnight)
+
+**THE actual root cause for HDMI display being broken in 6.x has been
+identified. A candidate fix is built and ready to test.**
+
+Root cause chain:
+1. `arch/x86/platform/ps4/ps4.c::x86_ps4_early_setup` sets
+   `legacy_pic = &null_legacy_pic` because PS4 has no physical 8259 PIC
+2. `early_irq_init()` then allocates ZERO IRQ descriptors for legacy
+   range 0..15 (with `CONFIG_SPARSE_IRQ=y`)
+3. ACPI subsystem init (`subsys_initcall`) calls `request_irq(9, ...)`
+   for SCI handler
+4. `request_threaded_irq → irq_to_desc(9) → NULL → -EINVAL`
+5. SCI install fails → `acpi_terminate` → all ACPI mutexes deleted
+6. ATOM BIOS calls fail (mutex acquire returns AE_BAD_PARAMETER)
+7. amdgpu PLL programming gets garbage → bridge can't lock → blank HDMI
+
+Fix in `patches/6.x-baikal/0100-x86-platform/0002-x86-ps4-allocate-irq9-desc-for-acpi-sci.patch`:
+- Pre-allocate IRQ 9 descriptor with `dummy_irq_chip` in `arch_initcall`
+- arch_initcall (level 3) runs after `early_irq_init` but before `acpi_init`
+  (subsys_initcall, level 4)
+- Result: `irq_to_desc(9)` returns valid desc → `request_irq` succeeds →
+  ACPI mutex init completes → ATOM BIOS works → display works
+
+To test (when USB available):
+```
+sudo bash scripts/swap-bzimage.sh output/6.x-baikal/bzImage
+sudo bash scripts/dev/update-bootargs.sh 6.x-edid-1920x1080
+bash scripts/dev/boot-capture.sh start v40-irq9-desc-fix
+# move USB to PS4, power-cycle, watch monitor
+```
+
+Look for in log: `ps4: pre-allocated IRQ 9 desc for ACPI SCI (virq=9)`
+NOT seeing: `SCI (IRQ9) allocation failed` or `MTX_Tables not acquired`
+
 ## 6.x current working config (post-v16, 2026-05-09)
 
 After 16 iterations, the combination that produces a fully booting 6.15.4 with
