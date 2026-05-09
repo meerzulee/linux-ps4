@@ -97,6 +97,8 @@
 # msi_for_each_desc finds nothing. Shotgun ensures the right virq has
 # our handler regardless of where kernel actually mapped it.
 0200-ps4-drivers/0014-ps4-bpcie-icc-shotgun-virq-register.patch
+# v38 was tried (remove polling) - LOST the RGB-at-/init effect from v37.
+# Reverted. Polling + shotgun IRQ together = best state observed.
 # DIAGNOSTIC ONLY — keep applied while we confirm Option B works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
 # v9 has its own pr_info — disabled to avoid hunk conflict
