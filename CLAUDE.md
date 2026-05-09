@@ -57,9 +57,118 @@ Default to **incremental** (`./build.sh -t 6.x-baikal`, ~2 min). It works the wa
 
 For a between-test rebuild that *only* changes a `.c` file: incremental is enough.
 
+## Iteration workflow (settled 2026-05-09)
+
+This is the loop we run for every kernel-side experiment. Each step has a
+specific actor — Claude OR user — written explicitly because mixing them up
+costs reboots.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. PROPOSE      Claude reads logs / upstream / past iterations and      │
+│                 proposes a concrete next change with hypothesis +       │
+│                 expected signal.  User says yes/no/redirect.            │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 2. PATCH        Claude edits source under src/<target>/, regenerates    │
+│                 the affected patches/<target>/.../<NNNN>-...patch       │
+│                 from a snapshot diff, runs ./build.sh -t <target>       │
+│                 (or -c for header changes — see "Build hygiene"         │
+│                 above).                                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 3. STAGE        Claude waits until USB is plugged into the host, then   │
+│                 sudo bash scripts/swap-bzimage.sh + verifies md5sum     │
+│                 match between built bzImage and bzImage on USB.         │
+│                 Drops a marker in the rolling UART log.                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 4. ARM CAPTURE  User says "start" / "start log" / "start capture".      │
+│                 Claude runs:                                            │
+│                   scripts/dev/boot-capture.sh start <name>              │
+│                 which records the byte offset of the rolling UART log  │
+│                 right now.                                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 5. BOOT         User physically moves USB to PS4, power-cycles the      │
+│                 console, and goes through the PSFree-Enhanced gauntlet  │
+│                 (see "NEVER trigger a PS4 reboot" above).               │
+│                 Claude does NOT initiate this.                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 6. WATCH        ps4-uart/ps4uart.py is already running in the           │
+│                 background; it streams /dev/ttyUSB0 into                │
+│                 ps4-uart/logs/ps4_uart_*.log.  User watches the UART    │
+│                 live (or just the console).                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 7. STOP         User says "stop" / "check logs" / "done".  Claude runs: │
+│                   scripts/dev/boot-capture.sh stop <name>               │
+│                 which slices the bytes added since step 4 into          │
+│                 checkpoint/uart-logs/<DATE>_<TIME>-<name>.log,          │
+│                 sanitizing non-printable bytes from serial reconnects   │
+│                 to '?', and prints a quick signal-count summary         │
+│                 (Linux version, bpcie_handle_edge_irq, Command          │
+│                 Aborted, etc.).                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 8. ANALYZE      Claude reads the saved excerpt, writes a per-test       │
+│                 report under checkpoint/docs/research/<DATE>-<name>-    │
+│                 result.md, appends one paragraph each to LEARNINGS.md   │
+│                 + BUILD_LOG.md.                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 9. COMMIT       Claude commits the patch + docs + saved log under one  │
+│                 message that captures the result, then `git push`.      │
+│                 Authored as "Meerzulee", co-authored-by Claude.        │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 10. NEXT        User compacts the conversation when context fills up,   │
+│                 may switch effort/model, and starts the next            │
+│                 iteration from "PROPOSE" with the committed state as    │
+│                 the new baseline.                                       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Things to remember about each step
+
+- **Step 2 (PATCH):** prefer editing source under `src/<target>/` and
+  regenerating the patch from a snapshot diff (vs hand-editing the .patch
+  file).  Hand-editing tends to break unified diff hunk headers when context
+  shifts.  Pattern: keep `/tmp/bpcie.before-B.c` (or similar) as the snapshot
+  baseline; after editing in-tree source, `diff -u --label=...` against the
+  snapshot to produce the patch body.
+
+- **Step 3 (STAGE):** the build script re-applies the patch series from
+  scratch each run, which means **any direct edit to source under
+  `src/<target>/` after build will be wiped on the next build**.  Always
+  update the patch file as the source of truth.
+
+- **Step 4 (ARM CAPTURE):** the marker pattern (`echo "===MARKER..." | sudo
+  tee -a logs/...`) is unreliable because pyserial's buffered writes
+  routinely clobber appended markers.  Use `boot-capture.sh start <name>`
+  instead — it records byte offset, not text marker.
+
+- **Step 7 (STOP):** the saved excerpt is the source of truth for the boot.
+  Quote line numbers from it (e.g. "see line 1742 of `2026-05-09_1436-v7-
+  baikallove.log`") in reports, not from the rolling log (which keeps growing
+  and shifts line numbers).
+
+- **Step 8 (ANALYZE):** include three things in every report — counts table
+  (vs previous iteration), boot timing milestones (`first at: t=...`), and
+  hypotheses for the next iteration.  See
+  `checkpoint/docs/research/2026-05-09-v7-baikallove-result.md` for the
+  template.
+
+- **Step 9 (COMMIT):** commit messages should state the change AND the
+  hardware result (✅/❌ per signal).  Future-Claude reading `git log` should
+  be able to tell which iterations are dead ends without reading the patch.
+
+### Naming conventions for `<name>` in steps 4/7
+
+- `<option>-v<N>-<short-tag>` for kernel iteration tests:
+  e.g. `option-b-v7-baikallove`, `option-b-v8-instrument`.
+- `<feature>-<scenario>` for one-off experiments:
+  e.g. `iommu-passthrough`, `nomsi-bypass-test`.
+- Keep it under ~30 chars so the saved filename is readable.
+
 ## Reference paths
 
 - `checkpoint/docs/PLAN.md` — global plan and next-session priority list
 - `checkpoint/docs/LEARNINGS.md` — diagnosis history
+- `checkpoint/docs/research/` — per-iteration boot reports + upstream surveys
+- `checkpoint/uart-logs/` — per-test UART excerpts (saved by `boot-capture.sh stop`)
 - `BUILD_LOG.md` — chronological session notes
-- `scripts/dev/` — host-side dev environment (test-kernel, mark-good, rollback-kernel)
+- `scripts/dev/` — host-side dev environment.  `scripts/dev/README.md` documents
+  `boot-capture.sh` (the per-test UART slicer used in steps 4/7 of the loop above).
