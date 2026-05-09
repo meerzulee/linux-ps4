@@ -547,3 +547,30 @@ hardware-level: missing HT-disable register write.  v10 is research +
 implement `apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask`.
 
 Full report: `checkpoint/docs/research/2026-05-09-v9-option-e-result.md`.
+
+## 2026-05-09 — v10 / Option F built and tested
+
+Implemented the day-1 TODO finally: faithful port of 5.4 Aeolia's
+apcie_config_msi for Baikal.  Added 0008-ps4-bpcie-southbridge-msi-config.patch
+on top of 0007 (v9 / Option E).  Build clean, all 23 patches applied.
+
+Hardware result: bpcie_config_msi runs 41 times without crashing, but
+a bug in func/subfunc extraction means we programmed function 0's MSI
+slots with everyone's data (`func=0` in every log line, even xhci which
+should be func=7).  bpcie_handle_edge_irq still fires 0 times.
+
+Root cause: extracted `func = (data->hwirq >> 5) & 7` expecting Baikal's
+`(slot << 8) | (func << 5) | subfunc` encoding.  That encoding only
+exists at the bpcie parent domain level.  In 6.x's per-device MSI flow,
+the LEAF data->hwirq is just the per-device subfunction index
+(0..nvec-1).  All values < 32 decode to func=0.
+
+v11 fix: extract func from PCI_FUNC(pdev->devfn), use data->hwirq
+directly as subfunc.
+
+What v10 DID prove (positive):
+- BAR2 register block at 0x110000 is writable, no register-bus fault
+- 41 sequential register writes completed without kernel crash
+- Validates assumption #1 (BPCIE_RGN_PCIE_BASE = 0x110000)
+
+Full report: checkpoint/docs/research/2026-05-09-v10-option-f-result.md

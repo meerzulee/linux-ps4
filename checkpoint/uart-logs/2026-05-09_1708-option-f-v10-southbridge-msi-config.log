@@ -1,0 +1,362 @@
+[SceShellCore] Libc Heap Status: free 36%, in-use 3909.3 KB, trend -63.7 KB/min, peak 4424.0 KB, when 1789 [sec]?
+[SceRnpsAppMgr] PERIODIC_CHECK_INTERVAL_SEC={600}?
+[SceRnpsAppMgr] CheckAllRnpsApps : trigger = 0, num_apps = 2?
+D/88391:?
+[UIProcess] malloc stats freeSize:38827008 (93%) inuseSize:3116032 peakSize:4068832 [pid:0x3a]?
+D/88391:AZIF00003?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_http.cpp(409) Request: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(720) Download: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_http.cpp(409) Request: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(720) Download: RNPSAM_ISOK::0x8095170d?
+[SceLncService] launchApp(AZIF00003)?
+[SceLncService] category={gde} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={0}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_MINI_APP} [] appVer={0.98}?
+[SceLncService] mem_mode = {NORMAL}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDirCheck()?
+[SceLncService] PrepareProcessLaunchDirCheck() returned?
+[SceSystemStateMgr] Power Mode Change: FULL_GAME?
+[ScePatchChecker] (*) check (title_id='AZIF00003', app_version='0.98', check_option=0): status=0, trigger=1 userId=0xffffffff return 0x80412883?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   0 NA  0 18  800  673  609  800  800    711  711     673 1400   1375   NA  NA   3 05b/975  05d/956  00710fa0?
+[SceLncService] PrepareProcessLaunchDir()?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_http.cpp(409) Request: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(720) Download: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(661) DownloadAndInstall: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(1506) CheckAllRnpsApps: RNPSAM_ISOK::0x8095170d?
+[ScePatchChecker] check (title_id='AZIF00003', app_version='0.98', check_option=0): status=0, dl_status=0, trigger=1 userId=0xffffffff return 0x80412883?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [ContentAreaScene : ContentAreaScene] -> [SplashScreen : SplashScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [SplashScreen : SplashScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : ActiveUserChanged : From : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : ActiveUserChanged : To   : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[BGFT] [571] GameStartBoot(AZIF00003, 7) start?
+[BGFT] [573] GameStartBoot(AZIF00003, 7) end?
+[PFS] mount [0x0000451f597ed800] finished 1 1 1 1 0 1 1?
+[PFS] mount [0x0000451f59e6a3af] finished 1 0 0 1 0 1 1?
+[BGFT] [606] GameWillStart(AZIF00003, 7) start?
+[BGFT] [608] GameWillStart(AZIF00003, 7) end?
+[SceLncService] PrepareProcessLaunchDir() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp AZIF00003?
+[Sy[score App]  ExpandCpuSetMode : disable?
+[Syscore App] processSpawn(pid, 0x6000110c, 0x1110c150, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/AZIF00003_000, titleId = AZIF00003?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /mnt/sandbox/pfsmnt/AZIF00003-app0-patch0-union/eboot.bin?
+[Syscore App] new pid=0x4b[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+KERNEL] dmem_start_app_process pid: 75, map=0xffffbef05c2793c0, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0xm4b?
+[AppMgr Trace]: New Process, pid=0x4b, created.?
+[AppMgr Trace]: New App, appId=0x6000110c, created?
+[Syscore App]  ExpandCpuSetMode : disable?
+DBG: Process 75 untraced![VCS]checkFocusStatus() [LNC->VCS] Focus Change. appType = 4(MINI_APP). appId = 0x6000110c.?
+?
+<[AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/OKxPr1nKw0/priv/mms/app.db] flags[0x10000002] result[0x0, 0]?
+[AppDb] AppInfoDbInitializeDaemon()[54]: [File:Open] AppInfoDbInitializeDaemon() call DbAccessor::Init() path[/OKxPr1nKw0/priv/mms/app.db] result[0x0, 0].?
+[SL] AppFocusChanged [NPXS20001] -> [AZIF00003]?
+[AppDb] AppInfoDbTerminateDaemon()[67]: [File:Close] AppInfoDbTerminateDaemon() call DbAccessor::Terminate().?
+[AppDb] Terminate()[768]: [File:Close] DbAccessor::Terminate() call dbutil::Connection::Close().?
+75> EXEC /app0/eboot.bin [system], vm#0, dmem#0  <1831040 msec>?
+[GoldHEN] <Plugins Loader> Started successfully?
+[GoldHEN] <Plugins Loader> Config parser failed to parse config: /data/GoldHEN/plugins.ini?
+(../game_patch/source/main.cpp:354) [GoldHEN] <game_patch\Ver.0x00000110> module_start?
+(../game_patch/source/main.cpp:355) [GoldHEN] Plugin Author(s): illusion?
+(../game_patch/source/main.cpp:356) Commit: caacf01174654235459d48ab9d0b9e00a588b300 Branch: main Build: 188 (Release)?
+(../game_patch/source/main.cpp:356) Built: May 27 2023 @ 04:49:25?
+(../game_patch/source/main.cpp:356) GoldHEN SDK Ver: 0x00000100?
+(../game_patch/source/main.cpp:356) GoldHEN System SDK Ver: 0xffffffff?
+(../game_patch/source/main.cpp:324) numModules: 5?
+(../game_patch/source/main.cpp:328) ret 0x0?
+(../game_patch/source/main.cpp:329) module 0?
+(../game_patch/source/main.cpp:330) name: eboot.bin?
+(../game_patch/source/main.cpp:331) start: 0x400000?
+(../game_patch/source/main.cpp:332) size: 49152 (0xc000)?
+(../game_patch/source/main.cpp:365) Module start: 0x400000 0xc000?
+(../game_patch/source/main.cpp:371) process info?
+(../game_patch/source/main.cpp:371) pid: 75?
+(../game_patch/source/main.cpp:371) name: eboot.bin?
+(../game_patch/source/main.c?pp:371) path: /app0/eboot.bin?
+(../game_patch/source/main.cpp:371) titleid: AZIF00003?
+(../game_patch/source/main.cpp:371) contentid: IV0000-AZIF00003_00-PAYLOADGUEST0000?
+(../game_patch/source/main.cpp:371) version: 0.98?
+(../game_patch/source/main.cpp:371) base_address: 0x400000?
+(../game_patch/source/main.cpp:130) file /data/GoldHEN/patches/xml/AZIF00003.xml not found?
+[32m[Info ] src/ChainLauncher.c:22: Loading "/app0/guest.elf"?[0m?
+[SceLncService] tryLockSuspendBl[ock: appId={0x6000110c}?
+[Syscore App] Kill for LoadExec(0x4b)?
+KERNEL] dmem_handle_vmspace_exited pid: 75, ptype=1, 0xffffbef05c2793c0->pt_loaded is TRUE?
+[KERNEL] dmem_handle_vmspace_exited map #0 0xffffbef05c2793c0?
+[KERNEL] dmem_handle_vmspace_exited pid: 75, app_maps_count[1], 1 -> 0?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x4b?
+[Syscore App] Kill for LoadExec(0x4b) => 0?
+[Syscore App] process delete event : pid=0x4b?
+[AppMgr Trace]: pid=0x4b, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited, ready for next spawn?
+[AppMgr] Executing next spawn?
+[Syscore App]  ExpandCpuSetMode : disable?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[Syscore App] processSpawn(pid, 0x6000110c, 0x1110c160, appParam, processParam, 1, 1, 1, param, debug, 1)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/AZIF00003_000, titleId = AZIF00003?
+[Syscore App] processParam: elfPath = /app0/guest.elf, fullPath = /mnt/sandbox/pfsmnt/AZIF00003-app0-patch0-[union/eboot.bin?
+[Syscore App] new pid=0x4c[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+KERNEL] dmem_start_app_process pid: 76, map=0xffffbef05c279148, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0xm4c?
+[SceLncService] unlockSuspendBlock: appId={0x6000110c}?
+DBG: Process 76 untraced!?
+<76> EXEC /app0/guest.elf [system], vm#0, dmem#0  <1831519 msec>?
+[GoldHEN] <Plugins Loader> Started successfully?
+[GoldHEN] <Plugins Loader> Config parser failed to parse config: /data/GoldHEN/plugins.ini?
+(../game_patch/source/main.cpp:354) [GoldHEN] <game_patch\Ver.0x00000110> module_start?
+(../game_patch/source/main.cpp:355) [GoldHEN] Plugin Author(s): illusion?
+(../game_patch/source/main.cpp:356) Commit: caacf01174654235459d48ab9d0b9e00a588b300 Branch: main Build: 188 (Release)?
+(../game_?patch/source/main.cpp:356) Built: May 27 2023 @ 04:49:25?
+(../game_patch/source/main.cpp:356) GoldHEN SDK Ver: 0x00000100?
+(../game_patch/source/main.cpp:356) GoldHEN System SDK Ver: 0xffffffff?
+(../game_patch/source/main.cpp:324) numModules: 5?
+(../game_patch/source/main.cpp:328) ret 0x0?
+(../game_patch/source/main.cpp:329) module 0?
+(../game_patch/source/main.cpp:330) name: guest.elf?
+(../game_patch/source/main.cpp:331) start: 0x400000?
+(../game_patch/source/main.cpp:332) size: 851968 (0xd0000)?
+(../game_patch/source/main.cpp:365) Module start: 0x400000 0xd0000?
+(../game_patch/source/main.cpp:371) process info?
+(../game_patch/source/main.cpp:371) pid: 76?
+(../game_patch/source/main.cpp:371) name: guest.elf?
+(../game_patch/source/main.cpp:371) path: /app0/guest.elf?
+(../game_patch/source/main.cpp:371) titleid: AZIF00003?
+(../game_patch/source/main.cpp:371) contentid: IV0000-AZIF00003_00-PAYLOADGUEST0000?
+(../game_patch/source/main.cpp:371) version: 0.98?
+(../game_patch/source/main.cpp:371) base_address: 0x400000?
+(../game_patch/source/main.cpp:130) file /data/GoldHEN/patches/xml/AZIF00003.xml not found?
+error: 0x80020002**** Base Mode ****?
+[SceShellCore] Libc Heap Status: free 35%, in-use 3946.7 KB, trend +47.7 KB/min, peak 4424.0 KB, when 1820 [sec]?
+[36m[Debug] src/App.cpp:29: Initialize Language...?[0m?
+?[36m[Debug] src/App.cpp:31: Initialize Controller...?[0m?
+[mbus] onNewClie?nt. clientNum 10 over 8?
+[36m[Debug] src/App.cpp:33: Initialize Graphics...?[0m?
+?[36m[Debug] src/Graphics.cpp:89: Handle is 1309737216 (0x4e110100)?[0m?
+?[36m[Debug] src/Graphics.cpp:181: DirectMemOff: 0x200000?[0m?
+?[36m[Debug] src/Graphics.cpp:182: DirectMemAllocationSize: 0xc000000?[0m?
+?[36m[Debug] src/Graphics.cpp:183: alignment: 2097152 (0x00200000)?[0m?
+?[36m[Debug] src/Graphics.cpp:188: VideoMem: 0x200200000?[0m?
+?[36m[Debug] src/Graphics.cpp:109: Allocating framebuffer...?[0m?
+?[36m[Debug] src/Graphics.cpp:237: handle: 1309737216 (0x4e110100)?[0m?
+?[36m[Debug] src/Graphics.cpp:239: flipArgLog: 0x2000041a0?[0m?
+?[36m[Debug] src/Graphics.cpp:240: FrameBuffers: 0x2000042c0?[0m?
+?[36m[Debug] src/Graphics.cpp:255: sceVideoOutRegisterBuffers: 0x00000000?[0m?
+?[36m[Debug] src/App.cpp:35: Initialize Resource...?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/App.cpp:43: Initialize the Main View...?[0m?
+?[36m[Debug] src/PayloadsView.cpp:186: GeneratePayloads is called!?[0m?
+?[36m[Debug] src/PayloadsView.cpp:212: Cleanup payload list...?[0m?
+?[36m[Debug] src/PayloadsView.cpp:206: GeneratePayloads: Refreshed?[0m?
+?[36m[Debug] src/PayloadsView.cpp:252: PayloadsView: End of constructor?[0m?
+?[36m[Debug] src/App.cpp:119: Application: RUN?[0m?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [SplashScreen : SplashScreenScene] -> [AppScreen : ApplicationScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [AppScreen : ApplicationScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[SceShellUI] I/PSM.UI : [NoDraw] : ClearFrameBuffer=False?
+?[36m[Debug] src/PayloadsView.cpp:319: Loading: /data/payloads/linux-1024mb.bin?[0m?
+[GoldHEN] <binloader> accepted a new payload?
+[GoldHEN] <binloader> TCP Mode?
+?[36m[[GoldHEND]ebug]  <binlosardce/Payr> ploadasyload recVieiew.cppve:d186: Gene r[saize: tePay283840load - buffs er_size:i 2s ca9lled!?[00m816 -?
+ ?i[p: 127.0.0.1]?
+36m[[DeGbuolg] dHEN] <sbrc/PayloadsinView.locpaderp:2>12: Cl feanup oupaynload da list...n?[d0m? 
+jailbroke?[36m[n targetDebu gp] srrc/PaocesyloadsVsie w.cpp:206[pi:d :Gene 46]r?
+ateP[GayloaoldHdEN]s: Refr <eshedb?[inlo0made?
+r> launching payload... [format: BIN]?
+[GoldHEN] <binloader> payload launched?
+kernel_init()?
+Kernel base = ffffffff838d8000?
+Direct map base = ffffbef000000000?
+Testing global variable access (write protection)...?
+OK.?
+Kernel interface initialized?
+Installing sys_kexec to system call #153?
+kexec_init() successful?
+?
+sys_kexec invoked?
+========================================?
+PS4 Linux Payloads AIO?
+FW 12.02 (1202)?
+VRAM 1024 MB?
+Southbridge: Baikal?
+========================================?
+sys_kexec(0x200a2c000, 9794560, 0x201384000, 4102011, "earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debug 8250.nr_uarts=0 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on")?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[KE]sceCameraDevKill::2685 ERROR: sceCameraProcConfigStop 0x802e0006 i=0 handle=257 pid=43?Co
+ntext.cc:174 (ajmContextCleanup) - Instance 27C853o2 ntwaexs not propet.crly destroyce:1d.?
+7Co4nt [KERN(eaxjELm]C domemn_tht.aecc:ndlxte_1Cvl89mse pace_exaniutpe)d  pi- d: Ins76,ta pnctey 1p6e39=11,  Cw0axfosf nftnofetbx eptf.ro05cpec:r1l8c29y791  48(d-ea>jpmstt_Corlonoaytdeedx eistd C.T?l
+RUE?eC
+an[oKuEpnRN)t EL-e ]Cxto dm.ecm_hdceanc:d 1leO_p8v9mspu acs(e_ae xSjImiLCtKoe d nEmap nt#ce0 0xoxfdfetffCbrle efwa05ca2nsu7914 pn8?
+)o[tKE p RNEr-Lo C]po dmeemr_hadlneyd uclne_ rvmeMspacgPe_i3exis ttDeeed cpioreddd.e:r? 
+ 7wC6,o aappns_t maexpstn.o_coctunt[ cpr1:o], 11p 8-e9> 0 ?
+rly( aujnmCreongitesxtetrCleeadn.?
+uCpontex)t .cc:1-89 (ajmC oCntexotCleandeucp O)p - Cuods ecC ATRAEC9 LDT eEcoder was notnc prooperdelry w uasn rnegistered.?
+ot properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec Opus Decoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec Opus CELT Encoder was not properl(ya jmCuontextCnrlegeanupi) - Codec sOpust SIeLrKed Enc.oder was n?o
+t properly uCnreogisterntede.xt?
+.cCconte:x1t89.cc:174 (ajmC ontext(aClejmanuCpon) te- Ixnstatnce 34C4067le waasn nup)o t p- Croperly odedestroyed.c?
+ ContOpext.cc:1u89s  (ajmCContELTex tDCleaneup) - Codec Opusco Dedcodeerr  wwaas ns noott  prproperly uonpregeisterrled.y?
+ unregisteredConte.xt.?
+cc:189 (ajmContexContCleatneup) - xCodec MPtEG4 A.AC Ecncodecr :wa17s n4 ot( properly uanregistejremCodnt.?
+extCleanup) - Instance 114689 wastryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+ not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec AC3 Encoder was not properly unregistered.?
+Context.cc:174 (ajmContextCleanup) - Instance 163842 was not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec DTS Encoder was not properly unregistered.?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_pfp.bin ?
+Copying PFP firmware?
+NOP handler at 0xff0?
+firmware_extract:tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+ Extract lib/firmware/amdgpu/liverpool_me.bin ?
+Copying ME firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_ce.bintryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+ ?
+Copying CE firmware?
+NOP handler at 0x7f0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec.bin ?
+Copying MEC firmwaretryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec2.bin ?
+Copying MEC2 firmware?
+NOP handler at 0xtryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+ff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_rlc.bin ?
+Copying RLC firmware?
+firmware_extract: Extract lib/firmware/atryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+mdgpu/liverpool_sdma.bin ?
+Copying SDMA firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma1.bin ?
+Copying SDMA1 tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+firmware?
+?
+kexec parameters:?
+    Kernel image size:   9794560 bytes?
+    Initramfs size:      4196747 bytestryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+ (4102011 from user)?
+    Kernel command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon initcall_debugtryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+ 8250.nr_uarts=0 panic=0 loglevel=8 ignore_loglevel printk.devkmsg=on?
+    Kernel image buffer: 0xffffffffffffffff?
+    Initramfs buftryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+fer:    0xffffffffffffffff?
+kernel_hook_install(0xffffff80761f912d, 0xffffffff83d1fad0)?
+  Using 64bit absolute jump?
+*************tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+*****************************************?
+kexec successfully armed. Please shut down the system.?
+**********************************tryGetMsg() failed. ret = 0x80020003, msgSize = 48?
+********************?
+?
+Context.cc:189 (ajmContextCleanup) - Codec CELP8 Decoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec CELP8 Encoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec CELP(16) Decoder was not properly unregistered.?
+Context.cc:191 (ajmContextCleanup) - More codecs were not properly unregistered...?
+[SceSysCore mini] killall timeout 5[sec]...?
+[SceSysCore mini] forcibly unmount 4 nullfses?
+[SceSysCore mini] forcibly unmount /mnt/usb0?
+[SceSysCore mini[REGMGR] 000006 ...?
+] sceKernelPollE[ventFlag(reboot_flag): failed 80020010?
+[SceSysCore mini] call reboot(4000)?
+REGMGR] (   1838.661 sec) 010006 ...?
+[REGMGR] (   0.011767 sec) 010007 ...?
+[REGMGR] 000108 ...?
+Waiting (max 60 seconds) for system process `SceVnlru' to stop...done?
+W?
+aSyncitinig n(mgax 60 secon ds) dfor isystsem pkrocess `s,SceSyncer 'v nto sotodes remaining...3 p...SD Manual Tuning done. MaxPassWindowSize=22, TunePoint=20 CORE_CTRL=0x184094?
+3 0 0 sched_sync: flush softdep (iter=2)?
+ succeeded?
+sched_sync: flush softdep (iter=1)?
+done?
+Waiting (max 60 seconds) for system process `SceBufdaemon1' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon2' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon0' to stop...done?
+All buffers synced.?
+[PFS] umount[0x0000451f59e6a3af] finished 0?
+[PFS] umount[0x0000451f597ed800] finished 0?
+Uptime: 30m44s?
+icc post sync:Thermal alert LED off?
+[REGMGR] 000007 @2@ ...?
+icc08-4001 0802?
+icc:failed to disabled reset button notification: 0005?
+icc:disabled thermal notification?
+ICC: howto:00004000 depth:2 cause:00 hand:01?
+ICC: Shutdown.?
+hook_icc_query_nowait called?
+ICC 05-00 polling?
+Fixing ACPI tables at 0xe0000 (0xffffbef0000e0000)?
+RSDT at 0xe0024?
+XSDT at 0xe0088?
+FACP at 0xe016c?
+FACS at 0xe012c?
+DSDT at 0xe0430?
+APIC at 0xe0298?
+MCFG at 0xe0304?
+SSDT at 0xe0730?
+ACPI tables fixed?
+kexec: Waiting for secondary CPUs...?
+kexec: Secondary CPUs quiesced?
+kexec: Setting up GDT...?
+kexec: Relocating stub...?
+kexec: Setting up boot params...?
+kexec: Cleaning up hardware...?
+Current sb_id: 3?
+?
+SB_BAIKAL constant: 3?
+?
+kexec: Detected Baikal Southbridge, disabling IOMMU...?
+kexec: Reconfiguring VRAM...?
+kexec: Resetting GPU...?
+kexec: About to relocate and jump to kernel?

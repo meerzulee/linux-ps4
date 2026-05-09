@@ -1,0 +1,182 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: Option F v10 - bpcie southbridge MSI redirect block (HT enable)
+
+The day-1 TODO finally implemented.  Faithful port of 5.4 Aeolia's
+apcie_config_msi (drivers/ps4/ps4-apcie.c:56-94) to Baikal — same
+register-block structure, BAR2 + 0x110000 instead of BAR4 + 0x1c8000.
+
+After v9 / Option E demonstrated all software-side correctness
+(composer firing 80x, irq_map populated 34x, no spurious 0xef events),
+bpcie_handle_edge_irq STILL fired 0 times.  Diagnosis: the southbridge
+needs to be programmed via its own per-function MSI redirection block
+— without that, child MSIs are silently dropped at the southbridge HT
+boundary even though the device-side MSI cap is correct.
+
+The function name in the FreeBSD orbis driver is
+apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask, marked TODO in
+ps4-bpcie.c::bpcie_msi_mask line 185 since the original 5.4 port.
+
+Changes:
+  - baikal.h: BPCIE_RGN_PCIE_BASE = 0x110000 + BPCIE_REG_MSI_* macro
+    family ported from aeolia.h.
+  - ps4-bpcie.c:
+    - glue_set_mask, glue_clear_mask helpers
+    - bpcie_config_msi function: writes the southbridge's per-function
+      MSI redirection block (CONTROL, ADDR, DATA_HI, DATA_LO, MASK, +
+      two unknown magic writes, likely the HT-disable bits).
+    - bpcie_msi_write_msg: after pci_msi_domain_write_msg writes the
+      device's MSI cap, ALSO call bpcie_config_msi to program the
+      southbridge's matching redirection slot.
+
+Two assumptions for v10 to validate:
+  1. Baikal's MSI block base is 0x110000 in BAR2.
+  2. Per-function/per-subfunc DATA_LO offset algorithm matches Aeolia's.
+
+References:
+  research/baikal-bringup/drivers/ps4/ps4-apcie.c (FreeBSD-derived)
+  src/5.4-baikal/drivers/ps4/ps4-apcie.c (5.4 working baseline)
+  checkpoint/docs/research/2026-05-09-v9-option-e-result.md
+---
+--- a/drivers/ps4/baikal.h
++++ b/drivers/ps4/baikal.h
+@@ -86,6 +86,27 @@
+ #define BPCIE_ACK_READ  		0x110088
+ 
+ /*
++ * v10: Southbridge MSI configuration block.  Ported by analogy from
++ * Aeolia's ps4-apcie.c (5.4 baseline) — Aeolia uses BAR4 + 0x1c8400,
++ * Baikal uses BAR2 + 0x110000-based block (same window as ACK_WRITE/READ).
++ * Per-function MSI registers control how the southbridge translates child-
++ * PCI HT writes (addr=0xFEE00000 + data=subfunc-index) into the real LAPIC
++ * vector fired on bpcie's function-4 vector pool.  Without programming
++ * this block, the southbridge silently drops every child MSI — the
++ * 7-iteration `bpcie_handle_edge_irq=0` blocker.
++ */
++#define BPCIE_RGN_PCIE_BASE		0x110000
++#define BPCIE_REG_MSI(x)		(BPCIE_RGN_PCIE_BASE + 0x400 + (x))
++#define BPCIE_REG_MSI_CONTROL		BPCIE_REG_MSI(0x0)
++#define BPCIE_REG_MSI_MASK(func)	BPCIE_REG_MSI(0x4c + ((func) << 2))
++#define BPCIE_REG_MSI_DATA_HI(func)	BPCIE_REG_MSI(0x8c + ((func) << 2))
++#define BPCIE_REG_MSI_ADDR(func)	BPCIE_REG_MSI(0xac + ((func) << 2))
++#define BPCIE_REG_MSI_DATA_LO(off)	BPCIE_REG_MSI(0x100 + (off))
++#define BPCIE_REG_MSI_CONTROL_ENABLE	0x05
++#define BPCIE_REG_MSI_MASK_FUNC		0x01000000
++#define BPCIE_REG_MSI_MASK_FUNC4	0x80000000
++
++/*
+ #define APCIE_REG_BAR(x)		(APCIE_RGN_PCIE_BASE + (x))
+ #define APCIE_REG_BAR_MASK(func, bar)	APCIE_REG_BAR(((func) * 0x30) + \
+ 						((bar) << 3))
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -40,6 +40,81 @@
+ 	iowrite32(value, sc->bar2 + offset);
+ }
+ 
++/* v10: Aeolia-analogue helpers for southbridge MSI register block. */
++static inline void glue_set_mask(struct bpcie_dev *sc, u32 offset, u32 mask) {
++	void __iomem *ptr = sc->bar2 + offset;
++	iowrite32(ioread32(ptr) | mask, ptr);
++}
++
++static inline void glue_clear_mask(struct bpcie_dev *sc, u32 offset, u32 mask) {
++	void __iomem *ptr = sc->bar2 + offset;
++	iowrite32(ioread32(ptr) & ~mask, ptr);
++}
++
++/*
++ * v10 / Option F: southbridge MSI configuration write.  Faithful port of
++ * 5.4 Aeolia's apcie_config_msi (ps4-apcie.c:56-94) for Baikal.  Without
++ * programming this block, the southbridge silently drops every child MSI
++ * even when the device's MSI cap is correctly set up by Option E's
++ * composer.  This is the missing piece behind the day-1 TODO comment in
++ * bpcie_msi_mask: "disable ht. See apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask".
++ *
++ * Per-function MSI register layout (offsets relative to BPCIE_REG_MSI(0)):
++ *   0x00  CONTROL              — bit 0+2 = engine enable
++ *   0x08  unknown              — written 0xffffffff
++ *   0x0c+f*4  unknown          — written 0xB7FFFF00 + func*16 (likely HT-disable)
++ *   0x4c+f*4  MASK(func)       — per-function unmask bit
++ *   0x8c+f*4  DATA_HI(func)    — high bits of LAPIC vector
++ *   0xac+f*4  ADDR(func)       — LAPIC dest address
++ *   0xcc+f*4  unknown          — written 0
++ *   0x100+off DATA_LO(off)     — per-subfunc low bits of LAPIC vector
++ *
++ * For Baikal func 5/7 we still use Aeolia's slot algorithm (no other
++ * reference exists); this is one of the two assumptions the boot will
++ * tell us about.
++ */
++static void bpcie_config_msi(struct bpcie_dev *sc, u32 func, u32 subfunc,
++			     u32 addr, u32 data) {
++	u32 offset;
++
++	dev_dbg(&sc->pdev->dev,
++		"bpcie_config_msi: func=%u subfunc=%u addr=%08x data=%08x\n",
++		func, subfunc, addr, data);
++
++	glue_clear_mask(sc, BPCIE_REG_MSI_CONTROL, BPCIE_REG_MSI_CONTROL_ENABLE);
++	/* Unknown — Aeolia writes 0xffffffff at MSI(0x8) every reprogram. */
++	glue_write32(sc, BPCIE_REG_MSI(0x8), 0xffffffff);
++	/* Unknown — likely HT-disable per-function. */
++	glue_write32(sc, BPCIE_REG_MSI(0xc + (func << 2)),
++		     0xB7FFFF00 + func * 16);
++	glue_write32(sc, BPCIE_REG_MSI_ADDR(func), addr);
++	/* Unknown — Aeolia writes 0 at MSI(0xcc + func*4). */
++	glue_write32(sc, BPCIE_REG_MSI(0xcc + (func << 2)), 0);
++	glue_write32(sc, BPCIE_REG_MSI_DATA_HI(func), data & 0xffe0);
++
++	/* Per-subfunc DATA_LO slot, from Aeolia's layout. */
++	if (func < 4) {
++		offset = (func << 4) | (subfunc << 2);
++	} else if (func == 4) {
++		if (subfunc < 24)
++			offset = 0x40 + (subfunc << 2);
++		else
++			offset = 0xe0 + ((subfunc - 24) << 2);
++	} else {
++		offset = 0xa0 + ((func - 5) << 4) + (subfunc << 2);
++	}
++	glue_write32(sc, BPCIE_REG_MSI_DATA_LO(offset), data & 0x1f);
++
++	if (func == BAIKAL_FUNC_ID_PCIE)
++		glue_set_mask(sc, BPCIE_REG_MSI_MASK(func),
++			      BPCIE_REG_MSI_MASK_FUNC4);
++	else
++		glue_set_mask(sc, BPCIE_REG_MSI_MASK(func),
++			      BPCIE_REG_MSI_MASK_FUNC);
++
++	glue_set_mask(sc, BPCIE_REG_MSI_CONTROL, BPCIE_REG_MSI_CONTROL_ENABLE);
++}
++
+ static u8 get_subfunc(unsigned long hwirq) {
+ 	//u32 func = (hwirq >> 5) & 7;
+ 	return hwirq & 0x1f;
+@@ -60,6 +135,28 @@
+ 	       msg->address_lo, msg->data, data->mask, data->irq, data->hwirq, sc);
+ 
+ 	pci_msi_domain_write_msg(data, msg);
++
++	/* v10: ALSO program the southbridge's per-function MSI redirection
++	 * block.  The device's MSI cap (above) only sets up what the device
++	 * SENDS on its MSI fire.  Baikal's southbridge needs to be told how
++	 * to translate that into a real LAPIC vector — without this, the
++	 * MSI is silently dropped at the southbridge boundary.  This is the
++	 * day-1 TODO finally implemented (see bpcie_config_msi). */
++	{
++		u32 func = (data->hwirq >> 5) & 7;
++		u32 subfunc = data->hwirq & 0x1f;
++
++		if (subfunc == 0x1f) {
++			/* Shared mode — configure all subfuncs of this func. */
++			int i;
++			for (i = 0; i < subfuncs_per_func[func]; i++)
++				bpcie_config_msi(sc, func, i,
++						 msg->address_lo, msg->data);
++		} else {
++			bpcie_config_msi(sc, func, subfunc,
++					 msg->address_lo, msg->data);
++		}
++	}
+ }
+ 
+ /*

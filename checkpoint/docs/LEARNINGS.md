@@ -873,3 +873,36 @@ that comment is a treasure map — investigate it BEFORE assuming the
 problem is somewhere else.  We spent 7 iterations debating Linux 6.2
 MSI rework details when the actual blocker had a TODO marker that
 no one reread until iteration 9.
+
+## 2026-05-09 — Option F (v10): southbridge programming + a func extraction bug
+
+Implemented the day-1 TODO (`apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask`)
+as a faithful port of Aeolia's apcie_config_msi for Baikal.  bpcie_config_msi
+ran 41 times without crashing, validating that BAR2 + 0x110000 is the
+correct register block base.
+
+But a bug in func/subfunc extraction:
+
+```c
+u32 func = (data->hwirq >> 5) & 7;  // WRONG at leaf level
+```
+
+The Baikal hwirq encoding `(slot<<8)|(func<<5)|subfunc` only exists at
+the bpcie PARENT domain level (set in bpcie_msi_domain_set_desc into
+arg->hwirq).  In 6.x's per-device MSI flow, the LEAF irq_data->hwirq
+is just the per-device subfunction index (0..nvec-1).  Result: all
+calls decoded `func=0` regardless of which device requested the MSI.
+
+Bpcie's 32 own MSIs all programmed func=0 slots 0..31; xhci/sdhci/ahci
+never got their slots programmed.  bpcie_handle_edge_irq still fires 0
+because the southbridge's per-function logic for funcs 2/3/5/7 is
+uninitialized.
+
+**Lesson for future-Claude.**  When you write a function that depends on
+how `irq_data->hwirq` is encoded at the level it runs at, EXPLICITLY
+write down which level you expect data to be at, and verify against the
+actual irq_domain hierarchy.  In modern (6.2+) per-device MSI:
+- bpcie domain (parent): hwirq = full Baikal encoding
+- per-device transient domain (leaf): hwirq = 0..nvec-1 within device
+
+Driver write_msg / mask / unmask hooks all run at LEAF level.
