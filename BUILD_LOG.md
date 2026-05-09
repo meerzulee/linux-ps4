@@ -720,3 +720,33 @@ Next candidate paths:
 - Both together → GPU acceleration likely works
 
 Boot log: checkpoint/uart-logs/2026-05-09_2024-v15-amdgpu-force-msi.log
+
+## 2026-05-09 — v16: Liverpool firmware in initramfs — ALL CP errors gone 🎉
+
+Added 10 liverpool_*.bin firmware files (pfp/me/ce/mec/mec2/rlc/sdma/
+sdma1/uvd/vce) to /lib/firmware/amdgpu/ inside USB's initramfs.cpio.gz
+(NOT boomerang-initramfs.cpio.gz — first attempt updated wrong file;
+discovered when boot showed kernel still loading 4 MB initramfs even
+after our 15 MB boomerang got bigger).  No kernel/patch changes.
+
+Hardware result (boot 2026-05-09 20:50):
+- gfx_v7_0_priv_inst_irq:        0  (was 14 in v15)
+- gfx_v7_0_priv_reg_irq:         0  (was 15 in v15)
+- cik_sdma_process_illegal_inst: 0  (was 28 in v15)
+- GPU reset:                     0  (was 0 — preserved)
+- asic atom init failed:         0  (was 0)
+- All v12 milestone signals preserved (USB enum=8, no Spurious,
+  no Command Aborted, bpcie_msi_init=68)
+
+Boot reaches /init at t=239s, then graceful shutdown at t=254s
+(amdgpu shutdown, sd shutdown, sync cache).  Confirms PS4
+shutdown/reboot path works (matches crashniels published status).
+
+Caps lock LED still works (bidirectional USB HID).
+
+Display still blocked by ICC i2c failures — ps4_bridge can't talk
+to HDMI bridge chip → "Cannot find any crtc or sizes" → no
+modeset → no display output.  ICC is the LAST remaining
+significant blocker for HDMI.
+
+Boot log: checkpoint/uart-logs/2026-05-09_2050-v16-firmware-correct-initramfs.log
