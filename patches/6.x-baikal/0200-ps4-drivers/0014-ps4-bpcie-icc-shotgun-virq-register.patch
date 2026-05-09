@@ -1,0 +1,53 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: v37 - shotgun-register ICC at virqs 0..63
+
+Eliminates "0.227 No irq handler for vector" spam by registering
+icc_interrupt at MULTIPLE virqs (0..63) with IRQF_SHARED.  Whichever
+virq the kernel actually mapped to LAPIC vector 0xE3 (bpcie multi-MSI
+base 0xE0 | msg_idx 3 for ICC subfunc 3) catches our handler.
+
+Diagnosis from v30/v34: msi_for_each_desc finds nothing, pci_irq_vector
+returns -EINVAL, vector_irq[0xE3]=VECTOR_UNUSED.  We can't find the
+correct virq through the standard kernel APIs.  Shotgun is brute force
+but reliable.
+
+Spurious failures from request_irq on virqs that don't exist or are
+already claimed exclusively are silently ignored.
+
+If v37 works:
+- "shotgun-registered ICC at N additional virqs" logs
+- "No irq handler for vector" stops appearing
+- Real IRQ delivery starts working (icc_interrupt log shows irq != 0)
+- Bonus: maybe other bpcie subfuncs also stop spurious-vectoring
+
+---
+--- a/drivers/ps4/ps4-bpcie-icc.c
++++ b/drivers/ps4/ps4-bpcie-icc.c
+@@ -590,6 +590,27 @@
+ 			sc_err("icc: could not request IRQ: %d\n", ret);
+ 			goto iounmap;
+ 		}
++
++		/* v37: shotgun-register icc_interrupt at virqs 0..63 to catch
++		 * whichever the kernel actually mapped to vector 0xE3.  We've
++		 * confirmed the LAPIC fires vector 0xE3 (= bpcie multi-MSI base
++		 * 0xE0 | msg_idx 3) but vector_irq[0xE3] is VECTOR_UNUSED ->
++		 * "No irq handler for vector" spam.  msi_for_each_desc finds
++		 * nothing (per-device MSI domain bypasses standard list).  This
++		 * shotgun ensures whichever virq the kernel allocated for
++		 * msg_idx 3, our handler is on it. */
++		{
++			int v;
++			int registered = 0;
++			for (v = 0; v <= 63; v++) {
++				if (v == icc_virq)
++					continue;	/* already registered above */
++				if (request_irq(v, icc_interrupt, IRQF_SHARED, "icc-shotgun", sc) == 0)
++					registered++;
++			}
++			pr_info("bpcie_icc_init: shotgun-registered ICC at %d additional virqs (0..63)\n",
++				registered);
++		}
+ 	}
+ 
+ 	req_empty = ioread32(REQUEST + BUF_EMPTY);
