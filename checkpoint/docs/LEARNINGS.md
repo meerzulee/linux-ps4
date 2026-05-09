@@ -211,6 +211,50 @@ That underscore is the firmware's leftover cursor. Here's the rundown:
 - Just `_`, no UART, no rebooting → kernel jumped, hung in *very* early init before any console came up. Earlycon should give us one or more lines before this happens. If we see literally nothing and `_` stays put, the kernel jumped to bad memory or triple-faulted before earlycon could initialize.
 - Just `_` + PS4 reboots back to firmware in ~milliseconds → triple-fault. Used to be every kexec attempt with old per-firmware payloads; v24b fixed this.
 
+## D + revert A: even forcing IR doesn't help (2026-05-09, boot #14)
+
+After Option A landed cleanly but didn't fix MSI delivery (boot #13),
+tried Option D (force kernel-side IR via `iommu=on amd_iommu=on
+intremap=on amd_iommu_dump=on` bootargs) WITH Option A REVERTED so
+bpcie_create_irq_domains runs again.
+
+Result:
+
+  [ 2.310] AMD-Vi: Interrupt remapping enabled                ← IR is ON
+  [ 4.967] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs:
+                                     requested nvec=3 msi_enabled=0
+  [ 4.975] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs
+                                     returning 1 (dev->irq=33)   ← STILL clamped
+  [ 7.203] Spurious interrupt (vector 0xef) on CPU#0. Acked
+  [14.533] Error while assigning device slot ID: Command Aborted
+
+Even with IR enabled at the kernel level AND bpcie_create_irq_domain
+restored, `bpcie_assign_irqs` still returns 1. That means
+`bpcie_msi_domain_info.flags & MSI_FLAG_MULTI_PCI_MSI` is still
+false in our context — i.e. inside `bpcie_create_irq_domain`,
+`irq_remapping_get_ir_irq_domain(&info)` returns NULL for our
+slot-20 PCI devices.
+
+Two breakage layers, both confirmed:
+1. The kernel's IR domain isn't attaching to our hand-crafted slot-20
+   PCI bus (so bpcie can't find an IR parent domain to inherit from).
+2. Even if it could, the legacy `dev_set_msi_domain()` is ignored by
+   6.x's PCI MSI core anyway (the original Linux 6.2 rework finding).
+
+Conclusion: **D is dead.** D was supposed to "force the per-function
+domain to start working" by giving it an IR parent. It can't because
+neither the kernel's IR setup nor the legacy domain-attach reach our
+PCI hierarchy on this hardware in 6.x.
+
+Re-enabling Option A as the baseline (bpcie's per-function domain
+creation is structurally broken on 6.x; skipping it is at minimum
+not worse than letting it run uselessly).
+
+**Only B (per-device MSI parent domain via msi_create_parent_irq_domain
++ msi_parent_ops) remains as a real fix.** C still worth spending 30
+min on as a sanity check, but the pattern of failures argues B is
+necessary regardless.
+
 ## Option A landed but isn't enough (2026-05-09, boot #13)
 
 Built and booted with patch 0006 (skip bpcie per-function MSI domain

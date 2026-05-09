@@ -46,6 +46,9 @@
 # MSI domain lookup; bpcie's per-function dev_set_msi_domain() is no
 # longer honoured. Skip the broken per-function domain creation;
 # child PCI devices use the kernel's default PCI MSI domain instead.
+# Re-enabled after D+revertA test (boot #14) confirmed forcing IR
+# does not give bpcie_create_irq_domain an IR parent to inherit from
+# either — neither layer of breakage is unwound by intremap=on.
 0200-ps4-drivers/0006-ps4-bpcie-skip-per-function-msi-domain-on-6.x.patch
 # DIAGNOSTIC ONLY — keep applied while we confirm 0006 works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
