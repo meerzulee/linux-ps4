@@ -906,3 +906,32 @@ actual irq_domain hierarchy.  In modern (6.2+) per-device MSI:
 - per-device transient domain (leaf): hwirq = 0..nvec-1 within device
 
 Driver write_msg / mask / unmask hooks all run at LEAF level.
+
+## 2026-05-09 — v11/v12: cross-check sibling drivers BEFORE inventing
+
+After v9-v11 spent three iterations building on a custom composer
+(`bpcie_irq_msi_compose_msg` writing 0xfee00000+irq_map_index), I
+re-read 5.4 Aeolia (the working baseline for this hardware family)
+and found Aeolia uses the KERNEL'S DEFAULT compose_msg
+(`irq_msi_compose_msg`), passing REAL LAPIC encoding into its
+`apcie_config_msi` southbridge programming.
+
+v9's custom composer came from feeRnt's `x_exp__6.15.4-BaikalLove`
+branch — RESEARCH notes, not a confirmed working baseline.  I mistook
+"the most actively-worked-on branch" for "the one that works".
+
+**Lesson for future-Claude.**  When porting between PS4 chip families
+(Aeolia/Belize/Baikal) or between kernel versions:
+1. Always identify the LATEST KNOWN-WORKING baseline (5.4 Aeolia in
+   our case — it boots and runs).
+2. Cross-check architectural choices against THAT baseline before
+   adopting innovations from research/experimental branches.
+3. "Active maintenance" ≠ "tested working".  Research branches are
+   often abandoned mid-experiment.
+4. If the working baseline uses kernel defaults, START with kernel
+   defaults — only diverge with concrete evidence the divergence is
+   needed for the new platform.
+
+The 4 KB binary size difference between v9 and v10 in the same
+direction was a sign that adding code wasn't fixing the root cause —
+worth staring at when iterating on a stuck problem.

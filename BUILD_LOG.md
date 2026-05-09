@@ -574,3 +574,23 @@ What v10 DID prove (positive):
 - Validates assumption #1 (BPCIE_RGN_PCIE_BASE = 0x110000)
 
 Full report: checkpoint/docs/research/2026-05-09-v10-option-f-result.md
+
+## 2026-05-09 — v11 / Option F (PCI_FUNC fix) tested
+
+Fixed v10's func-extraction bug.  Verified samples now show func=4 for
+bpcie's own MSIs, func=7 for xhci, func=3 for sdhci, func=2 for ahci.
+But bpcie_handle_edge_irq still 0.
+
+DEEPER architectural mistake spotted by reading 5.4 Aeolia: it uses
+the kernel's standard irq_msi_compose_msg, NOT a custom composer.
+Aeolia's apcie_config_msi gets called with REAL LAPIC encoding from
+the standard composer.  We've been programming the southbridge's MSI
+block with garbage (irq_map indexes) for 3 iterations because of v9's
+unforced error of inventing a custom composer based on feeRnt's
+BaikalLove (which is research, not a working baseline).
+
+v12 = 1-line revert to x86_vector_msi_compose_msg + leave
+bpcie_config_msi (the v10/v11 work) intact.  irq_map[] and
+bpcie_irq_msi_compose_msg become dead code.
+
+Full report: checkpoint/docs/research/2026-05-09-v11-result.md

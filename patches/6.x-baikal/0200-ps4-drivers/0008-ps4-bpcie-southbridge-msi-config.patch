@@ -1,41 +1,36 @@
 From: PS4 Linux Baikal Port <noreply@ps4-linux>
-Subject: [PATCH] drivers/ps4: Option F v10 - bpcie southbridge MSI redirect block (HT enable)
+Subject: [PATCH] drivers/ps4: Option F v11 - bpcie southbridge MSI config (func extract fix)
 
-The day-1 TODO finally implemented.  Faithful port of 5.4 Aeolia's
-apcie_config_msi (drivers/ps4/ps4-apcie.c:56-94) to Baikal — same
-register-block structure, BAR2 + 0x110000 instead of BAR4 + 0x1c8000.
+v11 = v10 + 5-line surgical fix to func/subfunc extraction in
+bpcie_msi_write_msg.  v10 decoded `(data->hwirq >> 5) & 7` expecting
+Baikal's hwirq encoding, but in 6.x's per-device MSI flow the leaf
+data->hwirq is just the per-device subfunction index (0..nvec-1) —
+all values < 32 decode to func=0.
 
-After v9 / Option E demonstrated all software-side correctness
-(composer firing 80x, irq_map populated 34x, no spurious 0xef events),
-bpcie_handle_edge_irq STILL fired 0 times.  Diagnosis: the southbridge
-needs to be programmed via its own per-function MSI redirection block
-— without that, child MSIs are silently dropped at the southbridge HT
-boundary even though the device-side MSI cap is correct.
+Result of v10: bpcie_config_msi ran 41x but ALL with func=0, programming
+function 0's MSI slots with everyone's data.  Functions 2/3/5/7
+(ahci/sdhci/dmac/xhci) had no slots programmed → bpcie_handle_edge_irq
+still 0.
 
-The function name in the FreeBSD orbis driver is
-apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask, marked TODO in
-ps4-bpcie.c::bpcie_msi_mask line 185 since the original 5.4 port.
+v11 fix: extract func from the PCI device's devfn:
+  struct pci_dev *pdev = msi_desc_to_pci_dev(data->common->msi_desc);
+  u32 func = PCI_FUNC(pdev->devfn);
+  u32 subfunc = data->hwirq;
 
-Changes:
-  - baikal.h: BPCIE_RGN_PCIE_BASE = 0x110000 + BPCIE_REG_MSI_* macro
-    family ported from aeolia.h.
-  - ps4-bpcie.c:
-    - glue_set_mask, glue_clear_mask helpers
-    - bpcie_config_msi function: writes the southbridge's per-function
-      MSI redirection block (CONTROL, ADDR, DATA_HI, DATA_LO, MASK, +
-      two unknown magic writes, likely the HT-disable bits).
-    - bpcie_msi_write_msg: after pci_msi_domain_write_msg writes the
-      device's MSI cap, ALSO call bpcie_config_msi to program the
-      southbridge's matching redirection slot.
+Then:
+  - bpcie's 32 own MSIs → func=4 subfuncs 0..31
+  - xhci's 3 MSIs       → func=7 subfuncs 0..2
+  - sdhci's 1 MSI       → func=3 subfunc 0
+  - ahci's 1 MSI        → func=2 subfunc 0
 
-Two assumptions for v10 to validate:
-  1. Baikal's MSI block base is 0x110000 in BAR2.
-  2. Per-function/per-subfunc DATA_LO offset algorithm matches Aeolia's.
+Also drops the shared-mode special-case: in modern 6.x flow with
+MSI_FLAG_MULTI_PCI_MSI set, each MSI gets its own virq (no shared
+0x1F marker at leaf level).
 
 References:
-  research/baikal-bringup/drivers/ps4/ps4-apcie.c (FreeBSD-derived)
-  src/5.4-baikal/drivers/ps4/ps4-apcie.c (5.4 working baseline)
-  checkpoint/docs/research/2026-05-09-v9-option-e-result.md
+  checkpoint/docs/research/2026-05-09-v10-option-f-result.md (the
+    v10 boot diagnosis that caught the bug)
+  src/5.4-baikal/drivers/ps4/ps4-apcie.c (the original Aeolia template)
 ---
 --- a/drivers/ps4/baikal.h
 +++ b/drivers/ps4/baikal.h
@@ -161,21 +156,21 @@ References:
 +	 * SENDS on its MSI fire.  Baikal's southbridge needs to be told how
 +	 * to translate that into a real LAPIC vector — without this, the
 +	 * MSI is silently dropped at the southbridge boundary.  This is the
-+	 * day-1 TODO finally implemented (see bpcie_config_msi). */
++	 * day-1 TODO finally implemented (see bpcie_config_msi).
++	 *
++	 * v11: extract func from the PCI device (NOT from data->hwirq).  In
++	 * 6.x's per-device MSI flow the leaf data->hwirq is just the
++	 * per-device subfunction index (0..nvec-1) — Baikal's hwirq encoding
++	 * (slot<<8)|(func<<5)|subfunc only exists at the bpcie parent level.
++	 * v10 decoded `(data->hwirq >> 5) & 7` and got func=0 for everyone. */
 +	{
-+		u32 func = (data->hwirq >> 5) & 7;
-+		u32 subfunc = data->hwirq & 0x1f;
++		struct pci_dev *pdev =
++			msi_desc_to_pci_dev(data->common->msi_desc);
++		u32 func = PCI_FUNC(pdev->devfn);
++		u32 subfunc = data->hwirq;
 +
-+		if (subfunc == 0x1f) {
-+			/* Shared mode — configure all subfuncs of this func. */
-+			int i;
-+			for (i = 0; i < subfuncs_per_func[func]; i++)
-+				bpcie_config_msi(sc, func, i,
-+						 msg->address_lo, msg->data);
-+		} else {
-+			bpcie_config_msi(sc, func, subfunc,
-+					 msg->address_lo, msg->data);
-+		}
++		bpcie_config_msi(sc, func, subfunc,
++				 msg->address_lo, msg->data);
 +	}
  }
  
