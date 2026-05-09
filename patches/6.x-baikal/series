@@ -23,6 +23,13 @@
 
 # === 0100: x86 platform (Kconfig, head64, bootparam, PS4 init, TSC calib)
 0100-x86-platform/0001-x86-add-ps4-platform-support.patch
+# v40: THE ACTUAL ROOT CAUSE FIX for 6.x HDMI. PS4 has null_legacy_pic
+# so early_irq_init allocates 0 legacy descs. ACPI request_irq(9, ...)
+# for SCI fails (-EINVAL) because irq_to_desc(9)=NULL. Cascade:
+# SCI install fails -> acpi_terminate -> mutex delete -> ATOM BIOS
+# returns 0 -> amdgpu PLL garbage -> blank HDMI.
+# Pre-allocate IRQ 9 desc with dummy_irq_chip in arch_initcall.
+0100-x86-platform/0002-x86-ps4-allocate-irq9-desc-for-acpi-sci.patch
 
 # === 0150: ACPI OSL fixes (PS4-specific)
 # v35: Revert SCI install from request_threaded_irq to request_irq.
