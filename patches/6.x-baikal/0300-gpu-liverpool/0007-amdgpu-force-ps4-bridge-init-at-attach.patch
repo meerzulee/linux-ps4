@@ -1,0 +1,56 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v21 - force ps4_bridge init at attach time
+
+After v20 (skip DP link training for Liverpool/Gladius) the clock
+recovery error was gone but ps4_bridge_pre_enable / ps4_bridge_enable
+still never fired.  Root cause: PS4 GPU uses DCE v8 with LEGACY drm
+encoder helpers (.prepare/.commit, no atomic_enable).  The DRM bridge
+chain pre_enable/enable callbacks are only invoked from the atomic
+modeset path's drm_atomic_bridge_chain_pre_enable / _enable helpers,
+which dce_v8_0_encoder_commit doesn't call.
+
+So even though ps4_bridge_attach succeeds and ps4_bridge_get_modes
+runs, the actual HDMI bridge chip (MN864729/MN86471A) is never
+programmed -- it stays in whatever state the BIOS left it.  No DP
+sync, no HDMI output.
+
+Workaround: force-call ps4_bridge_pre_enable + ps4_bridge_enable from
+ps4_bridge_register, right after drm_bridge_attach.  Hardcode mode to
+CEA VIC 16 (1920x1080 @ 60Hz) since we don't have an EDID-driven mode
+yet at attach time.
+
+If v21 works:
+- Monitor lights up at 1920x1080@60Hz
+- fbcon visible during boot
+
+If v21 doesn't work:
+- ps4_bridge ICC writes might still fail (cq_exec error)
+- Or the bridge needs the encoder to be programmed first (the GPU's
+  DP transmitter), in which case we need v22 to invoke bridge from
+  dce_v8_0_encoder_commit instead.
+
+This is a workaround.  The proper fix is to migrate dce_v8_0 to the
+atomic modeset framework, but that's a much larger project.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -786,5 +786,18 @@
+ 		return -EINVAL;
+ 	}
+ 
++	/* v21: amdgpu's dce_v8_0 uses LEGACY drm encoder helpers
++	 * (.prepare/.commit) — the bridge chain pre_enable/enable callbacks
++	 * are NEVER invoked from that path on PS4.  Force-program the bridge
++	 * here at attach time with a hardcoded 1080p60 VIC so the
++	 * MN864729/MN86471A converter is set up regardless of how amdgpu
++	 * drives the modeset later.  Without this, bridge_pre_enable +
++	 * bridge_enable never fire and HDMI output stays dark. */
++	mn_bridge->mode = 16;	/* CEA VIC 16 = 1920x1080 @ 60Hz */
++	pr_info("ps4_bridge: forcing bridge init at attach (mode=VIC %d)\n",
++		mn_bridge->mode);
++	ps4_bridge_pre_enable(&mn_bridge->bridge);
++	ps4_bridge_enable(&mn_bridge->bridge);
++
+ 	return 0;
+ }

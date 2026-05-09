@@ -97,6 +97,10 @@
 # 5x and bails out before bridge_enable runs. Skip DP train for
 # CHIP_LIVERPOOL/GLADIUS so bridge_pre_enable + bridge_enable can run.
 0300-gpu-liverpool/0006-amdgpu-skip-dp-link-train-liverpool.patch
+# v21: PS4 dce_v8 uses legacy non-atomic encoder helpers, so bridge chain
+# pre_enable/enable never fires from the modeset path. Force-call them
+# from ps4_bridge_register at attach time with hardcoded 1080p60 VIC.
+0300-gpu-liverpool/0007-amdgpu-force-ps4-bridge-init-at-attach.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
