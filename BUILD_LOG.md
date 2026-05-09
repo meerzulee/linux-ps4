@@ -594,3 +594,25 @@ bpcie_config_msi (the v10/v11 work) intact.  irq_map[] and
 bpcie_irq_msi_compose_msg become dead code.
 
 Full report: checkpoint/docs/research/2026-05-09-v11-result.md
+
+## 2026-05-09 — v12 + intremap=off — 🎉 MILESTONE BOOT
+
+After 12 iterations on bpcie MSI: everything working.  USB enumeration
+(8 devices including a Gaming Keyboard with WORKING CAPS LOCK LED —
+proving bidirectional HID I/O).  SATA disk fully attached and
+partitioned (TOSHIBA MQ01ABD050 500 GB, 15 partitions sdb1..sdb31).
+USB stick read.  amdgpu probed: VRAM/GTT/HDMI ready.  Bluetooth
+RFCOMM/BNEP/HIDP socket layers loaded.  IPv6 + btrfs ready.
+
+ZERO failures: 0 IOMMU events, 0 timeouts (Command Aborted, mmc0,
+qc), 0 spurious interrupts, 0 kernel panics.
+
+Final formula:
+- v3-v7's MSI parent routing (IRQ_DOMAIN_FLAG_MSI_PARENT +
+  msi_parent_ops + AMDVI bus_token)
+- v12's revert to standard kernel x86_vector_msi_compose_msg
+- v10/v11's bpcie_config_msi southbridge programming
+- bootargs: iommu=pt intremap=off (passthrough DMA + disable
+  interrupt remapping which was blocking Baikal's HT-MSI delivery)
+
+Full report: checkpoint/docs/research/2026-05-09-v12-MILESTONE.md

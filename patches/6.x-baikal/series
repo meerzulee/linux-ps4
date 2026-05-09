@@ -64,6 +64,7 @@
 # this series-file bug — neither patch applied; see option-d-result.md).
 0200-ps4-drivers/0007-ps4-bpcie-option-e-routing-plus-baikal-composer.patch
 0200-ps4-drivers/0008-ps4-bpcie-southbridge-msi-config.patch
+0200-ps4-drivers/0009-ps4-bpcie-revert-composer-default.patch
 # DIAGNOSTIC ONLY — keep applied while we confirm Option B works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
 # v9 has its own pr_info — disabled to avoid hunk conflict
