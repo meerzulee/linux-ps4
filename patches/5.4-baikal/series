@@ -22,6 +22,8 @@
 # === 0300: Liverpool GPU (amdgpu ps4_bridge, CIK quirks, connector glue)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch
 0300-gpu-liverpool/0002-amdgpu-dc-drop-mhard-float-for-modern-clang.patch
+# Diagnostic instrumentation mirroring 6.x v23/v32 logs - direct comparison
+0300-gpu-liverpool/0003-amdgpu-ps4-bridge-diagnostic-logs.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

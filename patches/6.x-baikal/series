@@ -81,6 +81,10 @@
 # sets STATUS bits but icc_interrupt never fires. Fixes ICC commands so
 # HDMI/ps4_bridge can come up. MSI delivery itself still needs diagnosis.
 0200-ps4-drivers/0012-ps4-bpcie-icc-poll-fallback.patch
+# v30: walk msi_desc list to find real virq for ICC (msi_index=3)
+# instead of pdev->irq+3 (which was wrong because pdev->irq=0).
+# Eliminates "0.227 No irq handler for vector" spam from real IRQ.
+0200-ps4-drivers/0013-ps4-bpcie-icc-msi-walk-virq.patch
 # DIAGNOSTIC ONLY — keep applied while we confirm Option B works on hw.
 # Once we have a clean boot, comment out and rebuild without trace.
 # v9 has its own pr_info — disabled to avoid hunk conflict
@@ -115,6 +119,26 @@
 # encoder -> mismatch -> blank. Add mode_fixup that rewrites adjusted_mode
 # with canonical 1920x1080@60Hz so GPU+bridge agree.
 0300-gpu-liverpool/0010-amdgpu-ps4-bridge-force-1080p-mode-fixup.patch
+# v25: Remove 1080p120 mode (community guide notes 120Hz causes
+# "unsupported resolution"/no signal). Mark 1080p60 as PREFERRED.
+0300-gpu-liverpool/0011-amdgpu-ps4-bridge-remove-1080p120-mode.patch
+# v28/v29: ATOM BIOS AdjustDisplayPll returns 0 on PS4 (known ATOM init
+# issues). adjusted_clock=0 -> dce_v8_0_crtc_mode_set returns -EINVAL.
+# Fall back to adjusted_mode->clock when ATOM returns nothing.  In v28
+# we ALSO no-op'd the bridge mode_fixup overwrite (v27); v29 reverted
+# that because the bridge needs adjusted_mode timing to match VIC 16
+# (mode_1080p struct) for HDMI signal to lock - otherwise backlight
+# stops. So: keep v24's mode_fixup overwrite + v28's clock fallback.
+0300-gpu-liverpool/0013-amdgpu-dce-v8-fallback-adjusted-clock.patch
+# v31: bridge_disable mutes the bridge before GPU TX reprograms; bridge then
+# fails to re-lock to the new signal -> backlight goes off after first
+# successful mode_set. Remove .disable so bridge stays running through
+# GPU reprogramming.
+0300-gpu-liverpool/0014-amdgpu-ps4-bridge-no-disable.patch
+# v32: 500ms msleep at start of bridge_enable so GPU's DP TX has time
+# to stabilize before the MN864729 tries to lock. Without the delay, the
+# cq_wait_set steps for DP lane status silently no-op on unstable signal.
+0300-gpu-liverpool/0015-amdgpu-ps4-bridge-msleep-settle.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

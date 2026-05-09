@@ -1,0 +1,97 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: 5x - ps4_bridge diagnostic logs (mirror v23/v32 from 6.x)
+
+Mirrors the diagnostic instrumentation added to 6.x ps4_bridge so 5.4
+boot logs can be directly compared to 6.x boot logs. All pr_info lines
+prefixed with [5x] for grep-ability.
+
+- mode_set: log VIC and resolution
+- pre_enable: BEGIN/END + cq_exec result
+- enable: BEGIN/END + MN864729 main seq cq_exec result
+- detect: TMONREG value and HPD bit
+
+Pure diagnostic, no behavior change.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -321,7 +321,8 @@
+ 	/* This gets called before pre_enable/enable, so we just stash
+ 	 * the vic ID for later */
+ 	mn_bridge->mode = drm_match_cea_mode(adjusted_mode);
+-	DRM_DEBUG_KMS("vic mode: %d\n", mn_bridge->mode);
++	pr_info("[5x] ps4_bridge_mode_set: vic=%d (%dx%d)\n",
++		mn_bridge->mode, adjusted_mode->hdisplay, adjusted_mode->vdisplay);
+ 	if (!mn_bridge->mode) {
+ 		DRM_ERROR("attempted to set non-CEA mode\n");
+ 	}
+@@ -330,8 +331,7 @@
+ static void ps4_bridge_pre_enable(struct drm_bridge *bridge)
+ {
+ 	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
+-	DRM_DEBUG_KMS("ps4_bridge_pre_enable\n");
+-	DRM_DEBUG("Enable ps4_bridge_pre_enable\n");
++	pr_info("[5x] ps4_bridge_pre_enable: BEGIN (mode=VIC %d)\n", mn_bridge->mode);
+ 	mutex_lock(&mn_bridge->mutex);
+ 	cq_init(&mn_bridge->cq, 4);
+ 
+@@ -390,10 +390,14 @@
+ 	/* Wait AKE busy */
+ 	cq_wait_clear(&mn_bridge->cq, AKESTA, AKESTA_BUSY);
+ 
+-	if (cq_exec(&mn_bridge->cq) < 0) {
+-		DRM_ERROR("failed to run pre-enable sequence");
++	{
++		int rc = cq_exec(&mn_bridge->cq);
++		pr_info("[5x] ps4_bridge_pre_enable: cq_exec returned %d\n", rc);
++		if (rc < 0)
++			DRM_ERROR("failed to run pre-enable sequence");
+ 	}
+ 	mutex_unlock(&mn_bridge->mutex);
++	pr_info("[5x] ps4_bridge_pre_enable: END\n");
+ }
+ 
+ static void ps4_bridge_enable(struct drm_bridge *bridge)
+@@ -403,7 +407,8 @@
+ 	struct drm_device *dev = connector->dev;
+ 	struct pci_dev *pdev = dev->pdev;
+ 	u8 dp[3];
+-	DRM_DEBUG("Enable PS4_BRIDGE_ENABLE\n");
++	pr_info("[5x] ps4_bridge_enable: BEGIN (mode=VIC %d, dev=0x%04x)\n",
++		mn_bridge->mode, pdev->device);
+ 	if (!mn_bridge->mode) {
+ 		DRM_ERROR("mode not available\n");
+ 		return;
+@@ -611,8 +616,11 @@
+ 		cq_mask(&mn_bridge->cq, 0x1e00, 0x01, 0x01);
+ 		cq_writereg(&mn_bridge->cq, VMUTECNT, VMUTECNT_LINEWIDTH_90);
+ 		cq_writereg(&mn_bridge->cq, HDCPEN, 0x00);
+-		if (cq_exec(&mn_bridge->cq) < 0) {
+-			DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("[5x] ps4_bridge_enable: MN864729 main seq cq_exec=%d\n", rc);
++			if (rc < 0)
++				DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
+ 		}
+ 		#if 1
+ 		// AUDIO preinit
+@@ -657,7 +665,7 @@
+ 		#endif
+ 		mutex_unlock(&mn_bridge->mutex);
+ 	}
+-
++	pr_info("[5x] ps4_bridge_enable: END\n");
+ }
+ 
+ static void ps4_bridge_disable(struct drm_bridge *bridge)
+@@ -749,7 +757,8 @@
+ 	reg = mn_bridge->cq.reply.databuf[3];
+ 	mutex_unlock(&mn_bridge->mutex);
+ 
+-	DRM_DEBUG_KMS("TMONREG=0x%02x\n", reg);
++	pr_info("[5x] ps4_bridge_detect: TMONREG=0x%02x HPD=%d\n",
++		reg, !!(reg & TMONREG_HPD));
+ 
+ 	if (reg & TMONREG_HPD)
+ 		return connector_status_connected;
