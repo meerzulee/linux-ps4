@@ -341,6 +341,12 @@
 # Skip the self-test for Baikal — real interrupts still deliver via
 # bpcie's MSI domain.
 0700-network-sky2/0005-sky2-baikal-skip-msi-self-test.patch
+# v68 (2026-05-11): patch 0005 covered the wrong branch — sky2 reaches
+# MSI setup via the APCIE/BPCIE early-bind path (apcie_assign_irqs > 0),
+# not pci_enable_msi(). 0006 extends the skip-test-on-Baikal logic to
+# the APCIE branch. After v67b boot proved we hit "No interrupt
+# generated using MSI" via that path, despite 0005 being applied.
+0700-network-sky2/0006-sky2-baikal-skip-msi-test-in-apcie-branch.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
