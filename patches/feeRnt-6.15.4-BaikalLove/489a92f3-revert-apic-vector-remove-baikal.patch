@@ -1,0 +1,23 @@
+From 489a92f3c6d55c4a1c402041293420203cb5032f Mon Sep 17 00:00:00 2001
+From: feeRnt <81442162+feeRnt@users.noreply.github.com>
+Date: Sat, 2 May 2026 16:30:20 +0000
+Subject: [PATCH] Revert "apic/vector: Remove Baikal from x86_vector_select"
+
+This reverts commit 238fb41a12bf7018a2591856f413d35199a2e759.
+---
+ arch/x86/kernel/apic/vector.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index f499fc81a72d52..920399f0bb81b3 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -713,7 +713,7 @@ static int x86_vector_select(struct irq_domain *d, struct irq_fwspec *fwspec,
+ 	if (apic_id_valid(32768))
+ 		return 0;
+ 
+-	return x86_fwspec_is_ioapic(fwspec) || x86_fwspec_is_hpet(fwspec) || x86_fwspec_is_aeolia(fwspec)/*|| x86_fwspec_is_baikal(fwspec)*/;
++	return x86_fwspec_is_ioapic(fwspec) || x86_fwspec_is_hpet(fwspec) || x86_fwspec_is_aeolia(fwspec) || x86_fwspec_is_baikal(fwspec);
+ }
+ 
+ static const struct irq_domain_ops x86_vector_domain_ops = {

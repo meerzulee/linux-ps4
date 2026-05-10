@@ -1,0 +1,30 @@
+From: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+Date: Thu, 7 May 2026 12:00:00 +0600
+Subject: [PATCH] ps4-bpcie-uart: assign port.line explicitly (UART0=ttyS4)
+
+5.4 variant of the explicit-line-number patch. See the 6.x copy for
+the long-form rationale; tldr: the 8250 driver auto-numbers
+registered ports such that ttyS4 ends up on UART1 (`0xC890F000`)
+instead of UART0 (`0xC890E000`), which is where the user's UART
+cable is physically wired. Setting `port.line` explicitly pins
+UART0 → ttyS4 and UART1 → ttyS5.
+
+Layers cleanly on top of `0002-ps4-bpcie-uart-set-port-type.patch`.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/ps4/ps4-bpcie-uart.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/ps4/ps4-bpcie-uart.c b/drivers/ps4/ps4-bpcie-uart.c
+--- a/drivers/ps4/ps4-bpcie-uart.c
++++ b/drivers/ps4/ps4-bpcie-uart.c
+@@ -27,6 +27,8 @@ int bpcie_uart_init(struct bpcie_dev *sc)
+ 		uart.port.regshift	= 2;
+ 		/* Force 16550A type — 8250 autoconfig fails on PS4's BPCIe UART. */
+ 		uart.port.type		= PORT_16550A;
++		/* Pin UART0 → ttyS4, UART1 → ttyS5. Auto-numbering on this hw is reversed. */
++		uart.port.line		= 4 + i;
+ 		uart.port.dev		= &sc->pdev->dev;
+
+ 		sc->serial_line[i] = serial8250_register_8250_port(&uart);

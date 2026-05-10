@@ -1,0 +1,205 @@
+From 7ce794979dfccea34e4beedcaa9c32f54d0d3c13 Mon Sep 17 00:00:00 2001
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Sat, 2 May 2026 15:48:48 +0200
+Subject: [PATCH] xhci-aeolia/bpcie/amdgpu: Fix Baikal USB, SATA PHY and amdgpu
+ null deref
+
+xhci-aeolia:
+- Use pci_alloc_irq_vectors() for Baikal instead of apcie_assign_irqs(),
+  giving each xHCI controller a distinct IRQ (fixes Command Aborted errors
+  and couldn't allocate usb_device on ports 1-2 and 2-2)
+- Add xhci_aeolia_init_baikal_sata() to run SATA PHY init from BAR2
+  before USB host bringup, restoring behaviour from the 5.4 port
+- Add 20ms msleep between probe_one calls for Baikal to ensure middle
+  controller comes up reliably
+- Emit dev_info probe_one log lines for Baikal (dev_dbg for aeolia/belize)
+  to aid debugging; include IRQ number in Baikal log
+
+ps4-bpcie:
+- Allow bpcie_sata_phy_init() to be called from the Baikal xHCI function
+  (PCI_DEVICE_ID_SONY_BAIKAL_XHCI) in addition to the dedicated AHCI
+  function, matching the 5.4 combined-function behaviour
+- Fix EFUSE log string to match expected "Baikal SATA EFUSE VALUE:" prefix
+
+amdgpu_encoders:
+- Guard amdgpu_maybe_add_bridge() against NULL connector/encoder/dev
+- Switch from dev->dev_private to drm_to_adev() (fixes NULL dereference
+  at amdgpu_link_encoder_connector+0x84 on Baikal/Gladius ATOM table
+  parsing during dce_v8_0_sw_init)
+- Check return value of ps4_bridge_register()
+---
+ drivers/gpu/drm/amd/amdgpu/amdgpu_encoders.c | 18 +++++-
+ drivers/ps4/ps4-bpcie.c                      | 16 ++++--
+ drivers/usb/host/xhci-aeolia.c               | 59 +++++++++++++++++++-
+ 3 files changed, 81 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/amdgpu_encoders.c b/drivers/gpu/drm/amd/amdgpu/amdgpu_encoders.c
+index c6107763209517..71e48f7c3e7a9a 100644
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_encoders.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_encoders.c
+@@ -37,11 +37,23 @@
+ static void amdgpu_maybe_add_bridge(struct drm_connector *connector,
+ 				    struct drm_encoder *encoder)
+ {
+-	struct drm_device *dev = connector->dev;
+-	struct amdgpu_device *adev = dev->dev_private;
++	struct drm_device *dev;
++	struct amdgpu_device *adev;
++	int ret;
++
++	if (!connector || !encoder)
++		return;
++
++	dev = connector->dev;
++	if (!dev)
++		return;
++
++	adev = drm_to_adev(dev);
+ 
+ 	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
+-		ps4_bridge_register(connector, encoder);
++		ret = ps4_bridge_register(connector, encoder);
++		if (ret)
++			DRM_ERROR("Failed to register PS4 bridge: %d\n", ret);
+ 	}
+ }
+ #endif
+diff --git a/drivers/ps4/ps4-bpcie.c b/drivers/ps4/ps4-bpcie.c
+index 28d52513eae549..6ea598bd700be2 100644
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -537,8 +537,11 @@ int bpcie_sata_phy_init(struct pci_dev *pdev, void __iomem *ahci_mmio)
+ 	u32 status;
+ 	int ret = 0;
+ 
+-	if (!pdev || pdev->vendor != PCI_VENDOR_ID_SONY ||
+-	    pdev->device != PCI_DEVICE_ID_SONY_BAIKAL_AHCI || !ahci_mmio)
++	if (!pdev || pdev->vendor != PCI_VENDOR_ID_SONY || !ahci_mmio)
++		return 0;
++
++	if (pdev->device != PCI_DEVICE_ID_SONY_BAIKAL_AHCI &&
++	    pdev->device != PCI_DEVICE_ID_SONY_BAIKAL_XHCI)
+ 		return 0;
+ 
+ 	glue_dev = pci_get_slot(pdev->bus,
+@@ -560,8 +563,10 @@ int bpcie_sata_phy_init(struct pci_dev *pdev, void __iomem *ahci_mmio)
+ 	dev_info(&pdev->dev, "Baikal SATA PHY init\n");
+ 
+ 	/*
+-	 * Preserve the effective 5.4 port behavior: the call site always used
+-	 * the usb+ahci path and a fixed trace-length selector equivalent to 4.
++	 * Preserve the effective 5.4 Baikal tuning. The original path touched
++	 * the shared AHCI BAR from the xHCI function before bringing USB up,
++	 * and the same register sequence is safe from the dedicated AHCI
++	 * function in the split 7.0 port as well.
+ 	 */
+ 	glue_write32(sc, BPCIE_USB_BASE + 112, 1);
+ 	glue_write32(sc, BPCIE_USB_BASE + 48, 1);
+@@ -576,8 +581,7 @@ int bpcie_sata_phy_init(struct pci_dev *pdev, void __iomem *ahci_mmio)
+ 		tune2 = efuse0 >> 27;
+ 	}
+ 
+-	dev_info(&pdev->dev,
+-		 "Baikal SATA EFUSE tuning: 0x%02x:0x%02x:0x%02x\n",
++	dev_info(&pdev->dev, "Baikal SATA EFUSE VALUE: 0x%02x:0x%02x:0x%02x\n",
+ 		 tune0, tune1, tune2);
+ 	dev_info(&pdev->dev, "Baikal SATA PHY Trace length : %d\n", 4);
+ 
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+index 29a41d40b71f67..7c0c7a8f4039b9 100644
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -218,6 +218,43 @@ static int xhci_aeolia_irqnum(struct aeolia_xhci *axhci,
+ 	return dev->irq + index;
+ }
+ 
++static int xhci_aeolia_init_baikal_sata(struct pci_dev *dev)
++{
++	resource_size_t rsrc_start;
++	resource_size_t rsrc_len;
++	void __iomem *mmio;
++	int ret;
++
++	if (!xhci_aeolia_is_baikal(&dev->dev))
++		return 0;
++
++	rsrc_start = pci_resource_start(dev, 2);
++	rsrc_len = pci_resource_len(dev, 2);
++	if (!rsrc_start || !rsrc_len) {
++		dev_err(&dev->dev, "Baikal AHCI BAR missing on xHCI function\n");
++		return -ENODEV;
++	}
++
++	if (!devm_request_mem_region(&dev->dev, rsrc_start, rsrc_len,
++				     "xhci-aeolia-ahci")) {
++		dev_dbg(&dev->dev, "Baikal AHCI BAR already in use\n");
++		return -EBUSY;
++	}
++
++	mmio = pci_ioremap_bar(dev, 2);
++	if (!mmio) {
++		ret = -EFAULT;
++		goto release_mem_region;
++	}
++
++	ret = bpcie_sata_phy_init(dev, mmio);
++	iounmap(mmio);
++
++release_mem_region:
++	devm_release_mem_region(&dev->dev, rsrc_start, rsrc_len);
++	return ret;
++}
++
+ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
+ {
+ 	int retval;
+@@ -227,8 +264,13 @@ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
+ 	struct xhci_hcd *xhci;
+ 	int irq = xhci_aeolia_irqnum(axhci, dev, index);
+ 
+-	dev_dbg(&dev->dev, "xhci_aeolia_probe_one %d controller %04x\n",
+-		index, dev->device);
++	if (xhci_aeolia_is_baikal(&dev->dev))
++		dev_info(&dev->dev,
++			 "xhci_aeolia_probe_one %d controller %04x irq %d\n",
++			 index, dev->device, irq);
++	else
++		dev_dbg(&dev->dev, "xhci_aeolia_probe_one %d controller %04x\n",
++			index, dev->device);
+ 
+ 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
+ 	pci_set_drvdata(dev, axhci); /* usb_create_hcd clobbers this */
+@@ -327,7 +369,12 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 	}
+ 	pci_set_drvdata(dev, axhci);
+ 
+-	axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
++	if (xhci_aeolia_is_baikal(&dev->dev))
++		axhci->nr_irqs = retval = pci_alloc_irq_vectors(dev, NR_DEVICES,
++							NR_DEVICES,
++							PCI_IRQ_MSIX | PCI_IRQ_MSI);
++	else
++		axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+ 	if (retval < 0) {
+ 		goto free_axhci;
+ 	}
+@@ -339,6 +386,10 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 	if (retval)
+ 		goto free_irqs;
+ 
++	retval = xhci_aeolia_init_baikal_sata(dev);
++	if (retval)
++		goto free_irqs;
++
+ 	pci_set_master(dev);
+ 
+ 	for (idx = 0; idx < NR_DEVICES; idx++) {
+@@ -347,6 +398,8 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 		retval = xhci_aeolia_probe_one(dev, idx);
+ 		if (retval)
+ 			goto remove_hcds;
++		if (xhci_aeolia_is_baikal(&dev->dev))
++			msleep(20);
+ 	}
+ 
+ 	return 0;

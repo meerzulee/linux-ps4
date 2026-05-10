@@ -1,0 +1,39 @@
+From e9766fc3404853728114fa80dfb6aa6f64c25542 Mon Sep 17 00:00:00 2001
+From: feeRnt <81442162+feeRnt@users.noreply.github.com>
+Date: Sat, 2 May 2026 16:57:59 +0000
+Subject: [PATCH] ps4-bpcie: Re-add simplified msi_prepare for
+ X86_IRQ_ALLOC_TYPE_PCI_MSI
+
+Signed-off-by: feeRnt <81442162+feeRnt@users.noreply.github.com>
+---
+ drivers/ps4/ps4-bpcie.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/ps4/ps4-bpcie.c b/drivers/ps4/ps4-bpcie.c
+index 896c7f8c0d6369..39b9c50c6a49df 100644
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -348,17 +348,17 @@ static void bpcie_msi_free(struct irq_domain *domain,
+ static int bpcie_msi_prepare(struct irq_domain *domain, struct device *dev,
+ 				  int nvec, msi_alloc_info_t *arg)
+ {
+-	memset(arg, 0, sizeof(*arg));
+-	return 0; // This was the old stub -- it's the kernel default stub for kernel/irq/msi.c
+-	//init_irq_alloc_info(arg, NULL);
++	//memset(arg, 0, sizeof(*arg));
++	//return 0; // This was the old stub -- it's the kernel default stub for kernel/irq/msi.c
++	init_irq_alloc_info(arg, NULL);
+ 
+ 	/* if (to_pci_dev(dev)->msix_enabled)
+ 		arg->type = X86_IRQ_ALLOC_TYPE_PCI_MSIX;
+ 	else { */ // we don't use MSI-X
+-	//arg->type = X86_IRQ_ALLOC_TYPE_PCI_MSI;
+-	//pr_info("ps4-bpcie: Assigning X86_IRQ_ALLOC_TYPE_PCI_MSI in %s.\n", __func__);
++	arg->type = X86_IRQ_ALLOC_TYPE_PCI_MSI;
++	pr_info("ps4-bpcie: Assigning X86_IRQ_ALLOC_TYPE_PCI_MSI in %s.\n", __func__);
+ 	//}
+-	//return 0;
++	return 0;
+ 
+ 	/* Based on pci_msi_prepare of arch/x86/kernel/apic/msi.c,
+ 	 * since we don't have an init_irq_alloc_info at alloc_domain anymore,

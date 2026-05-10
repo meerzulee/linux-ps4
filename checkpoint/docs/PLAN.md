@@ -1,6 +1,39 @@
 # PS4 Linux — Global plan
 
-## Where we landed (end of 2026-05-08)
+## Where we landed (end of 2026-05-10) — **post-v62**
+
+🎉 **Major breakthroughs since 2026-05-08:**
+
+| Component | Status |
+|---|---|
+| **v40 IRQ 9 ACPI fix** | ✅ shipped — root-cause for all the ATOM mutex / display issues. PS4's `null_legacy_pic` left IRQ 9 desc unallocated; ACPI SCI install failed; ATOM BIOS calls failed. Fix: pre-allocate IRQ 9 desc in `arch_initcall`. |
+| **v60 HDMI working** (`abe29da`, tag `v60-hdmi-working`) | ✅ shipped — preserve firmware-trained DP TX state on Liverpool. PS4 firmware leaves the GPU's UNIPHYA DP transmitter trained with non-default per-lane swing/preemph values; standard DPMS_OFF/ON via `setup_dig_transmitter(DISABLE/ENABLE)` tears that down and the kernel has no working retrainer for the fake-DP MN864729 bridge. Fix: skip both DISABLE and ENABLE on Liverpool/Gladius DP encoders during modeset. **Display lights up.** |
+| **v62 WiFi + SSH** (`b02d1c6`, tag `v62-wifi-ssh`) | ✅ shipped — added `rtw88_8822bu` driver to 6.x build for USB TP-Link Archer T3U Plus (RTL8822BU). Boots into psxitarch via `bootargs/6.x-rootfs-psxitarch.txt`. Modules + Liverpool firmware installed in psxitarch via mount-and-rsync. SSH from host works. |
+| **`bpcie_handle_edge_irq` shared-vector dispatch** | ✅ Was actually fine — the May-8 "demuxer never fires" diagnosis turned out to be a misread. Boot reaches userspace cleanly with the current patch series including 0005-shared-vector-demux-bypass + the Option E composer. xhci enumerates, USB devices visible (we used a USB stick to boot the rootfs). |
+| **Built-in Marvell ethernet (sky2 on Baikal)** | ❌ documented dead-end — see [`research/2026-05-10-sky2-baikal-not-yukon.md`](research/2026-05-10-sky2-baikal-not-yukon.md). Not actually a Yukon-2 chip. PCI class is `0x088001` ("System peripheral"). 38 non-zero registers in BAR0 at offsets that don't match Yukon-2. **Multi-week RE project**, parked. |
+| **MT7668 internal WiFi+BT in 6.x** | 🚧 WIP — vendor tree imported as `patches/6.x-baikal/0500-network-mt7668/0001-mt76x8-vendor-tree-import.patch`. Build infrastructure parses but produces no .o files (vendor's `MTK_COMBO_CHIP` indirection + 2.6-era kbuild assumptions). Estimated remaining: 2-3 days of Makefile rework + 5.4-to-6.x API porting. See [`study/08-mt7668-port-todo.md`](study/08-mt7668-port-todo.md). |
+
+## Current focus (next session)
+
+1. **Phase-2 cleanup** — GitHub Actions CI/CD, Releases on tag, issue/PR templates, AUR PKGBUILDs. The repo is now positioned for community contributions; the build artifacts should follow.
+2. **MT7668 6.x port** — get internal WiFi+BT working. Replaces USB TP-Link adapter dependency. ~2-3 days.
+3. **Multi-version target framework** — easier to add `7.x-baikal` once 7.0 ships.
+4. **Upstream the v60 patch** — first upstream candidate. See [CONTRIBUTING.md](../../CONTRIBUTING.md#upstreaming).
+
+## Older state (kept as historical reference)
+
+The bisection saga that took 6.x from "boots to systemd, screen dark" to v60-HDMI-works is documented in:
+
+- [`research/2026-05-10-v60-skip-tx-enable-result.md`](research/2026-05-10-v60-skip-tx-enable-result.md) — the canonical v60 write-up with the full v45 → v60 narrative
+- [`research/2026-05-10-v58-step-by-step-probe-result.md`](research/2026-05-10-v58-step-by-step-probe-result.md) — the localizer that pinpointed the killer step
+- [`research/2026-05-10-v55-bridge-cq-chunks-result.md`](research/2026-05-10-v55-bridge-cq-chunks-result.md) — the chunk-split insight that reframed the problem
+- Per-iteration v45..v60 result reports in `research/`
+
+The 2026-05-08 PLAN content below predates this work — its "active blockers" (xhci slot-ID timeout, USB enumeration, AHCI -ENOMEM) are all resolved.
+
+---
+
+## Where we landed (end of 2026-05-08) — **historical, pre-v40**
 
 | Component | Status |
 |---|---|

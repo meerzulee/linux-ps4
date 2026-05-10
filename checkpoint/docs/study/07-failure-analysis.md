@@ -252,3 +252,43 @@ Done so far:
   `amdgpu.modeset=0` cmdline (works for built-in drivers).
 
 (Add new entries above this line as experiments accumulate.)
+
+### 2026-05-08 — USB inspection/reset baseline confirmed
+- Goal: identify unknown active USB kernel before continuing 6.x Baikal work.
+- Method: mounted `/dev/sda1` (`PS4BOOT`) read-only and hashed boot images.
+- Active USB `bzImage`: `46ab3246acdd70e46cb6360ab2a0c5b1e25a6ebe75791d20c29dd5f031b1bde0`.
+- Interpretation: active USB `bzImage` matches local `output/5.4-baikal/bzImage` exactly, so the USB is currently on the known-good self-built 5.4 baseline.
+- `bzImage-stable` and `bzImage-prev` also match the same known-good 5.4 hash.
+- `bzImage-6.x-ours` on USB is older build hash `1c9dd4cd0319399adc2c36cf7f847b2efd0cae3e0956e63d3adaa17b2851c1e0`, not the current rebuilt 6.x hash `822b95d258ca925d9d5097a1a03043c5eddc70e545dca6809ccbbf6feee1ab7d`.
+- Bootargs are the known-good Baikal earlycon args without `keep_bootcon` or bad legacy `earlyprintk`.
+- Next action: boot PS4 from USB into 5.4 baseline, confirm SSH, then run 6.x experiments via kexec first.
+
+### 2026-05-08 — initcall_debug kexec of current 6.x build
+- Host commit: `d6728a0`.
+- Dirty state before test: docs/candidate experiment files uncommitted; source kernel image already built.
+- Baseline before kexec: SSH confirmed working 5.4 kernel `5.4.247-neocine-1.1-dirty` with known-good Baikal earlycon cmdline.
+- Kernel image: `output/6.x-baikal/bzImage`.
+- Kernel SHA256: `822b95d258ca925d9d5097a1a03043c5eddc70e545dca6809ccbbf6feee1ab7d`.
+- Initrd: `checkpoint/boot/initramfs.cpio.gz`.
+- Initrd SHA256: `3f373bd6c469e490eaf4e5cf4d2e8ed77cf7bb91449b6a18da6a6529d479169b`.
+- Cmdline extras: `initcall_debug ignore_loglevel debug printk.devkmsg=on` appended to inherited 5.4 cmdline.
+- Method: `scripts/dev/experiments/01-initcall-debug.sh`, which uses `scripts/dev/kexec-test.sh`.
+- Console output: kexec image and initrd copied to PS4, `kexec -l` succeeded, clean kexec handoff was fired, SSH dropped.
+- Outcome reported by user: PS4 "rebooted and dead" / no SSH return after kexec.
+- HDMI: user reported nothing appeared on HDMI for this attempt.
+- User memory/context: an earlier Linux 6 attempt did show HDMI but could not boot fully; likely a different image/config/path than the current kexec of `822b95d...`.
+- Interpretation: current 6.x build fails before userspace/SSH and may be dying earlier than the previous "HDMI worked" 6.x attempt. Need to separate image/config/toolchain/path differences before jumping to a newer base.
+- USB was not modified by this kexec test; active USB remains known-good 5.4.
+- Next action: recover by manually power-cycling and relaunching `linux-1024mb.bin` from USB, confirm 5.4 SSH, then test the new boomerang initramfs to see whether 6.x reaches `/init` and can kexec back to 5.4.
+
+### 2026-05-08 — boomerang initramfs built for fast 6.x iteration
+- Goal: reduce jailbreak cost by letting a 6.x diagnostic initramfs save logs and kexec back to known-good 5.4 if 6.x reaches `/init`.
+- Created scripts:
+  - `scripts/dev/build-boomerang-initramfs.sh`
+  - `scripts/dev/kexec-boomerang-6x.sh`
+- Built artifact: `output/boomerang-initramfs.cpio.gz`.
+- Artifact SHA256 after verified build: `ae5fa55ad62f9b53ff6cbead12a8f14b28d3ffd5342061c524eee372f5425244`.
+- Contents: static busybox from existing checkpoint initramfs, PS4 rootfs `kexec` binary plus required libs, fallback `output/5.4-baikal/bzImage`, fallback `checkpoint/boot/initramfs.cpio.gz`, fallback 5.4 cmdline.
+- Host-side verification: extracted archive and verified `kexec-tools 2.0.32` runs inside chroot when `LD_LIBRARY_PATH=/lib:/usr/lib:/lib64:/usr/lib64` is set by `/init`.
+- Expected PASS-ish behavior: SSH drops, 6.x reaches boomerang `/init`, logs best-effort to `/var/log/ps4-boomerang/`, then kexecs back to 5.4 and SSH returns.
+- Expected FAIL behavior: SSH never returns, meaning 6.x died before `/init` or before the boomerang could kexec back; manual PS4 recovery still required.

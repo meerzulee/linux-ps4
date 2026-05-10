@@ -38,3 +38,4 @@ Thumbs.db
 # Local agent state and scratch
 .claude/
 debug/
+vendor/

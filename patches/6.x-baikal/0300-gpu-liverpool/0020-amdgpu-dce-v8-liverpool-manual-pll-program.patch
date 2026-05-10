@@ -1,0 +1,194 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v45 - dce_v8_0 manual PLL programming for Liverpool 1080p60
+
+Builds on top of v44 (0019). v44's diagnostic dump confirmed all four
+DCCG_PLL[0..3] register banks are at zero when dce_v8_0_crtc_mode_set
+runs — PS4 firmware's display PLL state does NOT survive the kexec from
+PS4-OS into Linux. amdgpu has to program the display PLL itself, and
+ATOM AdjustDisplayPll/SetPixelClock can't help (PS4 VBIOS table data is
+stub).
+
+This patch replaces v44's "preserve BIOS state" short-circuit with a
+direct PPLL register programmer.
+
+Target mode: 1080p60 = 148.5 MHz pixel clock.
+Reference clock: 100 MHz (PCIE refclk on CIK).
+Standard avivo PLL math:
+  pixel_clock = ref_clock * (fb_div_int + fb_div_frac/16) / ref_div / post_div
+For 148.5 MHz with our chosen dividers:
+  ref_div = 1, fb_div_int = 11, fb_div_frac = 14, post_div = 8
+  → 100 * (11 + 14/16) / 1 / 8 = 148.4375 MHz (within HDMI ±0.5% tolerance)
+  → VCO = 100 * 11.875 = 1187.5 MHz (within typical 600..1600 MHz range)
+
+Register layout from dce_8_0_sh_mask.h VGA*_PPLL_* defines (DCCG_PLL
+banks share the layout — both are CIK PPLL register banks, just routed
+for different consumers):
+  PLL_REF_DIV [9:0]    = ref_div
+  PLL_FB_DIV  [3:0]    = fb_div_frac (4-bit fractional)
+  PLL_FB_DIV  [26:16]  = fb_div_int  (11-bit integer)
+  PLL_POST_DIV[6:0]    = post_div_pixclk (7-bit)
+
+Programs ALL four PPLLs with identical dividers. Whichever PPLL the
+PIXCLK_RESYNC routes to our CRTC will then have valid dividers driving
+its clock output. Overkill (other PPLLs aren't driving any active
+output) but safe.
+
+Dumps PRE and POST register state for diagnostic. PLL_CNTL also dumped
+to see what enable/sleep state the PLL is in (might be powered down,
+which dividers alone won't fix).
+
+Three possible outcomes:
+  A) Display lights up — confirmed root cause was unprogrammed PLL.
+     Future v46 will replicate this for arbitrary modes (compute
+     dividers from adjusted_mode->clock instead of hardcoding 1080p60).
+  B) Display still dark, PPLL POST-program reads back the values we
+     wrote — register layout is right, PLL is taking the dividers,
+     but it's powered down or upstream chain (DP TX, DIG encoder)
+     still doesn't have signal. v46 will add PLL_CNTL enable
+     sequencing.
+  C) PPLL POST-program reads back differently than what we wrote —
+     register layout assumption is wrong, dividers stuck. v46 will
+     consult radeon's CIK PLL helper as reference.
+
+NOT doing in this iteration: PLL enable/reset/lock sequencing via
+PLL_CNTL/PLL_UPDATE_LOCK. Mode generalization (only 1080p60 hardcoded
+right now). PIXCLK_RESYNC routing setup (we trust whatever BIOS or
+amdgpu init left). DP TX or DIG encoder programming.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -2569,42 +2569,109 @@
+ 		amdgpu_crtc->adjusted_clock = adjusted_mode->clock;
+ 	}
+
+-	/* v44 (PS4 Liverpool/Gladius): PS4 VBIOS lacks usable ATOM AdjustDisplayPll/
+-	 * SetPixelClock data even after the v40 ACPI fix (mutex chain works, but the
+-	 * tables themselves return zero). Calling amdgpu_atombios_crtc_set_pll/
+-	 * set_dtd_timing programs the hardware with garbage and breaks the BIOS-
+-	 * default DP TX state that the MN864729 bridge needs to lock onto.
++	/* v45 (PS4 Liverpool/Gladius): v44 dump confirmed the kexec from PS4-OS
++	 * resets all four DCCG_PLL[0..3] banks to zero before our kernel runs.
++	 * ATOM AdjustDisplayPll/SetPixelClock can't help (PS4 VBIOS table data is
++	 * stub, returns 0 even with v40 ACPI fix). amdgpu must program the display
++	 * PLL itself by writing the divider registers directly.
+ 	 *
+-	 * Strategy: skip all ATOM-driven mode_set work, preserve the PS4 boot
+-	 * firmware's PLL/timing configuration, and only update what the framebuffer
+-	 * scanout needs (those writes don't go through ATOM). Dump current PPLL state
+-	 * to dmesg so we can see exactly what BIOS left us with. If the bridge still
+-	 * doesn't get signal after this, the issue is upstream of the PLL (DP TX or
+-	 * DIG encoder) and not anything mode_set can fix. */
++	 * Target: 1080p60 = 148.5 MHz pixel clock. Reference clock: 100 MHz (PCIE).
++	 * Standard avivo PLL math:
++	 *   pixel_clock = ref_clock * (fb_div_int + fb_div_frac/16) / ref_div / post_div
++	 * For 148.5 MHz: ref_div=1, fb_div_int=11, fb_div_frac=14, post_div=8
++	 *   → 100 * (11 + 14/16) / 1 / 8 = 148.4375 MHz (within HDMI ±0.5% tolerance)
++	 *   → VCO = 100 * 11.875 = 1187.5 MHz (within typical 600..1600 MHz range)
++	 *
++	 * Register layout from dce_8_0_sh_mask.h VGA*_PPLL_* (DCCG_PLL banks have
++	 * the same layout — both are CIK PPLL register banks):
++	 *   PLL_REF_DIV[9:0]  = ref_div
++	 *   PLL_FB_DIV[3:0]   = fb_div_frac (4-bit)
++	 *   PLL_FB_DIV[26:16] = fb_div_int (11-bit)
++	 *   PLL_POST_DIV[6:0] = post_div_pixclk (7-bit)
++	 *
++	 * Program ALL four PPLLs identically — whichever PPLL the PIXCLK_RESYNC
++	 * routes to our CRTC will then have valid dividers. This is overkill but
++	 * safe (other PPLLs aren't driving any active output yet).
++	 *
++	 * NOT doing in this iteration: PLL enable/reset/lock sequencing via
++	 * PLL_CNTL/PLL_UPDATE_LOCK. If the dividers alone don't unblock display,
++	 * v46 will layer on the enable sequence using radeon's CIK helper as
++	 * reference. */
+ 	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
+-		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL0 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++		const u32 ref_div       = 1;
++		const u32 fb_div_int    = 11;
++		const u32 fb_div_frac   = 14;
++		const u32 post_div      = 8;
++
++		const u32 ref_div_val   = ref_div & 0x3ff;
++		const u32 fb_div_val    = (fb_div_frac & 0xf) | ((fb_div_int & 0x7ff) << 16);
++		const u32 post_div_val  = post_div & 0x7f;
++
++		pr_info("dce_v8_0_crtc_mode_set: v45 Liverpool PRE-program PPLL state:\n");
++		pr_info("  PPLL0: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
+ 			RREG32(mmDCCG_PLL0_PLL_REF_DIV),
+ 			RREG32(mmDCCG_PLL0_PLL_FB_DIV),
+-			RREG32(mmDCCG_PLL0_PLL_POST_DIV));
+-		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL1 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL0_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL0_PLL_CNTL));
++		pr_info("  PPLL1: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
+ 			RREG32(mmDCCG_PLL1_PLL_REF_DIV),
+ 			RREG32(mmDCCG_PLL1_PLL_FB_DIV),
+-			RREG32(mmDCCG_PLL1_PLL_POST_DIV));
+-		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL2 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL1_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL1_PLL_CNTL));
++		pr_info("  PPLL2: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
+ 			RREG32(mmDCCG_PLL2_PLL_REF_DIV),
+ 			RREG32(mmDCCG_PLL2_PLL_FB_DIV),
+-			RREG32(mmDCCG_PLL2_PLL_POST_DIV));
+-		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL3 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL2_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL2_PLL_CNTL));
++		pr_info("  PPLL3: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
+ 			RREG32(mmDCCG_PLL3_PLL_REF_DIV),
+ 			RREG32(mmDCCG_PLL3_PLL_FB_DIV),
+-			RREG32(mmDCCG_PLL3_PLL_POST_DIV));
+-		pr_info("dce_v8_0_crtc_mode_set: Liverpool PIXCLK0/1/2 RESYNC: 0x%08x 0x%08x 0x%08x\n",
++			RREG32(mmDCCG_PLL3_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL3_PLL_CNTL));
++		pr_info("  PIXCLK0/1/2 RESYNC: 0x%08x 0x%08x 0x%08x  crtc_id=%d pll_id=%d\n",
+ 			RREG32(mmPIXCLK0_RESYNC_CNTL),
+ 			RREG32(mmPIXCLK1_RESYNC_CNTL),
+-			RREG32(mmPIXCLK2_RESYNC_CNTL));
+-		pr_info("dce_v8_0_crtc_mode_set: Liverpool - preserving BIOS PLL/timing, "
+-			"framebuffer-only setup (clock=%d kHz, x=%d, y=%d)\n",
+-			adjusted_mode->clock, x, y);
++			RREG32(mmPIXCLK2_RESYNC_CNTL),
++			amdgpu_crtc->crtc_id, amdgpu_crtc->pll_id);
++		pr_info("  Target dividers: ref=%u fb_int=%u fb_frac=%u/16 post=%u → ~148.44 MHz\n",
++			ref_div, fb_div_int, fb_div_frac, post_div);
++		pr_info("  Packed values: ref=0x%08x fb=0x%08x post=0x%08x\n",
++			ref_div_val, fb_div_val, post_div_val);
++
++		WREG32(mmDCCG_PLL0_PLL_REF_DIV,  ref_div_val);
++		WREG32(mmDCCG_PLL0_PLL_FB_DIV,   fb_div_val);
++		WREG32(mmDCCG_PLL0_PLL_POST_DIV, post_div_val);
++		WREG32(mmDCCG_PLL1_PLL_REF_DIV,  ref_div_val);
++		WREG32(mmDCCG_PLL1_PLL_FB_DIV,   fb_div_val);
++		WREG32(mmDCCG_PLL1_PLL_POST_DIV, post_div_val);
++		WREG32(mmDCCG_PLL2_PLL_REF_DIV,  ref_div_val);
++		WREG32(mmDCCG_PLL2_PLL_FB_DIV,   fb_div_val);
++		WREG32(mmDCCG_PLL2_PLL_POST_DIV, post_div_val);
++		WREG32(mmDCCG_PLL3_PLL_REF_DIV,  ref_div_val);
++		WREG32(mmDCCG_PLL3_PLL_FB_DIV,   fb_div_val);
++		WREG32(mmDCCG_PLL3_PLL_POST_DIV, post_div_val);
++
++		pr_info("dce_v8_0_crtc_mode_set: v45 Liverpool POST-program PPLL state:\n");
++		pr_info("  PPLL0: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
++			RREG32(mmDCCG_PLL0_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL0_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL0_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL0_PLL_CNTL));
++		pr_info("  PPLL1: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
++			RREG32(mmDCCG_PLL1_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL1_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL1_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL1_PLL_CNTL));
++		pr_info("  PPLL2: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
++			RREG32(mmDCCG_PLL2_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL2_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL2_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL2_PLL_CNTL));
++		pr_info("  PPLL3: ref=0x%08x fb=0x%08x post=0x%08x cntl=0x%08x\n",
++			RREG32(mmDCCG_PLL3_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL3_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL3_PLL_POST_DIV),
++			RREG32(mmDCCG_PLL3_PLL_CNTL));
+
+ 		dce_v8_0_crtc_do_set_base(crtc, old_fb, x, y, 0);
+ 		dce_v8_0_cursor_reset(crtc);

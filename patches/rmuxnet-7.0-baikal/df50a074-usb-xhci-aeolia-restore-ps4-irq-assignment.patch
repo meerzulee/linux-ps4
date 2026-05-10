@@ -1,0 +1,88 @@
+From df50a07483c8a84517b383a1e2c774035c586efd Mon Sep 17 00:00:00 2001
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Fri, 1 May 2026 22:12:39 +0200
+Subject: [PATCH] usb: xhci-aeolia: restore PS4 IRQ assignment
+
+---
+ drivers/usb/host/xhci-aeolia.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+index f714fe6c0121e6..c8866e4d46cb0f 100644
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -58,18 +58,19 @@ static bool xhci_aeolia_skip_index(struct pci_dev *dev, int index)
+ 	return !xhci_aeolia_has_middle_host(dev) && index == 1;
+ }
+ 
+-static int xhci_aeolia_vector_index(struct aeolia_xhci *axhci,
+-				    struct pci_dev *dev, int index)
++static int xhci_aeolia_irqnum(struct aeolia_xhci *axhci,
++			      struct pci_dev *dev, int index)
+ {
+-	int vector = index;
+-
+-	if (!xhci_aeolia_has_middle_host(dev) && index == 2)
+-		vector = 1;
+-
+-	if (axhci->nr_irqs <= 1 || vector >= axhci->nr_irqs)
+-		vector = 0;
++	/*
++	 * Belize/Baikal still use subfunction slots 0/1/2 even though slot 1 is
++	 * not an xHCI controller. Keep the sparse numbering so controller 2
++	 * continues to use IRQ slot 2 instead of being incorrectly collapsed to
++	 * slot 1.
++	 */
++	if (axhci->nr_irqs <= 1 || index >= axhci->nr_irqs)
++		return dev->irq;
+ 
+-	return vector;
++	return dev->irq + index;
+ }
+ 
+ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
+@@ -79,7 +80,7 @@ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
+ 	struct hc_driver *driver = &xhci_aeolia_hc_driver;
+ 	struct usb_hcd *hcd;
+ 	struct xhci_hcd *xhci;
+-	int irq = pci_irq_vector(dev, xhci_aeolia_vector_index(axhci, dev, index));
++	int irq = xhci_aeolia_irqnum(axhci, dev, index);
+ 
+ 	dev_dbg(&dev->dev, "xhci_aeolia_probe_one %d controller %04x\n",
+ 		index, dev->device);
+@@ -166,7 +167,6 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 	int idx;
+ 	int retval;
+ 	struct aeolia_xhci *axhci;
+-	int max_irqs = xhci_aeolia_has_middle_host(dev) ? NR_DEVICES : NR_DEVICES - 1;
+ 
+ 	if (apcie_status() == 0)
+ 		return -EPROBE_DEFER;
+@@ -182,8 +182,7 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 	}
+ 	pci_set_drvdata(dev, axhci);
+ 
+-	axhci->nr_irqs = retval = pci_alloc_irq_vectors(dev, 1, max_irqs,
+-							PCI_IRQ_MSIX | PCI_IRQ_MSI);
++	axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+ 	if (retval < 0) {
+ 		goto free_axhci;
+ 	}
+@@ -212,7 +211,7 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 		if (!xhci_aeolia_skip_index(dev, idx))
+ 			xhci_aeolia_remove_one(dev, idx);
+ free_irqs:
+-	pci_free_irq_vectors(dev);
++	apcie_free_irqs(dev->irq, axhci->nr_irqs);
+ free_axhci:
+ 	devm_kfree(&dev->dev, axhci);
+ 	pci_set_drvdata(dev, NULL);
+@@ -234,7 +233,7 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
+ 			xhci_aeolia_remove_one(dev, idx);
+ 	}
+ 
+-	pci_free_irq_vectors(dev);
++	apcie_free_irqs(dev->irq, axhci->nr_irqs);
+ 	pci_disable_device(dev);
+ }
+ 

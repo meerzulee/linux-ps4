@@ -1,0 +1,22 @@
+From 30eb36c14c3eebd6091a807131ec4a5f806c6b3d Mon Sep 17 00:00:00 2001
+From: feeRnt <81442162+feeRnt@users.noreply.github.com>
+Date: Fri, 8 May 2026 01:05:02 +0000
+Subject: [PATCH] usb/xhci-aeolia: NULLify axhci->host if fail in
+ ahci_init_one; prevent OOPS in Kernel (try to)
+
+---
+ drivers/usb/host/xhci-aeolia.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+index a430d8bbe9d7c9..13233d7aa835f1 100644
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -342,6 +342,7 @@ static int ahci_init_one(struct pci_dev *pdev)
+ 	host_deactivate:
+ 	release_host:
+ 	unmap_registers:
++		axhci->host = NULL; // otherwise kernel OOPS from NULL pointer deref if port[i] is uninitialized? Not sure if this is the right fix
+ 		iounmap(hpriv->mmio);
+ 	release_mem_region:
+ 		//release_mem_region(rsrc_start, rsrc_len);

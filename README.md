@@ -1,181 +1,157 @@
 # PS4 Linux — Baikal kernel build system
 
-A patch-based build system for porting Linux to PlayStation 4 consoles
-with the **Baikal** southbridge (PS4 Slim CUH-2xxx, PS4 Pro CUH-7xxx,
-Baikal-B1 ID 0x30201, MediaTek MT7668 WiFi/BT).
+A patch-based build system for porting **mainline Linux** to PlayStation 4
+consoles with the **Baikal** southbridge (PS4 Slim CUH-2xxx, PS4 Pro
+CUH-7xxx; Marvell MT7668 WiFi+BT, AMD Liverpool/Gladius GPU).
 
-Two kernel targets are wired up out of the box:
+> 🎉 **HDMI display works on 6.x as of v60 (`abe29da`, 2026-05-10).**
+> WiFi via USB adapter (rtw88) + SSH from host works on 6.x as of v62 (`b02d1c6`).
+> See [STATUS.md](STATUS.md) for the at-a-glance "what works" matrix.
+
+## Targets
 
 | Target | Base | Status | Compiler |
 |---|---|---|---|
-| `5.4-baikal` | vanilla v5.4.247 + 13 patches | Builds (boot pending) | Clang 22 + LLD |
-| `6.x-baikal` | vanilla v6.15.4 + 15 patches | Builds (boot pending) | GCC 15 |
+| `5.4-baikal` | vanilla `v5.4.247` + 13 patches | ✅ Boots, KDE, WiFi (mt7668), SSH | Clang 22 |
+| `6.x-baikal` | vanilla `v6.15.4` + 30 patches | ✅ **Boots to systemd**, HDMI, USB, SATA, WiFi (USB rtw88), SSH | GCC 14+ |
 
-The 5.4 target is a faithful re-creation of feeRnt's `5.4.247-baikal-dfaus`
-branch. The 6.x target is the forward-port: crashniels'
-`ps4-linux-6.15.y-baikal` split into per-subsystem patches, plus a couple
-of small fixes layered on top.
+The `5.4-baikal` target is a faithful re-creation of feeRnt's
+`5.4.247-baikal-dfaus`. The `6.x-baikal` target started as crashniels'
+`ps4-linux-6.15.y-baikal` forward-port and now carries the major
+display-bring-up work that took the project from "boots, no screen"
+to "boots to a desktop with SSH".
 
 ## Quick start
 
 ```sh
-# First-time setup: clone reference repos (~10GB) and download firmware
+# First-time setup: clone reference repos (~10 GB) and download firmware
 make init
 
-# Build the 5.4 baseline (Clang)
-make TARGET=5.4-baikal
-
-# Build the 6.x port (GCC)
+# Build the 6.x kernel (the active development target)
 make TARGET=6.x-baikal
 
-# Outputs land in output/<target>/{bzImage,config,System.map,version.txt}
+# Build the 5.4 baseline
+make TARGET=5.4-baikal
+
+# Outputs land in output/<target>/{bzImage,config,version.txt}
 ```
 
-To install modules into a stagable directory:
+Then to install modules into a stagable directory:
 
 ```sh
 cd src/<target>
 make INSTALL_MOD_PATH=../../output/<target>/modules modules_install
 ```
 
+For the full PS4 dev loop (UART capture, USB swap, bootargs profiles),
+see [scripts/dev/](scripts/dev/) and [bootargs/README.md](bootargs/README.md).
+
 ## Repo layout
 
 ```
 linux-ps4/
-├── build.sh                    # ./build.sh -t <target>
-├── Makefile                    # `make TARGET=<target>` shortcuts
+├── README.md                  # this file
+├── STATUS.md                  # at-a-glance: what works, what doesn't
+├── CONTRIBUTING.md            # how to contribute (bug reports, patches, upstreaming)
+├── BUILD_LOG.md               # chronological development history
+├── build.sh                   # ./build.sh -t <target>
+├── Makefile                   # `make TARGET=<target>` shortcuts
 ├── targets/
-│   ├── 5.4-baikal.env          # base repo, ref, config, compiler
+│   ├── 5.4-baikal.env         # base repo, BASE_REF, config, compiler
 │   └── 6.x-baikal.env
 ├── patches/
-│   ├── 5.4-baikal/             # 13 patches mirroring feeRnt's stack
-│   │   ├── series              # apply order
-│   │   ├── 0100-x86-platform/
-│   │   ├── 0200-ps4-drivers/
-│   │   ├── 0300-gpu-liverpool/
-│   │   ├── 0400-storage-ahci/
-│   │   ├── 0500-storage-sdio/
-│   │   ├── 0600-wifi-mt7668/   # ~214k-line MT7668 vendor driver
-│   │   ├── 0700-network-sky2/
-│   │   ├── 0800-usb-aeolia/
-│   │   ├── 0900-hwmon/
-│   │   ├── 1000-iommu/
-│   │   ├── 1100-pci-msi/
-│   │   └── 1200-misc/
-│   └── 6.x-baikal/             # 15 patches forward-ported from 5.4
+│   ├── 5.4-baikal/            # 13 patches mirroring feeRnt's stack
+│   │   ├── series             # apply order
+│   │   └── 0100..1200/        # bucketed by subsystem
+│   └── 6.x-baikal/            # 30+ patches; v60 + v62 milestones
 │       ├── series
 │       ├── 0100-x86-platform/
-│       ├── 0200-ps4-drivers/
-│       ├── 0300-gpu-liverpool/ # adds radeon Liverpool, amdkfd, drm_bridge
+│       ├── 0150-acpi/         # IRQ 9 desc fix (root cause for ATOM mutex)
+│       ├── 0200-ps4-drivers/  # bpcie/icc/uart/MSI infrastructure
+│       ├── 0300-gpu-liverpool/# amdgpu + bridge + DP TX fixes (v40-v60)
 │       ├── 0400-storage-ahci/
 │       ├── 0500-storage-sdio/
+│       ├── 0500-network-mt7668/ # WIP — vendor tree imported, build infra needs rework
 │       ├── 0700-network-sky2/
 │       ├── 0800-usb-aeolia/
 │       ├── 0900-hwmon/
-│       ├── 1000-iommu/         # path moved to drivers/iommu/amd/ in 6.x
-│       ├── 1100-pci-msi/       # heavily refactored vs 5.4
-│       └── 9000-todo/          # mt7668 forward-port, etc.
+│       ├── 1000-iommu/
+│       └── 1100-pci-msi/
 ├── config/
-│   ├── 5.4-baikal.config       # full .config — feeRnt's 5.4 working config
-│   ├── 6.x-baikal.config       # full .config — feeRnt's 6.15 working config
-│   └── fragments/              # mergeable additions (UART, debug, etc.)
-├── firmware/                   # firmware blobs embedded into the kernel
-├── scripts/
-│   ├── clone-refs.sh           # clone reference upstreams to tmp/
-│   ├── download-firmware.sh
-│   ├── generate-5.4-patches.sh # regenerator for patches/5.4-baikal/
-│   ├── generate-6.x-patches.sh # regenerator for patches/6.x-baikal/
-│   └── ...
-├── tmp/                        # reference repos (gitignored, ~10GB)
-└── src/, output/               # gitignored build dirs (per-target)
+│   ├── 5.4-baikal.config      # working 5.4 config
+│   └── 6.x-baikal.config      # working 6.15 config
+├── bootargs/                  # canonical kernel cmdline strings per scenario
+├── checkpoint/
+│   ├── docs/
+│   │   ├── PLAN.md            # roadmap / current focus
+│   │   ├── LEARNINGS.md       # diagnosis history (long form)
+│   │   └── research/          # per-iteration result reports
+│   └── uart-logs/             # captured UART excerpts per boot
+└── scripts/
+    └── dev/                   # helper scripts for the dev loop
+        ├── swap-bzimage.sh
+        ├── update-bootargs.sh
+        ├── boot-capture.sh
+        └── sky2-probe.py      # userspace BAR poker (RE tool)
 ```
 
-## How patches are sourced
+## Notable milestones
 
-### 5.4-baikal
+| Tag | Commit | What |
+|---|---|---|
+| `v60-hdmi-working` | `abe29da` | **HDMI works on 6.x** — preserve firmware-trained DP TX state on Liverpool. Two patches skip `setup_dig_transmitter(DISABLE/ENABLE)` for Liverpool DP encoders. PS4 firmware leaves the GPU's UNIPHYA DP transmitter trained with per-lane swing/preemph values not derivable from VBIOS; standard DPMS_OFF/ON tears down the trained PHY and there's no working DPCD-based retrainer for the fake-DP MN864729 bridge. |
+| `v62-wifi-ssh` | `b02d1c6` | **WiFi + SSH work on 6.x** via USB TP-Link Archer T3U Plus (rtw88_8822bu) since the built-in Marvell GbE turned out to not be a Yukon-2 (see `checkpoint/docs/research/2026-05-10-sky2-baikal-not-yukon.md`). |
 
-Diff between vanilla v5.4.247 and feeRnt's
-`ps4-linux-12xx 5.4.247-baikal-dfaus` (HEAD `1fdfbd9a4`), bucketed by
-subsystem. Plus one local patch (`-mhard-float` removal so the kernel
-builds with Clang 16+; feeRnt's CI pinned Clang 14).
+For the full history of the v40 → v60 display-bringup saga, see
+`checkpoint/docs/research/2026-05-10-v60-skip-tx-enable-result.md` —
+it documents the 16-iteration bisection that found the fix.
 
-100% file coverage of the feeRnt tree — building from these patches
-produces a kernel byte-equivalent to feeRnt's published 5.4 build.
+## Adding new kernel versions
 
-### 6.x-baikal
+Each kernel target is one `targets/<name>.env` file plus one
+`patches/<name>/` directory. To port to a new upstream release:
 
-Diff between vanilla v6.15.4 and crashniels'
-`ps4-linux-6.15.y-baikal` (HEAD `b3b6b1e4f`), bucketed by subsystem.
-crashniels has already absorbed the 5.4 work and forward-ported it,
-including additional 6.x-only changes that 5.4 didn't have:
+1. Copy `targets/6.x-baikal.env` to `targets/<NEW>.env`
+2. Bump `BASE_REF` to the new tag (e.g., `v6.16.4`, `v7.0.1`)
+3. Copy `patches/6.x-baikal/` to `patches/<NEW>/`
+4. Run `./build.sh -t <NEW>` and fix any patch-rejects
 
-- **radeon Liverpool support** (legacy radeon driver, in addition to
-  amdgpu)
-- **amdkfd quirks** (compute / kernel fusion driver)
-- **MSI subsystem rewrite handling** (`arch/x86/kernel/apic/msi.c`
-  was replaced by `drivers/pci/msi/irqdomain.c` +
-  `kernel/irq/irqdomain.c` + `arch/x86/kernel/apic/io_apic.c` +
-  `vector.c`; `include/linux/msi.h` got a new layout)
-- **iommu directory move** (`drivers/iommu/amd_iommu_init.c` →
-  `drivers/iommu/amd/init.c`, plus a new `iommu.c`)
-- **drm_bridge API tightening**
+That's it — the build system is target-agnostic. See
+[CONTRIBUTING.md](CONTRIBUTING.md#adding-a-new-kernel-target) for a
+worked example.
 
-Plus 2 layered fixes:
+## Documentation index
 
-- `0200-ps4-drivers/0002-ps4-bpcie-icc-fix-...patch` — `u32 addr` →
-  `void __iomem *addr`. Same bug exists in 5.4 and 6.x trees; both
-  series carry the fix as a real patch (not the previous sed hack
-  in build.sh).
-- `0800-usb-aeolia/0002-xhci-aeolia-baikal-shutdown.patch` —
-  feeRnt's `b0969f7d101f`: original logic was "if not Belize, take
-  the generic shutdown path", which misclassifies Baikal. Inverted
-  to "only Aeolia takes the generic path".
+- [STATUS.md](STATUS.md) — what works / what doesn't
+- [CONTRIBUTING.md](CONTRIBUTING.md) — bug reports, patches, upstream plan
+- [BUILD_LOG.md](BUILD_LOG.md) — chronological progress
+- [checkpoint/docs/PLAN.md](checkpoint/docs/PLAN.md) — current roadmap
+- [checkpoint/docs/LEARNINGS.md](checkpoint/docs/LEARNINGS.md) — diagnosis notes
+- [checkpoint/docs/research/](checkpoint/docs/research/) — per-iteration reports
+- [bootargs/README.md](bootargs/README.md) — kernel cmdline reference
 
-## UART boot
-
-The Baikal southbridge exposes 4 memory-mapped 8250-compatible UARTs
-(BAR2 of the BPCIe device, `uartclk=58.5 MHz`, `regshift=2`,
-MMIO32). Once `drivers/ps4/ps4-bpcie-uart.c` probes during boot,
-they appear as standard `ttyS0…ttyS3`. Useful bootargs:
-
-```
-console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 loglevel=7
-```
-
-Earlyprintk via the Baikal UART won't fire pre-driver (the port is
-not enumerated until BPCIe probes), so very-early-boot output isn't
-available there. EFI earlyprintk is the workaround if needed.
-
-## Outstanding work
-
-- **MT7668 WiFi/BT in 6.x.** Not present in any 6.x reference tree
-  (crashniels-6.15-baikal, feeRnt-6.15.4-baikal-crashniels,
-  feeRnt-6.15.4-BaikalLove). 5.4 carries the full vendor driver
-  (~214k lines, 250 files); forward-porting it is non-trivial. See
-  `patches/6.x-baikal/9000-todo/README.md`.
-- **Boot tests.** Both kernels build cleanly; neither has been
-  booted on hardware as of the last log entry.
-
-## Reference repos (cloned to `tmp/`)
+## Reference repos (cloned to `tmp/`, gitignored)
 
 | Repo | Branch | Role |
 |---|---|---|
 | crashniels-6.15 | `ps4-linux-6.15.y-baikal` | 6.x patch source |
-| feeRnt-5.4.247-baikal | `5.4.247-baikal-dfaus` | 5.4 patch source |
-| feeRnt-6.15.4-baikal-crashniels | `x_exp__6.15.4-baikal-crashniels` | xhci shutdown fix; reference 6.15 config |
+| feeRnt-5.4.247-baikal | `5.4.247-baikal-dfaus` | 5.4 patch source + MT7668 vendor driver |
 | feeRnt-6.15.4-BaikalLove | `x_exp__6.15.4-BaikalLove` | alternate 6.15 reference |
+| rmuxnet-12xx-current | various | sky2 + xhci experimental fixes |
+| baikal-bringup | various | Aeolia/Belize/Baikal southbridge reference |
 | whitehax0r-5.4-baikal | `main` | original 5.4 squashed Baikal port |
-| ps4boot-5.3-baikal | `baikal` | older 5.3 reference |
-| vanilla-5.4.247 | tag `v5.4.247` | clean 5.4 baseline for diffing |
-| vanilla-6.15.4 | tag `v6.15.4` | clean 6.15 baseline for diffing |
+| vanilla-5.4.247 / vanilla-6.15.4 | upstream tags | clean baselines for diffing |
 
 ## Credits
 
 - **whitehax0r** — original PS4 Baikal 5.4 port
 - **DFAUS / feeRnt** — 5.4.247 refinement, MT7668 driver, build infra
 - **crashniels** — 6.15 forward-port (the heavy lifting for 6.x)
+- **rmuxnet** — sky2 + xhci experimental fixes
 - **fail0verflow** — original PS4 Linux work and tooling
+- **psxitarch project** — Arch-based PS4 Linux distro we boot into
 
 ## License
 
-Patches are GPL-2.0, following the Linux kernel.
+Patches inherit GPL-2.0 from the Linux kernel. Build scripts and
+documentation are GPL-2.0 unless noted otherwise. See [LICENSE](LICENSE).

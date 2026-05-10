@@ -1,0 +1,52 @@
+From: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+Date: Thu, 7 May 2026 12:00:00 +0600
+Subject: [PATCH] ps4-bpcie-uart: set port.type=PORT_8250 (6.x kexec-fault variant)
+
+Alternative variant of the bpcie-uart port-type fix for 6.x. The
+canonical 5.4 patch sets `port.type = PORT_16550A` and adds
+`UPF_FIXED_TYPE`; that combination triple-faults at kexec on
+6.15.4 (no UART output, PS4 secure-loader returns immediately).
+The 8250 driver internals changed substantially 5.4 → 6.x, and the
+PORT_16550A path now exercises FIFO/auto-flow setup that the BPCIe
+UART hardware doesn't support.
+
+PORT_8250 is the simpler 8250 variant: no FIFO assumption, no
+auto-flow control, no detection of advanced features. If the
+PORT_16550A path triple-faults because some autoconfig still runs
+even with UPF_FIXED_TYPE — or because 6.x's serial8250 expects
+fields we don't initialize when claiming PORT_16550A — PORT_8250
+should sidestep it.
+
+Tradeoff vs PORT_16550A on 5.4 (where 16550A works):
+  - PORT_8250: registration succeeds, console works, no FIFO →
+    higher per-byte overhead. Acceptable for debug.
+  - PORT_16550A: same but with 16-byte TX/RX FIFO. Faster, but
+    apparently broken on 6.x.
+
+This patch is currently disabled. To enable, copy the file to its
+non-`.candidate` name and uncomment the corresponding line in
+`patches/6.x-baikal/series`.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/ps4/ps4-bpcie-uart.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ps4/ps4-bpcie-uart.c b/drivers/ps4/ps4-bpcie-uart.c
+--- a/drivers/ps4/ps4-bpcie-uart.c
++++ b/drivers/ps4/ps4-bpcie-uart.c
+@@ -21,11 +21,13 @@ int bpcie_uart_init(struct bpcie_dev *sc)
+ 		memset(&uart, 0, sizeof(uart));
+ 		uart.port.irq		= bpcie_irqnum(sc, BPCIE_SUBFUNC_UART0 + i);
+ 		uart.port.uartclk	= 58500000;
+-		uart.port.flags		= UPF_SHARE_IRQ;
++		uart.port.flags		= UPF_SHARE_IRQ | UPF_FIXED_TYPE;
+ 		uart.port.iotype	= UPIO_MEM32;
+ 		uart.port.mapbase	= pci_resource_start(sc->pdev, 2) + off;
+ 		uart.port.membase	= sc->bar2 + off;
+ 		uart.port.regshift	= 2;
++		/* PORT_8250 (no FIFO) — 16550A variant triple-faulted at kexec on 6.x. */
++		uart.port.type		= PORT_8250;
+ 		uart.port.dev		= &sc->pdev->dev;
+
+ 		sc->serial_line[i] = serial8250_register_8250_port(&uart);
