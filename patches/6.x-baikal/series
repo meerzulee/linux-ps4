@@ -308,6 +308,20 @@
 # 0500-network-mt7668/0004-mt76x8-rmuxnet-silence-clang-warnings.patch
 0500-network-mt7668/0005-mt76x8-rmuxnet-disable-mediatek-wifi-power-save.patch
 0500-network-mt7668/0006-mt76x8-rmuxnet-fix-fortified-copy-from-user.patch
+# v67 (2026-05-11): full cfg80211/timer/cfg80211_ap_update API port for
+# Linux 6.15+. Fixes 16 build errors (7 listed + 9 cascade discoveries):
+#   stddef.h→linux/stddef.h, mm_segment_t/get_fs/set_fs removal,
+#   scan_width gone, MODULE_SUPPORTED_DEVICE removed in 5.16,
+#   netif_rx_ni→netif_rx, del_timer_sync→timer_delete_sync,
+#   cfg80211_roam_info.channel/bssid→links[0],
+#   cfg80211_beacon_data→cfg80211_ap_update,
+#   key_index u8→int callback adapter wrappers,
+#   STA_PARAMS_LINK accessor for moved supported_rates/ht_capa/vht_capa,
+#   cfg80211_cac_event + cfg80211_ch_switch_notify link_id additions.
+# Also flips the Kconfigs from tristate→bool so MT76X8=y links cleanly
+# (the vendor Makefile uses obj-$(CONFIG_MTK_WIFI_ONLY)=y exported, which
+# only resolves when the parent CONFIG_MT76X8 is built into the kernel).
+0500-network-mt7668/0007-mt76x8-cfg80211-6.15-api-port.patch
 
 # === 0700: sky2 ethernet (Marvell Yukon)
 # Baikal GBE 0x90d8 turned out to be the SAME sky2 family as Aeolia 0x909e
@@ -317,6 +331,16 @@
 # when treated identically to Aeolia.
 0700-network-sky2/0001-sky2-ps4-quirks.patch
 0700-network-sky2/0003-sky2-baikal-belize-extend-aeolia-quirks.patch
+# v65 (2026-05-11): chip_id read returned 0x0 — sky2_init bailed with
+# "unsupported chip type". Override to YUKON_PRM family when Baikal
+# reports 0x0. This is the second half of the rmuxnet 846b0b28 idea.
+0700-network-sky2/0004-sky2-baikal-override-chip-id-zero.patch
+# v66 (2026-05-11): after 0004 made sky2_init succeed, pci_enable_msi
+# also worked (bpcie programmed the MSI message), but sky2_test_msi
+# failed because Baikal silicon doesn't fire MSI from CS_ST_SW_IRQ.
+# Skip the self-test for Baikal — real interrupts still deliver via
+# bpcie's MSI domain.
+0700-network-sky2/0005-sky2-baikal-skip-msi-self-test.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
