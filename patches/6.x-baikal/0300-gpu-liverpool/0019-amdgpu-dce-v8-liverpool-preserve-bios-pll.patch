@@ -1,0 +1,106 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v44 - dce_v8_0 preserve BIOS PLL/timing on Liverpool, dump PPLL state
+
+Supersedes 0017 (v33). Same intent (skip ATOM PLL/timing on Liverpool because
+ATOM AdjustDisplayPll/SetPixelClock return zero data even after the v40 ACPI
+fix), but adds two things:
+
+  1. Reads all four PPLL register banks (DCCG_PLL0..3 REF_DIV, FB_DIV,
+     POST_DIV) and the three PIXCLKn_RESYNC_CNTL registers, dumps them via
+     pr_info before doing anything else. After the next boot we'll see
+     exactly what BIOS-default PLL state PS4 firmware leaves the GPU in
+     when Linux takes over. This is the diagnostic data we've been missing
+     when reasoning about the PLL path.
+
+  2. Skips amdgpu_atombios_crtc_set_pll, set_dtd_timing, overscan_setup,
+     and scaler_setup for Liverpool/Gladius. All four go through ATOM and
+     would clobber BIOS-default state with garbage. Only do_set_base
+     (framebuffer scanout, direct register writes) and cursor_reset run.
+
+Hypothesis being tested: if BIOS already has the PLL configured correctly
+for whatever resolution PS4 boot firmware brought up (most likely 1080p60
+since PS4 OS targets that), and we don't touch the PLL or DP TX state,
+then attaching our framebuffer should produce visible scanout on HDMI via
+the MN864729 bridge.
+
+Possible outcomes:
+  A) Display lights up — confirms the kill chain was ATOM clobbering
+     BIOS-default PLL/DP-TX state. Future work: replicate the BIOS-default
+     PLL programming so we can change resolutions.
+  B) Display still dark, but PPLL register dump shows valid dividers —
+     the kill is downstream of the PLL (DP TX, DIG encoder, or bridge
+     timing). PLL bypass eliminated as a hypothesis.
+  C) Display still dark, PPLL register dump shows zeros / garbage — BIOS
+     never programmed PPLL on this boot path (kexec from PS4 OS may not
+     leave display state intact). Need a manual PLL programmer with
+     hand-computed dividers in a follow-up patch.
+
+This patch is intentionally conservative: it READS PLL state, doesn't
+WRITE PLL state. We can write hand-computed values in a follow-up once we
+know what BIOS gives us.
+
+Replaces the workaround chain v28 fallback + v33 skip with a single,
+better-instrumented Liverpool path. The v28 fallback block stays for non-
+Liverpool ASICs that may also exhibit ATOM AdjustDisplayPll returning 0.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -2552,6 +2552,7 @@
+ 				  int x, int y, struct drm_framebuffer *old_fb)
+ {
+ 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
++	struct amdgpu_device *adev = drm_to_adev(crtc->dev);
+
+ 	if (!amdgpu_crtc->adjusted_clock) {
+ 		/* v28: PS4 ATOM BIOS sometimes returns 0 from
+@@ -2568,6 +2569,49 @@
+ 		amdgpu_crtc->adjusted_clock = adjusted_mode->clock;
+ 	}
+
++	/* v44 (PS4 Liverpool/Gladius): PS4 VBIOS lacks usable ATOM AdjustDisplayPll/
++	 * SetPixelClock data even after the v40 ACPI fix (mutex chain works, but the
++	 * tables themselves return zero). Calling amdgpu_atombios_crtc_set_pll/
++	 * set_dtd_timing programs the hardware with garbage and breaks the BIOS-
++	 * default DP TX state that the MN864729 bridge needs to lock onto.
++	 *
++	 * Strategy: skip all ATOM-driven mode_set work, preserve the PS4 boot
++	 * firmware's PLL/timing configuration, and only update what the framebuffer
++	 * scanout needs (those writes don't go through ATOM). Dump current PPLL state
++	 * to dmesg so we can see exactly what BIOS left us with. If the bridge still
++	 * doesn't get signal after this, the issue is upstream of the PLL (DP TX or
++	 * DIG encoder) and not anything mode_set can fix. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL0 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL0_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL0_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL0_PLL_POST_DIV));
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL1 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL1_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL1_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL1_PLL_POST_DIV));
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL2 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL2_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL2_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL2_PLL_POST_DIV));
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool PPLL3 (BIOS): ref=0x%08x fb=0x%08x post=0x%08x\n",
++			RREG32(mmDCCG_PLL3_PLL_REF_DIV),
++			RREG32(mmDCCG_PLL3_PLL_FB_DIV),
++			RREG32(mmDCCG_PLL3_PLL_POST_DIV));
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool PIXCLK0/1/2 RESYNC: 0x%08x 0x%08x 0x%08x\n",
++			RREG32(mmPIXCLK0_RESYNC_CNTL),
++			RREG32(mmPIXCLK1_RESYNC_CNTL),
++			RREG32(mmPIXCLK2_RESYNC_CNTL));
++		pr_info("dce_v8_0_crtc_mode_set: Liverpool - preserving BIOS PLL/timing, "
++			"framebuffer-only setup (clock=%d kHz, x=%d, y=%d)\n",
++			adjusted_mode->clock, x, y);
++
++		dce_v8_0_crtc_do_set_base(crtc, old_fb, x, y, 0);
++		dce_v8_0_cursor_reset(crtc);
++		amdgpu_crtc->hw_mode = *adjusted_mode;
++		return 0;
++	}
++
+ 	amdgpu_atombios_crtc_set_pll(crtc, adjusted_mode);
+ 	amdgpu_atombios_crtc_set_dtd_timing(crtc, adjusted_mode);
+ 	dce_v8_0_crtc_do_set_base(crtc, old_fb, x, y, 0);

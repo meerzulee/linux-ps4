@@ -166,6 +166,13 @@
 # modeset which should program GPU PLL correctly.
 # 0300-gpu-liverpool/0016-amdgpu-skip-dpms-on-liverpool-option-c.patch
 # 0300-gpu-liverpool/0017-amdgpu-dce-v8-skip-atom-pll-on-liverpool.patch
+# v44 (2026-05-10): even with v40, ATOM AdjustDisplayPll still returns 0 — the
+# tables themselves are stub on PS4 VBIOS. Reapply skip-ATOM logic but with
+# diagnostic register dump (v44 supersedes v33). Plus i2c table-name rename
+# from ps4gentoo's original 1fef36f5 reference patch (no-op functionally,
+# documents PS4 ATOM table-set choice).
+0300-gpu-liverpool/0018-amdgpu-atombios-i2c-rename-to-readedid.patch
+0300-gpu-liverpool/0019-amdgpu-dce-v8-liverpool-preserve-bios-pll.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

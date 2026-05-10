@@ -750,3 +750,35 @@ modeset → no display output.  ICC is the LAST remaining
 significant blocker for HDMI.
 
 Boot log: checkpoint/uart-logs/2026-05-09_2050-v16-firmware-correct-initramfs.log
+
+## 2026-05-10 — v44: Liverpool preserve-BIOS-PLL diagnostic
+
+Patches:
+- 0300-gpu-liverpool/0018-amdgpu-atombios-i2c-rename-to-readedid.patch
+  — cosmetic rename ProcessI2cChannelTransaction → ReadEDIDFromHWAssistedI2C,
+    matching ps4gentoo's original 1fef36f5 reference (no-op functionally
+    because they're #define aliases in our atombios.h).
+- 0300-gpu-liverpool/0019-amdgpu-dce-v8-liverpool-preserve-bios-pll.patch
+  — supersedes disabled v33; in dce_v8_0_crtc_mode_set for Liverpool,
+    dump all four DCCG_PLL[0..3] register banks plus PIXCLK[0..2] resync
+    regs, then skip every ATOM-driven mode_set call (set_pll, set_dtd_timing,
+    overscan_setup, scaler_setup), only run do_set_base + cursor_reset.
+
+bzImage: output/6.x-baikal/bzImage  md5 8999ea68d90d99d34cab9fbdfe415d10
+Bootargs: 6.x-edid-v40-nocrs (v40 ACPI fix + intremap=off + pci=nocrs +
+                              EDID firmware + 1920x1080@60D)
+UART log: checkpoint/uart-logs/2026-05-10_1454-v44-liverpool-preserve-bios-pll.log
+
+Result: ❌ HDMI dark.  Diagnostic dump shows all four PPLL banks at 0.
+PIXCLK1_RESYNC_CNTL = 0x1 (proves MMIO works), other PIXCLK = 0.
+
+Conclusion: PS4 firmware does NOT leave display PLL programmed across
+the kexec into Linux.  The "preserve BIOS state" mental model is wrong.
+Linux must program the display PLL itself.  v40 ACPI fix is independently
+correct; ATOM AdjustDisplayPll continues to return 0 (PS4 VBIOS table
+appears stub).
+
+Next iteration: v45 — manual PLL programming for Liverpool 1080p60 with
+hand-computed dividers, targeting PPLL1 (per PIXCLK1_RESYNC routing).
+
+Full analysis: checkpoint/docs/research/2026-05-10-v44-liverpool-preserve-bios-pll-result.md

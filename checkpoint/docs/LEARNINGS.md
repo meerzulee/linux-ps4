@@ -935,3 +935,50 @@ branch — RESEARCH notes, not a confirmed working baseline.  I mistook
 The 4 KB binary size difference between v9 and v10 in the same
 direction was a sign that adding code wasn't fixing the root cause —
 worth staring at when iterating on a stuck problem.
+
+## 2026-05-10 — v44: kexec into Linux leaves PS4 display PLL at zero
+
+Long-running mental model for the 6.x HDMI bring-up was that PS4 boot
+firmware programs HDMI for PS4 OS, ArabPixel kexecs into Linux, and
+the GPU display state stays intact — so if Linux/amdgpu doesn't
+clobber it, the bridge stays locked.  Refuted by v44.
+
+v44 added a Liverpool short-circuit in `dce_v8_0_crtc_mode_set` that
+dumps DCCG_PLL[0..3]_PLL_{REF,FB,POST}_DIV and PIXCLK[0..2]_RESYNC_CNTL
+via pr_info, then skips every ATOM-driven mode_set call (set_pll,
+set_dtd_timing, overscan_setup, scaler_setup) and only runs
+do_set_base + cursor_reset.
+
+Boot result (2026-05-10 14:54): all four PPLL banks read as
+`ref=0x00000000 fb=0x00000000 post=0x00000000`.  PIXCLK1_RESYNC_CNTL
+reads as 0x1, the other two as 0 — so MMIO access is fine; the zeros
+in PPLL banks are real.  Display dark (expected — no clock).
+
+Implications:
+- The kexec handoff from PS4-OS firmware into our Linux kernel resets
+  the display engine's PLL state to zero, even though the framebuffer
+  scanout regs and PIXCLK routing survive.
+- Linux/amdgpu MUST program the display PLL itself.  ATOM
+  `AdjustDisplayPll` returning 0 (which is what triggers the v28
+  fallback to `mode->clock`) is a separate symptom — the PS4 VBIOS
+  ATOM tables for display PLL appear to be stub.
+- v33 "skip ATOM" + v44 "preserve BIOS state" were never going to
+  work — neither programs the PLL, but PS4's PLL is unprogrammed at
+  Linux entry, so both leave it at zero.
+- Whether ATOM `SetPixelClock` (a different table from
+  `AdjustDisplayPll`) writes the PLL on PS4 is still untested.  Could
+  be tested with: run set_pll + dump PPLL after.  Not chosen as the
+  next iteration — user opted for direct manual PLL programming
+  instead (cheaper iteration count).
+
+Lesson for future-Claude.  When a "preserve hardware state" hypothesis
+is in play, the very first diagnostic should be: dump that state and
+verify it matches the hypothesis BEFORE designing a patch around it.
+v44 was framed as a fix, but its real value was the dump.  The dump
+showed the hypothesis was wrong.  If we'd run the dump first as a
+pure diagnostic patch (no skip-ATOM logic), we'd have moved to
+"manual PLL programming" one iteration sooner.
+
+Also: register dumps are cheap. Add them generously when investigating
+hardware mysteries — every value either confirms a hypothesis (move
+on) or refutes one (also useful).
