@@ -15,10 +15,28 @@
 
 ## Current focus (next session)
 
-1. **Phase-2 cleanup** — GitHub Actions CI/CD, Releases on tag, issue/PR templates, AUR PKGBUILDs. The repo is now positioned for community contributions; the build artifacts should follow.
-2. **MT7668 6.x port** — get internal WiFi+BT working. Replaces USB TP-Link adapter dependency. ~2-3 days.
-3. **Multi-version target framework** — easier to add `7.x-baikal` once 7.0 ships.
-4. **Upstream the v60 patch** — first upstream candidate. See [CONTRIBUTING.md](../../CONTRIBUTING.md#upstreaming).
+1. **🎯 NEXT: Dump Orbis kernel — RE foundation track**
+    Why: Orbis has working drivers for the hardware blocks we can't drive yet on Linux (Baikal ethernet, fan/thermal, HDD timing). Mining the dump gives us register definitions, init sequences, and the actual chip family identifications. **Single biggest unlock** for stmmac/DWMAC1000 ethernet port and various smaller mysteries.
+    Steps:
+    - Identify the right dumper payload for our jailbreak FW level
+    - Boot via PSFree → dumper.bin instead of linux-1024mb.bin
+    - Save kernel blob to USB → pull to host
+    - Open in Ghidra (free), find `if_msk`/`if_dwc_eth_qos` ethernet driver, fan/hwmon, HDD timing code
+    - Cross-reference with mainline `stmmac` source to write Baikal-specific binding
+    - Doc findings in `checkpoint/docs/research/orbis-kernel/`
+    Output: a research directory with annotated register defs + init traces. Drives the next several patches.
+
+2. **Stmmac/DWMAC1000 port (post-dump)** — once we have Orbis register definitions, port the existing mainline `stmmac` driver. sky2 path proven dead (v69 MDIO scan, [`research/2026-05-11-sky2-phy-dead-end-mdio-proven.md`](research/2026-05-11-sky2-phy-dead-end-mdio-proven.md)). Bottleneck for ethernet.
+
+3. **Phase-2 cleanup** — GitHub Actions CI/CD, Releases on tag, issue/PR templates, AUR PKGBUILDs.
+
+4. **Multi-version target framework** — easier to add `7.x-baikal` once 7.0 ships.
+
+5. **Upstream the v60 patch** — first upstream candidate. See [CONTRIBUTING.md](../../CONTRIBUTING.md#upstreaming).
+
+6. **Ultrawide 21:9 support** — user has a 2560×1080 / 3440×1440 monitor. PS4 HDMI 1.4 caps at ~4.95 Gbps so UWHD (2560×1080@60, 185 MHz pixclk) should work; UWQHD (3440×1440@60, 313 MHz pixclk) is borderline against Liverpool PLL's ~300 MHz limit. Path: generate widescreen EDID, swap `drm.edid_firmware=`, possibly relax 1080p VIC hardcode in `ps4_bridge.c`. Low-priority.
+
+7. **MT7668 6.x port — DONE in v67** (historical link).
 
 ## Older state (kept as historical reference)
 
