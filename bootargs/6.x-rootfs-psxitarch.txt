@@ -1,0 +1,1 @@
+earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info

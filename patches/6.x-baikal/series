@@ -292,6 +292,11 @@
 # === 0500: SDHCI/SDIO host (for MT7668 / 88w8897 WiFi-BT once ported)
 0500-storage-sdio/0001-sdhci-pci-ps4-quirks.patch
 
+# === 0500: MT7668 WiFi+BT vendor driver (MediaTek MT76X8)
+# Imported from tmp/feeRnt-5.4.247-baikal/, ~7.1 MB / 213k lines.
+# 5.4-to-6.x API breakage fixed by subsequent patches in this directory.
+0500-network-mt7668/0001-mt76x8-vendor-tree-import.patch
+
 # === 0700: sky2 ethernet (Marvell Yukon)
 0700-network-sky2/0001-sky2-ps4-quirks.patch
 
