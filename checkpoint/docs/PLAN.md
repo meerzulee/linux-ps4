@@ -36,7 +36,13 @@
 
 6. **Ultrawide 21:9 support** — user has a 2560×1080 / 3440×1440 monitor. PS4 HDMI 1.4 caps at ~4.95 Gbps so UWHD (2560×1080@60, 185 MHz pixclk) should work; UWQHD (3440×1440@60, 313 MHz pixclk) is borderline against Liverpool PLL's ~300 MHz limit. Path: generate widescreen EDID, swap `drm.edid_firmware=`, possibly relax 1080p VIC hardcode in `ps4_bridge.c`. Low-priority.
 
-7. **MT7668 6.x port — DONE in v67** (historical link).
+7. **AHCI DMA boundary fix → unlock BD drive + internal HDD** — `ahci 0000:00:14.2: probe with driver ahci failed with error -12 (-ENOMEM)`. Root cause is `PS4_AHCI_DMA_BOUNDARY = 0xB7FFFFFF` which is not power-of-2; modern SWIOTLB `BUG_ON(!is_power_of_2(boundary_size))` returns -ENOMEM. Rmuxnet's fix (per his BAIKAL_DEVLOG): change to `0x7FFFFFFF` (power-of-2 aligned). Adds ~10 lines to `patches/6.x-baikal/0400-storage-ahci/`. Once fixed: BD drive enumerates as `sr0` — can read BD-R/CD/DVD data discs; commercial BD movies need libbluray+AACS; writing depends on drive model (Pro=yes, Slim/Phat=read-only typical). Internal HDD also visible (kept disabled via libata.force=1.00:disable due to Sony-encrypted partitions). Low-priority.
+
+8. **macOS-on-PS4 — long-term research track** — possible technically (AMD x86_64 Jaguar + GCN 1.1 GPU was supported in macOS 10.13-10.15 era). Practical ceiling: High Sierra/Mojave. Modern macOS (Big Sur+) drops AVX2-less CPUs; Apple Silicon (12+) is ARM-only dead end. Approach: OpenCore bootloader with AMD_Vanilla patches + custom KEXTs for each PS4 chip (southbridge demux, MN864729 bridge, ethernet, ICC). **Reuses Orbis kernel dump findings** — same RE outputs feed both Linux drivers and macOS KEXTs. Order: finish Linux first as forcing function (better debug tools), then translate driver knowledge into KEXTs.
+
+9. **Recovery-kexec image** — minimal 50MB busybox+ssh kernel that boots in ~5s, usable as safety net when the main image breaks. Eliminates a PSFree gauntlet on most iteration failures. Build as a sibling target `recovery-baikal.env`.
+
+10. **MT7668 6.x port — DONE in v67** (historical link).
 
 ## Older state (kept as historical reference)
 
