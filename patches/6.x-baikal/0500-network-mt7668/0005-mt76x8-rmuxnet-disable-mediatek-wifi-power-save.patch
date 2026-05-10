@@ -1,0 +1,101 @@
+From a30953ce2d1c0f7fdf78e55f4deba64f5cbf5d1a Mon Sep 17 00:00:00 2001
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Sun, 26 Apr 2026 12:35:18 +0200
+Subject: [PATCH] ps4: disable MediaTek WiFi power save
+
+PS4 testers using MediaTek WiFi drivers can hit unstable connectivity
+while userspace or the driver enables WiFi power saving. Match the PS4
+mwifiex policy by forcing MediaTek WiFi power-save requests to remain in
+the active/CAM profile on PS4.
+
+The cfg80211 power-management path still programs the driver, but PS4
+requests to enable power save are converted into explicit power-save-off
+commands. Any internal default power profile touched by this patch is
+also forced to CAM only on PS4.
+
+Non-PS4 MediaTek behavior is unchanged. Scan handling, P2P behavior,
+firmware filenames, regulatory handling, Bluetooth behavior, config, and
+build profiles are unchanged.
+
+Signed-off-by: rmuxnet <armandas.kvietkus@proton.me>
+---
+ .../MT6632/wlan/os/linux/gl_cfg80211.c        | 17 ++++++++++++++++-
+ .../drv_wlan/MT6632/wlan/os/linux/gl_init.c   | 19 ++++++++++++++++++-
+ 2 files changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
+index 9f3537f8e2a727..aed0ce6b8b63b2 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
+@@ -78,6 +78,19 @@
+ #include <linux/can/netlink.h>
+ #include <net/netlink.h>
+ #include <net/cfg80211.h>
++
++#ifdef CONFIG_X86_PS4
++#include <asm/ps4.h>
++#endif
++
++static bool mtk_wifi_is_ps4(void)
++{
++#ifdef CONFIG_X86_PS4
++	return apcie_status() >= 0;
++#else
++	return false;
++#endif
++}
+ #include "gl_cfg80211.h"
+ 
+ /*******************************************************************************
+@@ -1437,6 +1450,9 @@ int mtk_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev, bo
+ 	if (!prGlueInfo->prAdapter->prAisBssInfo)
+ 		return -EFAULT;
+ 
++	if (mtk_wifi_is_ps4())
++		enabled = false;
++
+ 	if (enabled) {
+ 		if (timeout == -1)
+ 			rPowerMode.ePowerMode = Param_PowerModeFast_PSP;
+@@ -3701,4 +3717,3 @@ int mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
+ 	}
+ 	return 0;
+ }
+-
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+index 89447c9b3941db..f426aaec1146ae 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+@@ -76,6 +76,20 @@
+ #include "gl_wext.h"
+ #include "gl_cfg80211.h"
+ #include "precomp.h"
++
++#ifdef CONFIG_X86_PS4
++#include <asm/ps4.h>
++#endif
++
++static bool mtk_wifi_is_ps4(void)
++{
++#ifdef CONFIG_X86_PS4
++	return apcie_status() >= 0;
++#else
++	return false;
++#endif
++}
++
+ #if CFG_SUPPORT_AGPS_ASSIST
+ #include "gl_kal.h"
+ #endif
+@@ -2379,7 +2393,10 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
+ 
+ 		/* kalMemCopy(&prGlueInfo->rRegInfo, prRegInfo, sizeof(REG_INFO_T)); */
+ 
+-		prRegInfo->u4PowerMode = CFG_INIT_POWER_SAVE_PROF;
++		if (mtk_wifi_is_ps4())
++			prRegInfo->u4PowerMode = ENUM_PSP_CONTINUOUS_ACTIVE;
++		else
++			prRegInfo->u4PowerMode = CFG_INIT_POWER_SAVE_PROF;
+ #if 0
+ 		prRegInfo->fgEnArpFilter = TRUE;
+ #endif

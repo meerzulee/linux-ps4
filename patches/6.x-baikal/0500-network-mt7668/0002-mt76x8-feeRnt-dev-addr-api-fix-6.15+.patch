@@ -1,0 +1,182 @@
+From c46339880113ef935c10dd1f781c4bcf7df621fc Mon Sep 17 00:00:00 2001
+From: feeRnt <81442162+feeRnt@users.noreply.github.com>
+Date: Thu, 12 Mar 2026 18:28:15 +0000
+Subject: [PATCH] net: wireless: mt76x8/MT6632: fix dev_addr API and pointer
+ type errors for 6.15+
+
+The net_device->dev_addr field was made const in Linux ~5.16 and direct
+writes were replaced with helper functions (eth_hw_addr_set etc.).
+The MT6632 driver predates this change and fails to build on 6.15+.
+
+- Replace direct dev_addr writes with eth_hw_addr_set() / ether_addr_copy()
+- Fix incompatible pointer type: 'char (*)[]' -> 'const u8 *' in gl_init.c
+  by decaying the array correctly before passing to net functions
+
+Fixes kernel oops observed on PS4 with MT7668:
+  netdevice: wlan0: Incorrect netdev->dev_addr
+  WARNING: CPU: 4 PID: 458 at net/core/dev_addr_lists.c:520
+
+Cherry-picked from: x_exp__6.15.4-aeolia-belize-mt7668
+Signed-off-by: feeRnt <81442162+feeRnt@users.noreply.github.com>
+---
+ .../mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_bow.c  | 14 ++++++++++++--
+ .../mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c |  9 +++++++++
+ .../mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c  |  7 +++++++
+ .../mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c  |  9 +++++++++
+ .../MT6632/wlan/os/linux/gl_p2p_cfg80211.c         | 11 ++++++++++-
+ 5 files changed, 47 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_bow.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_bow.c
+index 05d9a36558e3ed..4fe1c0c3f09d26 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_bow.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_bow.c
+@@ -78,6 +78,8 @@
+ #include <linux/poll.h>
+ #include "bss.h"
+ 
++#include <linux/etherdevice.h>
++
+ #if CFG_ENABLE_BT_OVER_WIFI
+ 
+ /*******************************************************************************
+@@ -1095,10 +1097,18 @@ BOOLEAN kalInitBowDevice(IN P_GLUE_INFO_T prGlueInfo, IN const char *prDevName)
+ 		/* 1.2 fill hardware address */
+ 		COPY_MAC_ADDR(rMacAddr, prAdapter->rMyMacAddr);
+ 		rMacAddr[0] |= 0x2;	/* change to local administrated address */
++
++/* dev_addr access&write api change since 5.16:
++ * https://github.com/torvalds/linux/commit/349f631da4e1bdcb1b4a2a3ee630d689bfe6724d
++ * https://github.com/torvalds/linux/commit/48eab831ae8b9f7002a533fa4235eed63ea1f1a3
++ * https://github.com/aircrack-ng/rtl8812au/pull/1089 */
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
++		eth_hw_addr_set(prGlueInfo->rBowInfo.prDevHandler, rMacAddr); /* prDevHandler is probably the net_device struct */
++#else
+ 		kalMemCopy(prGlueInfo->rBowInfo.prDevHandler->dev_addr, rMacAddr, ETH_ALEN);
++#endif
+ 		kalMemCopy(prGlueInfo->rBowInfo.prDevHandler->perm_addr,
+-			   prGlueInfo->rBowInfo.prDevHandler->dev_addr, ETH_ALEN);
+-
++			   prGlueInfo->rBowInfo.prDevHandler->dev_addr, ETH_ALEN); /* perm addr is not protected; no helper funcs */
+ 		/* 1.3 register callback functions */
+ 		prGlueInfo->rBowInfo.prDevHandler->needed_headroom += NIC_TX_HEAD_ROOM;
+ 		prGlueInfo->rBowInfo.prDevHandler->netdev_ops = &bow_netdev_ops;
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+index a7cf03b40cb11b..895c0e53781297 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+@@ -81,6 +81,8 @@
+ #endif
+ #include "gl_vendor.h"
+ 
++#include <linux/etherdevice.h>
++
+ /*******************************************************************************
+ *                              C O N S T A N T S
+ ********************************************************************************
+@@ -2491,7 +2493,14 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
+ 				DBGLOG(INIT, WARN, "set MAC addr fail 0x%lx\n", rStatus);
+ 				prGlueInfo->u4ReadyFlag = 0;
+ 			} else {
++				/* dev_addr access&write api change since 5.16; see os/linux/gl_bow.c: */
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
++				eth_hw_addr_set(prGlueInfo->prDevHandler, MacAddr.sa_data);
++				/* Will copy 6 bytes (ETH_ADDRESS_LENGTH) from the socket address data */
++				/* addr_set expects const u8 *, so remove & to ensure array decaying {char * ~= u8 *) */
++#else
+ 				kalMemCopy(prGlueInfo->prDevHandler->dev_addr, &MacAddr.sa_data, ETH_ALEN);
++#endif
+ 				kalMemCopy(prGlueInfo->prDevHandler->perm_addr,
+ 					   prGlueInfo->prDevHandler->dev_addr, ETH_ALEN);
+ 
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
+index 130f026e5331a3..96a899621d702e 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
+@@ -82,6 +82,8 @@
+ #include <net/checksum.h>
+ #include <net/ip6_checksum.h>
+ 
++#include <linux/etherdevice.h>
++
+ /*******************************************************************************
+ *                              C O N S T A N T S
+ ********************************************************************************
+@@ -599,7 +601,12 @@ VOID kalUpdateMACAddress(IN P_GLUE_INFO_T prGlueInfo, IN PUINT_8 pucMacAddr)
+ 	ASSERT(pucMacAddr);
+ 
+ 	if (UNEQUAL_MAC_ADDR(prGlueInfo->prDevHandler->dev_addr, pucMacAddr))
++		/* dev_addr access&write api change since 5.16; see os/linux/gl_bow.c: */
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
++		eth_hw_addr_set(prGlueInfo->prDevHandler, pucMacAddr); /*PARAM_MAC_ADDR_LEN = ETH_ALEN = 6 */
++#else
+ 		memcpy(prGlueInfo->prDevHandler->dev_addr, pucMacAddr, PARAM_MAC_ADDR_LEN);
++#endif
+ 
+ }
+ 
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
+index 0f629d5c79cd75..cf8d7a5c682789 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
+@@ -88,6 +88,8 @@
+ #include "gl_vendor.h"
+ #include "gl_cfg80211.h"
+ 
++#include <linux/etherdevice.h>
++
+ /*******************************************************************************
+ *                              C O N S T A N T S
+ ********************************************************************************
+@@ -944,7 +946,14 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
+ 		COPY_MAC_ADDR(rMacAddr, prAdapter->rMyMacAddr);
+ 		rMacAddr[0] |= 0x2;
+ 		rMacAddr[0] ^= i << 2;	/* change to local administrated address */
++
++		/* dev_addr access&write api change since 5.16; see os/linux/gl_bow.c: */
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
++		eth_hw_addr_set(prGlueInfo->prP2PInfo[i]->prDevHandler, rMacAddr);
++		/*realMACAddress decays to pointer, so things work out in the end */
++#else
+ 		kalMemCopy(prGlueInfo->prP2PInfo[i]->prDevHandler->dev_addr, rMacAddr, ETH_ALEN);
++#endif
+ 		kalMemCopy(prGlueInfo->prP2PInfo[i]->prDevHandler->perm_addr,
+ 			prGlueInfo->prP2PInfo[i]->prDevHandler->dev_addr,
+ 			   ETH_ALEN);
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c
+index f8388fadbac9b7..085dd2e190a9d2 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c
+@@ -89,6 +89,8 @@
+ #pragma GCC diagnostic ignored "-Wformat"
+ #endif
+ 
++#include <linux/etherdevice.h>
++
+ /*******************************************************************************
+ *                              C O N S T A N T S
+ ********************************************************************************
+@@ -435,9 +437,15 @@ struct wireless_dev *mtk_p2p_cfg80211_add_iface(struct wiphy *wiphy,
+ 			else
+ 				rMacAddr[0] ^= prGlueInfo->prAdapter->prP2pInfo->u4DeviceNum << 2;
+ 		}
++
++		/* dev_addr access&write api change since 5.16; see os/linux/gl_bow.c: */
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
++		eth_hw_addr_set(prNewNetDevice, rMacAddr); /*prNewNetDevice is just net_device, bearing dev addr */
++		/* decay to pointer */
++#else
+ 		kalMemCopy(prNewNetDevice->dev_addr, rMacAddr, ETH_ALEN);
++#endif
+ 		kalMemCopy(prNewNetDevice->perm_addr, rMacAddr, ETH_ALEN);
+-
+ 		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_add_iface ucBssIdx=%d\n", prNetDevPriv->ucBssIdx);
+ 
+ 		/* Switch OP MOde. */
+@@ -2604,6 +2612,7 @@ int mtk_p2p_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev, struct
+ 
+ 		COPY_MAC_ADDR(prConnReqMsg->aucBssid, sme->bssid);
+ 		COPY_MAC_ADDR(prConnReqMsg->aucSrcMacAddr, dev->dev_addr);
++		/* Copies TO aucSrcMacAddr = dst, so we're good with accessing const dev addr */
+ 
+ 		DBGLOG(P2P, TRACE, "Assoc Req IE Buffer Length:%d\n", sme->ie_len);
+ 		kalMemCopy(prConnReqMsg->aucIEBuf, sme->ie, sme->ie_len);

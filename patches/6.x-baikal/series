@@ -294,8 +294,20 @@
 
 # === 0500: MT7668 WiFi+BT vendor driver (MediaTek MT76X8)
 # Imported from tmp/feeRnt-5.4.247-baikal/, ~7.1 MB / 213k lines.
-# 5.4-to-6.x API breakage fixed by subsequent patches in this directory.
+# 5.4 → 6.15+ kernel API fixes — credit:
+#   feeRnt   (c4633988): dev_addr API + pointer types for 6.15+
+#   rmuxnet  (ec88cc96): from_timer→container_of, get_tx_power signature
+#   rmuxnet  (ed975cc6): silence MT6632 clang warnings
+#   rmuxnet  (a30953ce): disable MediaTek WiFi power save (PS4 stability)
+#   rmuxnet  (2a5e7920): fortified copy_from_user (kernel 7.0 hardening; harmless on 6.x)
+# All cherry-picked from rmuxnet/ps4-linux-12xx rmux/baikal/7.0 branch.
 0500-network-mt7668/0001-mt76x8-vendor-tree-import.patch
+0500-network-mt7668/0002-mt76x8-feeRnt-dev-addr-api-fix-6.15+.patch
+0500-network-mt7668/0003-mt76x8-rmuxnet-fix-build-6.15+.patch
+# 0004 disabled: line-number drift vs our 0001 vendor tree; only silences clang warnings, not functional.
+# 0500-network-mt7668/0004-mt76x8-rmuxnet-silence-clang-warnings.patch
+0500-network-mt7668/0005-mt76x8-rmuxnet-disable-mediatek-wifi-power-save.patch
+0500-network-mt7668/0006-mt76x8-rmuxnet-fix-fortified-copy-from-user.patch
 
 # === 0700: sky2 ethernet (Marvell Yukon)
 0700-network-sky2/0001-sky2-ps4-quirks.patch

@@ -8,6 +8,11 @@ CUH-7xxx; Marvell MT7668 WiFi+BT, AMD Liverpool/Gladius GPU).
 > WiFi via USB adapter (rtw88) + SSH from host works on 6.x as of v62 (`b02d1c6`).
 > See [STATUS.md](STATUS.md) for the at-a-glance "what works" matrix.
 
+> **What's original to this project vs forward-ported from upstream?**
+> See [ORIGINAL_CONTRIBUTIONS.md](ORIGINAL_CONTRIBUTIONS.md) for the
+> per-patch breakdown, evidence trail (UART logs + research files), and
+> upstream candidates.
+
 ## Targets
 
 | Target | Base | Status | Compiler |
@@ -122,6 +127,7 @@ worked example.
 
 ## Documentation index
 
+- [ORIGINAL_CONTRIBUTIONS.md](ORIGINAL_CONTRIBUTIONS.md) — what's genuinely ours vs forward-ported, with evidence trail
 - [STATUS.md](STATUS.md) — what works / what doesn't
 - [CONTRIBUTING.md](CONTRIBUTING.md) — bug reports, patches, upstream plan
 - [BUILD_LOG.md](BUILD_LOG.md) — chronological progress
@@ -151,7 +157,44 @@ worked example.
 - **fail0verflow** — original PS4 Linux work and tooling
 - **psxitarch project** — Arch-based PS4 Linux distro we boot into
 
-## License
+## Licensing
 
-Patches inherit GPL-2.0 from the Linux kernel. Build scripts and
-documentation are GPL-2.0 unless noted otherwise. See [LICENSE](LICENSE).
+### Default — GPL-2.0
+
+The bulk of this repository is GPL-2.0, matching the Linux kernel itself.
+This includes:
+
+- All kernel patches under `patches/`
+- The patched kernel sources written into `src/<target>/` at build time
+- Build scripts, configs, and documentation, unless an individual file says otherwise
+
+See [LICENSE](LICENSE) for the full GPL-2.0 text.
+
+### Vendor firmware blobs — vendor licenses, not GPL
+
+When you build a kernel from this tree, certain proprietary firmware blobs
+are loaded at runtime from `/lib/firmware/` on the target system (Sony's
+Liverpool/Gladius GPU microcode, Marvell wireless firmware, MediaTek SDIO
+firmware). These blobs are **not** part of this repository and **not**
+covered by GPL-2.0 — they are redistributed by their respective vendors
+under their own license terms. We do not ship them; you obtain them
+yourself from the PS4 firmware extraction or each vendor's release.
+
+If you build prebuilt images for redistribution, take care to either
+exclude these blobs or ensure your distribution complies with each
+vendor's license.
+
+### MediaTek MT7668 wireless driver — Dual BSD-3 / GPL-2.0
+
+The vendor driver under `drivers/net/wireless/mediatek/mt76x8/` is
+distributed by MediaTek under a dual BSD-3-Clause / GPL-2.0 license. It
+was originally imported from feeRnt's 5.4 baseline and adapted for newer
+kernels via cherry-picks credited in `patches/6.x-baikal/series`. Inside
+that subtree, individual files retain their original headers — consult
+those for per-file specifics. Outside that subtree, GPL-2.0 applies.
+
+### In short
+
+- This repo by default → **GPL-2.0**
+- Runtime firmware blobs → **vendor licenses, not bundled here**
+- `mt76x8/` subtree → **dual BSD-3 / GPL-2.0** per file headers
