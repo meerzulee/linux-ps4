@@ -37,7 +37,7 @@ for current focus see [checkpoint/docs/PLAN.md](checkpoint/docs/PLAN.md).
 
 | Subsystem | Status | Notes |
 |---|---|---|
-| **Ethernet (built-in Marvell sky2)** | 🔄 v68 in build | sky2 chip_id detection works (Yukon-2 OptimaEEE forced from raw 0x00). v67 hit `No interrupt generated using MSI` in the APCIE/BPCIE branch (test 0005 covered the wrong branch). v68 patch 0006 extends skip-test logic to the APCIE branch — pending boot test. |
+| **Ethernet (built-in Marvell sky2)** | ❌ sky2 dead-end (proven) | v68 binds the driver (`enp0s20f1` appears with MAC), but v69's MDIO scan proved **no PHY responds at any of 32 MDIO addresses**. The chip is NOT actually a Yukon family despite our chip_id force — it's Synopsys DWMAC1000 (per rmuxnet) with a different PHY block. Sky2 cannot drive it. See [research/2026-05-11-sky2-phy-dead-end-mdio-proven.md](checkpoint/docs/research/2026-05-11-sky2-phy-dead-end-mdio-proven.md). Next path: stmmac/DWMAC1000 port (multi-day RE). |
 | **GPU 3D acceleration** | ⚠️ Mesa works userspace | radeonsi 25.1.0-devel + RADV LIVERPOOL detected, OpenGL ES 3.2; KMS works. Hyprland renders. Full GL/Vulkan throughput not benchmarked. |
 | **Suspend / resume** | ❌ | ICC dependency unverified on 6.x; not a priority. |
 | **Fan / thermal management** | ❓ | hwmon (fam15h_power, k10temp) loads. Fan speed control via APcie ICC not tested; may need rmuxnet's Aeolia-fan-driver port. |

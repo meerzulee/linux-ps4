@@ -1,0 +1,75 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: MDIO address scan diagnostic for Baikal PHY discovery
+
+v68 boot proved the driver binds and registers enp0s20f1, but the PHY
+chip is invisible: dmesg shows 8x "phy I/O error" when systemd brings
+the interface admin-up, then no further events even when an ethernet
+cable is plugged. The wlan still works (so it isn't a kernel hang),
+but ethernet has no carrier ever.
+
+Our existing 0001 patch sets `hw->phy_addr = 1` (matching what Aeolia
+needs). Empirical result on Baikal: addr 1 doesn't respond. This is
+diagnostic: sweep all 32 MDIO addresses (0..31) right after sky2_init
+returns, and log every address that returns non-trivial PHY ID
+registers. Restores hw->phy_addr to its original value after, so the
+rest of probe runs unchanged.
+
+Expected outcomes when the patched kernel boots:
+
+  Case A — some address responds:
+      PS4 Baikal: MDIO addr  3 responds: ID0=0x0141 ID1=0x0CC2 ...
+      → 0x0141 is Marvell's OUI prefix (PHY_MARV_ID0_VAL), 0x0CC2 is
+        Yukon-EC PHY 88E1111. Then v70 hardcodes phy_addr=3 (or
+        whatever address).
+
+  Case B — no responses, all 32 addresses silent:
+      → The PHY isn't on the MDIO bus at all. Confirms rmuxnet's
+        Belize-tree hint that Baikal silicon may have a DWMAC-style
+        memory-mapped PHY block instead of a Yukon MDIO bus. Pivots
+        the next iteration to RE'ing the DWMAC1000 register layout
+        for PHY status access.
+
+Either way, this patch GIVES us the data to choose. After v69 boot,
+pull the new "PS4 Baikal: MDIO addr ..." lines and we know the answer.
+
+The patch only runs on PS4 Baikal (gated by vendor+device PCI IDs),
+restores hw->phy_addr after the scan, and uses dev_info() — no impact
+on Aeolia or Belize behavior, and no runtime cost on non-PS4 boots.
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -5028,6 +5028,34 @@
+ 	if (err)
+ 		goto err_out_iounmap;
+
++#ifdef CONFIG_X86_PS4
++	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
++	    pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE) {
++		/* Sweep MDIO addresses 0..31 to find where the Baikal PHY
++		 * actually responds. The patch 0001 assumption (addr=1, same
++		 * as Aeolia) appears wrong — sky2_read_phy logs phy I/O errors
++		 * at boot and never sees link. Log every address that returns
++		 * a non-trivial ID register pair so we can pick the right one
++		 * for the next iteration. */
++		unsigned saved = hw->phy_addr;
++		int scan_a;
++		dev_info(&pdev->dev, "PS4 Baikal: MDIO scan starting (addrs 0..31)\n");
++		for (scan_a = 0; scan_a < 32; scan_a++) {
++			u16 id0 = 0xffff, id1 = 0xffff;
++			int e0, e1;
++			hw->phy_addr = scan_a;
++			e0 = __gm_phy_read(hw, 0, PHY_MARV_ID0, &id0);
++			e1 = __gm_phy_read(hw, 0, PHY_MARV_ID1, &id1);
++			if (e0 == 0 && id0 != 0xffff && id0 != 0)
++				dev_info(&pdev->dev,
++					 "PS4 Baikal: MDIO addr %2d responds: ID0=0x%04x ID1=0x%04x (e0=%d e1=%d)\n",
++					 scan_a, id0, id1, e0, e1);
++		}
++		hw->phy_addr = saved;
++		dev_info(&pdev->dev, "PS4 Baikal: MDIO scan complete, phy_addr restored to %u\n", hw->phy_addr);
++	}
++#endif
++
+ 	/* ring for status responses */
+ 	hw->st_size = hw->ports * roundup_pow_of_two(3*RX_MAX_PENDING + TX_MAX_PENDING);
+ 	hw->st_le = dma_alloc_coherent(&pdev->dev,
