@@ -157,6 +157,16 @@ worked example.
 - **fail0verflow** — original PS4 Linux work and tooling
 - **psxitarch project** — Arch-based PS4 Linux distro we boot into
 
+### Tooling
+
+Much of the code in this repository — patches, build scripts, docs, and
+debugging analysis — was written collaboratively using
+[Claude Code](https://claude.com/claude-code), Anthropic's CLI agent for
+software engineering. Specifications, diagnoses, and architectural decisions
+were directed by the human maintainer; Claude implemented the mechanical
+work (patch generation, build automation, log analysis, infrastructure
+scaffolding) under that direction.
+
 ## Licensing
 
 ### Default — GPL-2.0
