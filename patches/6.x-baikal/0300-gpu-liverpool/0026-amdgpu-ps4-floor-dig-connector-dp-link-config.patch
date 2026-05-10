@@ -1,0 +1,108 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v52 - floor dig_connector dp_clock + dp_lane_count for Liverpool
+
+The v51 trace (patch 0025) caught the actual root cause of the dark
+screen on the bridge side. Inside the modeset between SetPixelClock
+and bridge_pre_enable, every DP encoder/transmitter call shows:
+
+  ps4_atom: dig_encoder action=0x0f (SETUP)        enc_id=0x001e dig=0 pclk=148500 dp_clk=0 dp_lanes=0
+  ps4_atom: dig_tx      action=1  (ENABLE)         enc_id=0x001e dig=0 pll=1 is_dp=1 dp_clk=0 dp_lanes=0 lane_num=0 lane_set=0x00
+  ps4_atom: dig_encoder action=0x0d (DP_VIDEO_ON)  enc_id=0x001e dig=0 pclk=148500 dp_clk=0 dp_lanes=0
+
+dp_clk=0 and dp_lanes=0 everywhere. The DP transmitter is being enabled
+with **zero lanes and zero link clock**. ATOM accepts those values
+(no validation on lane_num), runs through the bytecode, and returns
+ret=0 — but the resulting DP signal has no carrier. The bridge sees
+nothing on the link, cq_wait_set times out 3 seconds, screen dark.
+
+Why dp_clk=0 reaches the encoder/transmitter:
+
+  setup_dig_encoder (atombios_encoders.c:584-586) reads the link config
+  from the connector field directly:
+
+    dp_clock = dig_connector->dp_clock;
+    dp_lane_count = dig_connector->dp_lane_count;
+    hpd_id = amdgpu_connector->hpd.hpd;
+
+  setup_dig_transmitter (atombios_encoders.c:787-788) reads the same
+  fields. These are normally populated by
+  amdgpu_atombios_dp_set_link_config(connector, mode) after a
+  successful DPCD read. On PS4:
+
+    - ps4_bridge_detect (the connector .detect callback) never runs
+      in our boot path — bridge is force-attached at probe by patch
+      0007 with mode_set fired directly, bypassing the helper-driven
+      detect path.
+    - amdgpu_atombios_dp_set_link_config is therefore never invoked.
+    - dig_connector->dp_clock and dp_lane_count stay at zero-init.
+
+The v47 fix (patch 0022) only floors a *local* dp_clock variable inside
+amdgpu_atombios_crtc_adjust_pll. That local feeds ATOM AdjustDisplayPll
+correctly (which is why v47 made AdjustDisplayPll return freq=270000),
+but it's never written back to dig_connector. So setup_dig_*'s direct
+reads of the connector field still see zero.
+
+This patch floors the **connector fields themselves** in the same
+function (`amdgpu_atombios_crtc_adjust_pll`), inside the existing
+`if (connector)` block at line 327, just before
+`dp_clock = dig_connector->dp_clock`. After this:
+
+  dig_connector->dp_clock      = 270000  (PS4 internal DP link, 2.7 Gbps)
+  dig_connector->dp_lane_count = 4       (PS4 internal DP link, 4 lanes)
+
+All downstream consumers (setup_dig_transmitter, setup_dig_encoder, any
+other code that reads dig_connector) then see a coherent 4-lane @
+2.7 GHz config. The v47 local-variable floor (patch 0022) becomes
+redundant after this — the local read at line 332 picks up the floored
+connector value automatically — but it's left in place as defensive
+belt-and-suspenders.
+
+Expected v52 trace markers in next boot:
+
+  ps4_atom: floor dig_connector dp_clock=270000 dp_lane_count=4
+  ps4_atom: AdjustDisplayPll v1.3 IN pix=270000 ... dp_clock=270000
+  ps4_atom: AdjustDisplayPll v1.3 OUT r=0 freq=270000 ref=0 post=0
+  ps4_atom: SetPixelClock IN ... pll=1 ref=2 fb=118 frac=8 post=22 ...
+  ps4_atom: SetPixelClock OUT r=0
+  ps4_atom: dig_encoder action=0x0f (SETUP) ... dp_clk=270000 dp_lanes=4
+  ps4_atom: dig_tx      action=1 (ENABLE)  ... dp_clk=270000 dp_lanes=4 lane_num=4
+  ps4_atom: dig_encoder action=0x0d (DP_VIDEO_ON) ... dp_clk=270000 dp_lanes=4
+  ps4_bridge_enable: cq_exec=20 (with the 3-s wait collapsed to <500 ms)
+
+If the bridge cq_wait_set 3-second hang collapses to <500 ms, lane lock
+acquired, screen lights up. If the trace shows the floored values
+reaching the encoder/TX correctly but the bridge still hangs, H3
+(skip-DP-link-train, patch 0006) becomes the next test — the bridge
+might need the kernel to send TPS1/TPS2 patterns on the link before
+DP_VIDEO_ON.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
+@@ -329,6 +329,26 @@
+ 			struct amdgpu_connector_atom_dig *dig_connector =
+ 				amdgpu_connector->con_priv;
+
++			/* v52 (PS4 Liverpool/Gladius): the connector detect/dpcd
++			 * path never runs, so dig_connector->dp_clock and
++			 * dp_lane_count stay at zero-init. Downstream
++			 * setup_dig_transmitter and setup_dig_encoder read these
++			 * fields directly (atombios_encoders.c) and pass
++			 * lane_num=0 to ATOM — which then enables the DIG with
++			 * zero lanes and zero clock. ATOM doesn't validate, so
++			 * SetPixelClock and TransmitterControl all return r=0
++			 * but produce a dead DP link. v51 trace confirmed
++			 * dp_clk=0 dp_lanes=0 reaching the TX/encoder. Floor the
++			 * connector fields once here so every downstream
++			 * consumer sees a coherent 4-lane @ 2.7 Gbps config. */
++			if ((adev->asic_type == CHIP_LIVERPOOL ||
++			     adev->asic_type == CHIP_GLADIUS) &&
++			    dig_connector->dp_clock == 0) {
++				pr_info("ps4_atom: floor dig_connector dp_clock=270000 dp_lane_count=4\n");
++				dig_connector->dp_clock = 270000;
++				dig_connector->dp_lane_count = 4;
++			}
++
+ 			dp_clock = dig_connector->dp_clock;
+ 		}
+ 	}

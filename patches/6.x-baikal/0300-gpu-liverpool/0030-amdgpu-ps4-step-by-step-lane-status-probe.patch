@@ -1,0 +1,229 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v58 - step-by-step DP lane-status probe across modeset
+
+After v55 split the bridge MN864729 main seq and showed that 0x60f8
+flips from 0xff (BIOS lock) to 0x0f (lock destroyed) between the two
+bridge_enable cycles, v56 falsified the v54 source-only training pulse
+hypothesis (still 0x0f), and v57 falsified v53 (TX SETUP/SETUP_VSEMPH).
+The minimal stock DPMS_ON path — DIG SETUP/PANEL_MODE → TX DISABLE → TX
+ENABLE → DP_VIDEO_ON — is enough to break the bridge's inherited DP
+receiver lock.
+
+We currently only sample 0x60f8 at the two bridge cycles, so we don't
+know which intra-modeset step is the actual killer. v58 adds intra-
+modeset sampling.
+
+Helper:
+
+  src/6.x-baikal/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+
+  void ps4_bridge_probe_lane_status(const char *tag)
+
+  Reads 0x60f8 (DP RX lane lock) and 0x60f9 (DP RX link state) via the
+  bridge's existing ICC command queue (cq_init + cq_read + cq_exec),
+  prints both with the caller's tag. ~10ms per call (one ICC roundtrip
+  per register). Holds the bridge mutex around its own cq_exec only,
+  not during ATOM execution. Early-returns if connector not yet
+  registered (e.g., during ASIC_Init at probe time).
+
+Forward declarations are added in atombios_crtc.c and
+atombios_encoders.c via plain `extern void
+ps4_bridge_probe_lane_status(const char *tag);` rather than touching a
+header — this is a temporary diagnostic.
+
+Call sites (all gated on CHIP_LIVERPOOL/CHIP_GLADIUS):
+
+  atombios_crtc.c::amdgpu_atombios_crtc_adjust_pll v3 case:
+    - "before-AdjustDisplayPll" right before amdgpu_atom_execute_table
+    - "after-AdjustDisplayPll" right after, before adjusted_clock assign
+
+  atombios_crtc.c::amdgpu_atombios_crtc_program_pll:
+    - "after-SetPixelClock" right after amdgpu_atom_execute_table
+
+  atombios_encoders.c::amdgpu_atombios_encoder_setup_dig_encoder:
+    - "after-dig_encoder-action=0x%02x" after each execute_table
+      Captures all encoder actions (DP_VIDEO_OFF=0x0c, DP_VIDEO_ON=0x0d,
+      SETUP=0x0f, PANEL_MODE=0x10, link-training phases 0x08-0x0b).
+
+  atombios_encoders.c::amdgpu_atombios_encoder_setup_dig_transmitter:
+    - "before-dig_tx-action=%d" right before execute_table
+    - "after-dig_tx-action=%d" right after
+      Captures all TX actions (DISABLE=0, ENABLE=1, INIT=7, SETUP=10,
+      SETUP_VSEMPH=11, etc).
+
+After this patch, the next boot's UART log will contain a chronological
+sequence of 0x60f8 readings tagged by step. The first tag where 0x60f8
+flips from 0xff to 0x0f is the exact killer. From v57 evidence, the
+candidates and Hermes' updated probabilities:
+
+  TX DISABLE          ~35%   action=0
+  TX ENABLE           ~25%   action=1
+  SetPixelClock/PPLL  ~25%   "after-SetPixelClock"
+  DP_VIDEO_OFF        ~10%   action=0x0c
+  DIG SETUP/PANEL_MODE ~5%   action=0x0f / 0x10
+
+Once v58 identifies the offender, v59 is a precise preserve/skip patch
+on that specific action, instead of another blind revert.
+
+Probe latency note: 9-10 calls × ~10ms = ~100ms additional time during
+modeset. Acceptable for one diagnostic boot. Probe itself is non-
+destructive (read-only ICC reads). The bridge mutex contention with
+the modeset path is fine because we never call the probe while the
+bridge driver is executing its own commands.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -302,6 +302,47 @@
+ 	return container_of(bridge, struct ps4_bridge, bridge);
+ }
+
++/* v58: step-by-step DP lane-status probe.
++ *
++ * Read 0x60f8 (DP RX lane lock — was 0xff in BIOS state, drops to 0x0f
++ * after our modeset across v55-v57) and 0x60f9 (DP RX link state) via
++ * the bridge ICC command queue and log the result with a caller-supplied
++ * tag. Used to localize the exact step in the modeset path that
++ * destroys the inherited DP receiver lock.
++ *
++ * Safe to call from outside ps4_bridge.c — non-static, declared via
++ * forward extern in callers (atombios_crtc.c, atombios_encoders.c).
++ * Early-returns if connector not yet registered (e.g., during ASIC_Init).
++ * Each call costs ~10ms (one ICC roundtrip per register). */
++void ps4_bridge_probe_lane_status(const char *tag)
++{
++	struct ps4_bridge *mn_bridge = &g_bridge;
++	int rc1 = -1, rc2 = -1;
++	u8 f8 = 0xee, f9 = 0xee;
++
++	if (!mn_bridge->connector)
++		return;
++
++	mutex_lock(&mn_bridge->mutex);
++
++	cq_init(&mn_bridge->cq, 4);
++	cq_read(&mn_bridge->cq, 0x60f8, 1);
++	rc1 = cq_exec(&mn_bridge->cq);
++	if (rc1 >= 5)
++		f8 = mn_bridge->cq.reply.databuf[3];
++
++	cq_init(&mn_bridge->cq, 4);
++	cq_read(&mn_bridge->cq, 0x60f9, 1);
++	rc2 = cq_exec(&mn_bridge->cq);
++	if (rc2 >= 5)
++		f9 = mn_bridge->cq.reply.databuf[3];
++
++	mutex_unlock(&mn_bridge->mutex);
++
++	pr_info("ps4_bridge_probe: tag=%s rc_f8=%d f8=0x%02x rc_f9=%d f9=0x%02x\n",
++		tag, rc1, f8, rc2, f9);
++}
++
+ void ps4_bridge_mode_set(struct drm_bridge *bridge,
+ 			 const struct drm_display_mode *mode,
+ 			 const struct drm_display_mode *adjusted_mode)
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
+@@ -35,6 +35,11 @@
+ #include "amdgpu_pll.h"
+ #include "amdgpu_connectors.h"
+
++/* v58: forward decl of bridge-side lane-status probe. Defined in
++ * ps4_bridge.c. Used only on Liverpool/Gladius DP path to localize the
++ * step that destroys 0x60f8 lane lock. */
++extern void ps4_bridge_probe_lane_status(const char *tag);
++
+ void amdgpu_atombios_crtc_overscan_setup(struct drm_crtc *crtc,
+ 				  struct drm_display_mode *mode,
+ 				  struct drm_display_mode *adjusted_mode)
+@@ -466,7 +471,7 @@
+ 			 * whether the table aborts (-EINVAL), runs but writes
+ 			 * zero, or runs and writes a real freq. */
+ 			if (adev->asic_type == CHIP_LIVERPOOL ||
+-			    adev->asic_type == CHIP_GLADIUS)
++			    adev->asic_type == CHIP_GLADIUS) {
+ 				pr_info("ps4_atom: AdjustDisplayPll v1.3 IN pix=%u tx=0x%02x enc=%u cfg=0x%02x ext_tx=0x%02x dp_clock=%u\n",
+ 					le16_to_cpu(args.v3.sInput.usPixelClock) * 10,
+ 					args.v3.sInput.ucTransmitterID,
+@@ -474,15 +479,19 @@
+ 					args.v3.sInput.ucDispPllConfig,
+ 					args.v3.sInput.ucExtTransmitterID,
+ 					dp_clock);
++				ps4_bridge_probe_lane_status("before-AdjustDisplayPll");
++			}
+ 			{
+ 				int r = amdgpu_atom_execute_table(adev->mode_info.atom_context,
+ 						   index, (uint32_t *)&args, sizeof(args));
+ 				if (adev->asic_type == CHIP_LIVERPOOL ||
+-				    adev->asic_type == CHIP_GLADIUS)
++				    adev->asic_type == CHIP_GLADIUS) {
+ 					pr_info("ps4_atom: AdjustDisplayPll v1.3 OUT r=%d freq=%u ref=%u post=%u\n",
+ 						r, le32_to_cpu(args.v3.sOutput.ulDispPllFreq) * 10,
+ 						args.v3.sOutput.ucRefDiv,
+ 						args.v3.sOutput.ucPostDiv);
++					ps4_bridge_probe_lane_status("after-AdjustDisplayPll");
++				}
+ 			}
+ 			adjusted_clock = le32_to_cpu(args.v3.sOutput.ulDispPllFreq) * 10;
+ 			if (args.v3.sOutput.ucRefDiv) {
+@@ -805,8 +814,10 @@
+ 			frac_fb_div, post_div, encoder_id, encoder_mode, bpc, ss_enabled);
+ 	{
+ 		int r = amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
+-		if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
+ 			pr_info("ps4_atom: SetPixelClock OUT r=%d\n", r);
++			ps4_bridge_probe_lane_status("after-SetPixelClock");
++		}
+ 	}
+ }
+
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_encoders.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_encoders.c
+@@ -39,6 +39,11 @@
+ #include <linux/backlight.h>
+ #include "bif/bif_4_1_d.h"
+
++/* v58: forward decl of bridge-side lane-status probe, defined in
++ * ps4_bridge.c. Used to localize which encoder/transmitter step
++ * destroys the inherited 0x60f8 DP RX lane lock. */
++extern void ps4_bridge_probe_lane_status(const char *tag);
++
+ u8
+ amdgpu_atombios_encoder_get_backlight_level_from_reg(struct amdgpu_device *adev)
+ {
+@@ -745,6 +750,13 @@
+ 			dig->dig_encoder, amdgpu_encoder->pixel_clock,
+ 			dp_clock, dp_lane_count, hpd_id);
+ 	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
++	/* v58: probe lane status after each dig_encoder action to localize
++	 * which step destroys the inherited DP RX lock. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		char tag[64];
++		snprintf(tag, sizeof(tag), "after-dig_encoder-action=0x%02x", action);
++		ps4_bridge_probe_lane_status(tag);
++	}
+
+ }
+
+@@ -1161,7 +1173,20 @@
+ 			action, frev, crev, amdgpu_encoder->encoder_id,
+ 			dig_encoder, pll_id, is_dp, dp_clock, dp_lane_count,
+ 			lane_num, lane_set, connector_object_id, hpd_id);
++	/* v58: probe before TX action to capture pre-state */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		char tag[64];
++		snprintf(tag, sizeof(tag), "before-dig_tx-action=%d", action);
++		ps4_bridge_probe_lane_status(tag);
++	}
+ 	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
++	/* v58: probe after TX action — the action that flips 0x60f8 from
++	 * 0xff to 0x0f is the killer. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		char tag[64];
++		snprintf(tag, sizeof(tag), "after-dig_tx-action=%d", action);
++		ps4_bridge_probe_lane_status(tag);
++	}
+ }
+
+ bool

@@ -172,7 +172,119 @@
 # from ps4gentoo's original 1fef36f5 reference patch (no-op functionally,
 # documents PS4 ATOM table-set choice).
 0300-gpu-liverpool/0018-amdgpu-atombios-i2c-rename-to-readedid.patch
-0300-gpu-liverpool/0019-amdgpu-dce-v8-liverpool-preserve-bios-pll.patch
+# v48 (2026-05-10): DISABLED 0019 (v44 preserve-bios-pll) AND 0020 (v45
+# manual-pll-program). Both were written under the assumption that ATOM
+# was hopelessly broken on Liverpool and that we had to bypass it with
+# manual PLL programming. v47 disproved that assumption — ATOM
+# AdjustDisplayPll returned freq=270000 cleanly once we floored dp_clock
+# (patch 0022). The v45 manual programmer's WREG32 to mmDCCG_PLL_* is now
+# triple-confirmed as no-op (POST-program dump shows all zeros for the
+# third boot in a row); those addresses are not the actual Liverpool
+# display PLL. Restoring stock ATOM-driven mode_set so SetPixelClock and
+# SetCRTC_UsingDTDTiming run, which writes to whatever the *real* display
+# PLL registers are. v46 trace (patch 0021) will catch SetPixelClock's
+# return value in the next boot.
+# 0300-gpu-liverpool/0019-amdgpu-dce-v8-liverpool-preserve-bios-pll.patch
+# 0300-gpu-liverpool/0020-amdgpu-dce-v8-liverpool-manual-pll-program.patch
+# v46 (2026-05-10): instrumentation bundle from research/ideas/ multi-agent
+# synthesis. Captures amdgpu_atom_execute_table ret + in/out for both
+# AdjustDisplayPll and SetPixelClock, traces first ATOM_IIO_READ/WRITE to
+# disambiguate Hermes/GLM I/O BAR hypothesis, and forces dp_clock=270000 /
+# dp_lane_count=4 in ps4_bridge_detect (Kimi defensive floor). One boot
+# disambiguates four of the five hypotheses in research/ideas/.
+0300-gpu-liverpool/0021-amdgpu-ps4-atom-display-diagnostics.patch
+# v47 (2026-05-10): the v46 trace caught dp_clock=0 going into ATOM
+# AdjustDisplayPll, producing freq=0 out (GIGO). Floor dp_clock to 270000
+# (PS4 internal DP link rate, 4 lanes @ 2.7 Gbps) at the actual consumer in
+# amdgpu_atombios_crtc_adjust_pll, since the connector .detect callback
+# (where the v46 defensive write was placed) never runs in our boot path.
+0300-gpu-liverpool/0022-amdgpu-ps4-floor-dp-clock-on-liverpool.patch
+# v49 (2026-05-10): v48 trace caught pll=255 (ATOM_PPLL_INVALID) reaching
+# SetPixelClock — the picker dce_v8_0_pick_pll returns INVALID for DP when
+# adev->clock.dp_extclk is non-zero (advertises "external DP ref clock
+# present"). PS4 doesn't have one. Clobber dp_extclk=0 for Liverpool/Gladius
+# right after the VBIOS read so the picker falls through to the CIK PPLL
+# allocator and returns ATOM_PPLL2; same clobber also makes the DIG PHY
+# encoder use the PPLL as ref clock instead of the missing external one.
+0300-gpu-liverpool/0023-amdgpu-ps4-clobber-dp-extclk-pick-real-ppll.patch
+# v50 (2026-05-10): v49 confirmed ATOM SetPixelClock now does real PLL work
+# (355us execute, 16x longer than v48's no-op) but bridge cq_wait_set still
+# hangs 3s. Generic ATOM table tracer in amdgpu_atom_execute_table_locked
+# captures every master+sub-table call (74-entry atom_table_names[] array
+# from atom-names.h) with depth, idx, name, ps_size, return value. Should
+# reveal which DIG/DP TX/EnableCRTC/BlankCRTC table is the new blocker
+# between SetPixelClock and bridge enable.
+0300-gpu-liverpool/0024-amdgpu-atom-table-tracer-for-modeset-diag.patch
+# v51 (2026-05-10): v50 trace caught the full ATOM table sequence; all calls
+# return ret=0 yet bridge cq_wait_set still hangs. Two visibility-only
+# probes: (H1) print setup_dig_transmitter and setup_dig_encoder args to
+# see action/UNIPHY/lane/link config reaching ATOM, and (H2) dump
+# PIXCLK0/1/2_RESYNC_CNTL after SetPixelClock to verify PPLL→CRTC routing.
+# H3 (disable patch 0006 for DP link train TPS pattern) deferred to v52.
+0300-gpu-liverpool/0025-amdgpu-ps4-trace-dig-tx-encoder-pixclk.patch
+# v52 (2026-05-10): v51 trace caught the actual root cause — DP transmitter
+# enabled with dp_clk=0 dp_lanes=0 lane_num=0 because dig_connector fields
+# stay zero (ps4_bridge_detect/dpcd never runs). v47 only floored a local
+# variable, never propagated to dig_connector. This patch floors the
+# connector fields directly in amdgpu_atombios_crtc_adjust_pll so all
+# downstream consumers (setup_dig_encoder/transmitter) get 4 lanes @
+# 2.7 GHz. After this, ATOM should program a real 4-lane DP link.
+0300-gpu-liverpool/0026-amdgpu-ps4-floor-dig-connector-dp-link-config.patch
+# v53 (2026-05-10): TX SETUP + SETUP_VSEMPH injection. DISABLED for v57.
+# v56 falsified v54/source-training as the lane-lock killer: with 0028 disabled,
+# post-modeset chunk A still timed out (~607 ms) and 0x60f8 still dropped from
+# 0xff to 0x0f. The remaining v53-added source-side state changes are TX SETUP
+# and SETUP_VSEMPH immediately before TX ENABLE. For v57, remove only these two
+# injected ATOM transmitter actions and return to DISABLE -> ENABLE so we can
+# test whether SETUP/VSEMPH disturb the BIOS-default locked bridge link.
+# 0300-gpu-liverpool/0027-amdgpu-ps4-tx-setup-vsemph-before-enable.patch
+# v54 (2026-05-10): source-only DP training pulse. DISABLED for v56.
+# v55 chunk-split evidence showed the bridge starts with DP receiver lane lock
+# intact (0x60f8=0xff, chunk A completes in ~31 ms) during the force-init cycle,
+# then loses it after the GPU modeset path and this TPS1/TPS2/COMPLETE pulse
+# (0x60f8=0x0f, chunk A times out in ~605 ms). For v56, revert only this pulse
+# to test whether it is the step that destroys the BIOS-default locked link.
+# 0300-gpu-liverpool/0028-amdgpu-ps4-source-only-dp-training-pulse.patch
+# v55 (2026-05-10): the 2.97s cq_wait_* timeout in ps4_bridge_enable is
+# identical across v46-v54 regardless of every GPU-side change — it's a
+# hardcoded timeout in the MN864729 firmware. Pivot to bridge-side
+# instrumentation: trace cq_wait_set/wait_clear enqueue, time and dump
+# every cq_exec (elapsed_us + reply.res1/res2/count + databuf[0..7]),
+# and split the MN864729 main seq into 3 chunks at wait boundaries
+# (Chunk A = DP lane status 0x60f8/0x60f9, Chunk B = HDMI update 0x10f6,
+# Chunk C = PLL 0x7204) with cq_read readbacks of polled registers
+# between. Identifies which exact wait fires the timeout in one boot.
+0300-gpu-liverpool/0029-amdgpu-ps4-bridge-cq-instrumentation-chunk-split.patch
+# v58 (2026-05-10): step-by-step DP lane-status probe. Adds
+# ps4_bridge_probe_lane_status helper in ps4_bridge.c that reads
+# 0x60f8/0x60f9 via the bridge ICC queue. Calls inserted in
+# atombios_crtc.c (before/after AdjustDisplayPll, after SetPixelClock)
+# and atombios_encoders.c (after each dig_encoder action, before+after
+# each dig_tx action). The first probe where 0x60f8 flips from 0xff to
+# 0x0f identifies the exact modeset step destroying the inherited DP
+# RX lock. ~10 calls x ~10ms = ~100ms overhead during modeset. Pure
+# read-only diagnostic.
+0300-gpu-liverpool/0030-amdgpu-ps4-step-by-step-lane-status-probe.patch
+# v59 (2026-05-10): TARGETED FIX. v58 trace identified TX DISABLE as the
+# singular killer of the BIOS-trained DP link (0x60f8: 0xff -> 0x9f
+# exactly at action=0). Subsequent TX ENABLE doesn't restore the lock.
+# Skip ATOM_TRANSMITTER_ACTION_DISABLE in setup_dig's ATOM_DISABLE branch
+# for Liverpool/Gladius DP encoders. The firmware-trained PHY stays
+# powered through modeset; later TX ENABLE fires on an already-enabled
+# PHY. Logs "preserving PS4 DP TX lock; skip TX DISABLE" when the gate
+# fires. Other DPMS_OFF operations (DP_VIDEO_OFF, dp_set_rx_power_state)
+# are NOT skipped — v58 confirmed they preserve f8=0xff.
+0300-gpu-liverpool/0031-amdgpu-ps4-skip-tx-disable-preserve-firmware-dp-lock.patch
+# v60 (2026-05-10): v59 trace confirmed both halves of the TX DISABLE/ENABLE
+# pair are destructive. Skipping DISABLE preserved f8=0xff through
+# DP_VIDEO_OFF + DIG SETUP/PANEL_MODE, but TX ENABLE then flipped f8 from
+# 0xff -> 0x0f (more destructive than DISABLE was, which had flipped to
+# 0x9f). Extend v59's preserve-firmware-state model: also gate ATOM_
+# TRANSMITTER_ACTION_ENABLE in setup_dig's ATOM_ENABLE branch. Leaves
+# the firmware-trained PHY completely untouched. DP_VIDEO_ON is the
+# remaining unknown — its effect on an intact lock is tested for the
+# first time in v60.
+0300-gpu-liverpool/0032-amdgpu-ps4-skip-tx-enable-too.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

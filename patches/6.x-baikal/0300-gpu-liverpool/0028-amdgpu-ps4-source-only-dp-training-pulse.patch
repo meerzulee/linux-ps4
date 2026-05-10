@@ -1,0 +1,173 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v54 - source-only DP training pulse for Liverpool
+
+After v53 confirmed the DP transmitter is fully and correctly
+configured on Liverpool/Gladius (TX SETUP + SETUP_VSEMPH + ENABLE all
+run with coherent args: UNIPHYA, 4 lanes, 270 MHz, DP mode), the
+remaining missing step is **emitting actual DP training symbols on
+the link**. Without TPS1/TPS2 on the wire, the MN864729 bridge has
+nothing to lock its receiver onto — its cq_wait_set polls for DP
+lane status indefinitely and times out at 3 seconds.
+
+Stock CIK DP path emits TPS1/TPS2 from inside
+amdgpu_atombios_dp_link_train, by calling
+amdgpu_atombios_encoder_setup_dig_encoder with action codes:
+
+  ATOM_ENCODER_CMD_DP_LINK_TRAINING_START    (0x08)
+  ATOM_ENCODER_CMD_DP_LINK_TRAINING_PATTERN1 (0x09)
+  ATOM_ENCODER_CMD_DP_LINK_TRAINING_PATTERN2 (0x0a)
+  ATOM_ENCODER_CMD_DP_LINK_TRAINING_COMPLETE (0x0b)
+
+Those source-side actions are independent of DPCD reads. They tell
+the GPU's DIG encoder to drive specific bit patterns onto the four DP
+lanes at the configured link rate. The kernel's DPCD-based trainer
+interleaves them with sink readbacks to adjust voltage swing per
+attempt, and that DPCD path is what fails on the PS4's fake-DP bridge
+(which is why patch 0006 made link_train early-return).
+
+This patch (v54) replaces the bare `return;` from patch 0006 with a
+call to a new static helper amdgpu_atombios_dp_ps4_source_train that
+emits the canonical training sequence with no DPCD reads:
+
+  pr_info("ps4_atom: source-only DP training pulse START")
+  setup_dig_encoder(LINK_TRAINING_START, 0)
+  mdelay(5)
+  setup_dig_encoder(LINK_TRAINING_PATTERN1, 0)
+  mdelay(5)
+  setup_dig_encoder(LINK_TRAINING_PATTERN2, 0)
+  mdelay(5)
+  setup_dig_encoder(LINK_TRAINING_COMPLETE, 0)
+  mdelay(1)
+  pr_info("ps4_atom: source-only DP training pulse COMPLETE")
+
+Why this lives inside amdgpu_atombios_dp_link_train (vs directly in
+amdgpu_atombios_encoder_setup_dig per Hermes' suggestion):
+
+  - Maintains the semantic that "PS4 has a special link_train
+    implementation" rather than scattering DP-specific logic in the
+    DPMS path.
+  - Encoder DPMS sequencing stays unchanged: TX ENABLE → link_train()
+    → DP_VIDEO_ON → bridge_enable.
+  - Easier to evolve the trainer body later (e.g., hold TPS2 during
+    bridge_enable for v55) without touching DPMS.
+
+Patch 0006's behavior changes from "return immediately for Liverpool"
+to "source-only train, no DPCD reads". The early-return comment is
+updated; the structure stays the same so it's a small diff.
+
+mdelay between phases gives the bridge time to observe each pattern.
+DP spec requires CR_DONE within 100µs per attempt; 5ms dwell is
+conservative for the PS4 fixed-config link.
+
+Expected v54 trace markers in next boot:
+
+  ps4_atom: floor dig_connector dp_clock=270000 dp_lane_count=4
+  ps4_atom: AdjustDisplayPll v1.3 OUT r=0 freq=270000
+  ps4_atom: SetPixelClock IN ... pll=1 ...
+  ps4_atom: SetPixelClock OUT r=0
+  ps4_atom: dig_encoder action=0x0c (DP_VIDEO_OFF)
+  ps4_atom: dig_tx action=0 (DISABLE)
+  ps4_atom: dig_encoder action=0x0f (SETUP)
+  ps4_atom: dig_encoder action=0x10 (PANEL_MODE)
+  ps4_atom: forcing TX SETUP + SETUP_VSEMPH before ENABLE
+  ps4_atom: dig_tx action=10 (SETUP)
+  ps4_atom: dig_tx action=11 (SETUP_VSEMPH)
+  ps4_atom: dig_tx action=1 (ENABLE)
+  ps4_atom: source-only DP training pulse START                       <- v54
+  ps4_atom_table: [d=0] enter idx=0x... (DIGxEncoderControl) ps_size=24
+    -> DP_LINK_TRAINING_START
+  ... (5 ms delay, on link: TPS1 carrier)
+  ps4_atom_table: [d=0] enter idx=0x... -> PATTERN1
+  ... (5 ms delay)
+  ps4_atom_table: [d=0] enter idx=0x... -> PATTERN2
+  ... (5 ms delay)
+  ps4_atom_table: [d=0] enter idx=0x... -> COMPLETE
+  ps4_atom: source-only DP training pulse COMPLETE                    <- v54
+  ps4_atom: dig_encoder action=0x0d (DP_VIDEO_ON)
+  ps4_bridge_enable: BEGIN
+  ps4_bridge_enable: cq_exec=20  (with the 3-s wait collapsed)
+
+Outcomes:
+
+  - cq_wait_set 3-s hang collapses + HDMI lights up → done. Promote
+    v47/v49/v52/v53/v54 to permanent, clean up traces.
+  - cq_wait_set still hangs but timing pattern differs (e.g., shrinks
+    to ~1 s, or hangs at a different cq step) → bridge is seeing some
+    link activity but training is incomplete. v55 candidates: hold
+    TPS2 during bridge_enable instead of completing first; try
+    PATTERN3/PATTERN4 (TPS3/TPS4 are required for higher rates but
+    might be needed here too); increase mdelay; manually toggle
+    voltage swing via SETUP_VSEMPH between PATTERN1 and PATTERN2.
+  - cq_wait_set unchanged at 3 s → bridge is not waiting on link
+    symbols at all; the issue is elsewhere (e.g., wrong UNIPHY block
+    despite VBIOS object ID, or DCE clock-tree state still wrong).
+    v55 fallback: dump bridge MN864729 internal status registers via
+    cq_read at known offsets (0x60f8, 0x60f9 from prior agent
+    analysis) right before/after the source-only train.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_dp.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_dp.c
+@@ -725,6 +725,45 @@
+ 	}
+ }
+
++/* v54: Source-only DP training pulse for PS4 Liverpool/Gladius.
++ *
++ * Called from amdgpu_atombios_dp_link_train as a replacement for the
++ * standard DPCD-driven link trainer (which times out on the bridge's
++ * fake DPCD). Emits the canonical sequence of source-side ATOM
++ * encoder actions — LINK_TRAINING_START → PATTERN1 → PATTERN2 →
++ * COMPLETE — without any DPCD reads. This puts real bit patterns
++ * (TPS1 then TPS2) on the GPU's DP TX output so the MN864729 bridge
++ * has something to lock onto when its cq_wait_set polls for lane
++ * status. After v53 confirmed TX SETUP/SETUP_VSEMPH/ENABLE all run
++ * with coherent args (UNIPHYA, 4 lanes, 270 MHz, DP mode), this is
++ * the missing "actually drive symbols on the link" step.
++ *
++ * mdelay between each phase gives the bridge time to observe the
++ * pattern. Standard DP requires CR_DONE in 100us per attempt; a 5ms
++ * dwell is conservative for the PS4 fixed-config link. */
++static void amdgpu_atombios_dp_ps4_source_train(struct drm_encoder *encoder)
++{
++	pr_info("ps4_atom: source-only DP training pulse START\n");
++
++	amdgpu_atombios_encoder_setup_dig_encoder(encoder,
++		ATOM_ENCODER_CMD_DP_LINK_TRAINING_START, 0);
++	mdelay(5);
++
++	amdgpu_atombios_encoder_setup_dig_encoder(encoder,
++		ATOM_ENCODER_CMD_DP_LINK_TRAINING_PATTERN1, 0);
++	mdelay(5);
++
++	amdgpu_atombios_encoder_setup_dig_encoder(encoder,
++		ATOM_ENCODER_CMD_DP_LINK_TRAINING_PATTERN2, 0);
++	mdelay(5);
++
++	amdgpu_atombios_encoder_setup_dig_encoder(encoder,
++		ATOM_ENCODER_CMD_DP_LINK_TRAINING_COMPLETE, 0);
++	mdelay(1);
++
++	pr_info("ps4_atom: source-only DP training pulse COMPLETE\n");
++}
++
+ void amdgpu_atombios_dp_link_train(struct drm_encoder *encoder,
+ 			    struct drm_connector *connector)
+ {
+@@ -741,9 +780,14 @@
+ 	 * itself.  Kernel-side DP link training never completes clock
+ 	 * recovery on this hardware (5x retries → fail), and the bridge's
+ 	 * pre_enable/enable callbacks are what actually program the link.
+-	 * Skip kernel link training so amdgpu modeset can proceed. */
+-	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++	 * Skip the DPCD-driven trainer but DO emit a source-only training
++	 * pulse (TPS1/TPS2 patterns on the GPU's DP TX output) so the bridge
++	 * has something to lock its receiver onto. v54: previously this
++	 * branch was a bare `return;` (patch 0006). */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		amdgpu_atombios_dp_ps4_source_train(encoder);
+ 		return;
++	}
+
+ 	if (!amdgpu_encoder->enc_priv)
+ 		return;

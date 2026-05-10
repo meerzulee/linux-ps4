@@ -1,0 +1,126 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v59 - skip TX DISABLE on Liverpool DP to preserve firmware-trained link
+
+The v58 step-by-step probe (patch 0030) read the MN864729 bridge DP RX
+lane-status registers (0x60f8/0x60f9) at every step of the modeset
+sequence. The result is unambiguous:
+
+  before-dig_tx-action=7  (INIT)        f8=0xff f9=0x1b   ← BIOS lock OK
+  after-dig_tx-action=7   (INIT)        f8=0xff f9=0x1b   ← INIT preserves
+  before-AdjustDisplayPll                 f8=0xff f9=0x1b
+  after-AdjustDisplayPll                  f8=0xff f9=0x1b   ← OK
+  after-SetPixelClock                     f8=0xff f9=0x1b   ← OK
+  after-dig_encoder-action=0x0c (DP_VIDEO_OFF)  f8=0xff f9=0x1b   ← OK
+  before-dig_tx-action=0  (TX DISABLE)    f8=0xff f9=0x1b   ← still locked
+  after-dig_tx-action=0   (TX DISABLE)    f8=0x9f f9=0x1a   ← *** BROKE IT ***
+  after-dig_encoder-action=0x0f (SETUP)     f8=0x9f f9=0x1a
+  after-dig_encoder-action=0x10 (PANEL_MODE) f8=0x9f f9=0x1a
+  after-dig_tx-action=1   (TX ENABLE)     f8=0x9f f9=0x1a   ← ENABLE doesn't restore
+  after-dig_encoder-action=0x0d (DP_VIDEO_ON)  f8=0x9f f9=0x1a
+
+ATOM_TRANSMITTER_ACTION_DISABLE is the singular killer of the
+firmware-trained DP link. Subsequent TX ENABLE does not restore lock,
+so by the time the bridge runs cq_wait_set on chunk A (DP lane status),
+0x60f8 has further degraded to 0x0f and the wait times out 2.97s.
+
+This matches the model of the PS4 internal display chain:
+
+  - PS4 firmware/PSFree payload arrives at Linux with the GPU's UNIPHYA
+    DP transmitter already trained, locked, and outputting valid 4-lane
+    @ 2.7 GHz to the MN864729 bridge.
+  - amdgpu's standard DPMS lifecycle is "DPMS_OFF (DISABLE encoder/TX) ->
+    mode_set -> DPMS_ON (ENABLE TX/DP_VIDEO_ON)". On a hot-plug PC DP
+    monitor this is fine — the kernel retrains the link via DPCD-driven
+    clock recovery + channel equalization.
+  - On PS4, the bridge does NOT respond to standard DPCD link training
+    (patch 0006 already early-returns the kernel trainer). After TX
+    DISABLE tears down the live link, there is no working trainer to
+    bring it back, and TX ENABLE alone reprograms PHY state without
+    re-establishing the trained electrical handshake.
+
+Fix: in amdgpu_atombios_encoder_setup_dig (atombios_encoders.c:1409-
+1411), gate the ATOM_TRANSMITTER_ACTION_DISABLE call so it skips on
+PS4 DP encoders. The firmware-trained PHY remains powered through the
+modeset; the subsequent TX ENABLE call fires on an already-enabled
+PHY (no-op or reprograms with same state).
+
+Conditions for the skip:
+
+  - asic_type == CHIP_LIVERPOOL || CHIP_GLADIUS  (PS4 hardware)
+  - encoder mode is DP                           (only DP encoders use
+                                                  the locked PHY path)
+  - connector != NULL                            (not the eDP-init code
+                                                  path)
+
+When the gate fires, log "ps4_atom: preserving PS4 DP TX lock; skip TX
+DISABLE" so the v58 probe trace clearly shows the new behavior. The
+non-PS4 / non-DP / no-connector paths fall through to the normal TX
+DISABLE call.
+
+Other operations in the DPMS_OFF path are NOT skipped:
+
+  - DP_VIDEO_OFF (line 1398-1399) — v58 confirmed it preserves f8=0xff
+  - dp_set_rx_power_state(D3) (line 1408) — v58's pre-DISABLE probe
+    showed f8=0xff was still intact after this; harmless.
+  - eDP power-off (lines 1414-1418) — only fires on eDP connectors,
+    not Liverpool's DP-to-bridge path.
+
+Predictions for v59:
+
+  - Probe trace will show:
+      after-dig_tx-action=0 NEVER FIRES (DISABLE skipped)
+      ps4_atom: preserving PS4 DP TX lock; skip TX DISABLE
+      after-DP_VIDEO_OFF: f8=0xff f9=0x1b
+      after-dig_tx-action=1 (TX ENABLE): f8=0xff f9=0x1b (or stable)
+      after-dig_encoder-action=0x0d (DP_VIDEO_ON): f8 stable
+
+  - Bridge cq_wait_set chunk A: passes fast (~30ms) like force-init
+  - Total bridge_enable second cycle drops from 3.0s to ~1.6s
+    (chunks B/C still time out per v55 baseline, but those are
+    tolerated by the bridge firmware)
+
+  - HDMI may finally light. Even if the screen still stays dark from
+    a residual chunk-B/C downstream issue, the upstream lane-lock
+    killer is solved and the next investigation is bridge-internal.
+
+If TX ENABLE then breaks f8 in v59 (i.e., DISABLE was not the only
+PHY-disturbing action), v60 also gates TX ENABLE under the same
+condition, leaving the firmware transmitter completely untouched.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_encoders.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_encoders.c
+@@ -1407,8 +1407,31 @@
+ 		    connector)
+ 			amdgpu_atombios_dp_set_rx_power_state(connector, DP_SET_POWER_D3);
+ 		/* disable the transmitter */
+-		amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
+-						       ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
++		/* v59 (PS4 Liverpool/Gladius DP): the firmware leaves the
++		 * internal GPU->MN864729 DP link already trained and locked at
++		 * boot. v58 step-by-step probe of bridge reg 0x60f8 showed
++		 * AdjustDisplayPll, SetPixelClock, and DP_VIDEO_OFF all preserve
++		 * f8=0xff f9=0x1b — but TX DISABLE flips f8 to 0x9f, and
++		 * subsequent TX ENABLE / DP_VIDEO_ON do not restore lock. The
++		 * bridge then times out 3 seconds at cq_wait_set on chunk A and
++		 * the screen stays dark. Skip the destructive TX DISABLE on PS4
++		 * DP encoders — the BIOS/payload-trained PHY stays powered;
++		 * later TX ENABLE fires on an already-enabled PHY (no-op or
++		 * reprogram-with-same-state). */
++		{
++			struct amdgpu_device *adev = drm_to_adev(encoder->dev);
++			bool ps4_internal_dp =
++				(adev->asic_type == CHIP_LIVERPOOL ||
++				 adev->asic_type == CHIP_GLADIUS) &&
++				ENCODER_MODE_IS_DP(amdgpu_atombios_encoder_get_encoder_mode(encoder)) &&
++				connector;
++
++			if (ps4_internal_dp)
++				pr_info("ps4_atom: preserving PS4 DP TX lock; skip TX DISABLE\n");
++			else
++				amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
++								       ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
++		}
+ 		if (ENCODER_MODE_IS_DP(amdgpu_atombios_encoder_get_encoder_mode(encoder)) &&
+ 		    connector) {
+ 			if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {

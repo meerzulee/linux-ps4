@@ -1,0 +1,128 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v49 - clobber dp_extclk on Liverpool so picker selects a real PPLL
+
+The v48 trace caught the next blocker after AdjustDisplayPll/SetPixelClock
+were both made to run cleanly:
+
+  ps4_atom: SetPixelClock IN frev=1 crev=6 crtc=0 clock=148500 pll=255 ref=2 fb=118 frac=8 post=22 enc_id=30 enc_mode=0 bpc=8 ss=1
+  ps4_atom: SetPixelClock OUT r=0
+
+`pll=255` is `ATOM_PPLL_INVALID`. ATOM v6 SetPixelClock returns r=0 cleanly
+when ucPpll=0xFF because there's nothing to program — no PLL gets
+configured, no GPU clock is generated, the bridge's cq_wait_set polls for
+a DP signal that never arrives (3-second timeout, screen dark).
+
+The picker is `dce_v8_0_pick_pll` at `dce_v8_0.c:2174-2177`:
+
+  if (ENCODER_MODE_IS_DP(...)) {
+      if (adev->clock.dp_extclk)
+          /* skip PPLL programming if using ext clock */
+          return ATOM_PPLL_INVALID;
+
+`adev->clock.dp_extclk` is read from VBIOS firmware_info_21
+(`usUniphyDPModeExtClkFreq`) at `amdgpu_atombios.c:707`. Sony's Starsha2
+VBIOS advertises a non-zero value, telling amdgpu "the DP PHY is clocked
+from an external reference, don't bother programming a PPLL". That's
+correct for some retail CIK boards that have a dedicated DP ref clock IC,
+but it's wrong on PS4 — the GPU's DisplayPort output goes to the MN864729
+HDMI bridge over an internal trace, and there is no external reference
+clock routed to Liverpool's UNIPHY block. The PHY must be driven by an
+on-chip PPLL.
+
+When `dp_extclk` is non-zero, two things go wrong simultaneously:
+
+  1. dce_v8_0_pick_pll returns ATOM_PPLL_INVALID, so SetPixelClock has no
+     PLL to program (v48 confirmed pll=255).
+  2. atombios_encoders.c (lines 940, 1000, 1067) selects
+     ucRefClkSource=2 (external) for the DIG PHY's DP_PHY_INSTANCE
+     args, instead of ucRefClkSource=pll_id. Even if the picker
+     returned a valid PPLL, the PHY would still try to use the
+     non-existent external clock.
+
+Both reads are gated on the same `dp_extclk != 0` test. Clobbering it to
+0 for Liverpool/Gladius right after the VBIOS read fixes both with one
+override.
+
+Effect on the picker after the clobber (v49 expected):
+
+  ENCODER_MODE_IS_DP(enc_mode) → true
+  adev->clock.dp_extclk → 0 (clobbered)
+  amdgpu_pll_get_shared_dp_ppll(crtc) → ATOM_PPLL_INVALID (no other DP CRTC)
+  fall through to CIK allocation block (line 2202+)
+  pll_in_use = 0 (fresh boot)
+  return ATOM_PPLL2 (== 1)
+
+So `amdgpu_crtc->pll_id = 1`, ATOM SetPixelClock v6 receives `ucPpll=1`,
+and Sony's bytecode programs whatever the *real* PPLL2 hardware is on
+Liverpool (not the phantom mmDCCG_PLL_* registers from the v45 patch).
+The DIG encoder DP PHY ref source becomes pll_id=1 (PPLL2) too, so the
+PHY clock chain is internally consistent.
+
+Two debug prints added for visibility:
+
+  - In amdgpu_atombios_get_clock_info, print the VBIOS value before the
+    clobber.
+  - In dce_v8_0_pick_pll on Liverpool/Gladius, print enc_mode + dp_extclk
+    + asic_type so we can see the picker decision in the next boot log.
+
+Expected v49 trace markers in next boot:
+
+  ps4_atom: VBIOS dp_extclk=<NNN> (PS4 forces 0 on Liverpool/Gladius)
+  ps4_atom: dce_v8_0_pick_pll enc_mode=0 dp_extclk=0 asic=<liverpool>
+  ps4_atom: SetPixelClock IN frev=1 crev=6 crtc=0 clock=148500 pll=1 ref=2 fb=118 frac=8 post=22 ...
+  ps4_atom: SetPixelClock OUT r=0
+  ps4_bridge_enable: cq_exec=20 (with the 3-second wait shrunk dramatically)
+
+If the bridge cq_wait_set still hangs, the next investigation would be
+the DIG/DP TX programming itself (link training, lane setup) since the
+PLL is now confirmed programmed.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_atombios.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_atombios.c
+@@ -706,6 +706,23 @@
+ 		}
+ 		adev->clock.dp_extclk =
+ 			le16_to_cpu(firmware_info->info_21.usUniphyDPModeExtClkFreq);
++		/* v49 (PS4 Liverpool/Gladius): Sony's Starsha2 VBIOS sets a non-zero
++		 * dp_extclk in the firmware_info table, advertising "DP PHY is
++		 * clocked from external source, don't program a PPLL." That's wrong
++		 * on PS4 — the MN864729 bridge needs a real DP signal driven by a
++		 * PPLL, and there's no usable external DP ref clock routed to
++		 * Liverpool's UNIPHY block. With dp_extclk non-zero,
++		 * dce_v8_0_pick_pll returns ATOM_PPLL_INVALID for DP encoders, and
++		 * atombios_encoders.c chooses ucRefClkSource=2 (external) for the
++		 * DIG PHY — both producing no GPU clock. Clobber to 0 here so all
++		 * 6 downstream consumers see a coherent "no external clock, use a
++		 * PPLL" picture. v48 trace confirmed pll=255 was reaching ATOM
++		 * SetPixelClock; this fix makes the picker return PPLL2 instead. */
++		pr_info("ps4_atom: VBIOS dp_extclk=%u (PS4 forces 0 on Liverpool/Gladius)\n",
++			adev->clock.dp_extclk);
++		if (adev->asic_type == CHIP_LIVERPOOL ||
++		    adev->asic_type == CHIP_GLADIUS)
++			adev->clock.dp_extclk = 0;
+ 		adev->clock.current_dispclk = adev->clock.default_dispclk;
+
+ 		adev->clock.max_pixel_clock = le16_to_cpu(firmware_info->info.usMaxPixelClock);
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -2170,8 +2170,18 @@
+ 	struct amdgpu_device *adev = drm_to_adev(dev);
+ 	u32 pll_in_use;
+ 	int pll;
++	int enc_mode = amdgpu_atombios_encoder_get_encoder_mode(amdgpu_crtc->encoder);
+
+-	if (ENCODER_MODE_IS_DP(amdgpu_atombios_encoder_get_encoder_mode(amdgpu_crtc->encoder))) {
++	/* v49: trace picker decision so we can see if Liverpool gets a real
++	 * PPLL after the dp_extclk clobber. Expected on PS4: enc_mode=0 (DP),
++	 * dp_extclk=0 (forced by amdgpu_atombios.c v49 fix), picker falls
++	 * through to amdgpu_pll_get_shared_dp_ppll (returns INVALID on first
++	 * DP CRTC) then to the CIK allocation block returning ATOM_PPLL2. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		pr_info("ps4_atom: dce_v8_0_pick_pll enc_mode=%d dp_extclk=%u asic=%d\n",
++			enc_mode, adev->clock.dp_extclk, adev->asic_type);
++
++	if (ENCODER_MODE_IS_DP(enc_mode)) {
+ 		if (adev->clock.dp_extclk)
+ 			/* skip PPLL programming if using ext clock */
+ 			return ATOM_PPLL_INVALID;

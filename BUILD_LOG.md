@@ -782,3 +782,116 @@ Next iteration: v45 — manual PLL programming for Liverpool 1080p60 with
 hand-computed dividers, targeting PPLL1 (per PIXCLK1_RESYNC routing).
 
 Full analysis: checkpoint/docs/research/2026-05-10-v44-liverpool-preserve-bios-pll-result.md
+
+## 2026-05-10 — v45: Liverpool manual PLL programming (writes silently dropped)
+
+Patches:
+- 0300-gpu-liverpool/0020-amdgpu-dce-v8-liverpool-manual-pll-program.patch
+  — supersedes v44's preserve-BIOS-PLL short-circuit. For Liverpool/Gladius
+    in dce_v8_0_crtc_mode_set, hardcode 1080p60 PLL dividers (ref_div=1
+    fb_int=11 fb_frac=14 post=8 → 148.44 MHz from 100 MHz refclk), pack
+    per VGA*_PPLL_* bit layout, write to all four mmDCCG_PLL[0..3]
+    register banks. Dump PRE+POST PLL state for verification.
+
+bzImage: output/6.x-baikal/bzImage  md5 8b3c5680977fd82328364e2eb15f662f
+Bootargs: 6.x-edid-v40-nocrs (unchanged from v44)
+UART log: checkpoint/uart-logs/2026-05-10_1510-v45-liverpool-manual-pll-program.log
+
+Result: ❌ HDMI dark. POST-program read shows IDENTICAL all-zero values
+to PRE-program. Our WREG32 returns without error but the registers
+don't store the writes.
+
+Three new realizations from deeper log read + source cross-check:
+
+  1. NO code in 5.4-baikal directly writes to mmDCCG_PLL[0..3]_* either.
+     The visually-confirmed-working baseline produces HDMI without anyone
+     touching these registers. Strongly implies they're NOT the actual
+     display PLL on Liverpool.
+
+  2. amdgpu has no PLL indirect-access path (RREG32_PLL/WREG32_PLL
+     undefined). radeon has them but uses radeon_invalid_rreg for CIK.
+     So the writes-dropping isn't an indirect-access issue.
+
+  3. WREG32 to DCCG block IS valid (dce_v8_0.c:1537-1539 uses it
+     successfully for AUDIO_DTO regs). Our writes reach hardware,
+     but specifically these PLL register offsets either need a lock
+     protocol, are gated, or aren't the real display PLL.
+
+Other notable details from deeper log read:
+  - VBIOS string "113-Starsha2-018" (Starsha2 = PS4 Slim Liverpool
+    codename). VBIOS IS parsed by amdgpu, not stub.
+  - GPU register MMIO base = 0xE4800000 (BAR 5, 256 KB)
+  - 2nd bridge_enable takes 2.97s vs 1st 1.34s — cq_wait_set steps
+    for DP lane status silently timing out (no DP signal).
+  - call_irq_handler vector 2.61 storm with 977 callbacks suppressed
+    correlates with 2nd bridge_enable. Bridge raising IRQs nobody
+    handles.
+  - Encoder = "DFP1: INTERNAL_UNIPHY"
+  - HPD1 detected, DDC i2c works (0x194c..0x194f)
+
+Conclusion: the v44/v45 mental model "kexec leaves PPLL at zero, just
+program them" is now in question. Either we're targeting wrong
+registers entirely (most likely given 5.4 evidence) or the protocol is
+more complex than guessed. Need ATOM IIO trace to find the actual
+registers ATOM SetPixelClock targets on Liverpool — that data is
+upstream of any further "manual PLL programming" attempts.
+
+Self-critique: should have done ATOM IIO trace first as recommended
+by the multi-agent ideas synthesis. v44/v45 cost two boots and
+half a day on a hypothesis that turned out testable in 5 minutes
+of source grep ("does anyone in 5.4 write these registers?" — no).
+
+Full analysis: checkpoint/docs/research/2026-05-10-v45-liverpool-manual-pll-program-result.md
+
+
+# 2026-05-10 evening — v46→v60 — HDMI WORKING (THE FIX)
+
+After 16 iterations chasing the dark-screen on PS4 6.x-baikal, v60
+brought HDMI up. User photo (~/Downloads/IMG_20260510_195300931.jpg)
+shows initramfs rendering text at boot.
+
+The fix: **do not call setup_dig_transmitter(DISABLE) and
+setup_dig_transmitter(ENABLE) on PS4 Liverpool/Gladius DP encoders
+during modeset.** PS4 firmware leaves the GPU's UNIPHYA DP transmitter
+already trained and locked to the MN864729 bridge with per-lane
+voltage swing / pre-emphasis values that are not derivable from VBIOS
+object info. Linux's standard DPMS_OFF/ON cycle reprograms those
+PHY-state values to ATOM defaults (`ucDPLaneSet=0`), immediately
+invalidating the receiver's adaptive equalization. Once broken, the
+kernel has no working trainer to recover (PS4 bridge doesn't speak
+DPCD; patch 0006 makes dp_link_train early-return).
+
+Final patch stack (active for HDMI):
+- 0022 v47 — floor `dp_clock=270000` in adjust_pll
+- 0023 v49 — clobber `adev->clock.dp_extclk=0` so picker selects PPLL2
+- 0026 v52 — floor `dig_connector->dp_clock=270000, dp_lane_count=4`
+- 0031 v59 — skip `setup_dig_transmitter(DISABLE)` for Liverpool DP
+- 0032 v60 — skip `setup_dig_transmitter(ENABLE)` for Liverpool DP
+
+Disabled (proven wrong / superseded):
+- 0019 v44 (preserve-bios-pll), 0020 v45 (manual-pll-program)
+- 0027 v53 (TX SETUP/SETUP_VSEMPH), 0028 v54 (source-only DP train)
+
+Diagnostic patches kept (verbose; consider removing for v61 cleanup):
+- 0021 v46 (ATOM ret/in/out trace)
+- 0024 v50 (generic ATOM table tracer)
+- 0025 v51 (DIG/TX args + PIXCLK trace)
+- 0029 v55 (bridge cq trace + chunk split)
+- 0030 v58 (step-by-step bridge probe `ps4_bridge_probe_lane_status`)
+
+The two crucial diagnostic patches were v55 (split monolithic
+MN864729 main seq into 3 chunks at wait boundaries) and v58
+(intra-modeset probe of `0x60f8/0x60f9`). v55 reframed the
+problem from "bridge needs help" to "we broke the lock"; v58
+localized the killer to a single ATOM action in one boot.
+
+Visual proof at second-cycle bridge_enable in v60 log:
+- chunk A elapsed: 520ms (was 605ms timeout in v59)
+- readback 0x60f8: 0xff (was 0x0f in v59 — broken)
+- readback 0x60f9: 0x1b (was 0x1a in v59)
+- total bridge_enable second cycle: 1.66s (was 3.85s in v59)
+- HDMI signal emerges; initramfs text visible on screen
+
+Per-iteration result files: checkpoint/docs/research/2026-05-10-v46
+through v60-*.md. The v60 result file documents the full bisection
+narrative across 16 iterations.

@@ -1,0 +1,252 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v55 - bridge cq instrumentation + MN864729 main seq chunk split
+
+The 2.97s cq_wait_set/cq_wait_clear timeout in ps4_bridge_enable is
+suspiciously identical across v46 through v54:
+
+  v46: 14.737 → 17.696 = 2.96s
+  v47: 14.733 → 17.703 = 2.97s
+  v49: 14.735 → 17.704 = 2.97s
+  v52: 14.725 → 17.699 = 2.97s
+  v53: 15.143 → 18.110 = 2.97s
+  v54: 15.160 → 18.126 = 2.97s
+
+Independent of every GPU-side change we've made (dp_clock floor, PPLL
+picker, dig_connector floor, TX SETUP/SETUP_VSEMPH/ENABLE, source-only
+DP training pulse). The hang is almost certainly a hardcoded internal
+timeout inside the MN864729 firmware running cq_wait_set/cq_wait_clear
+on a register that never asserts. Continuing to instrument the GPU side
+without identifying which wait fires the timeout is wasted boots.
+
+This patch adds three layers of bridge-side visibility:
+
+1. cq_wait_set / cq_wait_clear enqueue trace
+   Each call prints `addr=0x%04x mask=0x%02x` so we can see the order
+   of waits in the program before exec runs.
+
+2. cq_exec timing + reply dump
+   ktime_get_ns() before/after apcie_icc_cmd. Logs:
+     - q->req.code, req_len, groups
+     - res (apcie return)
+     - q->reply.res1/res2/count (bridge firmware status)
+     - q->reply.databuf[0..7] (first 8 bytes — read data lives here
+       after cq_read)
+     - elapsed_us
+   This is the headline diagnostic: which exec call burns ~2970000 us?
+
+3. MN864729 main seq split into 3 chunks at wait boundaries
+   Original ps4_bridge.c:528-601 was one giant cq_init→cq_exec block
+   covering all four cq_wait_* steps. Splitting at wait boundaries
+   isolates which one is slow:
+
+     Chunk A (DP lane status):
+       cq_mask 0x6005, cq_writereg 0x6a03/0x47
+       cq_wait_set 0x60f8/0xff
+       cq_wait_set 0x60f9/0x01
+       cq_writereg 0x6a01/0x4d
+       cq_wait_set 0x60f9/0x1a
+       → exec, log "chunk A result rc=%d"
+
+     Chunk B (HDMI/update setup):
+       (all writes from 0x1e00..0x10f6=0xff and 0x7202..0x7011)
+       cq_wait_set 0x10f6/0x80
+       → exec, log "chunk B result rc=%d"
+
+     Chunk C (PLL/7204/finalize):
+       cq_mask 0x7226, 0x7228; delay; writereg 0x7204/0x40
+       cq_wait_clear 0x7204/0x40
+       (writes 0x7a8b, 0x1e02, 0x1034, 0x1e00, VMUTECNT, HDCPEN)
+       → exec, log "chunk C result rc=%d"
+       (also keeps the existing "MN864729 main seq cq_exec=%d" marker
+        for log-format compat with prior boots)
+
+   Between chunks, readback the polled registers via cq_read+cq_exec:
+     after chunk A: read 0x60f8, 0x60f9
+     after chunk B: read 0x10f6
+     after chunk C: read 0x7204
+
+   Splitting changes timing/order granularity but preserves command
+   sequence. Worth the small behavioral risk for one-boot precision.
+
+Expected outcomes:
+
+  Case 1 — chunk A is the 2.97s offender:
+    "chunk A (DP lane status) result rc=20 elapsed=2970000us"
+    Readback 0x60f8/0x60f9 lacks the requested bits.
+    Means: bridge truly waiting on DP lane/status. GPU-side DP TX is
+    not delivering what the bridge expects. Investigate physical wiring,
+    UNIPHY power gates, or pre-PLL clock-tree state.
+
+  Case 2 — chunk B is the 2.97s offender:
+    "chunk B (HDMI/update) result rc=20 elapsed=2970000us"
+    Wait was on 0x10f6/0x80 — likely an HDMI/update-firmware ready
+    bit, not DP lane status. Stop chasing GPU-side DP issues; decode
+    what 0x10f6 represents and what writes set its ready bit.
+
+  Case 3 — chunk C is the 2.97s offender:
+    "chunk C (PLL/7204) result rc=20 elapsed=2970000us"
+    Wait_clear on 0x7204/0x40 — likely an internal MN864729
+    PLL/TMDS-side transition that never completes. Investigate whether
+    a missing earlier write or wrong mode timing prevents 0x7204 from
+    clearing.
+
+  Case 4 — splitting alone reduces the timeout:
+    Chunks complete fast individually but the original monolithic
+    sequence hung. Means cq firmware has ordering/timing sensitivity.
+    v56 keeps the split and adds delays/readbacks at the sensitive
+    transition.
+
+This is a pure visibility patch. The chunk split is intentional but
+preserves the sequential command order; only cq_init+cq_exec
+boundaries and inter-chunk readbacks are inserted.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -185,6 +185,8 @@
+ static int cq_exec(struct i2c_cmdqueue *q)
+ {
+ 	int res;
++	ktime_t t0, t1;
++	s64 elapsed_us;
+
+ 	if (!q->cmd)
+ 		return 0;
+@@ -192,8 +194,23 @@
+ 	q->cmd->length = q->p - (u8 *)q->cmd;
+ 	q->req.length = q->p - (u8 *)&q->req;
+
++	/* v55: time and dump every cq_exec to identify which one burns the
++	 * 2.97s timeout. Reply struct (res1, res2, count, first databuf
++	 * bytes) tells us how the bridge firmware terminated. */
++	t0 = ktime_get();
+ 	res = apcie_icc_cmd(0x10, 0, &q->req, q->req.length,
+ 		      &q->reply, sizeof(q->reply));
++	t1 = ktime_get();
++	elapsed_us = ktime_us_delta(t1, t0);
++
++	pr_info("ps4_bridge_cq: exec code=%u req_len=%u groups=%u res=%d reply_res=%u/%u count=%u data[0..7]=%02x %02x %02x %02x %02x %02x %02x %02x elapsed=%lldus\n",
++		q->req.code, q->req.length, q->req.count,
++		res, q->reply.res1, q->reply.res2, q->reply.count,
++		q->reply.databuf[0], q->reply.databuf[1],
++		q->reply.databuf[2], q->reply.databuf[3],
++		q->reply.databuf[4], q->reply.databuf[5],
++		q->reply.databuf[6], q->reply.databuf[7],
++		elapsed_us);
+
+ 	if (res < 5) {
+ 		DRM_ERROR("icc i2c commandqueue failed: %d\n", res);
+@@ -261,6 +278,7 @@
+
+ static void cq_wait_set(struct i2c_cmdqueue *q, u16 addr, u8 mask)
+ {
++	pr_info("ps4_bridge_cq: enqueue WAIT_SET addr=0x%04x mask=0x%02x\n", addr, mask);
+ 	cq_cmd(q, CMD_WAIT_SET);
+ 	*q->p++ = 0;
+ 	*q->p++ = addr >> 8;
+@@ -270,6 +288,7 @@
+
+ static void cq_wait_clear(struct i2c_cmdqueue *q, u16 addr, u8 mask)
+ {
++	pr_info("ps4_bridge_cq: enqueue WAIT_CLEAR addr=0x%04x mask=0x%02x\n", addr, mask);
+ 	cq_cmd(q, CMD_WAIT_CLEAR);
+ 	*q->p++ = 0;
+ 	*q->p++ = addr >> 8;
+@@ -526,16 +545,49 @@
+ 	{
+ 		/* Panasonic MN864729 */
+ 		mutex_lock(&mn_bridge->mutex);
++
++		/* v55: split MN864729 main seq into 3 chunks at wait boundaries
++		 * to identify which cq_wait_* burns the consistent 2.97s timeout
++		 * across v46-v54. Chunks preserve original command order; only
++		 * cq_init+cq_exec boundaries are inserted. Readback pairs after
++		 * each chunk poll the just-waited registers via cq_read so we
++		 * can see the actual register state when the chunk returned. */
++
++		/* === Chunk A: DP lane status setup + waits ===
++		 * Polled regs: 0x60f8, 0x60f9 (DP receiver lane-status / link-state) */
++		pr_info("ps4_bridge_cq: --- chunk A: DP lane status (waits 0x60f8/0xff, 0x60f9/0x01, 0x60f9/0x1a) ---\n");
+ 		cq_init(&mn_bridge->cq, 4);
+ 		cq_mask(&mn_bridge->cq, 0x6005, 0x01, 0x01);
+ 		cq_writereg(&mn_bridge->cq, 0x6a03, 0x47);
+-
+-		/* Wait for DP lane status */
+ 		cq_wait_set(&mn_bridge->cq, 0x60f8, 0xff);
+ 		cq_wait_set(&mn_bridge->cq, 0x60f9, 0x01);
+ 		cq_writereg(&mn_bridge->cq, 0x6a01, 0x4d);
+ 		cq_wait_set(&mn_bridge->cq, 0x60f9, 0x1a);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: chunk A (DP lane status) result rc=%d\n", rc);
++		}
++
++		/* Readback 0x60f8 and 0x60f9 */
++		cq_init(&mn_bridge->cq, 4);
++		cq_read(&mn_bridge->cq, 0x60f8, 1);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: readback 0x60f8 rc=%d val=0x%02x\n",
++				rc, mn_bridge->cq.reply.databuf[3]);
++		}
++		cq_init(&mn_bridge->cq, 4);
++		cq_read(&mn_bridge->cq, 0x60f9, 1);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: readback 0x60f9 rc=%d val=0x%02x\n",
++				rc, mn_bridge->cq.reply.databuf[3]);
++		}
+
++		/* === Chunk B: HDMI/update setup + 0x10f6/0x80 wait ===
++		 * Polled reg: 0x10f6 (likely HDMI/update firmware ready bit) */
++		pr_info("ps4_bridge_cq: --- chunk B: HDMI/update setup (wait 0x10f6/0x80) ---\n");
++		cq_init(&mn_bridge->cq, 4);
+ 		cq_mask(&mn_bridge->cq, 0x1e00, 0x00, 0x21);
+ 		cq_mask(&mn_bridge->cq, 0x1e02, 0x00, 0x70);
+ 		// 03 08 01 01 00  2c 01 00
+@@ -582,6 +634,24 @@
+ 		//cq_writereg(&mn_bridge->cq, 0x7a00, 0x0e);
+
+ 		cq_wait_set(&mn_bridge->cq, 0x10f6, 0x80);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: chunk B (HDMI/update) result rc=%d\n", rc);
++		}
++
++		/* Readback 0x10f6 */
++		cq_init(&mn_bridge->cq, 4);
++		cq_read(&mn_bridge->cq, 0x10f6, 1);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: readback 0x10f6 rc=%d val=0x%02x\n",
++				rc, mn_bridge->cq.reply.databuf[3]);
++		}
++
++		/* === Chunk C: PLL/7204 + finalize ===
++		 * Polled reg: 0x7204 (likely PLL/TMDS/HDMI-side transition bit) */
++		pr_info("ps4_bridge_cq: --- chunk C: PLL/7204/finalize (wait_clear 0x7204/0x40) ---\n");
++		cq_init(&mn_bridge->cq, 4);
+ 		cq_mask(&mn_bridge->cq, 0x7226, 0x00, 0x80);
+ 		cq_mask(&mn_bridge->cq, 0x7228, 0x00, 0xFF);
+ 		cq_delay(&mn_bridge->cq, 0x012c);
+@@ -595,10 +665,20 @@
+ 		cq_writereg(&mn_bridge->cq, HDCPEN, 0x00);
+ 		{
+ 			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: chunk C (PLL/7204) result rc=%d\n", rc);
+ 			pr_info("ps4_bridge_enable: MN864729 main seq cq_exec=%d\n", rc);
+ 			if (rc < 0)
+ 				DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
+ 		}
++
++		/* Readback 0x7204 */
++		cq_init(&mn_bridge->cq, 4);
++		cq_read(&mn_bridge->cq, 0x7204, 1);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_cq: readback 0x7204 rc=%d val=0x%02x\n",
++				rc, mn_bridge->cq.reply.databuf[3]);
++		}
+ 		#if 1
+ 		// AUDIO preinit
+ 		cq_init(&mn_bridge->cq, 4);

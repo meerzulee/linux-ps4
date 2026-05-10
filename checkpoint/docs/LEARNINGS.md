@@ -982,3 +982,140 @@ pure diagnostic patch (no skip-ATOM logic), we'd have moved to
 Also: register dumps are cheap. Add them generously when investigating
 hardware mysteries — every value either confirms a hypothesis (move
 on) or refutes one (also useful).
+
+## 2026-05-10 — v45: writes to mmDCCG_PLL_* silently dropped; the assumed PLL registers are probably wrong
+
+After v44's "PPLL=0 across all four banks" finding, v45 added direct
+WREG32 programming with hardcoded 1080p60 dividers (ref_div=1
+fb_int=11 fb_frac=14 post=8) for all four `mmDCCG_PLL[0..3]_*`
+register banks, packed per the `VGA*_PPLL_*` bit layout in
+`dce_8_0_sh_mask.h`.
+
+Boot result: POST-program read shows IDENTICAL all-zero values to
+PRE-program read. WREG32 returns no error but the registers don't
+store the writes.
+
+Three new realizations that change the model of the problem:
+
+1. **No code in either 5.4-baikal (working) or 6.x-baikal (broken)
+   directly writes to `mmDCCG_PLL[0..3]_*`.** The 5.4 baseline
+   produces full HDMI without anyone in-kernel touching these
+   registers. So they're probably not the actual display PLL
+   on Liverpool — ATOM SetPixelClock on 5.4 must either write
+   different registers, or write these via some access path
+   that hits hardware differently than direct WREG32.
+
+2. **amdgpu has no PLL indirect-access infrastructure.**
+   `RREG32_PLL`/`WREG32_PLL` are referenced inside `WREG32_PLL_P`
+   macro but never #defined in amdgpu source. radeon driver
+   has `pll_rreg`/`pll_wreg` callbacks but for CIK they're
+   set to `radeon_invalid_rreg`/`_wreg` (only R100 cards used
+   them). So "PLL needs indirect access" is not the issue.
+
+3. **WREG32 to the DCCG block IS valid in this codebase** —
+   `dce_v8_0.c:1537-1539` does `WREG32(mmDCCG_AUDIO_DTO_*, ...)`
+   for audio clock setup, register offsets right next to ours.
+   So the MMIO path reaches DCCG hardware. Our PPLL writes
+   specifically are being rejected by something at the hardware
+   level on those particular register addresses, OR those
+   addresses are unused/aliased to ground on Liverpool.
+
+Lesson for future-Claude: when writing manual register programmers
+for hardware you don't have authoritative docs for, the very FIRST
+test should be "does my WREG32 land?". If POST-write read != value
+written, stop programming further and figure out why before
+guessing more values. v45 wrote 12 register writes in one shot
+and learned nothing from each individual write — a single
+write-then-read for ONE register would've told us "writes drop
+silently" with the same boot cost. Generalize: when programming
+hardware, instrument the smallest possible step and verify it
+works before scaling up the operation.
+
+Also lesson: I deprioritized the multi-agent ATOM IIO trace
+recommendation in favor of "let's just try writing values" because
+the trace patch is bigger work. v44/v45 cost two boots and a
+half-day of dead-end analysis. The trace would have cost one boot
+and answered the actual question (which registers does ATOM target
+when it runs SetPixelClock on PS4). Diagnostic-first beats
+fix-first when you don't even know what the right fix targets.
+
+
+# 2026-05-10 evening — HDMI display fix, PS4 6.x-baikal (v60)
+
+**Root cause:** PS4 firmware leaves the internal GPU→MN864729 DP link
+already trained with per-lane voltage swing / pre-emphasis values not
+derivable from VBIOS object info. Linux's standard DPMS_OFF/ON path
+calls `setup_dig_transmitter(DISABLE)` then `setup_dig_transmitter(ENABLE)`,
+which writes ATOM v5 args including `ucDPLaneSet=0` (default swing
+0/preemph 0). ATOM bytecode pushes those values into UNIPHY hardware,
+overriding the firmware-trained per-lane state. The receiver immediately
+loses lock. PS4 bridge doesn't speak DPCD, so kernel link training
+(patch 0006: bare return) cannot retrain.
+
+**Fix:** skip both `setup_dig_transmitter(DISABLE)` and
+`setup_dig_transmitter(ENABLE)` for `CHIP_LIVERPOOL/CHIP_GLADIUS` DP
+encoders during modeset. Patches 0031 (v59) and 0032 (v60). Leave the
+firmware-trained PHY completely untouched. CRTC, PPLL (PPLL2), DIG
+encoder (SETUP/PANEL_MODE/DP_VIDEO_OFF/DP_VIDEO_ON), framebuffer, and
+bridge programming all run normally.
+
+**The bisect that found it:** v55 (chunk-split bridge cq) split the
+monolithic 2.97s `cq_wait_*` timeout into three separate timeouts,
+revealing chunks B and C are *always* tolerated baseline (~450ms each
+in both BIOS-state and post-modeset cycles), while chunk A (`0x60f8/0xff`
+DP RX lane lock) flips from passing fast (~30ms, `0x60f8=0xff`) at boot
+to timing out at ~600ms (`0x60f8=0x0f`) post-modeset. This reframed
+the problem from "bridge needs us to drive it" to "we broke its
+already-locked receiver".
+
+v58 added `ps4_bridge_probe_lane_status(tag)` calls between every modeset
+step. In one boot it pinpointed `setup_dig_transmitter(DISABLE)`:
+`f8: 0xff → 0x9f` exactly at action=0. v59 (skip DISABLE) preserved
+lock through DP_VIDEO_OFF/SETUP/PANEL_MODE but `setup_dig_transmitter(ENABLE)`
+then flipped `f8: 0xff → 0x0f`. v60 (also skip ENABLE) preserved lock
+end-to-end including DP_VIDEO_ON. Bridge passes; HDMI lights.
+
+## Lessons
+
+1. **"Preserve firmware state" is a real strategy on consoles.** PC DP
+   assumes hot-plug retraining; consoles often pre-train everything in
+   firmware. If standard DPMS_OFF/ON doesn't work, ask: "what is the
+   firmware doing that we're undoing?" before assuming "what is the
+   firmware not doing that we need to do?".
+
+2. **Sub-step bisection beats blind reverts when ambiguity is multi-axis.**
+   v52-v57 wasted iterations trying combinations of "add this", "remove
+   that". v58's intra-step probe gave a definitive answer in one boot
+   because it sampled state at every step boundary.
+
+3. **Splitting monolithic timing measurements is high-value.** v55
+   chunking the bridge cq main seq made the chunk-A vs chunks-B/C
+   distinction visible. Without that split, every iteration looked like
+   "still 2.97s timeout" and nothing was learned. The same insight
+   pattern probably applies elsewhere: any time you measure a single
+   wall-clock duration over a multi-step operation, try splitting it.
+
+4. **Sometimes the diagnostic patch is the breakthrough.** v55 and
+   v58 don't change behavior (just visibility), but they're what
+   actually unblocked the fix. Resist the temptation to keep guessing
+   when one more diagnostic boot would resolve the ambiguity.
+
+5. **Hermes' iterative consultation worked well.** Multi-agent advice
+   at v55→v56→v57→v58→v59→v60 each step accelerated decisions:
+   - When to escalate to bridge-side instrumentation
+   - When to bisect by reverting suspects
+   - When to do step-by-step probing instead of guessing
+   - Recognizing v54 (TPS pulse) was the wrong premise after v55 data.
+
+6. **Five-agent synthesis (research/ideas/) was useful even though
+   only one was right.** The Kimi `dp_clock=0` hypothesis from
+   `2026-05-10-kimi-dp-clock-zero.md` was the foundation: it identified
+   that downstream consumers were reading 0 from `dig_connector`
+   fields. v47 (local floor) implemented the spirit; v52 (connector
+   floor) implemented the letter. v59/v60 then extended the
+   "preserve firmware state" model. Without the multi-agent synthesis
+   we might still be chasing PPLL register-set theories.
+
+Full analysis chain: `checkpoint/docs/research/2026-05-10-v46-...md`
+through `2026-05-10-v60-...md`. The v60 result file is the canonical
+write-up of the breakthrough.
