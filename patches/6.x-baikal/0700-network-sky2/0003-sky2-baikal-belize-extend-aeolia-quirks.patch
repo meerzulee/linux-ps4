@@ -1,0 +1,74 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: extend Aeolia PS4 quirks to also cover Baikal and Belize GBE
+
+Our existing 0001-sky2-ps4-quirks.patch (forward-ported from feeRnt's 5.4
+PS4 stack via crashniels' 6.15 tree) registers the Baikal GBE PCI ID
+(0x90d8) in sky2_id_table so the driver matches the device, but it gates
+the three PS4-specific behavior tweaks on `device == AEOLIA_GBE` only.
+Result: Baikal binds the driver, then takes the wrong code paths:
+
+  - sky2_reset hits the generic Yukon init path (Baikal needs the same
+    pre-reset register pokes Aeolia does, otherwise the chip is left
+    in a state where MSI delivery silently drops)
+  - sky2_reset attempts a PHY reset (which hangs the chip on PS4 — the
+    integrated southbridge PHY does not respond to standard reset)
+  - sky2_probe defaults phy_addr to PHY_ADDR_MARV instead of 1 (PS4's
+    integrated GBE has its real PHY at addr 1; PHY_ADDR_MARV finds
+    nothing and the link never comes up)
+
+Reference: rmuxnet did the equivalent extension on his 7.0 tree as
+commit 846b0b28 ("sky2: experimental PS4 Baikal GBE support") on branch
+ps4-baikal-ethernet-experiment, plus included BELIZE_GBE for symmetry.
+We cherry-pick the same idea here for our 6.x stack — three textual
+changes to sky2.c, each adding `|| pdev->device == BAIKAL_GBE` (and the
+corresponding BELIZE_GBE clause) to the existing AEOLIA_GBE conditions.
+
+This is the minimum change needed to make Baikal GBE actually link up
+through the existing sky2 Aeolia-style init sequence. If the chip turns
+out to need additional Baikal-specific quirks (e.g. SPM-based MAC
+address fetch, different MSI vector layout), those go in follow-up
+patches; this is the "treat Baikal like Aeolia" foundation.
+
+Credit: rmuxnet/ps4-linux-12xx 846b0b28 — pattern adapted to our 6.x
+tree.
+
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -3245,7 +3245,9 @@ static void sky2_reset(struct sky2_hw *hw)
+
+ 	#ifdef CONFIG_X86_PS4
+ 	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+-	    pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE) {
++	    (pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE ||
++	     pdev->device == PCI_DEVICE_ID_SONY_BELIZE_GBE ||
++	     pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE)) {
+ 		u32 val1, val2;
+
+ 		sky2_write32(hw, 0x60, 0x32100);
+@@ -3327,8 +3329,10 @@ static void sky2_reset(struct sky2_hw *hw)
+
+ 	#ifdef CONFIG_X86_PS4
+ 	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+-	    pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE) {
+-		; /* Do not perform phy resets on aeolia, it will hang */
++	    (pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE ||
++	     pdev->device == PCI_DEVICE_ID_SONY_BELIZE_GBE ||
++	     pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE)) {
++		; /* Do not perform phy resets on PS4, it will hang */
+ 	} else
+ 	#endif
+
+@@ -4999,8 +5003,10 @@ static int sky2_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	hw->phy_addr = PHY_ADDR_MARV;
+ 	#ifdef CONFIG_X86_PS4
+ 	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+-	    pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE) {
+-		/* aeolia supports some sort of "l2 switch" */
++	    (pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE ||
++	     pdev->device == PCI_DEVICE_ID_SONY_BELIZE_GBE ||
++	     pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE)) {
++		/* PS4 supports some sort of "l2 switch" */
+ 		/* it has normal phy at addr 1 with a possibly-active switch at addr 2 */
+ 		hw->phy_addr = 1;
+ 	}

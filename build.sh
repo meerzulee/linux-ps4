@@ -218,6 +218,21 @@ fi
 log_info "Resolving config dependencies..."
 make olddefconfig
 
+# Stage firmware blobs into kernel source tree for CONFIG_EXTRA_FIRMWARE
+# (kbuild expects them relative to ${CONFIG_EXTRA_FIRMWARE_DIR} which we set
+# to "firmware" — same as kbuild's default, relative to kernel source root).
+if [ -d "${SCRIPT_DIR}/firmware" ]; then
+    log_info "Staging firmware blobs from ${SCRIPT_DIR#${HOME}/}/firmware/..."
+    mkdir -p firmware
+    # Copy non-doc files (skip README.md). Preserve subdirs (mediatek/, mrvl/).
+    find "${SCRIPT_DIR}/firmware" -type f ! -name "README*" -print0 | while IFS= read -r -d '' src; do
+        rel="${src#${SCRIPT_DIR}/firmware/}"
+        dst="firmware/${rel}"
+        mkdir -p "$(dirname "$dst")"
+        cp -u "$src" "$dst"
+    done
+fi
+
 # Step 4: build
 log_step "=== Step 4: Building kernel ==="
 

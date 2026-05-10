@@ -310,7 +310,13 @@
 0500-network-mt7668/0006-mt76x8-rmuxnet-fix-fortified-copy-from-user.patch
 
 # === 0700: sky2 ethernet (Marvell Yukon)
+# Baikal GBE 0x90d8 turned out to be the SAME sky2 family as Aeolia 0x909e
+# and Belize 0x90c9 — Sony's southbridge variants share the chip. Updated
+# 2026-05-11 after rmuxnet's experimental 846b0b28 commit on
+# ps4-baikal-ethernet-experiment branch confirmed Baikal binds and links
+# when treated identically to Aeolia.
 0700-network-sky2/0001-sky2-ps4-quirks.patch
+0700-network-sky2/0003-sky2-baikal-belize-extend-aeolia-quirks.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
