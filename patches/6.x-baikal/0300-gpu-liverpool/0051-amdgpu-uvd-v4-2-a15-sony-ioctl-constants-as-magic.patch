@@ -1,0 +1,92 @@
+amdgpu: uvd_v4_2 — write Sony IOCTL constants at region 2/3[0] (v76d-β-2-A15)
+
+A8 wrote plain region sizes (0x124000, 0x4000) at region 2[0]/3[0].
+Result: neutral (no effect on STATUS bit 1).
+
+A15: try Sony's IOCTL-returned constants instead. From the Ghidra
+dungeon-map:
+
+  IOCTL 0x4008830c returns 0x300308000
+    = 0x300000000 + total region size
+    Sony's userspace receives this — likely the "first user-allocatable
+    VA" hint after the 3 reserved regions.
+
+  IOCTL 0x4004830b returns 0x20000
+    = 128 KB, possibly a buffer/ring size constant.
+
+If the fw expects the host to set up these specific values at region
+2/3[0] before VCPU release, A15 unblocks STATUS bit 1. They're
+better-grounded guesses than A8's plain sizes since they're values
+Sony's actual userspace code observes.
+
+Layout written by A15:
+  region2[0]   = 0x300308000  (u64)
+  region2[1]   = 0x20000      (u64)
+  region3[0]   = 0x300308000  (u64)
+  region3[1]   = 0x20000      (u64)
+
+Expected:
+  ✅ STATUS bit 1 sets — Sony's IOCTL constants were the missing
+     "host setup". Narrow down in follow-up which of the four writes
+     mattered.
+  🟡 Cache sample table changes in a meaningful way (different sync
+     pattern) → fw read something different. Continue with variations.
+  ❌ Identical sample table → these constants aren't the gate. Pivot
+     to A16 (SBL Ghidra) or B1 (per-vmid PD).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -519,19 +519,39 @@
+ 	memcpy(mirror_cpu_addr, adev->uvd.fw->data + ucode_offset, ucode_size);
+
+ 	/*
+-	 * v76d-β-2-A8 (A7c part): write the SIZE of each region at its
+-	 * start. A7 (now disabled) wrote 0x00000001 there and broke fw
+-	 * cache fill — that regression proved fw reads these slots. The
+-	 * natural interpretation is they're SIZE fields, not flags.
+-	 * Sony's userspace would write region2_size and region3_size
+-	 * there before the VCPU release. Try that.
++	 * v76d-β-2-A15: try Sony's IOCTL-returned constants as the
++	 * "host setup" values at region 2/3[0].
++	 *
++	 * From Ghidra dungeon-map:
++	 *   IOCTL 0x4008830c returns 0x300308000 (= 0x300000000 + total
++	 *     region size). Sony's userspace receives this — likely a
++	 *     "first user-allocatable VA" hint.
++	 *   IOCTL 0x4004830b returns 0x20000 (128 KB — possibly a buffer
++	 *     size or ring size).
++	 *
++	 * If the fw expects the host to write THESE values into region 2/3
++	 * before VCPU release, A15 unblocks. A8 tried plain region SIZES;
++	 * A15 tries Sony's specific runtime constants.
++	 *
++	 * Layout we try:
++	 *   region2[0]   = 0x300308000  (user-buffer-start VA)
++	 *   region2[4]   = 0x20000      (buffer size)
++	 *   region3[0]   = 0x300308000  (same — userspace's view of where
++	 *                                its allocations start)
++	 *   region3[4]   = 0x20000
+ 	 */
+-	*(u32 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE) =
+-		PS4_UVD_REGION2_SIZE;	/* heap_size at region2[0] */
+-	*(u32 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE + PS4_UVD_REGION2_SIZE) =
+-		PS4_UVD_REGION3_SIZE;	/* msgq_size at region3[0] */
+-	DRM_INFO("ps4 uvd: A8 wrote sizes — region2[0]=0x%lx, region3[0]=0x%lx\n",
+-		 PS4_UVD_REGION2_SIZE, PS4_UVD_REGION3_SIZE);
++	{
++		u64 *region2 = (u64 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE);
++		u64 *region3 = (u64 *)(mirror_cpu_addr +
++				       PS4_UVD_REGION1_SIZE +
++				       PS4_UVD_REGION2_SIZE);
++		region2[0] = 0x300308000ULL;	/* user-buffer-start VA */
++		region2[1] = 0x20000ULL;	/* buffer size */
++		region3[0] = 0x300308000ULL;	/* same on msgq */
++		region3[1] = 0x20000ULL;
++		DRM_INFO("ps4 uvd: A15 wrote IOCTL constants — "
++			 "region2/3[0]=0x300308000, [1]=0x20000\n");
++	}
+
+ 	/*
+ 	 * Rebind GART at 0x300000000 for the full 3-region span (3.1 MB).
