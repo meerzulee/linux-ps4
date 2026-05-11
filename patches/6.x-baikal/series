@@ -348,6 +348,11 @@
 # zeros aren't valid microcode. This replaces the dummy with real fw
 # bytes (matching Sony's region 1 layout in vmid 4).
 0300-gpu-liverpool/0042-amdgpu-uvd-v4-2-fw-mirror-at-300000000.patch
+# 0043: v76d-β-2-A3 — add PTE_WRITEABLE to the UVD GART bindings.
+# A2 brought the fw to life. Fault changed to PROTECTIONS=0x10 (write
+# permission), which means the fw is now WRITING to its own region but
+# our PTEs were read-only. Add WRITEABLE flag.
+0300-gpu-liverpool/0043-amdgpu-ps4-uvd-gart-pte-writeable.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
