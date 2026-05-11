@@ -1,0 +1,66 @@
+amdgpu: enlarge UVD BO for Liverpool/Gladius to cover Sony's 3-region layout
+
+v75 of the UVD bring-up effort.
+
+v73 added the missing LMI_VM_VBASE writes (mmregs 0x3c68/0x3c69).
+v74 added uvd_v4_2_mc_resume() + diagnostic prints and confirmed via
+hardware test (checkpoint/uart-logs/2026-05-11_1652-v74-uvd.log) that
+those register writes land exactly where intended — but the VCPU still
+times out with a VM fault at page 0x300000 vmid 4.
+
+Diagnosis (full writeup in
+checkpoint/docs/research/2026-05-11-v74-uvd-result.md): Sony's Orbis
+UVD layout uses three GPU regions totalling ~3.07 MB (region 1 1920 KB
+ucode/data, region 2 1168 KB workspace/stack, region 3 16 KB session
+handle table), all addressed by the VCPU through one LMI_VM_VBASE.
+amdgpu_uvd_sw_init allocates only ~2.7 MB (stack 200 KB + heap 256 KB
++ session 50 KB × 40 handles + firmware ~315 KB), which ends ~400 KB
+before Sony's region 3 starts. The VCPU then VM-faults trying to read
+region 3 territory.
+
+Fix: when asic_type is Liverpool or Gladius, override bo_size to
+0x318000 (~3.1 MB padded with 64 KB slack). All other ASICs keep the
+existing formula. Numbers come from Ghidra RE of FUN_c88f8610
+(uvd_vcpu_start_baikal) in orbis-12.02.elf.
+
+This is a minimum-scope change — one .c file, behaviour-gated on
+asic_type. The diagnostic prints from v74 stay in (we still need them
+to see if v75 unblocks the VCPU or just moves the fault).
+
+Expected hardware signal:
+  ✅ if region count was right: "Liverpool VCPU did not start" gone;
+     ring test attempt follows.
+  🟡 if there's a 4th region we missed: fault moves to a HIGHER page;
+     useful new data point.
+  ❌ if BO size isn't the blocker: same 0x300000 fault — then the
+     issue is GMC vmid-4 page-table setup itself, not BO geometry.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_uvd.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_uvd.c
+@@ -325,6 +325,24 @@
+ 	if (adev->firmware.load_type != AMDGPU_FW_LOAD_PSP)
+ 		bo_size += AMDGPU_GPU_PAGE_ALIGN(le32_to_cpu(hdr->ucode_size_bytes) + 8);
+ 
++	/* PS4 Liverpool/Gladius: Sony's UVD firmware expects three GPU regions
++	 * totalling ~3.07 MB (region 1: 1920 KB, region 2: 1168 KB, region 3:
++	 * 16 KB), all walked from LMI_VM_VBASE through one MMU context (vmid 4).
++	 * Standard Bonaire-class bo_size (~2.7 MB) ends before region 3 starts;
++	 * v74 boot log shows VM fault at page 0x300000 vmid 4 — confirmed in
++	 * checkpoint/docs/research/2026-05-11-v74-uvd-result.md. */
++	if (adev->asic_type == CHIP_LIVERPOOL ||
++	    adev->asic_type == CHIP_GLADIUS) {
++		unsigned long sony_bo_size =
++			ALIGN(0x1E0000 + 0x124000 + 0x4000 + 0x10000, PAGE_SIZE);
++		if (bo_size < sony_bo_size) {
++			DRM_INFO("ps4 uvd: enlarging UVD BO from %lu KB to %lu KB "
++				 "to cover Sony's 3-region layout\n",
++				 bo_size >> 10, sony_bo_size >> 10);
++			bo_size = sony_bo_size;
++		}
++	}
++
+ 	for (j = 0; j < adev->uvd.num_uvd_inst; j++) {
+ 		if (adev->uvd.harvest_config & (1 << j))
+ 			continue;

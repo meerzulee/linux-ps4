@@ -308,6 +308,10 @@
 # Full per-register rationale in
 # checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md.
 0300-gpu-liverpool/0034-amdgpu-uvd-v4-2-liverpool-vcpu-start.patch
+# 0035: bump UVD BO size to cover Sony's 3-region (3.1 MB) UVD layout.
+# v74 result confirmed register writes are correct but the BO ends ~400 KB
+# before Sony's region 3 starts, causing VM fault at page 0x300000 vmid 4.
+0300-gpu-liverpool/0035-amdgpu-uvd-bo-size-liverpool-3-region.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
