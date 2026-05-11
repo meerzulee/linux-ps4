@@ -6,6 +6,42 @@ tree" sections get rewritten in place.
 
 ---
 
+## Where we are NOW (updated 2026-05-12 00:15, B1 built — awaiting hardware test)
+
+**Last action: built B1** (per-vmid 2-level PD).
+- Patch `0300-gpu-liverpool/0052-amdgpu-uvd-v4-2-b1-per-vmid-pd.patch`
+- bzImage md5: `8ececdad2b8e036d1237a21063e5b541`
+- PS4 currently powered down — boot test pending user power-cycle
+
+**What B1 does**:
+- Allocates a 32 KB PD + 16 KB PT in VRAM
+- Block size = 11 (Sony's value), PD entry covers 8 MB, PT page has
+  2048 entries
+- PD has ONE valid entry at index 0x600 (= 0x300000000 >> 23)
+  pointing at the PT
+- PT maps the 776 mirror-BO pages (region 1+2+3) with mainline flags
+  (VALID|SYSTEM|READABLE|WRITEABLE)
+- Repoints VC1..VC15 PT_BASE at the new PD
+- Switches VM_CONTEXT1_CNTL to DEPTH=1 + BLOCK_SIZE=2, undoing
+  β-2-A's DEPTH=0 override
+
+**Why B1 might succeed where A-arc didn't**:
+- A-arc forced flat walk: GMC reads PTE directly at gart.ptr[VA>>12].
+  UVD's read at 0x300000000 worked but fw never asserted ready.
+- Hypothesis: fw's bring-up internally walks more than the literal
+  VA — may DMA across the full 8 MB block, or check FRAG/PDE flags
+  in the walk it triggers.
+- B1 gives a real Sony-shaped walk. Same physical pages end up in
+  the PTEs, but the structural shape now matches Sony.
+
+**Expected signals**:
+- ✅ STATUS bit 1 sets → Sony's PD structure was the gate.
+- 🟡 Cache pattern changes meaningfully → fw saw something different.
+- ❌ Identical sample table → PD shape isn't the gate. Pivot to deep
+  Ghidra dig of Orbis-side pre-UVD init.
+
+---
+
 ## Where we are NOW (updated 2026-05-11 23:00, after A7-revert)
 
 **Last result: A7-revert** (commit `c7650f3` + series-disabled 0047,
