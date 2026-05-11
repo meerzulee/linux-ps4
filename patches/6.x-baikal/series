@@ -337,6 +337,11 @@
 # offset 0x300000000 so the UVD firmware's hardcoded VA read resolves
 # instead of faulting on missing PD entry. Two diagnostic prints confirm.
 0300-gpu-liverpool/0040-amdgpu-gmc-v7-0-liverpool-uvd-pt-fix-option-a.patch
+# 0041: v76d-β-2-A1.5 — also bind dummy at GART VA 0. Option A moved the
+# fault from VA 0x300000000 to VA 0 (firmware reads zero from dummy,
+# treats as null pointer, dereferences). Binding dummy at VA 0 too lets
+# the deref resolve, exposing the next firmware read.
+0300-gpu-liverpool/0041-amdgpu-gmc-v7-0-liverpool-also-bind-va0.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

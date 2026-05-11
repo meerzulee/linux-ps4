@@ -1,0 +1,84 @@
+amdgpu: gmc_v7_0 — also bind dummy page at GART VA 0 (v76d-β-2-A1.5)
+
+v76d-β-2-A landed and made huge progress: the UVD VCPU firmware read
+at GPU virtual 0x300000000 now succeeds, the fw is alive and executing
+(MC client field shows UVD, not UMC), and the fault moved to a new
+address: GPU virtual 0 (page 3145728 → page 0), with PROTECTIONS=0x0c
+(read access on unmapped page) instead of 0x02 (PT walk failure).
+
+Ghidra trace via the UVD IOCTL surface revealed that Sony lays out the
+three UVD regions starting at GPU virtual 0x300000000 in vmid 4:
+  - Region 1 (1920 KB firmware target) → 0x300000000..0x3001E0000
+  - Region 2 (1168 KB heap/IB)         → 0x3001E0000..0x300304000
+  - Region 3   (16 KB message queue)   → 0x300304000..0x300308000
+  - First user-allocatable VA          → 0x300308000 (returned by ioctl 0x4008830c)
+
+So when our dummy returns zeros at 0x300000000, the firmware probably
+interprets those zeros as a pointer (e.g., "address of next config
+struct") and dereferences it, hitting VA 0 → fault.
+
+Cheapest test to verify the model: bind dummy at VA 0 too. The fw's
+null-deref then resolves to the (zero-filled) dummy page instead of
+faulting, and the fw progresses to whatever it reads NEXT — that next
+fault address tells us about the firmware's state machine.
+
+This patch adds one extra amdgpu_gart_bind(adev, 0, ...) call right
+after the existing 0x300000000 bind from v76d-β-2-A. The TLB invalidate
+moves to after the second bind so both PTEs are flushed together.
+
+Risk: amdgpu's GART allocator may have claimed GART page 0 for an
+early BO. Binding dummy there would overwrite that BO's PTE and could
+regress GFX/SDMA/DCE. Watch dmesg for new probe-time errors and
+compare with v76d-β-2-A (which booted clean).
+
+Expected:
+  ✅ The fault at VA 0 disappears, firmware progresses further.
+     New fault elsewhere — tells us what the fw reads next.
+  🟡 GFX/SDMA still work but firmware loops on the same VA 0
+     (in our flat-walk model, GART[0] now returns zeros instead of
+     faulting; if firmware re-dereferences 0 it'd infinite-loop on
+     the dummy zeros).
+  ❌ GFX/SDMA regress. Roll back to A1 not touching VA 0; pivot to
+     A2 (allocate fresh GTT BO with non-trivial fw contents at
+     0x300000000).
+
+Build & USB-stage cleanly before submitting.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -789,10 +789,32 @@
+ 		amdgpu_gart_bind(adev, 0x300000000ULL, 1, &fw_dummy,
+ 				 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
+ 				 AMDGPU_PTE_READABLE);
+-		amdgpu_gart_invalidate_tlb(adev);
+ 		DRM_INFO("ps4: bound dummy page at GART virtual 0x300000000 "
+ 			 "(pa=0x%llx) for UVD fw access\n",
+ 			 (unsigned long long)fw_dummy);
++
++		/*
++		 * v76d-β-2-A1.5: chase the secondary firmware read.
++		 *
++		 * After bind at 0x300000000, the firmware succeeded the first
++		 * read (got zeros from dummy), interpreted zeros as a null
++		 * pointer, and faulted dereferencing GPU VA 0. Bind dummy at
++		 * VA 0 too so that dereference resolves instead of faulting.
++		 *
++		 * If amdgpu's GART allocator had already claimed GART page 0
++		 * for some other BO, this overwrite may cause a regression in
++		 * that subsystem (GFX, SDMA, or DCE). Watch for new errors
++		 * in their probe paths. If clean, the firmware moves to the
++		 * next access, and we learn more from the new fault.
++		 */
++		amdgpu_gart_bind(adev, 0x0ULL, 1, &fw_dummy,
++				 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
++				 AMDGPU_PTE_READABLE);
++		DRM_INFO("ps4: bound dummy page at GART virtual 0x0 "
++			 "(pa=0x%llx) for UVD fw null-deref\n",
++			 (unsigned long long)fw_dummy);
++
++		amdgpu_gart_invalidate_tlb(adev);
+ 	}
+
+ 	if (amdgpu_vm_fault_stop == AMDGPU_VM_FAULT_STOP_ALWAYS)
