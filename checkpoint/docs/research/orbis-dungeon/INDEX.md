@@ -120,7 +120,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | Room | Status | File |
 |---|---|---|
 | uvd | ⚠️ paused | `../UVD_BRINGUP_MAP.md`, `../2026-05-12-a17-result.md` |
-| vce | 🗝️ | rooms/vce.md |
+| vce | 🔍 first-pass | rooms/vce.md |
 
 ### Floor 4: Audio
 | Room | Status | File |
@@ -218,6 +218,11 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 7: + vce first-pass — Video Compression Engine (encoder).
+  Sister to UVD. 9 IP block func pointers (amdgpu-style), GFX reg
+  0xf802 bits 0+2 = VCE clock enable. Chip family signature 0x740f00 =
+  Baikal. State struct 0x158 bytes. Mutex names: "vce lock", "vce ih
+  lock", "vce context memory". TBD: vce_hw_init_baikal deep dive.
 - 2026-05-12 iter 6: + av_control first-pass — AV mode + HDR controller.
   IOCTL magic 0x9A, ~30 commands. 96-byte mega-IOCTL `update_info`
   decoded with 22 fields. Bonus: full Sony HDR colorspace table
