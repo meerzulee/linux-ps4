@@ -316,6 +316,10 @@
 # remove spurious 0x3d62/0x3d63 writes, fix 0x3da9 page-size encoding to
 # 0x1101080c, change LMI_VM_VBASE to 0 (matches Sony's ctx[+0x88]=0).
 0300-gpu-liverpool/0036-amdgpu-uvd-v4-2-liverpool-vcpu-v76a-fixes.patch
+# 0037: v76b — zero LMI_ADDR_EXT and LMI_EXT40_ADDR after mc_resume.
+# Bisection patch: tests whether LMI's address-extension is responsible
+# for the persistent fault at byte 0x300000000 vmid 4.
+0300-gpu-liverpool/0037-amdgpu-uvd-v4-2-liverpool-vcpu-v76b-zero-lmi-ext.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
