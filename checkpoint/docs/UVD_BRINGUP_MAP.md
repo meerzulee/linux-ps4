@@ -75,12 +75,24 @@ provide.
 - ❌ UDEC tile config (A6 — partial fix, not gate)
 - ❌ Clock-write order (A6)
 - ❌ Magic flag `1` at region 2/3[0] (A7 regression)
-- ❌ Magic SIZE at region 2/3[0] (A8 — neutral)
+- ❌ Magic SIZE at region 2/3[0] (A8 — neutral; best cache sync rate)
 - ❌ Time (A9 — 10s)
 - ❌ mc_resume hidden effects (A14)
 - ❌ Clock divider (A11 — confirmed k is divider, but no value helps)
 - ❌ SCRATCH register writes (A10 — Sony only reads)
 - ❌ Post-start kick function (A12 — doesn't exist)
+- ❌ SBL/ICC/SMU commands around UVD (A16 — Sony doesn't issue any)
+- ❌ Sony IOCTL constants at region 2/3[0] (A15 — partial sync only)
+
+**What we've learned about region 2/3 content sensitivity:**
+fw reads region 2/3[0] and modulates cache behavior:
+  - `1` → cache never syncs
+  - `0x300308000` → partial sync (intermediate `0x1d6f` state)
+  - `0` (zero) → full sync 1× per 2s window
+  - region SIZES (`0x124000`/`0x4000`) → full sync 2× per 2s — BEST
+
+But NONE of these unlock STATUS bit 1. The slots are part of fw's
+internal state machine but our values aren't sufficient.
 
 **Strategic pivot (deferred per user)**: graceful-fail amdgpu so DRM
 comes up without UVD. Available if/when we exhaust UVD options.
@@ -127,7 +139,7 @@ Numbered chronologically. Each row = one boot test.
 | v76d-β-2-A8 | Combined: write region 2/3 SIZES (0x124000/0x4000) at slot 0 + k clock divider 4→1 | A7c (size fields) + A9 (fastest clock) | 0048 | 🟡 sizes neutral (no regression like A7's `1`); cache now reaches synced TWICE (t=400 + t=1600) instead of once. STATUS still 0x4. **Did NOT hurt; faster cache cycling consistent with k=1.** Bonus: user observed "white screen before /init" — first HDMI signal across iterations, but no `/dev/fb*` exists so panel is just sitting at bridge's last config (not Linux fbcon) | 2026-05-11_2310-v76d-beta2-a8-sizes-k1 |
 | v76d-β-2-A9 | Extend STATUS poll 2s → 10s, sample every 1s (10 samples) | If fw needs more startup time, longer wait reveals; else rules out "needs more time" | 0049 | ❌ **Time NOT the gate.** 10s → STATUS still 0x4. Cache cycles ~5 sec (synced at t=1000, t=6000). Steady-state loop. | 2026-05-11_2326-v76d-beta2-a9-10sec-poll |
 | v76d-β-2-A14+A11 | Re-enable mc_resume (skip 3 UDEC writes) + k clock 1→15 | A14: hidden mc_resume side effects? A11: k=15 should slow cache cycle ~15x if k is pure clock divider | 0050 | 🟡 **k IS a clock divider** (confirmed): k=15 cache sync at t=0 only (>10s cycle). A14: no observable effect. STATUS still 0x4. | 2026-05-11_2342-v76d-beta2-a14-a11-mcresume-k15 |
-| **v76d-β-2-A15** | **Sony IOCTL constants at region 2/3[0]: 0x300308000 + 0x20000** | fw might expect these specific values (Sony userspace observes them via IOCTL) | **0051** | **(FTP-STAGED, awaiting boot)** | — |
+| v76d-β-2-A15 | Sony IOCTL constants at region 2/3[0]: 0x300308000 + 0x20000 | fw might expect these specific values (Sony userspace observes them via IOCTL) | 0051 | 🟡 **NEW cache state `0x1d6f`** never seen before. fw reads region 2/3 and reacts. But `0x1d6f` < Sony's `0x3f7f` — partial sync, never fully. STATUS still 0x4. **A8 (region sizes) made cache fully sync most frequently — BEST candidate.** | 2026-05-11_2354-v76d-beta2-a15-ioctl-constants |
 | v76d-β-2-A16 | Ghidra-only: search for SBL/ICC commands Sony issues around UVD init | maybe missing a power-up command | (no patch) | ❌ Sony's UVD module doesn't call SBL/ICC during bring-up; only reads 0xa5 for diag. amdgpu_asic_set_uvd_clocks is sufficient. | (Ghidra-only) |
 
 **Legend:** ❌ no change, 🟡 some change but not the gate, 🟢 progress
