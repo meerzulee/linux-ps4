@@ -1,0 +1,82 @@
+amdgpu: uvd_v4_2 — extend STATUS poll 2s → 10s, sample every 1s (v76d-β-2-A9)
+
+A5/A6/A7-revert/A8 all hit timeout at exactly 2s. If the firmware
+merely needs more startup time on Liverpool (vs Bonaire's typical
+~50ms), 10s should reveal it. If 10s also fails, we definitively
+rule out "needs more time" and pivot to other hypotheses.
+
+Sample table grows from 5×400ms to 10×1000ms during the longer wait.
+
+If bit 1 sets at t=2500ms or so: → JACKPOT, just needed time. Lower
+timeout permanently to ~3s and we're done.
+
+If bit 1 NEVER sets in 10s: → time isn't the issue; pivot to k
+variation tests (A9b/c try k=8, k=15) or deeper Ghidra dig.
+
+Cost: one boot cycle takes ~8 extra sec wait at UVD init. SSH still
+comes up afterwards.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -847,8 +847,15 @@
+ 	 *   0x3e41 = UVD ring/fifo
+ 	 *   0x3d45 = UVD_LMI_???
+ 	 */
+-#define V76D_A5_SAMPLES 5
+-#define V76D_A5_INTERVAL_MS 400
++/*
++ * v76d-β-2-A9: extend timeout from 2s to 10s, sample every 1s.
++ * A5/A6/A7-revert/A8 all hit timeout at exactly 2s; if fw merely
++ * needs more startup time, 10s reveals it. If 10s also fails, we
++ * definitively rule out "needs more time" as a cause.
++ */
++#define V76D_A5_SAMPLES 10
++#define V76D_A5_INTERVAL_MS 1000
++#define V76D_A5_TIMEOUT_MS 10000
+ 	{
+ 		u32 sample_status[V76D_A5_SAMPLES] = { 0 };
+ 		u32 sample_3d67[V76D_A5_SAMPLES]   = { 0 };
+@@ -864,7 +871,7 @@
+ 		int next_sample_ms = 0;
+ 		bool succeeded = false;
+
+-		for (i = 0; i < 2000; i++) {
++		for (i = 0; i < V76D_A5_TIMEOUT_MS; i++) {
+ 			u32 s = RREG32(mmUVD_STATUS);
+ 			if (i == next_sample_ms && sample_idx < V76D_A5_SAMPLES) {
+ 				sample_status[sample_idx] = s;
+@@ -892,10 +899,11 @@
+ 		 * the samples show how the VCPU progressed (useful baseline);
+ 		 * if not, they reveal where it stalled.
+ 		 */
+-		DRM_INFO("ps4 uvd: VCPU bring-up samples (5×400ms during 2s wait):\n");
+-		DRM_INFO("  ms |  STATUS  | 0x3d67  | 0x3d42  | 0x3d40  | 0x3d3d  | 0x3d98  | 0x3da0  | 0x3bc6  | 0x3e41  | 0x3d45\n");
++		DRM_INFO("ps4 uvd: VCPU bring-up samples (%d×%dms during %dms wait):\n",
++			 V76D_A5_SAMPLES, V76D_A5_INTERVAL_MS, V76D_A5_TIMEOUT_MS);
++		DRM_INFO("    ms |  STATUS  | 0x3d67  | 0x3d42  | 0x3d40  | 0x3d3d  | 0x3d98  | 0x3da0  | 0x3bc6  | 0x3e41  | 0x3d45\n");
+ 		for (i = 0; i < sample_idx; i++)
+-			DRM_INFO(" %4d |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x\n",
++			DRM_INFO(" %5d |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x\n",
+ 				 i * V76D_A5_INTERVAL_MS,
+ 				 sample_status[i], sample_3d67[i], sample_3d42[i],
+ 				 sample_3d40[i], sample_3d3d[i], sample_3d98[i],
+@@ -911,7 +919,8 @@
+ 			u32 ext40_addr  = RREG32(mmUVD_LMI_EXT40_ADDR);
+
+ 			DRM_ERROR("ps4 uvd: Liverpool VCPU did not start "
+-				  "(no STATUS bit 1 after 2s)\n");
++				  "(no STATUS bit 1 after %dms)\n",
++				  V76D_A5_TIMEOUT_MS);
+ 			DRM_ERROR("  STATUS=0x%08x SOFT_RESET=0x%08x "
+ 				  "LMI_STATUS=0x%08x\n",
+ 				  status, soft_reset, lmi_status);
+@@ -924,6 +933,7 @@
+ 	}
+ #undef V76D_A5_SAMPLES
+ #undef V76D_A5_INTERVAL_MS
++#undef V76D_A5_TIMEOUT_MS
+
+ 	/* Post-success: finalize host link + interrupt enable. */
+ 	WREG32(0x3d40, RREG32(0x3d40) | 2);

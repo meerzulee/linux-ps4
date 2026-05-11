@@ -387,6 +387,11 @@
 # A7 regression proved fw reads those slots; if they're size fields, real
 # sizes unblock. AND k=4 might be too slow for VCPU init — try fastest.
 0300-gpu-liverpool/0048-amdgpu-uvd-v4-2-region-sizes-and-k1.patch
+# 0049: v76d-β-2-A9 — extend STATUS poll 2s → 10s, sample every 1s (10
+# samples). If fw needs more startup time on Liverpool, the longer
+# wait reveals it. If 10s still fails, rules out "needs more time"
+# definitively.
+0300-gpu-liverpool/0049-amdgpu-uvd-v4-2-extend-status-poll-10s.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
