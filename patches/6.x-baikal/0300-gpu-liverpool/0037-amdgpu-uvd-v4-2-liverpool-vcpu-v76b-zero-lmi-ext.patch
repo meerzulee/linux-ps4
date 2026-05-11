@@ -1,0 +1,77 @@
+amdgpu: uvd_v4_2 — v76b zero LMI_ADDR_EXT/LMI_EXT40_ADDR after mc_resume
+
+v76a definitively ruled out LMI_VM_VBASE as the cause of the
+"VM fault at page 0x300000 vmid 4" — writing 0 vs fw_gpu_addr
+produced byte-identical fault behaviour. The VCPU's access at
+byte 0x300000000 is not computed from LMI_VM_VBASE.
+
+Next variable to bisect: mmUVD_LMI_ADDR_EXT and mmUVD_LMI_EXT40_ADDR.
+
+Sony's uvd_vcpu_start_baikal (FUN_c88f8610) does NOT write either of
+these registers. Mainline uvd_v4_2_mc_resume — which we call early
+in the Liverpool branch — writes them with Hawaii-class magic
+constants:
+
+  mmUVD_LMI_ADDR_EXT   = (addr << 12) | addr,  where addr is gpu_addr
+                        bits 28-31 (= 0x4 for fw_gpu_addr=0xf00400000)
+  mmUVD_LMI_EXT40_ADDR = addr | (0x9 << 16) | (0x1 << 31),
+                        where addr is gpu_addr bits 32-39 (= 0x0f)
+                        → final value 0x8009000f (matches v74-v76a diag)
+
+Hypothesis: LMI's address-extension hardware uses these registers to
+prepend/OR upper bits onto VCPU accesses. If the firmware does a
+low-address access (which then gets extended by LMI), our observed
+fault at virtual 0x300000000 could be the firmware's intended low
+access AFTER LMI extension by these registers.
+
+This patch zeros both after mc_resume so the address-extension is a
+no-op. Cache offset/size writes from mc_resume are still in effect.
+
+Expected hardware signal:
+  🟢 fault page changes to a different (likely lower) address:
+     confirms LMI_*_ADDR was responsible for the upper bits; we then
+     drill into the firmware's low-address expectation.
+  🟡 fault disappears, VCPU starts (STATUS bit 1 set): jackpot —
+     proceed to ring test.
+  🔴 fault unchanged at page 0x300000: LMI_*_ADDR isn't responsible.
+     Then v76c populates vmid 4 page table to map our BO at virtual
+     0x300000000 (larger amdgpu mod).
+
+Either way, this patch produces a clean bisection signal — no
+ambiguity remains after the hardware test.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -606,6 +606,30 @@
+ 	uvd_v4_2_mc_resume(adev);
+
+ 	/*
++	 * v76b: zero LMI_ADDR_EXT and LMI_EXT40_ADDR after mc_resume.
++	 *
++	 * mc_resume writes these registers with Hawaii-class magic
++	 * constants — specifically (0x9 << 16) | (0x1 << 31) for
++	 * LMI_EXT40_ADDR plus the upper-byte of gpu_addr. Sony's
++	 * uvd_vcpu_start_baikal (FUN_c88f8610) does NOT write either
++	 * register; we suspect Sony relies on the post-GPU-reset
++	 * default (zero) for both.
++	 *
++	 * Theory: if the VCPU's firmware does a low-address access
++	 * (e.g., 0x300000000) and LMI's address-extension hardware
++	 * prepends/OR's the high bits from these registers, our v74-v76a
++	 * fault at byte 0x300000000 in vmid 4 may be the FIRMWARE'S
++	 * intended access AFTER LMI extension. Zeroing should change
++	 * the fault address — useful information either way.
++	 *
++	 * If fault unchanged: LMI_*_ADDR isn't the variable, and we'll
++	 * need to actively populate vmid 4 page table at virtual
++	 * 0x300000000 (v76c — bigger amdgpu work).
++	 */
++	WREG32(mmUVD_LMI_ADDR_EXT, 0);
++	WREG32(mmUVD_LMI_EXT40_ADDR, 0);
++
++	/*
+ 	 * Cache region descriptors. Sony's Baikal-specific values; the
+ 	 * Gladius variant uses different constants (0x20fa00 / 0x417a00)
+ 	 * but for now we assume CHIP_GLADIUS uses these too — adjust
