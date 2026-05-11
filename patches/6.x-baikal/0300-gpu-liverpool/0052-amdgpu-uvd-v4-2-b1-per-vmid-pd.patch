@@ -1,0 +1,277 @@
+amdgpu: uvd_v4_2 — Sony-style per-vmid 2-level PD (v76e-B1)
+
+Mainline 5.x amdgpu shares a single flat GART across VMIDs 1..15 (VC1_CNTL
+DEPTH=1 + the same PT_BASE = gart.bo). Sony's gbase_create_vmid
+(FUN_c8867260, decompiled this iteration) does the opposite: every
+non-system VMID gets its own physically-contiguous PD (entries × 8 bytes,
+allocated via kmem_alloc_contig). Each PD entry covers 8 MB
+(block_size = 11, not mainline's default 9), each PT page is 16 KB
+holding 2048 entries × 8 bytes. Sony's VM_CONTEXT1_CNTL value
+(0x32fffeda) confirms PAGE_TABLE_BLOCK_SIZE field = 2.
+
+For our 3.1 MB region 1+2+3 at 0x300000000:
+  PD index = 0x300000000 >> 23 = 0x600
+  One 16 KB PT page covers VAs 0x300000000..0x300800000 — well past 3.1 MB.
+
+This patch adds uvd_v4_2_setup_vmid_pd_liverpool() that:
+  1. Allocates a 32 KB PD BO and a 16 KB PT BO, both in VRAM (must be
+     physically contiguous — GMC walks raw memory, not GART).
+  2. Populates the PT with mirror BO's per-page DMA addresses (PTE flags
+     match mainline: VALID | SYSTEM | READABLE | WRITEABLE).
+  3. Populates PD[0x600] with the PT's physical address + VALID bit
+     (matching Sony's gbase_write_pte: pt_phys | 1).
+  4. Repoints VC1..VC15 PT_BASE_ADDR registers at the new PD.
+  5. Restores VM_CONTEXT1_CNTL.PAGE_TABLE_DEPTH = 1 (undoing β-2-A's
+     DEPTH=0 override) and sets PAGE_TABLE_BLOCK_SIZE = 2.
+  6. Issues a VM_INVALIDATE_REQUEST = 0xfffe (VC1..VC15).
+
+Why ALL VC1..VC15, not just VC4? VC1_CNTL governs VC1..VC15 jointly on
+CIK GMC, so DEPTH must change for the whole group. We point every
+non-system VMID at the same minimal PD (only entry 0x600 is valid). Any
+non-UVD walk faults — but those aren't happening pre-userspace.
+
+Calls into start_liverpool right after setup_fw_mirror_liverpool so the
+mirror BO's dma_address array is populated before we read from it.
+
+Existing A-arc patches deliberately kept:
+  - Mirror BO + Sony IOCTL constants (A2/A15) — still written; fw reads them
+  - mirror gart_bind at 0x300000000 (A2/A4) — leaves stale entries in
+    the FLAT GART that VC1+ no longer walks; harmless
+  - Dummy bind at GART VA 0 (A1.5) — harmless
+  - VC1 CNTL DEPTH=0 override (β-2-A in gmc_v7_0.c) — UNDONE here
+
+Why this might work where A-arc didn't:
+  - A-arc forced flat walk (DEPTH=0); GMC reads PTE directly at
+    gart.ptr[VA>>12]. UVD's read of 0x300000000 succeeded but the
+    fw never asserted STATUS bit 1.
+  - Hypothesis: the fw's bring-up routine internally walks more than
+    just the literal VA 0x300000000 — it may issue DMAs across the
+    full 8 MB block, or rely on FRAG bits / PDE flags in the entries
+    it sees.
+  - B1 gives it a real, Sony-shaped 2-level walk. Same physical pages
+    end up in the PTEs, but the structural shape now matches the fw's
+    expectation.
+
+Expected hardware signals:
+
+  ✅ STATUS bit 1 sets — Sony's PD structure was the missing piece.
+     Narrow down whether it's DEPTH/BLOCK_SIZE/PD-shape that mattered.
+
+  🟡 Cache sample pattern changes meaningfully (not just k-divider
+     periodicity) — fw saw something different through the new walk.
+     Useful information either way.
+
+  ❌ Identical sample table (STATUS=0x4 forever) — Sony's PD shape
+     isn't the gate. Pivot to deep Ghidra dig of Orbis-side pre-UVD init
+     (what Orbis touches BEFORE userspace opens UVD).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -41,6 +41,10 @@
+ #include "smu/smu_7_0_1_d.h"
+ #include "smu/smu_7_0_1_sh_mask.h"
+ 
++/* v76e-B1: VM_CONTEXT* / VM_INVALIDATE_REQUEST register offsets + CNTL fields */
++#include "gmc/gmc_7_1_d.h"
++#include "gmc/gmc_7_1_sh_mask.h"
++
+ static void uvd_v4_2_mc_resume(struct amdgpu_device *adev);
+ static void uvd_v4_2_set_ring_funcs(struct amdgpu_device *adev);
+ static void uvd_v4_2_set_irq_funcs(struct amdgpu_device *adev);
+@@ -476,8 +480,52 @@
+ 				 PS4_UVD_REGION3_SIZE)	/* 3.1 MB */
+ #define PS4_UVD_FW_MIRROR_VA	0x300000000ULL		/* Sony's region 1 VA */
+ 
++/*
++ * v76e-B1: per-vmid 2-level page directory mimicking Sony's gbase_create_vmid
++ * (FUN_c8867260) + gbase_write_pte (FUN_c88661c0).
++ *
++ * Sony's layout (decoded from Ghidra):
++ *   - VM_CONTEXT1_CNTL.PAGE_TABLE_BLOCK_SIZE = 2  (Sony's CNTL = 0x32fffeda,
++ *     field at bits 24-27 = 2 → block_size_log2 = 11)
++ *   - Each PD entry covers 8 MB of VA (va_size >> 0x17 entries per PD)
++ *   - Each PT page is 16 KB (2048 entries × 8 bytes), covers 8 MB
++ *   - PTE format: phys & ~0xFFF | (flags & 0xFFF)
++ *   - PDE format: pt_phys & ~0xFFF | 1  (VALID only)
++ *
++ * Mainline default is block_size = 9 (PD entry = 2 MB, PT page = 4 KB / 512
++ * entries). For a 3.1 MB region, Sony's layout uses ONE 16 KB PT page; the
++ * mainline layout would need two 4 KB PT pages. We follow Sony — simpler.
++ *
++ * For a 32 GB VC range with block_size = 11:
++ *   PD entries = 32 GB / 8 MB = 4096 → PD size = 32 KB
++ *   VA 0x300000000 → PD index = 0x300000000 >> 23 = 0x600
++ *   PT page 0 (16 KB) covers 0x300000000..0x300800000, well past our 3.1 MB.
++ *
++ * We allocate PD/PT in VRAM (must be physically contiguous — GMC walks raw
++ * memory, not through GART). Both PD and PT entries point at our fw mirror
++ * BO's per-page DMA addresses (mirror is GTT-domain).
++ *
++ * Existing A patches we deliberately keep:
++ *   - Mirror BO + Sony IOCTL constants (A2/A15) — still written, fw reads them
++ *   - mirror gart_bind at 0x300000000 (A2/A4) — leaves stale entries in
++ *     the FLAT GART that VC1+ no longer walks; harmless
++ *   - Dummy bind at GART VA 0 (A1.5) — harmless
++ *   - VC1 CNTL DEPTH=0 override (β-2-A) — REVERTED here back to DEPTH=1 +
++ *     BLOCK_SIZE=2
++ */
++#define PS4_UVD_PD_BLOCK_BITS	23		/* Sony: 8 MB per PD entry */
++#define PS4_UVD_PT_ENTRIES	2048		/* 16 KB PT page */
++#define PS4_UVD_PT_SIZE		(PS4_UVD_PT_ENTRIES * 8)
++#define PS4_UVD_PD_ENTRIES	((32ULL << 30) >> PS4_UVD_PD_BLOCK_BITS)
++#define PS4_UVD_PD_SIZE		(PS4_UVD_PD_ENTRIES * 8)
++#define PS4_UVD_PD_INDEX	(PS4_UVD_FW_MIRROR_VA >> PS4_UVD_PD_BLOCK_BITS)
++#define PS4_UVD_CNTL_BLOCK_SIZE	2
++
+ static struct amdgpu_bo *uvd_fw_mirror_bo;
+ static bool uvd_fw_mirror_done;
++static struct amdgpu_bo *uvd_vmid_pd_bo;
++static struct amdgpu_bo *uvd_vmid_pt_bo;
++static bool uvd_vmid_pd_done;
+ 
+ static int uvd_v4_2_setup_fw_mirror_liverpool(struct amdgpu_device *adev)
+ {
+@@ -577,6 +625,120 @@
+ 	return 0;
+ }
+ 
++/*
++ * v76e-B1: build a Sony-style 2-level page directory for the UVD VMID, then
++ * re-point ALL VC1..VC15 PT_BASE registers at that PD and update VC1_CNTL
++ * for DEPTH=1 + BLOCK_SIZE=2.
++ *
++ * Why all VC1..VC15 (not just VC4)? VC1_CNTL governs VC1..VC15 jointly on CIK
++ * GMC. Switching the cntl to DEPTH=1 means every non-system VMID must have a
++ * valid PD; mainline's flat GART value in PT_BASE would be interpreted as a
++ * PD and walked into garbage. Cleanest fix: point every non-system VMID at
++ * the same minimal PD. The PD only has the single 0x600 entry mapped (region
++ * 1+2+3), so any walk other than the UVD region faults — but those other
++ * walks aren't happening pre-userspace.
++ *
++ * Compare to v76d-β-2-A which forced DEPTH=0 (flat) for all VC1+. That
++ * worked for UVD's read-at-0x300000000 path but diverges from Sony's hardware
++ * model and may starve the fw of something it expects to see in a real PD
++ * walk (e.g., FRAG bits, multi-page contiguous hint, etc.).
++ */
++static int uvd_v4_2_setup_vmid_pd_liverpool(struct amdgpu_device *adev)
++{
++	u64 pd_gpu_addr, pt_gpu_addr;
++	void *pd_cpu_addr_v, *pt_cpu_addr_v;
++	u64 __iomem *pd_iomem;
++	u64 __iomem *pt_iomem;
++	struct ttm_tt *mirror_ttm;
++	int r, i, mirror_pages;
++	u32 tmp;
++	const u64 pte_flags = AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
++			      AMDGPU_PTE_READABLE | AMDGPU_PTE_WRITEABLE;
++	const u64 pde_flags = AMDGPU_PTE_VALID;	/* Sony writes pt_phys | 1 */
++
++	if (uvd_vmid_pd_done)
++		return 0;
++
++	if (!uvd_fw_mirror_bo) {
++		DRM_ERROR("ps4 uvd: B1 mirror BO missing — fw_mirror_setup must run first\n");
++		return -EINVAL;
++	}
++	mirror_ttm = uvd_fw_mirror_bo->tbo.ttm;
++	if (!mirror_ttm || !mirror_ttm->dma_address) {
++		DRM_ERROR("ps4 uvd: B1 mirror BO has no dma_address\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * Allocate PD (32 KB) and PT (16 KB) in VRAM — must be physically
++	 * contiguous so GMC's PT walker can stride through them.
++	 */
++	r = amdgpu_bo_create_kernel(adev, PS4_UVD_PD_SIZE, PAGE_SIZE,
++				    AMDGPU_GEM_DOMAIN_VRAM,
++				    &uvd_vmid_pd_bo, &pd_gpu_addr, &pd_cpu_addr_v);
++	if (r) {
++		DRM_ERROR("ps4 uvd: B1 PD alloc failed: %d\n", r);
++		return r;
++	}
++	r = amdgpu_bo_create_kernel(adev, PS4_UVD_PT_SIZE, PAGE_SIZE,
++				    AMDGPU_GEM_DOMAIN_VRAM,
++				    &uvd_vmid_pt_bo, &pt_gpu_addr, &pt_cpu_addr_v);
++	if (r) {
++		DRM_ERROR("ps4 uvd: B1 PT alloc failed: %d\n", r);
++		amdgpu_bo_free_kernel(&uvd_vmid_pd_bo, NULL, NULL);
++		return r;
++	}
++
++	pd_iomem = (u64 __iomem *)pd_cpu_addr_v;
++	pt_iomem = (u64 __iomem *)pt_cpu_addr_v;
++	memset_io(pd_iomem, 0, PS4_UVD_PD_SIZE);
++	memset_io(pt_iomem, 0, PS4_UVD_PT_SIZE);
++
++	/* Populate PT with mirror BO pages 0..(PS4_UVD_REGIONS_TOTAL / PAGE_SIZE - 1). */
++	mirror_pages = PS4_UVD_REGIONS_TOTAL / PAGE_SIZE;
++	for (i = 0; i < mirror_pages; i++) {
++		u64 page_pa = mirror_ttm->dma_address[i];
++		u64 pte = (page_pa & ~(u64)0xFFFULL) | pte_flags;
++		writeq(pte, &pt_iomem[i]);
++	}
++
++	/* Populate the single PD entry pointing at our PT. */
++	writeq((pt_gpu_addr & ~(u64)0xFFFULL) | pde_flags,
++	       &pd_iomem[PS4_UVD_PD_INDEX]);
++
++	/*
++	 * Repoint VC1..VC15 PT_BASE at the new PD. Sony writes the PD's
++	 * physical address >> 12 to the per-vmid PT_BASE register.
++	 */
++	for (i = 1; i <= 7; i++)
++		WREG32(mmVM_CONTEXT0_PAGE_TABLE_BASE_ADDR + i,
++		       pd_gpu_addr >> 12);
++	for (i = 0; i <= 7; i++)
++		WREG32(mmVM_CONTEXT8_PAGE_TABLE_BASE_ADDR + i,
++		       pd_gpu_addr >> 12);
++
++	/* Switch VC1_CNTL to DEPTH=1 + BLOCK_SIZE=2 (Sony's exact config). */
++	tmp = RREG32(mmVM_CONTEXT1_CNTL);
++	tmp = REG_SET_FIELD(tmp, VM_CONTEXT1_CNTL, PAGE_TABLE_DEPTH, 1);
++	tmp = REG_SET_FIELD(tmp, VM_CONTEXT1_CNTL, PAGE_TABLE_BLOCK_SIZE,
++			    PS4_UVD_CNTL_BLOCK_SIZE);
++	WREG32(mmVM_CONTEXT1_CNTL, tmp);
++
++	/* Invalidate VC1..VC15 TLB entries. */
++	WREG32(mmVM_INVALIDATE_REQUEST, 0xfffe);
++	RREG32(mmVM_INVALIDATE_REQUEST);
++
++	DRM_INFO("ps4 uvd: B1 per-vmid PD ready — pd_gpu=0x%llx pt_gpu=0x%llx "
++		 "PD[0x%llx]=PDE, PT[0..%d]=PTEs, VC1..15 PT_BASE=0x%llx, "
++		 "CNTL DEPTH=1 BLOCK_SIZE=%d\n",
++		 pd_gpu_addr, pt_gpu_addr,
++		 (unsigned long long)PS4_UVD_PD_INDEX, mirror_pages - 1,
++		 pd_gpu_addr >> 12, PS4_UVD_CNTL_BLOCK_SIZE);
++
++	uvd_vmid_pd_done = true;
++	return 0;
++}
++
+ static int uvd_v4_2_start_liverpool(struct amdgpu_device *adev)
+ {
+ 	struct amdgpu_ring *ring = &adev->uvd.inst->ring;
+@@ -593,6 +755,20 @@
+ 	}
+ 
+ 	/*
++	 * v76e-B1: build Sony-style per-vmid PD and repoint VC1..VC15 PT_BASE
++	 * at it (replaces the flat-walk override from β-2-A). Must come AFTER
++	 * fw_mirror_setup since the PT entries reference the mirror BO's
++	 * per-page DMA addresses.
++	 */
++	r = uvd_v4_2_setup_vmid_pd_liverpool(adev);
++	if (r) {
++		DRM_ERROR("ps4 uvd: B1 per-vmid PD setup failed (%d) — "
++			  "VCPU walk will fault\n", r);
++		/* continue anyway; the old flat-GART path still exists if
++		 * the gmc_v7_0 patches haven't been reverted */
++	}
++
++	/*
+ 	 * v74 diagnostics: hardware test of v73 showed the LMI base writes
+ 	 * have measurable effect (VM-fault page moved 0x300800 -> 0x300000,
+ 	 * vmid moved 14 -> 4 = mainline UVD vmid) but the VCPU still

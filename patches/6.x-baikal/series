@@ -403,6 +403,13 @@
 # sizes. Replaces 0048's writes with better-grounded magic values that
 # Sony's actual userspace observes via IOCTL surface.
 0300-gpu-liverpool/0051-amdgpu-uvd-v4-2-a15-sony-ioctl-constants-as-magic.patch
+# 0052: v76e-B1 — Sony-style per-vmid 2-level page directory. Allocates a
+# 32 KB PD + 16 KB PT in VRAM (block_size=11, matching Sony's CNTL=0x32fffeda
+# decoded from FUN_c8867260 gbase_create_vmid). Repoints VC1..VC15 PT_BASE
+# at the new PD and switches VM_CONTEXT1_CNTL to DEPTH=1 + BLOCK_SIZE=2,
+# undoing β-2-A's flat-walk override. PD has only one entry (index 0x600)
+# pointing at our PT, which maps the 776 mirror-BO pages for region 1+2+3.
+0300-gpu-liverpool/0052-amdgpu-uvd-v4-2-b1-per-vmid-pd.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
