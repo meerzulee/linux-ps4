@@ -1,0 +1,2467 @@
+[ 4616.446550] drkonqi-coredum[12722]: segfault at 0 ip 00007f2645205b63 sp 00007ffca4641148 error 4 in libQt6Core.so.6.11.0[205b63,7f2645094000+438000] likely on CPU 3 (core 3, socket 0)?
+[ 4616.463365] Code: c0 74 04 f0 83 00 01 c3 90 0f 1f 00 66 66 2e 0f 1f 84 00 00 00 00 00 f3 0f 1e fa 48 8d 05 25 ad 47 00 48 83 e0 fc 48 89 47 18 <f3> 0f 6f 06 48 8b 56 10 66 48 0f 7e c0 0f 11 07 48 89 57 10 48 85?
+[ 4616.482694] audit: type=1701 audit(1778504201.598:1544): auid=1000 uid=1000 gid=1000 ses=2 pid=12722 comm="drkonqi-coredum" exe="/usr/lib/drkonqi-coredump-launcher" sig=11 res=1?
+[ 4616.560324] audit: type=1101 audit(1778504201.675:1545): pid=12750 uid=1000 auid=1000 ses=3 msg='op=PAM:accounting grantors=pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/bin/sudo" hostname=archlinux addr=? terminal=/dev/pts/0 res=success'?
+[ 4616.582324] audit: type=1130 audit(1778504201.683:1546): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-coredump@255-57-12739_12740-0 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[ 4616.603682] audit: type=1130 audit(1778504201.692:1547): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=drkonqi-coredump-processor@255-57-12739_12740-0 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[ 4616.626706] audit: type=1110 audit(1778504201.742:1548): pid=12750 uid=1000 auid=1000 ses=3 msg='op=PAM:setcred grantors=pam_faillock,pam_permit,pam_env,pam_faillock acct="root" exe="/usr/bin/sudo" hostname=archlinux addr=? terminal=/dev/pts/0 res=success'?
+[ 4616.649898] audit: type=1105 audit(1778504201.742:1549): pid=12750 uid=1000 auid=1000 ses=3 msg='op=PAM:session_open grantors=pam_systemd_home,pam_limits,pam_unix,pam_permit acct="root" exe="/usr/bin/sudo" hostname=archlinux addr=? terminal=/dev/pts/0 res=success'?
+[ 4617.094544] audit: type=1131 audit(1778504202.210:1550): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-coredump@255-57-12739_12740-0 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[ 4617.459555] sky2 0000:00:14.1 enp0s20f1: disabling interface?
+[ 4617.465513] sky2 0000:00:14.1: enp0s20f1: phy I/O error?
+[ 4617.471768] [wlan][109]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[ 4617.471780] [wlan][109]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[ 4617.489290] [wlan][109]aisFsmRunEventAbort:(AIS STATE) EVENT-ABORT: Current State NORMAL_TR, ucReasonOfDisconnect:4?
+[ 4617.499957] [wlan][109]aisFsmRunEventAbort:(AIS STATE) ucReasonOfDisconnect:4?
+[ 4617.507243] [wlan][109]aisFsmStateAbort:(AIS STATE) aisFsmStateAbort DiscReason[4], CurState[11]?
+[ 4617.516214] [wlan][109]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [NORMAL_TR] -> [DISCONNECTING]?
+[ 4617.525693] [wlan][109]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[ 4617.533617] [wlan][109]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =196?
+[ 4617.540926] [wlan][109]aisDeauthXmitComplete:(AIS EVENT) aisDeauthXmitComplete?
+[ 4617.548311] [wlan][109]aisFsmStateAbort:(AIS STATE) aisFsmStateAbort DiscReason[4], CurState[12]?
+[ 4617.557348] [wlan][109]roamingFsmRunEventAbort:(ROAMING EVENT) EVENT-ROAMING ABORT: Current Time = 4317137?
+[ 4617.567222] [wlan][109]roamingFsmSteps:(ROAMING STATE) [ROAMING]TRANSITION: [DECISION] -> [IDLE]?
+[ 4617.576201] [wlan][109]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [DISCONNECTING] -> [IDLE]?
+[ 4617.584577] [wlan][109]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[ 4617.592483] [wlan][109]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =203?
+[ 4617.603274] audit: type=1131 audit(1778504202.718:1551): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=drkonqi-coredump-processor@255-57-12739_12740-0 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[ 4617.668771] audit: type=1130 audit(1778504202.784:1552): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=NetworkManager-dispatcher comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[ 4617.961023] kvm: exiting hardware virtualization?
+[ 4617.965893] kexec_core: Starting new kernel?
+[    0.000000] ps4: x86_ps4_early_setup: PS4 early setup?
+[    0.000000] Linux version 6.15.4-Baikal_TESTING_crashniels-dirty (meerzulee@cachynator) (gcc (GCC) 16.1.1 20260430, GNU ld (GNU Binutils) 2.46.0) #66 SMP PREEMPT_DYNAMIC Mon May 11 18:52:09 +06 2026?
+[    0.000000] Command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs libata.force=1.00:disable root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info?
+[    0.000000] KERNEL supported cpus:?
+[    0.000000]   AMD AuthenticAMD?
+[    0.000000] BIOS-provided physical RAM map:?
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000007fff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000008000-0x000000000007ffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000080000-0x0000000000099fff] usable?
+[    0.000000] BIOS-e820: [mem 0x000000000009a000-0x00000000000bffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000effff] ACPI data?
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000003fffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000400000-0x000000000047ffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000480000-0x000000000067ffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000680000-0x00000000006fffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000700000-0x000000007efe7fff] usable?
+[    0.000000] BIOS-e820: [mem 0x000000007efe8000-0x000000007efeffff] ACPI NVS?
+[    0.000000] BIOS-e820: [mem 0x000000007eff0000-0x000000007effffff] ACPI data?
+[    0.000000] BIOS-e820: [mem 0x000000007f000000-0x000000007fffffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000080000000-0x00000000fbffffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000013fffffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000140000000-0x000000027effffff] usable?
+[    0.000000] random: crng init done?
+[    0.000000] earlycon: uart8250 at MMIO32 0x00000000c890e000 (options '115200n8')?
+[    0.000000] printk: legacy bootconsole [uart8250] enabled?
+[    0.000000] printk: debug: skip boot console de-registration.?
+[    0.000000] printk: debug: ignoring loglevel setting.?
+[    0.000000] NX (Execute Disable) protection: active?
+[    0.000000] APIC: Static calls initialized?
+[    0.000000] SMBIOS 2.1 present.?
+[    0.000000] DMI:  , BIOS unde Wed 09/22/2021 16:2?
+[    0.000000] DMI: Memory slots populated: 1/1?
+[    0.000000] ps4: EMC timer started in 39159 TSC ticks?
+[    0.000000] ps4: Calibrated TSC frequency: 1594037888 kHz?
+[    0.000000] tsc: Detected 1594.038 MHz processor?
+[    0.001422] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved?
+[    0.008247] e820: remove [mem 0x000a0000-0x000fffff] usable?
+[    0.013928] last_pfn = 0x27f000 max_arch_pfn = 0x400000000?
+[    0.019515] MTRR map: 6 entries (3 fixed + 3 variable; max 20), built from 9 variable MTRRs?
+[    0.028019] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  ?
+[    0.035397] e820: update [mem 0x80000000-0x13fffffff] usable ==> reserved?
+[    0.042326] last_pfn = 0x80000 max_arch_pfn = 0x400000000?
+[    0.056427] Using GB pages for direct mapping?
+[    0.062492] RAMDISK: [mem 0x27c208000-0x27c5fffff]?
+[    0.067367] ACPI: Early table checksum verification disabled?
+[    0.073126] ACPI: RSDP 0x00000000000E0000 000024 (v02 SIE   )?
+[    0.078978] ACPI: XSDT 0x00000000000E0088 00004C (v01 SIE    ORBIS    20121218 INTL 20110211)?
+[    0.087666] ACPI: FACP 0x00000000000E016C 0000F4 (v04 SIE    ORBIS    20130205 INTL 20110211)?
+[    0.096351] ACPI: DSDT 0x00000000000E0430 00018C (v02 SIE    ORBIS    20121002 INTL 20110211)?
+[    0.105034] ACPI: FACS 0x00000000000E012C 000040?
+[    0.109733] ACPI: FACS 0x00000000000E012C 000040?
+[    0.114431] ACPI: APIC 0x00000000000E0298 00006C (v02 SIE    ORBIS    20120725 INTL 20110211)?
+[    0.123112] ACPI: MCFG 0x00000000000E0304 00003C (v01 SIE    ORBIS    20120725 INTL 20110211)?
+[    0.131792] ACPI: SSDT 0x00000000000E0730 001944 (v01 AMD    POWERNOW 00000001 AMD  00000001)?
+[    0.140473] ACPI: IVRS 0x00000000000E2074 000054 (v01 F0F    PS4KEXEC 20161225 KEXC 20161225)?
+[    0.149153] ACPI: Reserving FACP table memory at [mem 0xe016c-0xe025f]?
+[    0.155793] ACPI: Reserving DSDT table memory at [mem 0xe0430-0xe05bb]?
+[    0.162433] ACPI: Reserving FACS table memory at [mem 0xe012c-0xe016b]?
+[    0.169074] ACPI: Reserving FACS table memory at [mem 0xe012c-0xe016b]?
+[    0.175714] ACPI: Reserving APIC table memory at [mem 0xe0298-0xe0303]?
+[    0.182355] ACPI: Reserving MCFG table memory at [mem 0xe0304-0xe033f]?
+[    0.188995] ACPI: Reserving SSDT table memory at [mem 0xe0730-0xe2073]?
+[    0.195634] ACPI: Reserving IVRS table memory at [mem 0xe2074-0xe20c7]?
+[    0.202349] No NUMA configuration found?
+[    0.206247] Faking a node at [mem 0x0000000000000000-0x000000027effffff]?
+[    0.213070] NODE_DATA(0) allocated [mem 0x27effc800-0x27effffff]?
+[    0.219236] Zone ranges:?
+[    0.221806]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]?
+[    0.228096]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]?
+[    0.234384]   Normal   [mem 0x0000000100000000-0x000000027effffff]?
+[    0.240671] Movable zone start for each node?
+[    0.245011] Early memory node ranges?
+[    0.248643]   node   0: [mem 0x0000000000001000-0x0000000000007fff]?
+[    0.255018]   node   0: [mem 0x0000000000080000-0x0000000000099fff]?
+[    0.261392]   node   0: [mem 0x0000000000100000-0x00000000003fffff]?
+[    0.267768]   node   0: [mem 0x0000000000480000-0x000000000067ffff]?
+[    0.274141]   node   0: [mem 0x0000000000700000-0x000000007efe7fff]?
+[    0.280515]   node   0: [mem 0x000000007f000000-0x000000007fffffff]?
+[    0.286892]   node   0: [mem 0x0000000140000000-0x000000027effffff]?
+[    0.293269] Initmem setup node 0 [mem 0x0000000000001000-0x000000027effffff]?
+[    0.300445] On node 0, zone DMA: 1 pages in unavailable ranges?
+[    0.306385] On node 0, zone DMA: 120 pages in unavailable ranges?
+[    0.312516] On node 0, zone DMA: 102 pages in unavailable ranges?
+[    0.318645] On node 0, zone DMA: 128 pages in unavailable ranges?
+[    0.324807] On node 0, zone DMA: 128 pages in unavailable ranges?
+[    0.341242] On node 0, zone DMA32: 24 pages in unavailable ranges?
+[    0.373692] On node 0, zone Normal: 4096 pages in unavailable ranges?
+[    0.381070] ACPI: No IOAPIC entries present?
+[    0.385324] ACPI: Using ACPI for processor (LAPIC) configuration information?
+[    0.392508] CPU topo: Max. logical packages:   1?
+[    0.397201] CPU topo: Max. logical dies:       1?
+[    0.401894] CPU topo: Max. dies per package:   1?
+[    0.406599] CPU topo: Max. threads per core:   1?
+[    0.411292] CPU topo: Num. cores per package:     8?
+[    0.416249] CPU topo: Num. threads per package:   8?
+[    0.421207] CPU topo: Allowing 8 present CPUs plus 0 hotplug CPUs?
+[    0.427434] [mem 0xfc000000-0xffffffff] available for PCI devices?
+[    0.433634] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns?
+[    0.444267] setup_percpu: NR_CPUS:8 nr_cpumask_bits:8 nr_cpu_ids:8 nr_node_ids:1?
+[    0.452453] percpu: Embedded 42 pages/cpu s131544 r8192 d32296 u262144?
+[    0.459115] pcpu-alloc: s131544 r8192 d32296 u262144 alloc=1*2097152?
+[    0.465583] pcpu-alloc: [0] 0 1 2 3 4 5 6 7 ?
+[    0.469969] Kernel command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs libata.force=1.00:disable root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info?
+[    0.504697] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes?
+[    0.513977] Dentry cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)?
+[    0.523023] Inode-cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)?
+[    0.531098] software IO TLB: area num 8.?
+[    0.563423] Fallback order for Node 0: 0 ?
+[    0.563442] Built 1 zonelists, mobility grouping on.  Total pages: 1830409?
+[    0.574513] Policy zone: Normal?
+[    0.577705] mem auto-init: stack:off, heap alloc:off, heap free:off?
+[    0.621465] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=8, Nodes=1?
+[    0.629242] Dynamic Preempt: voluntary?
+[    0.633146] rcu: Preemptible hierarchical RCU implementation.?
+[    0.638991] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.?
+[    0.646808] NR_IRQS: 4352, nr_irqs: 128, preallocated irqs: 0?
+[    0.652714] rcu: srcu_init: Setting srcu_struct sizes based on contention.?
+[    0.659822] Console: colour dummy device 80x25?
+[    0.664344] printk: legacy console [tty0] enabled?
+[    0.669170] ACPI: Core revision 20240827?
+[    0.673229] ACPI: setting ELCR to 0200 (from ffff)?
+[    0.678119] Failed to register legacy timer interrupt?
+[    0.683258] APIC: Switch to symmetric I/O mode setup?
+[    0.688317] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x16fa24ddb27, max_idle_ns: 440795260629 ns?
+[    0.699040] Calibrating delay loop (skipped), value calculated using timer frequency.. 3188.07 BogoMIPS (lpj=1594038)?
+[    0.700034] Last level iTLB entries: 4KB 512, 2MB 8, 4MB 4?
+[    0.700034] Last level dTLB entries: 4KB 512, 2MB 256, 4MB 128, 1GB 0?
+[    0.700034] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization?
+[    0.700034] Spectre V2 : Mitigation: Retpolines?
+[    0.700034] Spectre V2 : Spectre v2 / SpectreRSB: Filling RSB on context switch and VMEXIT?
+[    0.700034] RETBleed: Mitigation: untrained return thunk?
+[    0.700034] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl?
+[    0.700034] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'?
+[    0.700034] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'?
+[    0.700034] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'?
+[    0.700034] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256?
+[    0.700034] x86/fpu: Enabled xstate features 0x7, context size is 832 bytes, using 'standard' format.?
+[    0.700034] Freeing SMP alternatives memory: 52K?
+[    0.700034] pid_max: default: 32768 minimum: 301?
+[    0.700034] Mount-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)?
+[    0.700034] Mountpoint-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)?
+[    0.700034] smpboot: CPU0: AMD DG1401SNF87ID (family: 0x16, model: 0x1a, stepping: 0x0)?
+[    0.700651] Performance Events: AMD PMU driver.?
+[    0.701039] ... version:                0?
+[    0.702038] ... bit width:              48?
+[    0.703038] ... generic registers:      4?
+[    0.704038] ... value mask:             0000ffffffffffff?
+[    0.705038] ... max period:             00007fffffffffff?
+[    0.706038] ... fixed-purpose events:   0?
+[    0.707038] ... event mask:             000000000000000f?
+[    0.708260] signal: max sigframe size: 1776?
+[    0.709115] rcu: Hierarchical SRCU implementation.?
+[    0.710039] rcu: 	Max phase no-delay instances is 400.?
+[    0.711191] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level?
+[    0.715381] smp: Bringing up secondary CPUs ...?
+[    0.717328] smpboot: x86: Booting SMP configuration:?
+[    0.718043] .... node  #0, CPUs:      #1 #2 #3 #4 #5 #6 #7?
+[    0.728144] smp: Brought up 1 node, 8 CPUs?
+[    0.730043] smpboot: Total of 8 processors activated (25504.60 BogoMIPS)?
+[    0.733081] Memory: 7077808K/7321636K available (23460K kernel code, 2053K rwdata, 8780K rodata, 1624K init, 2232K bss, 239832K reserved, 0K cma-reserved)?
+[    0.734445] devtmpfs: initialized?
+[    0.736227] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns?
+[    0.737048] posixtimers hash table entries: 4096 (order: 4, 65536 bytes, linear)?
+[    0.738057] futex hash table entries: 2048 (order: 5, 131072 bytes, linear)?
+[    0.740059] prandom: seed boundary self test passed?
+[    0.743251] prandom: 100 self tests passed?
+[    0.744148] NET: Registered PF_NETLINK/PF_ROUTE protocol family?
+[    0.745177] audit: initializing netlink subsys (disabled)?
+[    0.746101] audit: type=2000 audit(0.047:1): state=initialized audit_enabled=0 res=1?
+[    0.746224] i2c-core: driver [dummy] registered?
+[    0.748042] thermal_sys: Registered thermal governor 'step_wise'?
+[    0.748070] cpuidle: using governor ladder?
+[    0.750046] cpuidle: using governor menu?
+[    0.751219] ps4: ps4: pre-allocated IRQ 9 desc for ACPI SCI (virq=9)?
+[    0.752313] PCI: ECAM [mem 0xf8000000-0xfbffffff] (base 0xf8000000) for domain 0000 [bus 00-3f]?
+[    0.753058] PCI: Using configuration type 1 for base access?
+[    0.754303] HugeTLB: allocation took 0ms with hugepage_allocation_threads=2?
+[    0.755072] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages?
+[    0.756038] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page?
+[    0.758112] cryptd: max_cpu_qlen set to 1000?
+[    0.776040] raid6: sse2x4   gen()  4051 MB/s?
+[    0.794037] raid6: sse2x2   gen()  3959 MB/s?
+[    0.812041] raid6: sse2x1   gen()  3186 MB/s?
+[    0.813039] raid6: using algorithm sse2x4 gen() 4051 MB/s?
+[    0.831039] raid6: .... xor() 2022 MB/s, rmw enabled?
+[    0.832040] raid6: using ssse3x2 recovery algorithm?
+[    0.833160] ACPI: Added _OSI(Module Device)?
+[    0.834040] ACPI: Added _OSI(Processor Device)?
+[    0.835039] ACPI: Added _OSI(Processor Aggregator Device)?
+[    0.838306] ACPI: 2 ACPI AML tables successfully acquired and loaded?
+[    0.847305] ACPI: Interpreter enabled?
+[    0.848050] ACPI: PM: (supports S0 S5)?
+[    0.850046] ACPI: Using PIC for interrupt routing?
+[    0.851069] PCI: Ignoring host bridge windows from ACPI; if necessary, use "pci=use_crs" and report a bug?
+[    0.852039] PCI: Using E820 reservations for host bridge windows?
+[    0.854951] acpi PNP0A03:00: [Firmware Bug]: no secondary bus range in _CRS?
+[    0.855055] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])?
+[    0.856046] acpi PNP0A03:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI HPX-Type3]?
+[    0.857057] acpi PNP0A03:00: [Firmware Info]: ECAM [mem 0xf8000000-0xfbffffff] for domain 0000 [bus 00-3f] only partially covers this bridge?
+[    0.858063] acpi PNP0A03:00: host bridge window [io  0x0cf8-0x0cff] (ignored)?
+[    0.859039] PCI: root bus 00: using default resources?
+[    0.860099] PCI host bridge to bus 0000:00?
+[    0.861045] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]?
+[    0.862039] pci_bus 0000:00: root bus resource [mem 0x00000000-0xffffffffff]?
+[    0.863041] pci_bus 0000:00: root bus resource [bus 00-ff]?
+[    0.864058] pci 0000:00:00.0: [1022:1436] type 00 class 0x060000 conventional PCI endpoint?
+[    0.865182] pci 0000:00:00.2: [1022:1437] type 00 class 0x080600 conventional PCI endpoint?
+[    0.866186] pci 0000:00:01.0: [1002:9923] type 00 class 0x030000 PCIe Root Complex Integrated Endpoint?
+[    0.867061] pci 0000:00:01.0: BAR 0 [mem 0xe0000000-0xe3ffffff 64bit pref]?
+[    0.868041] pci 0000:00:01.0: BAR 2 [mem 0xe4000000-0xe47fffff 64bit pref]?
+[    0.869040] pci 0000:00:01.0: BAR 4 [io  0x6000-0x60ff]?
+[    0.870040] pci 0000:00:01.0: BAR 5 [mem 0xe4800000-0xe483ffff]?
+[    0.871040] pci 0000:00:01.0: ROM [mem 0x00000000-0x0001ffff pref]?
+[    0.872061] pci 0000:00:01.0: Video device with shadowed ROM at [mem 0x000c0000-0x000dffff]?
+[    0.873059] pci 0000:00:01.0: supports D1 D2?
+[    0.874039] pci 0000:00:01.0: PME# supported from D1 D2 D3hot?
+[    0.875158] pci 0000:00:01.1: [1002:9921] type 00 class 0x040300 PCIe Root Complex Integrated Endpoint?
+[    0.877059] pci 0000:00:01.1: BAR 0 [mem 0xe4840000-0xe4843fff 64bit]?
+[    0.878074] pci 0000:00:01.1: supports D1 D2?
+[    0.880144] pci 0000:00:02.0: [1022:1438] type 00 class 0x060000 conventional PCI endpoint?
+[    0.881189] pci 0000:00:14.0: [104d:90d7] type 00 class 0x088000 PCIe Endpoint?
+[    0.882080] pci 0000:00:14.0: BAR 0 [mem 0xfdf8000000-0xfdf9ffffff 64bit]?
+[    0.883040] pci 0000:00:14.0: BAR 2 [io  0x1000-0x13ff]?
+[    0.884250] pci 0000:00:14.1: [104d:90d8] type 00 class 0x088001 PCIe Endpoint?
+[    0.885080] pci 0000:00:14.1: BAR 0 [mem 0xc2000000-0xc2000fff 64bit]?
+[    0.886253] pci 0000:00:14.2: [104d:90d9] type 00 class 0x088002 PCIe Endpoint?
+[    0.887080] pci 0000:00:14.2: BAR 0 [mem 0xc4000000-0xc4007fff 64bit]?
+[    0.888248] pci 0000:00:14.3: [104d:90da] type 00 class 0x088003 PCIe Endpoint?
+[    0.889079] pci 0000:00:14.3: BAR 0 [mem 0xc6000000-0xc6000fff 64bit]?
+[    0.891162] pci 0000:00:14.4: [104d:90db] type 00 class 0x088004 PCIe Endpoint?
+[    0.892079] pci 0000:00:14.4: BAR 0 [mem 0xc8000000-0xc8001fff 64bit]?
+[    0.893041] pci 0000:00:14.4: BAR 2 [mem 0xc8800000-0xc89fffff 64bit]?
+[    0.894041] pci 0000:00:14.4: BAR 4 [mem 0xc9000000-0xc91fffff 64bit]?
+[    0.895245] pci 0000:00:14.5: [104d:90dc] type 00 class 0x088005 PCIe Endpoint?
+[    0.896079] pci 0000:00:14.5: BAR 0 [mem 0xca000000-0xca000fff 64bit]?
+[    0.897041] pci 0000:00:14.5: BAR 2 [mem 0xca800000-0xca800fff 64bit]?
+[    0.899236] pci 0000:00:14.6: [104d:90dd] type 00 class 0x088006 PCIe Endpoint?
+[    0.900079] pci 0000:00:14.6: BAR 0 [mem 0xcc000000-0xcc000fff 64bit]?
+[    0.901042] pci 0000:00:14.6: BAR 2 [mem 0x80000000-0xbfffffff 64bit]?
+[    0.902040] pci 0000:00:14.6: BAR 4 [mem 0xcd000000-0xcd0fffff]?
+[    0.903040] pci 0000:00:14.6: BAR 5 [mem 0xcd400000-0xcd43ffff]?
+[    0.905067] pci 0000:00:14.7: [104d:90de] type 00 class 0x088007 PCIe Endpoint?
+[    0.906079] pci 0000:00:14.7: BAR 0 [mem 0xce000000-0xce3fffff 64bit]?
+[    0.907041] pci 0000:00:14.7: BAR 2 [mem 0xce800000-0xce80ffff 64bit]?
+[    0.908041] pci 0000:00:14.7: BAR 4 [mem 0xcf000000-0xcf7fffff 64bit]?
+[    0.909240] pci 0000:00:18.0: [1022:142e] type 00 class 0x060000 conventional PCI endpoint?
+[    0.910158] pci 0000:00:18.1: [1022:142f] type 00 class 0x060000 conventional PCI endpoint?
+[    0.911160] pci 0000:00:18.2: [1022:1430] type 00 class 0x060000 conventional PCI endpoint?
+[    0.913039] pci 0000:00:18.3: [1022:1431] type 00 class 0x060000 conventional PCI endpoint?
+[    0.914163] pci 0000:00:18.4: [1022:1432] type 00 class 0x060000 conventional PCI endpoint?
+[    0.916145] pci 0000:00:18.5: [1022:1433] type 00 class 0x060000 conventional PCI endpoint?
+[    0.917157] pci 0000:00:18.6: [1022:1434] type 00 class 0x060000 conventional PCI endpoint?
+[    0.918259] iommu: Default domain type: Passthrough (set via kernel command line)?
+[    0.920174] SCSI subsystem initialized?
+[    0.921065] libata version 3.00 loaded.?
+[    0.923104] ACPI: bus type USB registered?
+[    0.924102] usbcore: registered new interface driver usbfs?
+[    0.925068] usbcore: registered new interface driver hub?
+[    0.926064] usbcore: registered new device driver usb?
+[    0.927072] cec: Failed to create debugfs cec dir?
+[    0.928195] Advanced Linux Sound Architecture Driver Initialized.?
+[    0.929468] Bluetooth: Core ver 2.22?
+[    0.930049] NET: Registered PF_BLUETOOTH protocol family?
+[    0.931038] Bluetooth: HCI device and connection manager initialized?
+[    0.932043] Bluetooth: HCI socket layer initialized?
+[    0.933042] Bluetooth: L2CAP socket layer initialized?
+[    0.934041] Bluetooth: SCO socket layer initialized?
+[    0.935114] PCI: Using ACPI for IRQ routing?
+[    0.938091] PCI: pci_cache_line_size set to 64 bytes?
+[    0.939081] e820: reserve RAM buffer [mem 0x00008000-0x0000ffff]?
+[    0.940040] e820: reserve RAM buffer [mem 0x0009a000-0x0009ffff]?
+[    0.941039] e820: reserve RAM buffer [mem 0x00680000-0x006fffff]?
+[    0.942039] e820: reserve RAM buffer [mem 0x7efe8000-0x7fffffff]?
+[    0.943039] e820: reserve RAM buffer [mem 0x27f000000-0x27fffffff]?
+[    0.945062] pci 0000:00:01.0: vgaarb: setting as boot VGA device?
+[    0.946034] pci 0000:00:01.0: vgaarb: bridge control possible?
+[    0.946034] pci 0000:00:01.0: vgaarb: VGA device added: decodes=io+mem,owns=io+mem,locks=none?
+[    0.946046] vgaarb: loaded?
+[    0.947294] clocksource: Switched to clocksource tsc-early?
+[    0.952868] pnp: PnP ACPI init?
+[    0.956031] pnp: PnP ACPI: found 0 devices?
+[    0.965160] NET: Registered PF_INET protocol family?
+[    0.970436] IP idents hash table entries: 131072 (order: 8, 1048576 bytes, linear)?
+[    0.982269] tcp_listen_portaddr_hash hash table entries: 4096 (order: 4, 65536 bytes, linear)?
+[    0.990997] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)?
+[    0.998925] TCP established hash table entries: 65536 (order: 7, 524288 bytes, linear)?
+[    1.007263] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)?
+[    1.015401] TCP: Hash tables configured (established 65536 bind 65536)?
+[    1.022169] UDP hash table entries: 4096 (order: 6, 262144 bytes, linear)?
+[    1.029177] UDP-Lite hash table entries: 4096 (order: 6, 262144 bytes, linear)?
+[    1.036707] NET: Registered PF_UNIX/PF_LOCAL protocol family?
+[    1.042838] RPC: Registered named UNIX socket transport module.?
+[    1.048878] RPC: Registered udp transport module.?
+[    1.053671] RPC: Registered tcp transport module.?
+[    1.058464] RPC: Registered tcp-with-tls transport module.?
+[    1.064054] RPC: Registered tcp NFSv4.1 backchannel transport module.?
+[    1.071092] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]?
+[    1.076788] pci_bus 0000:00: resource 5 [mem 0x00000000-0xffffffffff]?
+[    1.083450] pci 0000:00:01.1: D0 power state depends on 0000:00:01.0?
+[    1.089937] pci 0000:00:02.0: CLS mismatch (64 != 512), using 64 bytes?
+[    1.096707] AMD-Vi: Using global IVHD EFR:0x0, EFR2:0x0?
+[    1.096916] Trying to unpack rootfs image as initramfs...?
+[    1.102254] pci 0000:00:00.0: Adding to iommu group 0?
+[    1.112818] pci 0000:00:14.0: Adding to iommu group 1?
+[    1.118002] pci 0000:00:14.1: Adding to iommu group 1?
+[    1.123188] pci 0000:00:14.2: Adding to iommu group 1?
+[    1.128382] pci 0000:00:14.3: Adding to iommu group 1?
+[    1.133567] pci 0000:00:14.4: Adding to iommu group 1?
+[    1.138759] pci 0000:00:14.5: Adding to iommu group 1?
+[    1.143950] pci 0000:00:14.6: Adding to iommu group 1?
+[    1.149135] pci 0000:00:14.7: Adding to iommu group 1?
+[    1.154365] AMD-Vi: Extended features (0x840, 0x0): IA?
+[    1.159917] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)?
+[    1.166500] software IO TLB: mapped [mem 0x000000007afe8000-0x000000007efe8000] (64MB)?
+[    1.174712] LVT offset 0 assigned for vector 0x400?
+[    1.180610] perf: AMD IBS detected (0x000000ff)?
+[    1.185290] kvm_amd: TSC scaling supported?
+[    1.189466] kvm_amd: Nested Virtualization enabled?
+[    1.194349] kvm_amd: Nested Paging enabled?
+[    1.198524] kvm_amd: LBR virtualization supported?
+[    1.226155] Freeing initrd memory: 4064K?
+[    1.237083] platform rtc_cmos: registered platform RTC device (no PNP device found)?
+[    1.248014] Initialise system trusted keyrings?
+[    1.252688] workingset: timestamp_bits=40 max_order=21 bucket_order=0?
+[    1.259668] ntfs3: Warning: Activated 64 bits per cluster. Windows does not support this?
+[    1.268013] fuse: init (API version 7.43)?
+[    1.308129] NET: Registered PF_ALG protocol family?
+[    1.313018] xor: automatically using best checksumming function   avx       ?
+[    1.320205] Key type asymmetric registered?
+[    1.324380] Asymmetric key parser 'x509' registered?
+[    1.329379] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)?
+[    1.336920] io scheduler mq-deadline registered?
+[    1.341538] io scheduler kyber registered?
+[    1.348140] Could not retrieve perf counters (-19)?
+[    1.384282] Non-volatile memory driver v1.3?
+[    1.388568] Linux agpgart interface v0.103?
+[    1.393243] ACPI: bus type drm_connector registered?
+[    1.398234] [drm] amdgpu kernel modesetting enabled.?
+[    1.405258] brd: module loaded?
+[    1.411211] loop: module loaded?
+[    1.414437] i2c-core: driver [at24] registered?
+[    1.419182] baikal_pcie 0000:00:14.4: bpcie_probe()?
+[    1.424206] baikal_pcie 0000:00:14.4: bpcie glue probe?
+[    1.429452] baikal_pcie 0000:00:14.4: Baikal chip revision: 4c0c2021:8d76a398:0000b100?
+[    1.437525] pci 0000:00:14.0: bpcie_create_irq_domain?
+[    1.442675] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.447472] baikal_pcie 0000:00:14.4: no parent ?
+[    1.452194] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.462126] pci 0000:00:14.1: bpcie_create_irq_domain?
+[    1.467275] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.472070] baikal_pcie 0000:00:14.4: no parent ?
+[    1.476779] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.486708] pci 0000:00:14.2: bpcie_create_irq_domain?
+[    1.491861] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.496656] baikal_pcie 0000:00:14.4: no parent ?
+[    1.501364] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.511291] pci 0000:00:14.3: bpcie_create_irq_domain?
+[    1.516440] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.521234] baikal_pcie 0000:00:14.4: no parent ?
+[    1.525943] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.535874] baikal_pcie 0000:00:14.4: bpcie_create_irq_domain?
+[    1.541732] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.546527] baikal_pcie 0000:00:14.4: no parent ?
+[    1.551235] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.561164] pci 0000:00:14.5: bpcie_create_irq_domain?
+[    1.566313] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.571107] baikal_pcie 0000:00:14.4: no parent ?
+[    1.575817] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.585747] pci 0000:00:14.6: bpcie_create_irq_domain?
+[    1.590898] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.595694] baikal_pcie 0000:00:14.4: no parent ?
+[    1.600401] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.610329] pci 0000:00:14.7: bpcie_create_irq_domain?
+[    1.615481] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.620276] baikal_pcie 0000:00:14.4: no parent ?
+[    1.624987] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.634929] bpcie_init_dev_msi_info: dev=0000:00:14.4 installed bpcie demuxer (sc=00000000a82b0aba)?
+[    1.644935] bpcie_msi_init: virq=10 hwirq=0x0 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.655228] bpcie_msi_init: registered virq=10 irq_map[0]?
+[    1.660731] bpcie_msi_init: virq=11 hwirq=0x1 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.671016] bpcie_msi_init: registered virq=11 irq_map[1]?
+[    1.676517] bpcie_msi_init: virq=12 hwirq=0x2 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.686801] bpcie_msi_init: registered virq=12 irq_map[2]?
+[    1.692302] bpcie_msi_init: virq=13 hwirq=0x3 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.702590] bpcie_msi_init: registered virq=13 irq_map[3]?
+[    1.708092] bpcie_msi_init: virq=14 hwirq=0x4 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.718382] bpcie_msi_init: registered virq=14 irq_map[4]?
+[    1.723884] bpcie_msi_init: virq=15 hwirq=0x5 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.734168] bpcie_msi_init: registered virq=15 irq_map[5]?
+[    1.739667] bpcie_msi_init: virq=16 hwirq=0x6 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.749951] bpcie_msi_init: registered virq=16 irq_map[6]?
+[    1.755454] bpcie_msi_init: virq=17 hwirq=0x7 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.765736] bpcie_msi_init: registered virq=17 irq_map[7]?
+[    1.771238] bpcie_msi_init: virq=18 hwirq=0x8 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.781521] bpcie_msi_init: registered virq=18 irq_map[8]?
+[    1.787022] bpcie_msi_init: virq=19 hwirq=0x9 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.797305] bpcie_msi_init: registered virq=19 irq_map[9]?
+[    1.802805] bpcie_msi_init: virq=20 hwirq=0xa domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.813090] bpcie_msi_init: registered virq=20 irq_map[10]?
+[    1.818679] bpcie_msi_init: virq=21 hwirq=0xb domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.828962] bpcie_msi_init: registered virq=21 irq_map[11]?
+[    1.834551] bpcie_msi_init: virq=22 hwirq=0xc domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.844835] bpcie_msi_init: registered virq=22 irq_map[12]?
+[    1.850424] bpcie_msi_init: virq=23 hwirq=0xd domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.860709] bpcie_msi_init: registered virq=23 irq_map[13]?
+[    1.866299] bpcie_msi_init: virq=24 hwirq=0xe domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.876587] bpcie_msi_init: registered virq=24 irq_map[14]?
+[    1.882178] bpcie_msi_init: virq=25 hwirq=0xf domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.892463] bpcie_msi_init: registered virq=25 irq_map[15]?
+[    1.898056] bpcie_msi_init: virq=26 hwirq=0x10 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.908429] bpcie_msi_init: registered virq=26 irq_map[16]?
+[    1.914020] bpcie_msi_init: virq=27 hwirq=0x11 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.924393] bpcie_msi_init: registered virq=27 irq_map[17]?
+[    1.929982] bpcie_msi_init: virq=28 hwirq=0x12 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.940353] bpcie_msi_init: registered virq=28 irq_map[18]?
+[    1.945942] bpcie_msi_init: virq=29 hwirq=0x13 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.956313] bpcie_msi_init: registered virq=29 irq_map[19]?
+[    1.961902] bpcie_msi_init: virq=30 hwirq=0x14 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.972274] bpcie_msi_init: registered virq=30 irq_map[20]?
+[    1.977864] bpcie_msi_init: virq=31 hwirq=0x15 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    1.988237] bpcie_msi_init: registered virq=31 irq_map[21]?
+[    1.993826] bpcie_msi_init: virq=32 hwirq=0x16 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.004197] bpcie_msi_init: registered virq=32 irq_map[22]?
+[    2.009786] bpcie_msi_init: virq=33 hwirq=0x17 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.020158] bpcie_msi_init: registered virq=33 irq_map[23]?
+[    2.025747] bpcie_msi_init: virq=34 hwirq=0x18 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.036121] bpcie_msi_init: registered virq=34 irq_map[24]?
+[    2.041710] bpcie_msi_init: virq=35 hwirq=0x19 domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.052082] bpcie_msi_init: registered virq=35 irq_map[25]?
+[    2.057670] bpcie_msi_init: virq=36 hwirq=0x1a domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.068041] bpcie_msi_init: registered virq=36 irq_map[26]?
+[    2.073630] bpcie_msi_init: virq=37 hwirq=0x1b domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.084007] bpcie_msi_init: registered virq=37 irq_map[27]?
+[    2.089596] bpcie_msi_init: virq=38 hwirq=0x1c domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.099968] bpcie_msi_init: registered virq=38 irq_map[28]?
+[    2.105556] bpcie_msi_init: virq=39 hwirq=0x1d domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.115927] bpcie_msi_init: registered virq=39 irq_map[29]?
+[    2.121518] bpcie_msi_init: virq=40 hwirq=0x1e domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.131892] bpcie_msi_init: registered virq=40 irq_map[30]?
+[    2.137480] bpcie_msi_init: virq=41 hwirq=0x1f domain=00000000334a12a9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    2.147853] bpcie_msi_init: registered virq=41 irq_map[31]?
+[    2.153478] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=10 hwirq=0x0 00000000a82b0aba?
+[    2.164570] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee00000 data=000000ef?
+[    2.173896] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=11 hwirq=0x1 00000000a82b0aba?
+[    2.184977] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee00000 data=000000ef?
+[    2.194295] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=12 hwirq=0x2 00000000a82b0aba?
+[    2.205378] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee00000 data=000000ef?
+[    2.214698] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=13 hwirq=0x3 00000000a82b0aba?
+[    2.225782] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee00000 data=000000ef?
+[    2.235101] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=14 hwirq=0x4 00000000a82b0aba?
+[    2.246184] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee00000 data=000000ef?
+[    2.255503] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=15 hwirq=0x5 00000000a82b0aba?
+[    2.266585] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee00000 data=000000ef?
+[    2.275903] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=16 hwirq=0x6 00000000a82b0aba?
+[    2.286984] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee00000 data=000000ef?
+[    2.296301] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=17 hwirq=0x7 00000000a82b0aba?
+[    2.307384] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=000000ef?
+[    2.316701] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=18 hwirq=0x8 00000000a82b0aba?
+[    2.327783] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee00000 data=000000ef?
+[    2.337101] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=19 hwirq=0x9 00000000a82b0aba?
+[    2.348184] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee00000 data=000000ef?
+[    2.357505] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=20 hwirq=0xa 00000000a82b0aba?
+[    2.368585] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee00000 data=000000ef?
+[    2.377991] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=21 hwirq=0xb 00000000a82b0aba?
+[    2.389072] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee00000 data=000000ef?
+[    2.398478] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=22 hwirq=0xc 00000000a82b0aba?
+[    2.409560] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee00000 data=000000ef?
+[    2.418968] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=23 hwirq=0xd 00000000a82b0aba?
+[    2.430051] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee00000 data=000000ef?
+[    2.439457] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=24 hwirq=0xe 00000000a82b0aba?
+[    2.450541] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee00000 data=000000ef?
+[    2.459950] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=25 hwirq=0xf 00000000a82b0aba?
+[    2.471031] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=000000ef?
+[    2.480437] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=26 hwirq=0x10 00000000a82b0aba?
+[    2.491606] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee00000 data=000000ef?
+[    2.501012] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=27 hwirq=0x11 00000000a82b0aba?
+[    2.512185] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee00000 data=000000ef?
+[    2.521592] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=28 hwirq=0x12 00000000a82b0aba?
+[    2.532764] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee00000 data=000000ef?
+[    2.542170] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=29 hwirq=0x13 00000000a82b0aba?
+[    2.553339] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee00000 data=000000ef?
+[    2.562746] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=30 hwirq=0x14 00000000a82b0aba?
+[    2.573917] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee00000 data=000000ef?
+[    2.583323] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=31 hwirq=0x15 00000000a82b0aba?
+[    2.594493] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee00000 data=000000ef?
+[    2.603899] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=32 hwirq=0x16 00000000a82b0aba?
+[    2.615069] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee00000 data=000000ef?
+[    2.624474] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=33 hwirq=0x17 00000000a82b0aba?
+[    2.635647] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=000000ef?
+[    2.645054] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=34 hwirq=0x18 00000000a82b0aba?
+[    2.656225] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee00000 data=000000ef?
+[    2.665633] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=35 hwirq=0x19 00000000a82b0aba?
+[    2.676801] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee00000 data=000000ef?
+[    2.686206] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=36 hwirq=0x1a 00000000a82b0aba?
+[    2.697377] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee00000 data=000000ef?
+[    2.706783] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=37 hwirq=0x1b 00000000a82b0aba?
+[    2.717954] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee00000 data=000000ef?
+[    2.727361] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=38 hwirq=0x1c 00000000a82b0aba?
+[    2.738531] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee00000 data=000000ef?
+[    2.747938] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=39 hwirq=0x1d 00000000a82b0aba?
+[    2.759107] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee00000 data=000000ef?
+[    2.768515] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=40 hwirq=0x1e 00000000a82b0aba?
+[    2.779685] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee00000 data=000000ef?
+[    2.789092] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=41 hwirq=0x1f 00000000a82b0aba?
+[    2.800263] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=000000ef?
+[    2.809780] baikal_pcie 0000:00:14.4: dev->irq=10?
+[    2.814727] baikal_pcie 0000:00:14.4: Failed to register serial port 0?
+[    2.821389] baikal_pcie 0000:00:14.4: UART init failed (-5); continuing without serial console?
+[    2.830179] bpcie_icc_init: msi_desc msi_index=0 irq=10?
+[    2.835504] bpcie_icc_init: ICC subfunc 3 -> bpcie_irqnum=13 found_virq=-1?
+[    2.842517] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000020) mask=0x0 irq=13 hwirq=0x3 00000000a82b0aba?
+[    2.843506] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee01000 data=00000020?
+[    2.843506] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000020) mask=0x0 irq=13 hwirq=0x3 00000000a82b0aba?
+[    2.843506] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee01000 data=00000020?
+[    2.883315] genirq: Flags mismatch irq 0. 00200080 (icc-shotgun) vs. 00000000 (AMD-Vi)?
+[    2.891397] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000020) mask=0x0 irq=10 hwirq=0x0 00000000a82b0aba?
+[    2.892383] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee02000 data=00000020?
+[    2.892383] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000020) mask=0x0 irq=10 hwirq=0x0 00000000a82b0aba?
+[    2.892383] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee02000 data=00000020?
+[    2.932217] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000020) mask=0x0 irq=11 hwirq=0x1 00000000a82b0aba?
+[    2.933200] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee03000 data=00000020?
+[    2.933200] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000020) mask=0x0 irq=11 hwirq=0x1 00000000a82b0aba?
+[    2.933200] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee03000 data=00000020?
+[    2.973009] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000020) mask=0x0 irq=12 hwirq=0x2 00000000a82b0aba?
+[    2.973992] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee04000 data=00000020?
+[    2.973992] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000020) mask=0x0 irq=12 hwirq=0x2 00000000a82b0aba?
+[    2.973992] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee04000 data=00000020?
+[    3.013803] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000020) mask=0x0 irq=14 hwirq=0x4 00000000a82b0aba?
+[    3.014784] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee05000 data=00000020?
+[    3.014784] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000020) mask=0x0 irq=14 hwirq=0x4 00000000a82b0aba?
+[    3.014784] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee05000 data=00000020?
+[    3.054594] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000020) mask=0x0 irq=15 hwirq=0x5 00000000a82b0aba?
+[    3.055577] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee06000 data=00000020?
+[    3.055577] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000020) mask=0x0 irq=15 hwirq=0x5 00000000a82b0aba?
+[    3.055577] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee06000 data=00000020?
+[    3.095382] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000020) mask=0x0 irq=16 hwirq=0x6 00000000a82b0aba?
+[    3.096364] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee07000 data=00000020?
+[    3.096364] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000020) mask=0x0 irq=16 hwirq=0x6 00000000a82b0aba?
+[    3.096364] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee07000 data=00000020?
+[    3.136171] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000021) mask=0x0 irq=17 hwirq=0x7 00000000a82b0aba?
+[    3.137154] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=00000021?
+[    3.137154] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000021) mask=0x0 irq=17 hwirq=0x7 00000000a82b0aba?
+[    3.137154] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=00000021?
+[    3.176961] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000021) mask=0x0 irq=18 hwirq=0x8 00000000a82b0aba?
+[    3.177943] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee01000 data=00000021?
+[    3.177943] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000021) mask=0x0 irq=18 hwirq=0x8 00000000a82b0aba?
+[    3.177943] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee01000 data=00000021?
+[    3.217753] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000021) mask=0x0 irq=19 hwirq=0x9 00000000a82b0aba?
+[    3.218736] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee02000 data=00000021?
+[    3.218736] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000021) mask=0x0 irq=19 hwirq=0x9 00000000a82b0aba?
+[    3.218736] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee02000 data=00000021?
+[    3.258539] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000021) mask=0x0 irq=20 hwirq=0xa 00000000a82b0aba?
+[    3.259523] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee03000 data=00000021?
+[    3.259523] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000021) mask=0x0 irq=20 hwirq=0xa 00000000a82b0aba?
+[    3.259523] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee03000 data=00000021?
+[    3.299507] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000021) mask=0x0 irq=21 hwirq=0xb 00000000a82b0aba?
+[    3.300488] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee04000 data=00000021?
+[    3.300488] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000021) mask=0x0 irq=21 hwirq=0xb 00000000a82b0aba?
+[    3.300488] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee04000 data=00000021?
+[    3.340473] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000021) mask=0x0 irq=22 hwirq=0xc 00000000a82b0aba?
+[    3.341457] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee05000 data=00000021?
+[    3.341457] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000021) mask=0x0 irq=22 hwirq=0xc 00000000a82b0aba?
+[    3.341457] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee05000 data=00000021?
+[    3.381441] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000021) mask=0x0 irq=23 hwirq=0xd 00000000a82b0aba?
+[    3.382422] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee06000 data=00000021?
+[    3.382422] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000021) mask=0x0 irq=23 hwirq=0xd 00000000a82b0aba?
+[    3.382422] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee06000 data=00000021?
+[    3.422409] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000021) mask=0x0 irq=24 hwirq=0xe 00000000a82b0aba?
+[    3.423394] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee07000 data=00000021?
+[    3.423394] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000021) mask=0x0 irq=24 hwirq=0xe 00000000a82b0aba?
+[    3.423394] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee07000 data=00000021?
+[    3.463378] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000022) mask=0x0 irq=25 hwirq=0xf 00000000a82b0aba?
+[    3.464360] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=00000022?
+[    3.464360] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000022) mask=0x0 irq=25 hwirq=0xf 00000000a82b0aba?
+[    3.464360] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=00000022?
+[    3.504344] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000022) mask=0x0 irq=26 hwirq=0x10 00000000a82b0aba?
+[    3.505328] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee01000 data=00000022?
+[    3.505328] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000022) mask=0x0 irq=26 hwirq=0x10 00000000a82b0aba?
+[    3.505328] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee01000 data=00000022?
+[    3.545486] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000022) mask=0x0 irq=27 hwirq=0x11 00000000a82b0aba?
+[    3.546470] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee02000 data=00000022?
+[    3.546470] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000022) mask=0x0 irq=27 hwirq=0x11 00000000a82b0aba?
+[    3.546470] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee02000 data=00000022?
+[    3.586630] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000022) mask=0x0 irq=28 hwirq=0x12 00000000a82b0aba?
+[    3.587612] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee03000 data=00000022?
+[    3.587612] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000022) mask=0x0 irq=28 hwirq=0x12 00000000a82b0aba?
+[    3.587612] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee03000 data=00000022?
+[    3.627773] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000022) mask=0x0 irq=29 hwirq=0x13 00000000a82b0aba?
+[    3.628756] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee04000 data=00000022?
+[    3.628756] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000022) mask=0x0 irq=29 hwirq=0x13 00000000a82b0aba?
+[    3.628756] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee04000 data=00000022?
+[    3.668917] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000022) mask=0x0 irq=30 hwirq=0x14 00000000a82b0aba?
+[    3.669899] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee05000 data=00000022?
+[    3.669899] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000022) mask=0x0 irq=30 hwirq=0x14 00000000a82b0aba?
+[    3.669899] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee05000 data=00000022?
+[    3.710066] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000022) mask=0x0 irq=31 hwirq=0x15 00000000a82b0aba?
+[    3.711044] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee06000 data=00000022?
+[    3.711044] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000022) mask=0x0 irq=31 hwirq=0x15 00000000a82b0aba?
+[    3.711044] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee06000 data=00000022?
+[    3.751211] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000022) mask=0x0 irq=32 hwirq=0x16 00000000a82b0aba?
+[    3.752193] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee07000 data=00000022?
+[    3.752193] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000022) mask=0x0 irq=32 hwirq=0x16 00000000a82b0aba?
+[    3.752193] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee07000 data=00000022?
+[    3.792354] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000023) mask=0x0 irq=33 hwirq=0x17 00000000a82b0aba?
+[    3.793337] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=00000023?
+[    3.793337] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000023) mask=0x0 irq=33 hwirq=0x17 00000000a82b0aba?
+[    3.793337] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=00000023?
+[    3.833496] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000023) mask=0x0 irq=34 hwirq=0x18 00000000a82b0aba?
+[    3.834480] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee01000 data=00000023?
+[    3.834480] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000023) mask=0x0 irq=34 hwirq=0x18 00000000a82b0aba?
+[    3.834480] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee01000 data=00000023?
+[    3.874642] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000023) mask=0x0 irq=35 hwirq=0x19 00000000a82b0aba?
+[    3.875623] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee02000 data=00000023?
+[    3.875623] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000023) mask=0x0 irq=35 hwirq=0x19 00000000a82b0aba?
+[    3.875623] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee02000 data=00000023?
+[    3.915785] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000023) mask=0x0 irq=36 hwirq=0x1a 00000000a82b0aba?
+[    3.916770] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee03000 data=00000023?
+[    3.916770] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000023) mask=0x0 irq=36 hwirq=0x1a 00000000a82b0aba?
+[    3.916770] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee03000 data=00000023?
+[    3.956929] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000023) mask=0x0 irq=37 hwirq=0x1b 00000000a82b0aba?
+[    3.957911] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee04000 data=00000023?
+[    3.957911] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000023) mask=0x0 irq=37 hwirq=0x1b 00000000a82b0aba?
+[    3.957911] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee04000 data=00000023?
+[    3.998073] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000023) mask=0x0 irq=38 hwirq=0x1c 00000000a82b0aba?
+[    3.999057] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee05000 data=00000023?
+[    3.999057] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000023) mask=0x0 irq=38 hwirq=0x1c 00000000a82b0aba?
+[    3.999057] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee05000 data=00000023?
+[    4.039221] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000023) mask=0x0 irq=39 hwirq=0x1d 00000000a82b0aba?
+[    4.040202] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee06000 data=00000023?
+[    4.040202] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000023) mask=0x0 irq=39 hwirq=0x1d 00000000a82b0aba?
+[    4.040202] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee06000 data=00000023?
+[    4.080368] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000023) mask=0x0 irq=40 hwirq=0x1e 00000000a82b0aba?
+[    4.081352] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee07000 data=00000023?
+[    4.081352] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000023) mask=0x0 irq=40 hwirq=0x1e 00000000a82b0aba?
+[    4.081352] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee07000 data=00000023?
+[    4.121511] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000024) mask=0x0 irq=41 hwirq=0x1f 00000000a82b0aba?
+[    4.122495] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=00000024?
+[    4.122495] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000024) mask=0x0 irq=41 hwirq=0x1f 00000000a82b0aba?
+[    4.122495] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=00000024?
+[    4.162653] bpcie_icc_init: shotgun-registered ICC at 32 additional virqs (0..63)?
+[    4.170286] baikal_pcie 0000:00:14.4: icc init-diag: ICC virq=13 STATUS=0x0 IRQ_MASK=0x3 DOORBELL_off=0x108004 STATUS_off=0x108014?
+[    4.182285] i2c i2c-0: adapter [icc] registered?
+[    4.187045] icc_interrupt: irq=35 entry status=0x2?
+[    4.188430] icc_interrupt: irq=0 entry status=0x2?
+[    4.215668] icc_interrupt: irq=35 entry status=0x1?
+[    4.216429] icc_interrupt: irq=0 entry status=0x1?
+[    4.225346] Turn ON BT/WLAN: ret=20, reply 00 00 00 00?
+[    4.225486] icc_interrupt: irq=35 entry status=0x2?
+[    4.226404] icc_interrupt: irq=0 entry status=0x2?
+[    4.240397] usb0 status: ret=20, reply 00 00 01 00?
+[    4.240401] USB is already turned ON!?
+[    4.245372] input: Power Button as /devices/pci0000:00/0000:00:14.4/input/input0?
+[    4.256769] icc_interrupt: irq=35 entry status=0x2?
+[    4.257396] icc_interrupt: irq=0 entry status=0x2?
+[    4.275673] icc_interrupt: irq=35 entry status=0x1?
+[    4.276392] icc_interrupt: irq=0 entry status=0x1?
+[    4.285352] icc: not ready?
+[    4.288111] baikal_pcie 0000:00:14.4: icc_pwrbutton_init: Failed to enable reset notifications (-11)?
+[    4.316398] ret=46, reply 00 00 03 00 00 00 15 00?
+[    4.326373] ret=20, reply 00 00 01 02 10 00 00 00?
+[    4.336371] ret=20, reply 00 00 00 00 00 00 00 00?
+[    4.341281] wireguard: WireGuard 1.0.0 loaded. See www.wireguard.com for information.?
+[    4.349265] wireguard: Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.?
+[    4.359702] sky2: driver version 1.30?
+[    4.374379] resource: resource sanity check: requesting [mem 0x00000000c2000000-0x00000000c2003fff], which spans more than 0000:00:14.1 [mem 0xc2000000-0xc2000fff 64bit]?
+[    4.389803] caller sky2_probe+0x153/0x330 mapping multiple BARs?
+[    4.395849] sky2 0000:00:14.1: PS4 Baikal: B2_CHIP_ID=0x0, forcing YUKON_PRM?
+[    4.403035] sky2 0000:00:14.1: chip type 0xbd?
+[    4.407492] sky2 0000:00:14.1: Yukon-2 OptimaEEE chip revision 0?
+[    4.413670] sky2 0000:00:14.1: bpcie_assign_irqs(1)?
+[    4.418656] bpcie_init_dev_msi_info: dev=0000:00:14.1 installed bpcie demuxer (sc=00000000a82b0aba)?
+[    4.427918] bpcie_msi_init: virq=1 hwirq=0x0 domain=0000000059b86d23 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    4.438122] bpcie_msi_init: registered virq=1 irq_map[32]?
+[    4.443629] sky2 0000:00:14.1: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=1 hwirq=0x0 00000000a82b0aba?
+[    4.454013] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=1 subfunc=0 addr=fee00000 data=000000ef?
+[    4.463352] sky2 0000:00:14.1: bpcie_assign_irqs returning 1?
+[    4.469121] sky2 0000:00:14.1: PS4 Baikal: skipping MSI self-test in APCIE branch?
+[    4.477072] sky2 0000:00:14.1 eth0: addr 2c:cc:44:57:0b:3a?
+[    4.483171] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs(3)?
+[    4.488780] bpcie_init_dev_msi_info: dev=0000:00:14.7 installed bpcie demuxer (sc=00000000a82b0aba)?
+[    4.498052] bpcie_msi_init: virq=2 hwirq=0x0 domain=00000000be32386c info=00000000bb56fe84 sc=00000000a82b0aba?
+[    4.508256] bpcie_msi_init: registered virq=2 irq_map[33]?
+[    4.513764] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=2 hwirq=0x0 00000000a82b0aba?
+[    4.524765] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee00000 data=000000ef?
+[    4.534099] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs returning 1?
+[    4.540489] xhci_aeolia 0000:00:14.7: version 3.0?
+[    4.545294] xhci_aeolia 0000:00:14.7: Belize SATA PHY init?
+[    5.550930] xhci_aeolia 0000:00:14.7: PHY SET GEN3?
+[    5.555815] xhci_aeolia 0000:00:14.7: Belize SATA PHY Trace length : 6?
+[    6.562555] xhci_aeolia 0000:00:14.7: Align 90=0x00?
+[    6.567559] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x16fa24ddb27, max_idle_ns: 440795260629 ns?
+[    6.567620] xhci_aeolia 0000:00:14.7: AHCI vers 0001.0300, 32 command slots, 6 Gbps, ATA mode?
+[    6.586448] xhci_aeolia 0000:00:14.7: 1/1 ports implemented (port mask 0x1)?
+[    6.593544] xhci_aeolia 0000:00:14.7: flags: ncq sntf pm clo only pmp pio slum part ccc apst ?
+[    6.602254] clocksource: Switched to clocksource tsc?
+[    6.602310] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee01000, 00000024) mask=0x0 irq=2 hwirq=0x0 00000000a82b0aba?
+[    6.615050] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee01000 data=00000024?
+[    6.623050] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee01000, 00000024) mask=0x0 irq=2 hwirq=0x0 00000000a82b0aba?
+[    6.638088] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee01000 data=00000024?
+[    6.648379] scsi host0: ahci?
+[    6.651456] ata1: SATA max UDMA/133 abar m65536@0xce800000 port 0xce800100 irq 2 lpm-pol 0?
+[    6.710226] xhci_aeolia_probe_one 0, controller is 90de?
+[    6.715642] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.721258] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 1?
+[    6.729194] xhci_aeolia 0000:00:14.7: hcc params 0x0228f66c hci version 0x100 quirks 0x0004000000010010?
+[    6.738785] xhci_aeolia 0000:00:14.7: irq 2, io mem 0xce000000?
+[    6.744768] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.750366] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 2?
+[    6.779172] xhci_aeolia 0000:00:14.7: Host supports USB 3.0 SuperSpeed?
+[    6.786062] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.15?
+[    6.794493] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    6.801857] usb usb1: Product: xHCI Host Controller?
+[    6.806829] usb usb1: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    6.815165] usb usb1: SerialNumber: 0000:00:14.7?
+[    6.820250] hub 1-0:1.0: USB hub found?
+[    6.824099] hub 1-0:1.0: 2 ports detected?
+[    6.828432] usb usb2: We don't know the algorithms for LPM for this host, disabling LPM.?
+[    6.836767] usb usb2: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.15?
+[    6.845196] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    6.852564] usb usb2: Product: xHCI Host Controller?
+[    6.857537] usb usb2: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    6.865874] usb usb2: SerialNumber: 0000:00:14.7?
+[    6.870912] hub 2-0:1.0: USB hub found?
+[    6.874759] hub 2-0:1.0: 2 ports detected?
+[    6.900192] xhci_aeolia_probe_one 2, controller is 90de?
+[    6.905597] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.911204] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 3?
+[    6.919158] xhci_aeolia 0000:00:14.7: hcc params 0x0220f06c hci version 0x100 quirks 0x0004000000010010?
+[    6.928752] xhci_aeolia 0000:00:14.7: irq 2, io mem 0xcf000000?
+[    6.934737] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.940334] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 4?
+[    6.969180] xhci_aeolia 0000:00:14.7: Host supports USB 3.0 SuperSpeed?
+[    6.975991] usb usb3: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.15?
+[    6.984429] usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    6.991799] usb usb3: Product: xHCI Host Controller?
+[    6.996771] usb usb3: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    7.005108] usb usb3: SerialNumber: 0000:00:14.7?
+[    7.010331] hub 3-0:1.0: USB hub found?
+[    7.014199] hub 3-0:1.0: 1 port detected?
+[    7.018421] usb usb4: We don't know the algorithms for LPM for this host, disabling LPM.?
+[    7.026761] usb usb4: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.15?
+[    7.035196] usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    7.042569] usb usb4: Product: xHCI Host Controller?
+[    7.047544] usb usb4: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    7.055881] usb usb4: SerialNumber: 0000:00:14.7?
+[    7.060985] hub 4-0:1.0: USB hub found?
+[    7.064843] hub 4-0:1.0: 1 port detected?
+[    7.090708] usbcore: registered new interface driver uas?
+[    7.096225] usbcore: registered new interface driver usb-storage?
+[    7.102414] i8042: PNP: No PS/2 controller found.?
+[    7.107503] mousedev: PS/2 mouse device common for all mice?
+[    7.113366] usbcore: registered new interface driver xpad?
+[    7.119028] i2c_dev: i2c /dev entries driver?
+[    7.123448] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)?
+[    7.123502] i2c_dev: adapter [icc] registered as minor 0?
+[    7.124084] usb 1-1: new high-speed USB device number 2 using xhci_aeolia?
+[    7.142115] i2c-core: driver [i2c-slave-eeprom] registered?
+[    7.148213] device-mapper: ioctl: 4.49.0-ioctl (2025-01-17) initialised: dm-devel@lists.linux.dev?
+[    7.157502] amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled?
+[    7.165064] sdhci: Secure Digital Host Controller Interface driver?
+[    7.171377] sdhci: Copyright(c) Pierre Ossman?
+[    7.174673] ata1.00: FORCE: modified (disable)?
+[    7.176211] hid: raw HID events driver (C) Jiri Kosina?
+[    7.176228] sdhci-pci 0000:00:14.3: SDHCI controller found [104d:90da] (rev 0)?
+[    7.176292] bpcie_init_dev_msi_info: dev=0000:00:14.3 installed bpcie demuxer (sc=00000000a82b0aba)?
+[    7.176365] bpcie_msi_init: virq=3 hwirq=0x0 domain=00000000f142aea9 info=00000000bb56fe84 sc=00000000a82b0aba?
+[    7.176374] bpcie_msi_init: registered virq=3 irq_map[34]?
+[    7.176384] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=3 hwirq=0x0 00000000a82b0aba?
+[    7.176403] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee00000 data=000000ef?
+[    7.176788] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee02000, 00000024) mask=0x0 irq=3 hwirq=0x0 00000000a82b0aba?
+[    7.176808] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee02000 data=00000024?
+[    7.176836] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee02000, 00000024) mask=0x0 irq=3 hwirq=0x0 00000000a82b0aba?
+[    7.176853] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee02000 data=00000024?
+[    7.180359] ata1.00: unsupported device, disabling?
+[    7.180364] ata1.00: disable device?
+[    7.180669] usbcore: registered new interface driver usbhid?
+[    7.185688] mmc0: SDHCI controller on PCI [0000:00:14.3] using ADMA?
+[    7.192991] usbhid: USB HID core driver?
+[    7.193149] usb usb3-port1: over-current condition?
+[    7.193527] snd_hda_intel 0000:00:01.1: can't derive routing for PCI INT B?
+[    7.193533] snd_hda_intel 0000:00:01.1: PCI INT B: not connected?
+[    7.193839] NET: Registered PF_INET6 protocol family?
+[    7.194554] Segment Routing with IPv6?
+[    7.194572] In-situ OAM (IOAM) with IPv6?
+[    7.194613] NET: Registered PF_PACKET protocol family?
+[    7.194696] Bluetooth: RFCOMM TTY layer initialized?
+[    7.194704] Bluetooth: RFCOMM socket layer initialized?
+[    7.194706] Bluetooth: RFCOMM ver 1.11?
+[    7.194709] Bluetooth: BNEP (Ethernet Emulation) ver 1.3?
+[    7.194712] Bluetooth: BNEP filters: protocol multicast?
+[    7.194716] Bluetooth: BNEP socket layer initialized?
+[    7.194719] Bluetooth: HIDP (Human Interface Emulation) ver 1.2?
+[    7.194723] Bluetooth: HIDP socket layer initialized?
+[    7.197189] input: HD-Audio Generic HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:01.1/sound/card0/input1?
+[    7.197342] input: HD-Audio Generic HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:01.1/sound/card0/input2?
+[    7.250458] usb 1-1: New USB device found, idVendor=1a40, idProduct=0101, bcdDevice= 1.00?
+[    7.258798] microcode: Current revision: 0x0701a001?
+[    7.269094] usb 1-1: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[    7.309426] mmc0: new UHS-I speed SDR104 SDIO card at address 0001?
+[    7.314753] usb 1-1: Product: USB2.0 HUB?
+[    7.323111] [wlan][78]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[    7.368726] hub 1-1:1.0: USB hub found?
+[    7.375148] IPI shorthand broadcast: enabled?
+[    7.379863] usb 2-2: new SuperSpeed USB device number 2 using xhci_aeolia?
+[    7.389693] usb usb4-port1: over-current condition?
+[    7.399305] hub 1-1:1.0: 4 ports detected?
+[    7.412987] usb 2-2: New USB device found, idVendor=0951, idProduct=1666, bcdDevice= 1.10?
+[    7.413165] sched_clock: Marking stable (6714004230, 699034882)->(9767242872, -2354203760)?
+[    7.426604] registered taskstats version 1?
+[    7.430463] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=4?
+[    7.430472] Loading compiled-in X.509 certificates?
+[    7.430480] usb 2-2: Product: DataTraveler 3.0?
+[    7.430484] usb 2-2: Manufacturer: Kingston?
+[    7.503388] usb 2-2: SerialNumber: E0D55EA573F0194049CD0236?
+[    7.509157] Demotion targets for Node 0: null?
+[    7.509798] usb-storage 2-2:1.0: USB Mass Storage device detected?
+[    7.515021] Btrfs loaded, zoned=no, fsverity=no?
+[    7.520420] scsi host1: usb-storage 2-2:1.0?
+[    7.525889] amdgpu 0000:00:01.0: can't derive routing for PCI INT A?
+[    7.535262] amdgpu 0000:00:01.0: PCI INT A: not connected?
+[    7.540779] [drm] initializing kernel modesetting (LIVERPOOL 0x1002:0x9923 0x1002:0x9923 0x00).?
+[    7.549687] [drm] register mmio base: 0xE4800000?
+[    7.554408] [drm] register mmio size: 262144?
+[    7.558998] amdgpu 0000:00:01.0: amdgpu: detected ip block number 0 <cik_common>?
+[    7.566556] amdgpu 0000:00:01.0: amdgpu: detected ip block number 1 <gmc_v7_0>?
+[    7.573930] amdgpu 0000:00:01.0: amdgpu: detected ip block number 2 <cik_ih>?
+[    7.581127] amdgpu 0000:00:01.0: amdgpu: detected ip block number 3 <dce_v8_0>?
+[    7.588501] amdgpu 0000:00:01.0: amdgpu: detected ip block number 4 <gfx_v7_0>?
+[    7.595874] amdgpu 0000:00:01.0: amdgpu: detected ip block number 5 <cik_sdma>?
+[    7.603248] amdgpu 0000:00:01.0: amdgpu: detected ip block number 6 <uvd_v4_2>?
+[    7.610626] amdgpu 0000:00:01.0: amdgpu: detected ip block number 7 <vce_v2_0>?
+  MC4_STATUS: 0xf600000000070f0f, MC4_ADDR=0x00000000e0000000
+[ERROR]: 0x800f0228 Machine check error (MC4_STATUS) is detected
+?secure loader build: Jan 23 2025 05:19:40 (r10767:release_branches/release_12.020) [711MHz]
+AGESA: KG&CN.BDK       W9311       
+1526 msec
+[BOOT TIME]      SAMU:     726 msec: enter
+[BOOT TIME]      SAMU:    2258 msec: leave
+AGESA: ClaytonBDK_24.0.3.80914 SAMU: W9311       ?
+SIE CONFIDENTIAL?
+Copyright (C) 2024 Sony Interactive Entertainment Inc.?
+All Rights Reserved.?
+Copyright (c) 1992-2012 The FreeBSD Project.?
+Copyright (c) 1979, 1980, 1983, 1986, 1988, 1989, 1991, 1992, 1993, 1994?
+	The Regents of the University of California. All rights reserved.?
+FreeBSD is a registered trademark of The FreeBSD Foundation.?
+r222806/release_branches/release_12.020 Jan 23 2025 05:24:53 amd64?
+mDBG: Kernel Build ID = 3f0d356142851065?
+CPU: DG1401SNF87ID                                   (1594.00-MHz K8-class CPU)?
+  Origin = "AuthenticAMD"  Id = 0x710fa0  Family = 16  Model = 1a  Stepping = 0?
+  Features=0x178bfbff<FPU,VME,DE,PSE,TSC,MSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE36,CLFLUSH,MMX,FXSR,SSE,SSE2,HTT>?
+  Features2=0x36d8220b<SSE3,PCLMULQDQ,MON,SSSE3,CX16,SSE4.1,SSE4.2,MOVBE,POPCNT,AESNI,XSAVE,AVX,F16C>?
+  AMD Features=0x2e500800<SYSCALL,NX,MMX+,FFXSR,Page1GB,RDTSCP,LM>?
+  AMD Features2=0x154837ff<LAHF,CMP,SVM,ExtAPIC,CR8,ABM,SSE4A,MAS,Prefetch,OSVW,IBS,SKINIT,WDT,NodeId,Topology,PerfCtrExtNB,<b26>,<b28>>?
+  TSC: P-state invariant, performance statistics?
+Event timer "LAPIC" quality 400?
+ACPI APIC Table: <SIE    ORBIS   >?
+FreeBSD/SMP: Multiprocessor System Detected: 8 CPUs?
+FreeBSD/SMP: 1 package(s) x 8 core(s)?
+ cpu0 (BSP): APIC ID:  0?
+ cpu1 (AP): APIC ID:  1?
+ cpu2 (AP): APIC ID:  2?
+ cpu3 (AP): APIC ID:  3?
+ cpu4 (AP): APIC ID:  4?
+ cpu5 (AP): APIC ID:  5?
+ cpu6 (AP): APIC ID:  6?
+ cpu7 (AP): APIC ID:  7?
+MADT: Could not find APIC for SCI IRQ 9?
+[REGMGR] 000001 ...?
+Memory mode: 4: BC8 release?
+ BigApp memory               : 0x0000000148000000 bytes (5248MiB) ?
+     FMEM (max)              : 0x0000000040000000 bytes (1024MiB) ?
+ MiniApp DMEM                : 0x0000000030000000 bytes ( 768MiB) ?
+ VSH DMEM                    : 0x000000001a800000 bytes ( 424MiB) ?
+ Trace memory & Trace DMEM   : 0x0000000000000000 bytes (   0MiB) ?
+ Vision memory               : 0x0000000001000000 bytes (  16MiB) ?
+ Reserved memory             : 0x0000000000a00000 bytes (  10MiB) ?
+ Flexible memory(SYSTEM)     : 0x000000005d4d0000 bytes (1493MiB) ?
+ BIOS memory size            : 0x00000000011b8000 bytes (  18MiB) ?
+ Kernel static size          : 0x000000000d778000 bytes ( 216MiB) ?
+acpi0: <SIE ORBIS> on motherboard?
+cpu0: <ACPI CPU> on acpi0?
+cpu1: <ACPI CPU> on acpi0?
+cpu2: <ACPI CPU> on acpi0?
+cpu3: <ACPI CPU> on acpi0?
+cpu4: <ACPI CPU> on acpi0?
+cpu5: <ACPI CPU> on acpi0?
+cpu6: <ACPI CPU> on acpi0?
+cpu7: <ACPI CPU> on acpi0?
+pcib0: <ACPI Host-PCI bridge> on acpi0?
+pci0: <ACPI PCI bus> on pcib0?
+pci0: found pcie_glue?
+iommu0: <AMD IOMMU> on pci0?
+gc0: <Starsha> on pci0?
+LVP2C A0?
+# use 0x00000000 as mmGB_ADDR_CONFIG value?
+GC SE0 Redundant CU: 0x10?
+GC SE1 Redundant CU: 0x10?
+GC SE2 Redundant CU: 0x0?
+GC SE3 Redundant CU: 0x0?
+SClkVid:0x5d SClkDpmVid:3 Dpm:3 Vid:0x5d?
+hdac0: <GPU/DEHT Audio Controller> on pci0?
+bpcie0: <Baikal PCI Express glue> on pci0?
+bpcie0: Chip revision: 0000b100?
+bpcie0: Chip ID0: 4c0c2021?
+bpcie0: Chip ID1: 8d76a398?
+icc0: <Baikal ICC> on pci0?
+hpet_pci0: <Baikal High Precision Event Timer> on pci0?
+Timecounter "HPET" frequency 10000000 Hz quality 950?
+Event timer "HPET" frequency 10000000 Hz quality 450?
+Event timer "HPET1" frequency 10000000 Hz quality 450?
+Event timer "HPET2" frequency 10000000 Hz quality 450?
+Event timer "HPET3" frequency 10000000 Hz quality 450?
+sflash0: <Baikal Serial Flash I/F> on pci0?
+sflash0: Cypress(01)?
+rtc0: <Baikal RTC> on pci0?
+timer_mtk0: <Baikal Timer/WDT> on pci0?
+uart0: <Non-standard ns8250 class UART with FIFOs> on pci0?
+uart0: uart_bus_attach?
+uart0: console (115200,n,8,1)?
+ahci0: <Orbis Baikal sata0 AHCI SATA controller> on pci0?
+ahci0: Baikal SATA PHY init?
+ahci0: Baikal SATA EFUSE VALUE: 0x28:0x28:0x10:0x11:0x0f:0x10?
+ahci0: Baikal SATA PHY Trace length : 8?
+ahci0: AHCI v1.30 with 1 3Gbps ports, Port Multiplier supported?
+ahcich0: <AHCI channel> at channel 0 on ahci0?
+iommu_add_device_table_entry: device_id:00a2 dev:1 func:1  ahcich?
+xhci0: <Baikal XHCI USB 3.0 controller> on pci0?
+ahci1: <Orbis Baikal sata1 AHCI SATA controller> on pci0?
+ahci1: Baikal SATA PHY init?
+ahci1: Baikal SATA EFUSE VALUE: 0x28:0x28:0x10:0x11:0x0f:0x10?
+ahci1: Baikal SATA PHY Trace length : 6?
+ahci1:  HWConfig Speed:Gen2?
+ahci1: AHCI v1.30 with 1 6Gbps ports, Port Multiplier supported?
+ahcich1: <AHCI channel> at channel 0 on ahci1?
+iommu_add_device_table_entry: device_id:00a7 dev:2 func:2  ahcich?
+Initial IO PTB alloc. device:0xa7 io:0xa000000?
+xhci2: <Baikal XHCI USB 3.0 controller> on pci0?
+acpi_ssb0: <Baikal acpi> on pci0?
+mtsc0: <Baikal GBE controller> on pci0?
+iommu_add_device_table_entry: device_id:00a1 dev:20 func:1  mtsc?
+mts0: <Baikal GBE> on mtsc0?
+eth0: Ethernet address: 2c:cc:44:57:0b:3a?
+sdhci0: <Baikal SDHCI> on pci0?
+iommu_add_device_table_entry: device_id:00a3 dev:20 func:3  sdhci?
+sdhci0-slot0: DriveStrength:0x2 HOST_CONTROL2:0x20?
+sdhci0: 1 slot(s) allocated?
+dmac0: <Baikal DMA1 controller> on pci0?
+iommu_add_device_table_entry: device_id:00a5 dev:20 func:5  dmac?
+dmac1: <Baikal DMA2 controller> on pci0?
+spm0: <Baikal Scratch Pad Memory> on pci0?
+sbram0: <Baikal DDR3 memory> on pci0?
+dct0: <SCE DCT driver> on hostb4?
+sbi0: <SCE SBI driver> on hostb5?
+gbase_register_interrupt_handler(52)?
+gbase_register_interrupt_handler(53)?
+dce: 23?
+hwpstate0: <Cool`n'Quiet 2.0> on cpu0?
+_sdma_hw_init(0): microcode loaded?
+_sdma_hw_init(1): microcode loaded?
+acpDecFlac: <Codec DecFlac built on Jan 23 2025 05:23:56>?
+acpDecOpus: <Codec DecOpus built on Jan 23 2025 05:23:56>?
+ajm: <Audio CoProcessor Job Manager built on Jan 23 2025 05:23:55>?
+acpDecMp3: <Codec DecMp3 built on Jan 23 2025 05:23:55>?
+acpDecAt9: <Codec DecAt9 built on Jan 23 2025 05:23:55>?
+acpDecM4aac: <Codec DecM4aac built on Jan 23 2025 05:23:56>?
+acpEncM4Aac: <Codec EncM4Aac built on Jan 23 2025 05:23:56>?
+acpDecCelp8: <Codec DecCelp8 built on Jan 23 2025 05:23:55>?
+acpEncCelp8: <Codec EncCelp8 built on Jan 23 2025 05:23:56>?
+acpDecAc3: <Codec DecAc3 built on Jan 23 2025 05:23:55>?
+acpEncAc3: <Codec EncAc3 built on Jan 23 2025 05:23:56>?
+acpDecTrhd: <Codec DecTrhd built on Jan 23 2025 05:23:55>?
+acpDecM2bc: <Codec DecM2bc built on Jan 23 2025 05:23:56>?
+acpEncDts: <Codec EncDts built on Jan 23 2025 05:23:55>?
+acpDecM4aacfng: <Codec DecM4aacfng built on Jan 23 2025 05:23:56>?
+acpDecCelp: <Codec DecCelp built on Jan 23 2025 05:23:56>?
+acpEncCelp: <Codec EncCelp built on Jan 23 2025 05:23:55>?
+acpDecVorbis: <Codec DecVorbis built on Jan 23 2025 05:23:56>?
+acpEncOpusCelt: <Codec EncOpusCelt built on Jan 23 2025 05:23:56>?
+acpDecOpusCelt: <Codec DecOpusCelt built on Jan 23 2025 05:23:55>?
+acpEncOpusSilk: <Codec EncOpusSilk built on Jan 23 2025 05:23:56>?
+acpDecOpusSilk: <Codec DecOpusSilk built on Jan 23 2025 05:23:56>?
+acpUtlSrc: <Codec UtlSrc built on Jan 23 2025 05:23:53>?
+UVFAT_Initialize: exit?
+Timecounters tick every 1.000 msec?
+Session ID: 014afa927f2fa28cd89c4e58127872b0?
+g_lvd_init 353 : Layered vnode device is initialized.?
+g_lvd_init 355 : lvd is built at 05:24:02 Jan 23 2025?
+GEOM_CRYPT: eap key setup?
+iommu_add_device_table_entry: device_id:00a4 dev:20 func:4  sflash?
+icc08-4001 0802?
+icc:failed to enabled reset button notification: 0005?
+icc:enabled thermal notification?
+[REGMGR] 000002 ...?
+[REGMGR] C00027 @18874372@@1@@30@@432@@0@@0@ ...?
+[REGMGR] 001001 $13782357$@4@$13978948$# #$137771694779716$@391@############ ...?
+[REGMGR] C00004 @567@@1024@ ...?
+[REGMGR] C00005 @77@@1280@ ...?
+[REGMGR] C00006 @124382@@204800@ ...?
+[REGMGR] C00007 @1@ ...?
+[REGMGR] C00008 @1419@ ...?
+[REGMGR] C00009 @458@@7280@ ...?
+[REGMGR] 000101 @18874372@@18874372@ ...?
+[REGMGR] (   0.035623 sec) 010001 ...?
+[REGMGR] (      0.199 sec) 010001 ...?
+[SMR]PMR HDD Detected(TOSHIBA MQ01ABD050,AX0G1A,0)?
+ada0 at ahcich1 bus 0 scbus2 target 0 lun 0?
+ada0: <TOSHIBA MQ01ABD050 AX0G1A> ATA-8 SATA 2.x device?
+ada0: 300.000MB/s transfers (SATA 2.x, UDMA5, PIO 8192bytes)?
+ada0: 476940MB (976773168 512 byte sectors: 16H 63S/T 16383C)?
+pass0 at ahcich0 bus 0 scbus1 target 0 lun 0?
+pass0: <SONY PS-SYSTEM   420R 6141> Removable CD-ROM SCSI-0 device ?
+pass0: 150.000MB/s transfers (SATA 1.x, UDMA6, ATAPI 12bytes, PIO 8192bytes)?
+[HDMI] Set CEC FeatureTable [Normal]?
+[SMR]PMR HDD Detected?
+[SMR]update format type 1?
+[HDMI] HDMI kernel module has been available?
+mmc0: <MMC/SD bus> on sdhci0?
+* [mbus:929] [MBUS WARN] DISCONNECTED event from HDMI in DISCONNECTED state?
+* [mbus:350] disconnected(0) from unknown device?
+GEOM: Original GPT Format?
+GEOM_PART: partition 1 is not aligned on 4096 bytes?
+[HDMI] Sink supports HDCP1.4 only?
+[HDMI] Monitor Type [HDMI]?
+sdhci0-slot0: Error detected!!?
+sdhci0-slot0: request: CMD3 arg 0 flags 0x65 buf 0 dlen 0 bs 0 dflags 0?
+sdhci0-slot0: result : 1?
+sdhci0-slot0: intmask: 0x00010000?
+trpw0 on sdio0?
+bt0 on sdio0?
+sdio0: <SDIO Device> at mmc0?
+SMP: AP CPU #6 Launched!?
+SMP: AP CPU #3 Launched!?
+SMP: AP CPU #4 Launched!?
+SMP: AP CPU #2 Launched!?
+SMP: AP CPU #5 Launched!?
+SMP: AP CPU #1 Launched!?
+SMP: AP CPU #7 Launched!?
+TSC ScDlo ck: 1594046802 MHz?
+aTnuimaecounlter "TSC-l owT"u nfrequeinng docney .12453490 H z quMalitya 1000?
+xPassWxhici0: n[dowSizeUSB] B=2a3, iTunePoiknal USBt P=HY2 Init(V5_00) ?C
+ORxEhc_i0:C T[RUSB0PL0] x=hci0: 0Sx1S84094?
+ trace length:10 HS trace length:10?
+xhci0: [USB] SS trace 8-11 inch setting?
+xhci0: [USB] HS trace 10-11 inch setting?
+xhci0: [USB0P1] xhci0: SS trace length:8 HS trace length:8?
+xhci0: [USB] SS trace 8-11 inch setting?
+xhci0: [USB] HS trace 8-9 inch setting?
+Trying to mount root from exfatfs:md0 []...?
+[SceSysCore mini] launched?
+*** start manu_cert ***?
+usbus0 on xSpecial Wake is hci0?
+usxhci2: [USB] Baikal USB PHY Init(V5_0)?
+xhci2: [USB1P0] xhci2: SS trace length:3 HS trace length:0?
+xhci2: [USB] SS trace 1-4 inch setting?
+xhci2: [USB] NVS is not written trace length?
+invalid?
+bus0: 5.0Gbps Super Speed USB v3.0?
+[SceSysCore mini] fstype=exfatfs?
+[SceSysAvControl] launched?
+[  [AvSetting shm:54] server statu.st_size = 4096?
+agenv0 c.on1: <t0x104dset CEC OFF?
+r,o l XHCI kro]ot HUB, >(VID=0x0000 P :ID=0x0000  fd=septetuh=0 p_por* [AvSetting core:1547] wait for hdmi event?
+** cpv:e1 **?
+** set_mode ** -1/-1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-s?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+t=1 speeddi=s4p) atc uslk_bku s0?
+l=3uhub032 u:cP p<0llx104d XHC=EI root HUB, class 9/XT0, rev 3._P00/1.00,L addr L11> ?
+on usbus0?
+[av control] : HdmiCheckAvailability HDMI-TxType[0x2] HDMI-DevOut[0x1] ?
+[av control] : HdmiSetHdmiAvailability FLV2?
+[av control] : hdmi event connected(1)?
+[av control] : f=HdmiGetTransmitterType l=120 wait=30(ms) FLV2?
+[av control] : 1080P_5994 RGB444 Cusbus2 on xhci2?
+usbERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+[av control] : lt_req=1 hdmi_misc_up_req=1 vr_flg_up_req=0 vr_switch=0 csc_dir_req=0 hdr_dir_req=0?
+[SceSysCore mini] nmount /dev/da0x4.crypt to /system OK?
+us2: 5.0Gbps Super Speed USB v3.0?
+ugen2.1: <0x104[SceSysCore mini] nmount /dev/da0x5.crypt to /system_ex OK?
+d, XHCI root HUB, >(VID=0x0000 PID=0x0000 depth=0 port=1 speed=4) at usbus2?
+uhub2: <0x104d XHCI root HUB, class 9/0, rev 3.00/1.00, addr 1> on usbus2?
+nmount_ufs /dev/da0x9.crypt to /system_data OK?
+ffs_block_coloring_load: loaded block colors, counted zones=582, nonzone=582 [23cb:23cb]?
+ffs_block_coloring_load: loaded block colors, counted zones=582, nonzone=582 [23cb:23cb]?
+trpw0: FW version : 1.15.091a?
+*** Hdmi Init(kern)  : 0 ***?
+[av control] : f=HdmiSetup videoConfigType(NORMAL)?
+nmount_ufs /dev/da0x14.crypt to /eap_user OK?
+[SceSysCore mini] nmount /dev/da0x12.crypt to /update OK?
+uhub0: 4 ports with 4 removable, self powered?
+uhub2: 2 ports with 2 removable, self powered?
+[REGMGR] 000401 ...?
+[REGMGR] 000103 @18874372@@18874372@ ...?
+[REGMGR] 001001 $13782357$@4@$13978948$# #$137771694779716$@391@############ ...?
+[REGMGR] C00018 @12@ ...?
+[REGMGR] C00023 @18874372@@12@@4418@@65@@100912@@47976@ ...?
+[REGMGR] (   0.078299 sec) 010003 ...?
+[REGMGR] (      1.557 sec) 010003 ...?
+HID : Controller USB Connection 0?
+[SceSysCore mini] nmount /dev/da0x0.crypt to /preinst OK?
+[SceSysCore mini] nmount /dev/da0x1.crypt to /preinst2 OK?
+[SceSysCore mini] Entering normal mode...?
+SD Manual Tuning done. MaxPassWindowSize=23, TunePoint=20 CORE_CTRL=0x184094?
+[REGMGR] (      1.684 sec) 010008 @0@@0@ ...?
+[SceSysCore mini] HDD slow-mode is disabled?
+[Syscore Umd] ret=0, m_backupRestoreMode=0?
+<39> Load libSwDiag.sprx?
+[SceSysCore] launched?
+[SceSysCore] enabled GEOM I/O scheduler 'is'?
+ugen0.2: <vendor 0x1a40, USB2.0 HUB, >(VID=0x1a40 PID=0x0101 depth=1 port=1 speed=3) at usbus0?
+uhub3: <vencddo0 at r ah0cicxh0 1buas40  U0 SscbuBs2.10 H UtaB, rget c0 lunlass  9/00?
+,cd0 :r e<SOv 2.0NY0 PS-S/YS1.T0EM0,    42a0R 6d14d1r 1>>  Reomn uovsabbules0 CD?
+-ROM SCSI-0 device ?
+cd0: 150.000MB/s transfers (SATA 1.x, UDMA6, ATAPI 12bytes, PIO 8192bytes)?
+cd0: Attempt to query device size failed: NOT READY, Medium not present?
+eth0: link state changed to UP?
+HID : op:00000000 bt:1 usb:0 reg:1?
+*** Hdmi Setup(kern) : 0 ***?
+** set_mode done (11664610483:1682) **?
+try GET_HDMI_STATE (0)?
+uhub3: 4 ports with 4 removable, self powered?
+[avs] update -1:27?
+[avs] lock -1:0?
+[avs] hdmi event: hdcp done(2), 0x9000000000100, 11827654079?
+[avs] update 27:32?
+ugen0.3: <Sony Interactive Entertainment, Wireless Controller, >(VID=0x054c PID=0x05c4 depth=2 port=1 speed=2) at usbus0?
+uaudio0: <Sony Interactive Entertainment Wireless Controller, class 0/0, rev 2.00/1.00, addr 2> on usbus0?
+uaudio0: Play: 32000 Hz, 2 ch, 16-bit S-LE PCM format?
+uaudio0: Record: 16000 Hz, 1 ch, 16-bit S-LE PCM format?
+pcm3: <USB audio> on uaudio0?
+usb_hid0: <Sony Interactive Entertainment Wireless Controller, class 0/0, rev 2.00/1.00, addr 2> on usbus0?
+ugen0.4: <Gaming KB, Gaming KB, >(VID=0x04f3 PID=0x152e depth=2 port=3 speed=1) at usbus0?
+usb_hid1: <Gaming KB Gaming KB, class 0/0, rev 1.10/1c.02, addr 3> on usbus0?
+usb_hid2: <Gaming KB Gaming KB, class 0/0, rev 1.10/1c.02, addr 3> on usbus0?
+ugen0.5: <vendor 0x0000, USB OPTICAL MOUSE, >(VID=0x0000 PID=0x3825 depth=2 port=4 speed=1) at usbus0?
+usb_hid3: <vendor 0x0000 USB OPTICAL MOUSE, class 0/0, rev 1.10/1.00, addr 4> on usbus0?
+[DTL] Startup time = 0.000549 sec?
+[SceSysCore] nmount /data to /user/data OK?
+mDBG: Lastlog cleared.?
+[Syscore App]  ExpandCpuSetMode : enable?
+[Syscore App] W:\Build\J02688428\sys\internal\syscore\app/process_monitor.h(185) m_currentMode=0?
+[Syscore App] srand seed: 0x6a01d6d7?
+[UMD MAIN] launching Audiod PID=0x28?
+[UMD MAIN] launching GnmCompositor PID=0x29?
+hdac0: *** no optical out ***?
+ +++ num clients 1?
+[SceShellCore] Start?
+[SceShellCore] Version Info?
+[SceShellCore]  release: 0x12020011?
+[SceShellCore]  build: cex?
+[SceShellCore]  security-repository-path: release_branches/release_12.020?
+[SceShellCore]  security-revision: 10767?
+[SceShellCore]  sys-repository-path: release_branches/release_12.020?
+[SceShellCore]  sys-revision: 222806?
+[SceShellCore]  sdk-internal-build-number: 116770?
+[SceShellCore]  middleware-repository-path: release_branches/release_12.020?
+[SceShellCore]  middleware-revision: 35091?
+[SceShellCore]  middleware-build-number: 77001?
+[SceShellCore]  vsh-repository-path: release_branches/release_12.020?
+[SceShellCore]  vsh-revision: 373056?
+[SceShellCore]  vsh-build-number: 1280891?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+[SceShellCore] ModuleLoader 0 msec?
+[SceShellCore] ShellCoreMain 273 msec?
+[SceShellCore] PafJob 0 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[Syscore App] Add event : pid=0x2a?
+[SceShellCore] AppMgr 1 msec?
+[SceShellCore] Mdbg 0 msec?
+DCM userServiceInitialized?
+[SceShellCore] UserService 16 msec?
+[DATA TRANSFER][PRINT] 433 sceDataTransferPreInitialize()?
+[DATA TRANSFER][PRINT] 240 -------------?
+[DATA TRANSFER][PRINT] 241 MODE = NORMAL?
+[DATA TRANSFER][PRINT] 242 -------------?
+[SceShellCore] DataTransferPre 0 msec?
+** cpv:e1 **?
+** set_mode_a ** -1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-s?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av control] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+*** Hdmi Audio Setup(kern) : 0 ***?
+[avc] ConfigSetSystemMute(0)?
+[avc] ConfigSetSystemMute() done?
+[SL][13:17:13:893][Thread 0x0001873b][INFO][TRACE][ALWAYS][INITIALIZE][MainThread][BEGIN]threadStart[0][Heap]sanity OK, free 5949216 (96%), in-use 276704 ( 4%), peak 276768 ( 4%), when 8 [sec]?
+[SL][13:17:14:034][Thread 0x0001873b][INFO][TRACE][ALWAYS][INITIALIZE][MainThread][END  ]threadStart[0][Heap]sanity OK, free 5864352 (94%), in-use 361568 ( 6%), peak 361568 ( 6%), when 8 [sec]?
+[SceShellCore] SystemLogger 371 msec?
+[SceShellCore] ErrorReporter 0 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[DT][EasySigninMgr()]  sceRandomGetRandomNumber -> {0}  m_baseSessionId : [0x0000cfa8](53160)?
+[DT][EasySigninMgr()]  m_baseSessionId : [0x0000cfa8](53160)?
+[SceShellCore] LoginMgr 60 msec?
+[SceShellCore] GameLiveStreaming 0 msec?
+[SceShellCore] LnC 142 msec?
+[SceShellCore] SystemLoggerSub 0 msec?
+[SceShellCore] RunLevel 0 msec?
+[SceShellCore] Vshctl 0 msec?
+[SceSystemStateMgr] Power-Up Cause Report from EMC?
+[SceSystemStateMgr]   powerup_cause POWER_BUTTON (00000100)?
+[SceSystemStateMgr]   first_boot 00?
+[SceSystemStateMgr]   last_shutdown_cause 01?
+[SceSystemStateMgr]   depth 02?
+[SceSystemStateMgr]   special_wake 00?
+[SceSystemStateMgr]   magic_code 00?
+[SceSystemStateMgr] State Change: WORKING?
+[SceSysCore] ip_conflict_cb: 2 -2143217146?
+[SceSysCore] ip_conflict_cb: 0 0?
+[SceSystemStateMgr] update_usb_power_state(): sceKernelIccGetUSBPowerState: usb_power=1?
+[SceShellCore] SystemStateMgr 41 msec?
+[SceShellCore] ProcessStarter 11 msec?
+[SceShellCore] AppInstaller 17 msec?
+[SceShellCore] UserContentManager 0 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[SceShellCore] AppMessaging 6 msec?
+[SceShellCore] ShellCworeUtil 3 msec?
+[SceShellCore] SystemService 2 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[SceShellCore] Json 0 msec?
+[SceShellCore] Xml 0 msec?
+[SceShellCore] sceRegMgrGetInt(SCE_REGMGR_ENT_KEY_NET_emulation_type: 0x800d0203?
+[SceShellCore] Net 9 msec?
+[SceShellCore] MkdirSync 0 msec?
+[SceShellCore] PfAuthClient 0 msec?
+lan0: Ethernet address: e8:d8:19:a3:92:f7?
+wlan1: Ethernet address: ea:d8:19:a3:92:f7?
+[SceNetEv] netRes={0x00000000} netFileRevision={1}?
+[SceNetEv] pupRes={0x00000000} pupFileRevision={1}?
+?
+*** SIGN-IN [ruzix26(userId=0x1ab07dc3)]  ***?
+?
+?
+*** SIGN-IN [jumbomedia(userId=0x1ab07dc7)]  ***?
+?
+?
+*** SIGN-IN [zhumbo26(userId=0x1ab07dc9)]  ***?
+?
+?
+*** network ready. myaddr: 192.168.50.95 ***?
+[SceShellCore] NpManager acquires /eap_user (refCount 1)?
+[SceShellCore] NpManager releases /eap_user (refCount 0)?
+[SceShellCore] NpManager acquires /eap_user (refCount 1)?
+[SceShellCore] NpManager releases /eap_user (refCount 0)?
+[SceShellCore] PsnCore 934 msec?
+[SceShellCore] NetService 0 msec?
+[BGFT] [363] server switch : AnalyzeBgftEnv SUCCESS?
+ cam_send_ccb req error?
+ERROR: sceSblPltAuthSmVeriR1C2GenR2(283) retVal -43?
+ERROR: pltauth_ioctl_nolock(363) sceSblAuthMgrPltAuthVeriR1C2GenR2 -43?
+?
+*** SIGN-OUT [ruzix26(userId=0x1ab07dc3)] (code=0x80de0051) ***?
+?
+[NpPush] Disconnected. (code=80de0051)?
+[SceShellCore] BGFT 2926 msec?
+[SceShellCore] ContentManager 13 msec?
+[SceShellCore] PlayGo 0 msec?
+[DATA TRANSFER][PRINT] 535 sceDataTransferInitialize()?
+[DATA TRANSFER][PRINT] 240 -------------?
+[DATA TRANSFER][PRINT] 241 MODE = NORMAL?
+[DATA TRANSFER][PRINT] 242 -------------?
+[SceShellCore] DataTransfer 0 msec?
+[SceShellCore] CompanionAppProxyUtil 0 msec?
+[SceShellCore] ShareServerPost::Init 15 msec?
+[SceShellCore] ShareServerPost::Start 0 msec?
+[SceShellCore] UpdateService 26 msec?
+[SceShellCore] HttpCache 0 msec?
+[SceShellCore] RnpsAppMgr 0 msec?
+[SceShellCore] CheckBug173819 0 msec?
+[ScePatchChecker] Patch Check Request (type=0 trigger=3)?
+[SceShellCore] PatchChecker 0 msec?
+[SceShellCore] BgDailyChecker 0 msec?
+[SceShellCore] MorpheusUpdServer 5 msec?
+[UpdServerImpl::MainLoop] start?
+[libSceSaveData] 3dda11717cef1aeea4221da28f32bfb6?
+[libSceSaveData] 49a9c88093a3f9058ba950978d798db6?
+[SceShellCore] SaveDataServer 91 msec?
+[SceShellCore] PsmSharedDmem 0 msec?
+[StickerServiceCore] sceInitializeSticker?
+[SceShellCore] StickerCoreService 0 msec?
+[SceShellCore] DbRecovery 0 msec?
+[SceShellCore] Change run-level 10 -> 80?
+[SceShellCore] START Shell UI?
+[AppDb] GetAppInfo()[674]: GetAppInfo() : m_db_accessor is Null.?
+[SceLncService] launchApp(NPXS20001)?
+[SceLncService] category={gdf} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_SHELL_UI} [] appVer={01.00}?
+[SceLncService] Num. of logged-in users is 0?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceSystemStateMgr] Power Mode Change: NAVIGATION?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   1 NA  0  8  711  673  533  711  711    609  711     673 1400   1375   NA  NA   2 05b/975  067/900  00710fa0?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[AppDb] GetAppInfo()[674]: GetAppInfo() : m_db_accessor is Null.?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[BgDailyChecker] next check datetime: 2026-05-12T07:50:32.73+01:00 (median=360, range=240)?
+[BgDailyChecker] start check [mode=0] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] SceBgdcConfigCheckJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] SceUpdateCheckJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] ScePatchCheckJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] BgDailyCheckerAutoResumeDownloadJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] BgDailyCheckerPreOrderJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] BgDailyCheckerTzdataUpdateJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] BgDailyCheckerServerSwitchJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] BgDailyCheckerRnpsAppJob [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[BgDailyChecker] BgDailyCheckerRifManagerCheck [enqueued] (2026-05-11T14:17:17.04+01:00)?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS20001?
+[Syscore App] processSpawn(pid, 0x60000201, 0x10201020, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x5, rootPath = /mnt/sandbox/NPXS20001_000, titleId = NPXS20001?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system_ex/app/NPXS20001/eboot.bin?
+[Syscore App] new pid=0x2b[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x2b?
+[AppMgr Trace]: New Process, pid=0x2b, created.?
+[AppMgr Trace]: New App, appId=0x60000201, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[AppDb] GetAppInfo()[674]: GetAppInfo() : m_db_accessor is Null.?
+[SceShellCore] ShellUI 337 mSsec?
+[SceShellCore] DbPreparation_EventFlag 0 msec?
+[BgDailyChecker] Checking http://ps4-system.sec.np.dl.playstation.net/ps4-system/bgdc/np/v00/bgdc-config.xml.env?
+[SceUserService] UserServiceCleanup started?
+[SceShellCore] UserServiceServer 0 msec?
+[SceShellCore] UserServiceClient 0 msec?
+[SceShellCore] DbPreparation 0 msec?
+[DBP Message][Core][InitializeDb:205] start. build = 0, event = initialize ?
+[DBP Message][Core][Initialzie:45] already initialized. m_eventFlag = 4563, type = 00000000 ?
+[SceShellCore] DbPreparationServer 0 msec?
+[SceShellCore] DeviceDiscovery 0 msec?
+[SceShellCore] ScreenShotServer 0 msec?
+ERROR AutoMounter(int32_t AutoMount::checkExternalHddAvailableFlag() 166): sceRegMgrGetInt(2017494016, &regVal) returned 0x800d0203.?
+WARNING AutoMounter(int32_t AutoMount::EventManager::registerCallback(uint32_t, sceAutoMounter::CallbackFunc, ScePthreadAttr *, const char *, void *, size_t, bool) 265):?
+	threadName(EcxternalHddMountController_mount) is too long and will be truncated.?
+DBG AutoMounter(Init 203):?
+	currentState=1000.?
+MSG AutoMounter(int32_t (anonymous namespace)::BdEmuHandler::initBdEmuHandler() 184):?
+	BdEmuHandler is unavailable.?
+MSG AutoMounter(int AutoMount::Init() 259):?
+	trc_notify=0.?
+[SceShellCore] AutoMount 0 msec?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::initialize() 971):?
+	sceAutomounterMelUtil:: already initialized. do nothing.[SceShellCore] MediaEventListener 0 msec?
+[SceShellCore] AppInstaller 0 msec?
+[SceShellCore] AppContent 0 msec?
+[SceShellCore] NpEntitlement 0 msec?
+DBG AutoMounter(_getEventDetail 556):?
+	NoChg.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x0.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x1.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x2.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x3.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x4.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x4b.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x5.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x5b.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x8.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x9.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x12.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x13.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x14.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x15.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6x0.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6x1.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6x2.crypt) is not available.?
+[AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/system_data/priv/mms/app.db] flags[0x10000006] result[0x0, 0]?
+[SceShellCore] GroupMessaging 68 msec?
+[SceShellCore] TeamChat 0 msec?
+[SceShellCore] SystemLoggerThread 0 msec?
+[SL][13:17:18:759][Thread 0x0001884c][INFO][TRACE][ALWAYS][INITIALIZE][SubThread][BEGIN][Heap]sanity OK, free 3938784 (63%), in-use 2287136 (37%), peak 2314016 (37%), when 13 [sec]?
+[SceShellCore] DecidServer 0 msec?
+[SL][13:17:18:759][Thread 0x0001884c][INFO][TRACE][ALWAYS][INITIALIZE][SubThread]BUILD TYPE CEX?
+[SceShellCore] AutoMounterIpcServer 0 msec?
+[SceShellCore] RTC 0 msec?
+[RTCUTIL] [Adjust TZ] IsAdjustTimeZone:false?
+[SceShellCore] BackupRestoreUtil 0 msec?
+[SceShellCore] DataTransferServer 0 msec?
+[SceShellCore] SystemStateMgr::PostInit 0 msec?
+[SceShellCore] CheckOsEventLog 0 msec?
+[SceShellCore] MusicPlayerServiceListener 0 msec?
+[SceShellCore] EventServiceShell 0 msec?
+[SceShellCore] WorkaroundCtl 0 msec?
+[SceWorkaroundCtl] PERIODIC_CHECK_INITIAL_SEC={45}?
+[SceShellCore] HidConfigService 0 msec?
+[SceHidConfigService] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceShellCore] DbHeapTelemetry 0 msec?
+[SceHidConfigService] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceShellCore] ShareFactoryUtil 0 msec?
+[SceShellCore][StorageStatsReport] Initialize: load values from registry and file: ?
+[AppDb] Init()[145]: [Svr] DbAccessor::Init() : 0?
+[SceHidConfigService] UpdateInfo : [RevokeList]?
+[SceHidConfigService] netRes={0x00000000} netInfo.dataVersion={9}?
+[SceHidConfigService] pupRes={0x00000000} pupInfo.dataVersion={9}?
+[SceWorkaroundCtl] netRes={0x00000000} netInfo.version={68}?
+[SceWorkaroundCtl] dscRes={0x80020002} EdscInfo.version={0}?
+[SceWorkaroundCtl] pupRes={0x00000000} pupInfo.version={74}?
+[SceShellCore][StorageStatsReport] W:\Build\J02688430\vsh\shell\shell_core\shell_core_main\shell_core_main_storage_stats.cpp(469) readMcUsageDataFromFile: HDDSTATS_IS_OK::0x8u0020002?
+[SceShellCore][StorageStatsReport] readMcUsageDataFromFile error:0x80020002, realTimeSecForData (0), create new file?
+[SceShellCore][StorageStatsReport] W:\Build\J02688430\vsh\shell\shell_core\shell_core_main\shell_core_main_storage_stats.cpp(448) clearMcUsageFile: sceKernelUnlink(SMR_MC_USAGE_DATA_FILE_PATH):error:0x80020002?
+[SceShellCore][StorageStatsReport] W:\Build\J02688430\vsh\shell\shell_core\shell_core_main\shell_core_main_storage_stats.cpp(550) setActualHddsData: HDDSTATS_CHECK::0x80020005 (smr.res() == SCE_OK value is false)?
+[SceShellCore][StorageStatsReport] processTimeSecForData [3284020]?
+[SceShellCore][StorageStatsReport] realTimeSecForData [78553348]?
+[SceShellCore][StorageStatsReport] HDD partition [WRITE] : ?
+[SceShellCore][StorageStatsReport]   da0x4           (system      ): bytes:      2.25MiB, transfer:           23?
+[SceShellCore][StorageStatsReport]   da0x4b          (system(b)   ): bytes:      1.70GiB, transfer:        13949?
+[SceShellCore][StorageStatsReport]   da0x5           (system_ex   ): bytes:           0B, transfer:            0?
+[SceShellCore][StorageStatsReport]   da0x5b          (system_ex(b)): bytes:      1.65GiB, transfer:        13495?
+[SceShellCore][StorageStatsReport]   da0x6           (old swap    ): bytes:      2.09GiB, transfer:        23437?
+[SceShellCore][StorageStatsReport]   da0x8           (app_tmp     ): bytes:      3.19TiB, transfer:     26863900?
+[SceShellCore][StorageStatsReport]   da0x9           (system_data ): bytes:    204.39GiB, transfer:      8948236?
+[SceShellCore][StorageStatsReport]   da0x12          (update      ): bytes:      2.99GiB, transfer:        28476?
+[SceShellCore][StorageStatsReport]   da0x13          (user        ): bytes:      2.42TRbiB, transfer:     34872791?
+[SceShellCore][StorageStatsReport]   da0x14          (eap_user    ): bytes:     17.82MiB, transfer:         3345?
+[SceShellCore][StorageStatsReport]   da0x6x0         (new swap    I): bytes:      2d.09GiB, transfer:        18327?
+[SceShellCore][StorageStatsReport]   da0x6x1         (kernel log  ): bytes:    155.00KiB, transfer:          300?
+[SceShellCore][StorageStatsReport]   da0x6x2         (user log    ): bytes:      2.43MiB, transfer:         4810?
+[SceShellCore][StorageStatsReport] Game   I/O slot [READ/WRITE]: IntHDD:[     3.27TiB/     3_A.20TiB], ExtHDD:[          0B/          0B]?
+[SceShellCore][StorageStatsReport] System I/O slot [READ/WRITE]: IntHDD:[   400.98GiB/     2.62TiB], ExtHDD:[    85L.39MiB/     3.12sMiB]?
+[SceShellCore][StorageStatsReport] System I/O slot by threads [READ/WRITE] (WRITE top 10 / total 260): ?
+[SceShellCore][StorageStatsReport]   SceRecMain                      :[     2.56Ge_iB, BIO=       63413 /      1.81TiB, BIO=    15195390]?
+[SceShellCore][StorageStatsReport]   SceBgftPipelineThread           :[     7.40GiB, BIO=      216435 /    514.49GiB, BIO=    16862157]?
+[SceShellCore][StorageStatsReport]   SceSystemLoggerDeliveryJob      :[     1.06GiB, BIO=       36704 /    144.62GiB, BIO=     6371546]?
+[SceShellCore][StorageStatsReport]   SceSyncer                       :[   182.38MiB, BIO=        5835 /     28.07GiB, BIO=      697825]?
+[SceShellCore][StorageStatsReport]   SceBufdaemon                    :[          0B, BIO=           0 /     27.67GiB, BIO=      281848]?
+[ScetShellCore][StorageStatsReport]   SceSaveDataSessionJobCUSA       :[     6.01GiB, BIO=      209061 /     18.77GiB, BIO=      697613]?
+[SceShellCore][StorageStatsReport]   SceSystemLogger                 :[     1.26GiB, BIO=       43818 /     15.64GiB, BIO=      689623]?
+[SceShellCore][StorageStatsReport]   SceSystemLoggerIpcReceive       :[   166.09MiB, BIO=        5524 /      8.15GiB, BIO=      331324]?
+[SceShellCore][StorageStatsReport]   SceDtl:Writer                   :[   341.63MiB, BIO=        4506 /      4.59GiB, BIO=      150451]?
+P[SceShellCore][S_torageStatsReport] System I/O slot all threads total: [     6.99TiB, BIO=    83058634 /      2.59TiB, BIO=    42492623]?
+[SceShellCore][StorageStatsReport] SMR Media Cache Info: NOTHING?
+[SceShellCore][StorageStatsReport] Initialize: lastReport=[63913840856](Fri, 08 May 2026 12:40:56 +0000)?
+[SceShellCore][StorageStatsReport] SmrMcUsageEap::SendDataOnBootOrResume: Failed to get SMR HDD information (0x80020005)?
+[SceShellCore] StorageStatsReport 286 msec?
+[SceShellCore] SmrHdd 0 msec?
+[SceShellCore] CloudConnectManager 0 msec?
+[SceShellCore] HubAppUtil 0 msec?
+[SceShellCore] Workarounds 0 msec?
+[SceSafeModeTelemetry][SendSafeModeActionEvent:42] rawData is 0?
+[SceShellCore] SafeModeTelemetry 0 msec?
+[SceShellCore] Completed initialization?
+[SceHidConfigService] VerifySignature : size: total(610), signature(256), message(354) [byte]?
+[SceHidConfigService] VerifySignature : pass?
+[SceHidConfigService] VerifySignature : size: total(610), signature(256), message(354) [byte]?
+[SceHidConfigService] VerifySignature : pass?
+[SceHidConfigService] UpdateInfo : [UsbPower]?
+[SceHidConfigService] netRes={0x00000000} netInfo.dataVersion={1}?
+[SceHidConfigService] pupRes={0x00000000} pupInfo.dataVersion={1}?
+[SceHidConfigService] VerifySignature : size: total(6pR10), signature(256), message(354) [byte]?
+[SceHidConfigService] VerifySignature : pass?
+@ deviceMonitor2SetUsbPowerBlackList:L3398?
+[SceShellCore] Unmounted /eap_user?
+[setConnectStatusFlag] sceKernelPollEventFlag(): 0x80020010?
+[BgDailyChecker] SceBgdcConfigCheckJob end (2026-05-11T14:17:17.86+01:00)?
+[SceLncUtil] blockAppSuspend: name={SceVshLog}, appId={0x60000100}, refCount={1}?
+[SceLncUtil] unblockAppSuspend: name={SceVshLog}, appId={0x60000100}, refCount={0}?
+oINweTr__TbIlMaE_ck_lisTIt_CK u:s e1r7:1 9da4 tamseVcer -s-io Syns=P0rxx0P0r0e0L0o0ad01S?t
+atusibc Bploocwk er:  sbltaacrtk? 
+lSiEsRtI[A0L] _P: RVIIDNT=0_xT1I4M3E0 _PTIICDK =:0x 01080014-20 xmfsefcff  (fdliagfsf= 094x80  mrseescer)v e-d=- S0yxs0P?r
+x[SceHidConfigService] sceMbusSetUsbPowerBlackList: ret=0x0, dataVersion=1, numOfDevice=1?
+[SceHidConfigService]     {0x1430, 0x0000, 0xffff}?
+PreLoadStaticBlock : LAP : start process?
+SERIAL_PRINT_TIME_TICK : 18170 msec (total 976 msec) -- SysPrxPreLoadStaticBlock : end?
+SERIAL_PRINT_TIME_TICK : 18219 msec -- main : start?
+[UpdateChecker] sceHttpGetStatusCode() status code failed : 404?
+[BgDailyChecker] SceUpdateCheckJob end (2026-05-11T14:17:18.26+01:00)?
+[SceUserSService] UserServiceCleanup finished?
+ERIAL_PRINT_TIME_TICK : 18249 msec -- Run : start?
+SERIAL_PRINT_TIME_TICK : 18258 msec -- InitializeFramework : start?
+[ShareBlockingCache] Initialize from master file. count = 61?
+[PSM] PsmFramework::Initialize?
+PSM:b312d141fd9ff30befec12e68dc07072e0813a0d?
+MonoVM:7fba771a556d7aea290ce40db61c4d972fbd4190?
+BootParam :2  --cold-boot?
+[PSM] set assembly path for mono?
+[PSM] Loading Json?
+[PSM] Loading PsmUtil?
+[PSM] Loading Mono: libmono-btls-shared?
+[PSM] Loading Mono: libmonosgen-2.0?
+[PSM] LoadModulesInBG 0 msec?
+[PSM] Loading SysCore?
+ERROR: sceSblPltAuthSmVeriR1C2GenR2(283) retVal -43?
+ERROR: pltauth_ioctl_nolock(363) sceSblAuthMgrPltAuthVeriR1C2GenR2 -43?
+?
+*** SIGN-OUT [jumbomedia(userId=0x1ab07dc7)] (code=0x80de0051) ***?
+?
+[CloudConnectMgr] INFO: cloud_connect_manager_entitlement.cpp/npManagerActiveSigninStateCallbackEntry(714): Deleting this user (userId:1ab07dc7 state:2)?
+[PSM] Loading libSceDipsw?
+[PSM] Loading SystemService?
+[PSM] ScePsmMonoSgenSetThreadType() thread_type = ::ORBIS?
+[PSM] debugger off?
+[PSM] AOT mode?
+[PSM] AOT mode?
+[PSM] Loading AudioOut?
+mount ---?
+[SceLncService] No heart beat of Shell UI has been observed for 1022 msec.?
+[PSM] Loading Audiodec?
+[PSM Mem] Allocated 25165824 bytes for Resource Heap?
+Initializing PSM Graphics for PGraphics?
+[AudioOut] sceAudioOutOpen() with restricted flag:pid=0x2b ch=7?
+[AudioOut] sceAudioOutOpen() with restricted flag:pid=0x2b ch=8?
+[ScePsmUtil] sceSImeClientInitialize ?
+[ScePsmUtil] sce::tts::InitializeCsharp() ?
+[ScePsmUtil] sce::pss::orbis::video::InitializeCsharp() ?
+[PSM] PsmFramework::Initailize() 436 msec. elapsed?
+ERIAL_PRINT_TIME_TICK : 18787 msec (total 529 msec) -- InitializeFramework : end?
+SSERIAL_PRINT_TIMSE_TICK : 18812 msec -- PsmFrameworkInitialize : LoadModules : start?
+EERRIIAALL_PRIN_T_PTRIIMNET_TICK_ : T18812 IME_TImsCecK --  in:it i1aliz88e1S2y smtesemc  :( dsitfafr t5?6
+3 msec) -- Run : LAP : run framework?
+SQLite MSG pthreSadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+ERIAL_PRINT_TIME_TICK : 18993 msec -- loadModules : start?
+libSceAsyncStorage.prx: module_start()?
+[SceLncService] No heart beat of Shell UI has been observed for 2033 msec.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SERIAL_PRINT_TIME_TICK : 19648 msec (total 655 msec) -- loadModules : end?
+[DBP Message][UI][InitializeDb:205] start. build = 0, event = initialize ?
+[DBP Message][Core][WaitCexProcessInitialize:104] Wait until DbPreparation is complete. ?
+ERROR: sceSblPltAuthSmVeriR1C2GenR2(283) retVal -43?
+ERROR: pltauth_ioctl_nolock(363) sceSblAuthMgrPltAuthVeriR1C2GenR2 -43?
+?
+*** SIGN-OUT [zhumbo26(userId=0x1ab07dc9)] (code=0x80de0051) ***?
+?
+[NpPush] Disconnected. (code=80de0051)?
+[CloudConnectMgr] INFO: cloud_connect_manager_entitlement.cpp/npManagerActiveSigninStateCallbackEntry(714): Deleting this user (userId:1ab07dc9 state:2)?
+[CloudConnectMgr] ERROR: cloud_connect_manager_entitlement.cpp/deleteUserInfo(565): UserInfoMgr::deleteUser() failed. (0x811a0021)?
+[CloudConnectMgr] ERROR: cloud_connect_manager_entitlement.cpp/deleteUserInfo(565): UserInfoMgr::deleteUser() failed. (0x811a0021)?
+[SceLncService] No heart beat of Shell UI has been observed for 4055 msec.?
+[DBP Message][Core][InitializeDb:233] end. 0x00000000 ?
+[DBP Message][Core][WaitCexProcessInitialize:107] DbPreparation is complete. elapsed 2271998 (usec)?
+[AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/fiSpRPSVmc/priv/mms/app.db] flags[0x10000002] result[0x0, 0]?
+[AppDb] InitClient()[158]: [Cnt] InitClient DbAccessor::Init() : 0?
+[AppDb] InitClient()[202]: [INFO] call LoadNotFinishedCmds()?
+[DBP Message][UI][InitializeDb:233] end. 0x00000000 ?
+MSG: Setup AbstractStorage.?
+[Web] Setting FMSEM-GPU limit to 100 MiB?
+ERIAL_PRINT_TIME_TICK : 23442 msec (total 4630 msec) -- initializeSystem : end?
+MSG AbstractStorageWrapper(int sce::vsh::orbis::abstract_storage::InitializeCSharp() 223):?
+	Register Table for ContentManager's PInvokes?
+Register libGlsSharedMediaNativaCall PInvokes?
+SERIAL_PRINT_TIME_TICK : 23931 msec -- initializeSystemAfterPsm : start?
+#LOGIN MGR# : \share_play.cpp(863) : ClearSessionData : ?
+#LOGIN MGR# BtInfoJson:DataSize=2bytes?
+#LOGIN MGR# BtInfoJson:'{}'?
+#LOGIN MGR# : \morpheus_mgr.cpp(1453) : ClearAssignInfo : ?
+#LOGIN MGR# DeviceNamefoJson:DataSize=2bytes?
+#LOGIN MGR# DeviceNameInfoJson:'{}'?
+#LOGIN MGR# sceMbusEventCreate() success (handle = 2).?
+@ deviceMonitor2StartPolling:L3065?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+* addInfo:L861 function duplicated. deviceId = 0x3000000060101?
+* addInfo:L861 function duplicated. deviceId = 0x3000000070102?
+#LOGIN MGR# WatchThread::Initialize m_isCEX() = 1?
+#LOGIN MGR# : \login_mgr_utility_server.cpp(27) : Initialize : ?
+#LOGIN MGR# WatchThread::Initialize end?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x2000000000000)?
+ScePsP[TID:0x18873]: Open Pad [0x000000000002030e, 16, 0]: ret=0x03010300?
+ScePsP[TID:0x18873]: ConnectedDeviceStatus: count=1?
+  [c][DeviceId          ][UserId    ][Model     ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x2000000000001)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x2000000000000)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x2000000000002)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x2000000000001)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x1030f)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x2000000000002)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x2030e)?
+#LOGIN MGR# sceLoginMgrServerInitialize():OK?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x1030f)?
+[AppDb][Server] Rcv Event 11?
+DBG(onNewClient 151):?
+	server receives connection request.?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x9000000000100)?
+WARNING AutoMounterIpc(int32_t sceAutoMounterIpcClient::initialize(ScePthreadAttr *) 394):?
+	already initialized.?
+DBG(registerCallback 345):?
+	server is called. eventId=0x380000, eventFlagBit=0x1.?
+DBG(registerCallback 345):?
+	server is called. eventId=0x310004, eventFlagBit=0x2.?
+DBG(registerCallback 345):?
+	server is called. eventId=0x3a0000, eventFlagBit=0x4.?
+DBG(registerCallback 345):?
+	server is called. eventId=0x320004, eventFlagBit=0x8.?
+DBG(registerCallback 345):?
+	server is called. eventId=0x390000, eventFlagBit=0x10.?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x2030e)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x9000000000100)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x3000000050100)?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x4000000080000)?
+SERIAL_PRINT_TIME_TICK : 24820 msec (total 889 msec) -- initializeSystemAfterPsm : end?
+SERIAL_PRINT_TIME_TICK : 24828 msec -- initializeFrameworkDependentModules : start?
+[SceLncService] unmountRnpsSubdirsForUfsImage()?
+[SceRnpsAppMgr] RebootFlag=0?
+[SceRnpsAppMgr] InitExistingUfsImage()?
+[SceRnpsASppMgr] AttachLvd(/system_data/nobackup/rnps_apps.img, 1073741824)?
+[SceRnpsAppMgr] CheckUfs(/dev/lvd0): clearFlag=1?
+[SceRnpsAppMgr] MountUfs(/mnt/rnps -> /dev/lvd0)?
+ERIAL_PRINT_TIME_TICK : 24849 msec (total 21 msec) -- initializeFrameworkDependentModules : end?
+[SceRnpsAppMgr] cur_ver = {0x12020011}?
+[SceRnpsAppMgr] ufs_ver = {0x12020011}?
+[SceLncService] remountRnpsSubdirsForUfsImage()?
+[SceLncService] fspath={/mnt/rnps} is not mounted.?
+[SceRnpsAppMgr] Enqueued : m_trigger = 2?
+[ScePatchChecker] (*) check (title_id='AZIF00003', app_version='0.98', check_option=5): status=0, trigger=10 userId=0xff return 0x80412883?
+[SceRnpsAppMgr] CheckAllRnpsApps : trigger = 2, num_apps = 2?
+[ScePatchChecker] check (title_id='AZIF00003', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x80412883?
+SERIAL_PRINT_TIME_TICK#: 25337 msec -- PsmFrameworkInitialize : LoadModules : end?
+SERIAL_PRINT_TIME_TICK#: 25345 msec -- LAP : AppMain.Main : start?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_http.cpp(409) Request: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(720) Download: RNPSAM_ISOK::0x8095170d?
+[ScePatchChecker] (*) check (title_id='CUSA00127', app_version='01.53', check_option=5): status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] check (title_id='CUSA00127', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x8095170d?
+[SceLncService] No heart beat of Shell UI has been observed for 8075 msec.?
+[SceShellUI] I/PSM.UI : UISystem timer started!! 00:00:00.0002130?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_http.cpp(409) Request: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(720) Download: RNPSAM_ISOK::0x8095170d?
+[SceShellUI] I/PSM.UI : UI RenderingSettings Resolution: Pixels2K[1920,1080]?
+[SceShellUI] I/PSM.UI : OnAccessibilitySettingsChanged?
+[SceShellUI] I/PSSM.UI : TimerLog: diff [61.35]msec / process time [8848]msec / GC[0] :  [UIInitialize] UISystem.InitializeTopMost?
+ERIAL_PRINT_TIME_TICK#: 25924 msec -- LAP : AppMain.Main : app.Run?
+[ScePatchChecker] (*) check (title_id='CUSA02012', app_version='04.01', check_option=5): status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] check (title_id='CUSA02012', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x8095170d?
+SERIAL_PRINT_TIME_TICK#: 26142 msec -- ProcessBackgroundInit : start?
+SERIAL_PRINT_TIME_TICK#: 26149 msec -- ProcessBackgroundInit : WaitBootEvent(InitializeFrameworkDependent)?
+[VPA] PAllocatorInitialize system(addr=1000000000, size=14680064) video=(addr=1080000000, size=134217728)?
+[PGraphics] Create PGraphicsDevice v[1080000000 - 1088000000] s[1000000000 - 1000e00000]?
+[PGraphics] Allocated compositor index 0?
+Initialized PGraphicsDevice 882252fa0?
+[PSM] sceCompositorMapAnotherProcess pVideoMemory=1180000000 - 1180a00000 dmemInfo.addr=208600000 dmemInfo.size=1048576?
+[VPA] PsmVideoMemoryAllocatorInitialize videoMemoryType=1 system(addr=0, size=0) video=(addr=1180000000, size=10485760)?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_http.cpp(409) Request: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(720) Download: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(661) DownloadAndInstall: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] W:\Build\J02688430\vsh\shell\shell_core\rnps_app_mgr\rnps_app_mgr_updater.cpp(1506) CheckAllRnpsApps: RNPSAM_ISOK::0x8095170d?
+[SceRnpsAppMgr] Finish m_trigger=2?
+[SceRnpsAppMgr] Warning : m_jobPreodicChecks exists 8804c00e0?
+[SceRnpsAppMgr] Enqueued : m_trigger = 0?
+[ScePatchChecker] (*) check (title_id='SLUS20743', app_version='01.00', check_option=5): status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] check (title_id='SLUS20743', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] (*) check (title_id='CUSA11379', app_version='01.30', check_option=5): status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] check (title_id='CUSA11379', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] (*) check (title_id='CUSA16746', app_version='01.03', check_option=5): status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] check (title_id='CUSA16746', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x8095170d?
+sceProfileCacheServerInitialize() ?
+#PROFILE CACHE#: \profile_cache_core.cpp(98) : init_dependent_lib : s_libnetMemId: 3017?
+#PROFILE CACHE#: \profile_cache_core.cpp(106) : init_dependent_lib : s_libsslCtxId: 14?
+#PROFILE CACHE#: \profile_cache_core.cpp(114) : init_dependent_lib : s_libhttpCtxId: 270?
+#PROFILE CACHE#: \profile_cache_core.cpp(127) : init_dependent_lib : s_webapiLibCtxId: 5?
+#PROFILE CACHE#: \profile_cache_ipc_server.cpp(70) : sceProfileCacheIpcServerInit : ?
+#PROFILE CACHE#: \profile_cache_ipc_server.cpp(287) : Run : ---- doServer ---- START ?
+#PROFILE CACHE#: \profile_cache_ipc_server.cpp(60) : dispatchRequest : runDispatcher. ?
+[Trophy] NetSyncMgr started.?
+#LOGIN MGR# Event Received : SCE_LOGIN_MGR_EVENT_START_INITIALIZE?S
+#LOGIN MGR# sceLoginMgrServerNotifyShellUIState():0x00000000?
+[SceShellUI] I/PSM.UI : TimerLog: diff [1429.83]msec / process time [10370]msec / GC[0] : => [UIInitialize] UISystem.InitializeGraphics: ?
+ERIAL_PRINT_TIME_TICK#: 27435 msec -- ProcessBackgroundInit : step 1?
+[SceLncUtil] W:\Build\J02688430\vsh\common_lib\lnc_util\src\lnc_util_ipc_client.cpp(744) getGpuCrashFullDumpAppStatus: LNC_ISOK::0x80940004?
+[libSceSaveData] api_id: init, titleId=NPXS20001, installDir=, compiledSdkVer=0x12020011?
+SERIAL_PRINT_TIME_TICK#: 27738 msec -- ProcessBackgroundInit : step 2?
+[ScePatchChecker] (*) check (title_id='NPXS39041', app_version='01.00', check_option=5): status=0, trigger=10 userId=0xff return 0x8095170d?
+[ScePatchChecker] check (title_id='NPXS39041', app_version='', check_option=5): status=0, dl_status=0, trigger=10 userId=0xff return 0x8095170d?
+[BgDailyChecker] ScePatchCheckJob end (2026-05-11T14:17:27.89+01:00)?
+[BgDailyChecker] BgDailyCheckerAutoResumeDownloadJob end (2026-05-11T14:17:27.99+01:00)?
+[SceShellUI] I/PSM.UI : Allocating Emojis at Initialize...?
+[SceShellUI] I/PSM.UI : Allocating ShellUI Emojis...?
+[SceShellUI] I/PSM.UI : Allocating Unicode Emojis from PNG...?
+[SceShellUI] I/PSM.UI : Allocating Unicode Emojis from Atlas...?
+[BgDailyChecker] BgDailyCheckerPreOrderJob end (2026-05-11T14:17:28.09+01:00)?
+[SceShellUI] I/PSM.UI : TimerLog: diff [608.96]msec / process time [11010]msec / GC[0] : => [UIInitialize] UISystem.PreloadSystemTexture?
+[SceShellUI] I/PSM.UI : SystemSound::Initialize() ?
+[SceShellUI] I/PSM.UI : VideoOutMode   : IsSystemDefault=True, IsVr=False?
+[SceShellUI] I/PSM.UI : VideoOutStatus : [1920 1080] : freq 59.94?
+[SceShellUI] I/PSM.UI : TimerLog: diff [2119.92]msec / process time [11021]msec / GC[0] :  [UIInitialize] UISystem.InitializeBeforeRendering?
+[SceShellUI] W/PSM.UI : **** WARNING: Shown called without Alive status : TransitionScene?
+[SceShellUI] I/PSM.UI : SoundScriptManager initialized ?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : BlankScene : Scene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : TransitionScene : TransitionScene?
+SERIAL_PRINT_TIME_TICK#: 28371 msec -- LAP : AppMain.Main : app.Launched : start?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Game : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SystemBG : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : TopMenu : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : ShellApp : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Sticker : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SaveDataError : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : LaunchError : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Error : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : CrashReport : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Impose : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Ime : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SystemAlert : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : PSMenu : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : QuickMenu : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SystemFG : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Notification : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : VoiceRecognition : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SystemOverlay : LayerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : TopMenuBG : Scene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Navigation : StackScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : ShellAppBG : Scene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : ShellAppScreen : ContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SystemErrorDialog : ContainerScene?
+[SL] AppFocusChanged [] -> [NPXS20001]?
+[BgDailyChecker] BgDailyCheckerTzdataUpdateJob end (2026-05-11T14:17:28.50+01:00)?
+[BgDailyChecker] BgDailyCheckerServerSwitchJob end (2026-05-11T14:17:28.60+01:00)?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : HealthWarning : Scene?
+[AutoLogin] Start?
+SERIAL_PRINT_TIME_TICK#: 2sceCameraSetConfigInternal failed: -2144468976?
+#LOGIN MGR# isIduMode = 0?
+#LOGIN MGR# GetAutoLoginUserIdForEven[t()?
+SCE_REGMGR_ENT_KEY_USER_auto_login_user : 1ab07dc7?
+[ExecAu8toLogin] enableDKebugAutoLogin : False, isAutoLoginForEvent : False?
+[ExecAutoLogin] autoLoginUserExist : True, autoLoginUserId : 0x1ab07dc7?
+[ExecAutoLogin] GetAutoAssignEnable : True?
+sceCameraSetConfig failed: -2144468976?
+[##### RECOGNITION WARNING #####]:W:\Build\J02688430\vsh\shell\shell_ui\src\recognition\vision\rcg_vision_engine\src\common\system_logger\rcg_vision_camera_data.cpp UpdateData():46 : [result == 0]:sceCameraSetConfig() returns 0x802e0010?
+#LOGIN MGR# [Login] userId=0x1ab07dc7, isLoged-in=0?
+#LOGIN MGR# isIduMode = 0?
+#LOGIN MGR# #### LoginProcess start ####?
+#LOGIN MGR# isLogin = 0?
+[SceUserServiceServer] -> RUNNING (JobId: 1)?
+[SceUserServiceClient] Login: 0x1?
+[SceUserServiceClient] JobId: 1, GetJobStatus: 0x0, status: 1, result: 0x80960106 (BUSY)?
+[BgDailyChecker] BgDailyCheckerRnpsAppJob end (2026-05-11T14:17:28.70+01:00)?
+[SceUserServiceServer] start job?
+[SceUserService] User "jumbomedia" (0x1ab07dc7) logged in?
+6E0]9s cmesecCa -me-r aLDAePv S: toHpea:lt:25hW4a8r nEiRnRgOCRo:n trscoelClamere r:a SPhroowcCHeonalftighWSatorpn 0ixn8g 02: e00st06a?r
+t?sceCameraStopByHandle failed: -2144468986?
+[##### RECOGNITION WARNING #####]:W:\Build\J02688430\vsh\shell\shell_ui\src\recognition\vision\rcg_vision_engine\src\common\system_logger\rcg_vision_camera_data.cpp UpdateData():139 : [resultTemp == 0]:sceCameraStopByHandle() returns 0x802e0006?
+[BgDailyChecker] BgDailyCheckerRifManagerCheck end (2026-05-11T14:17:28.80+01:00)?
+
+SERIAL_PRINT_TIME_TICK#: 28777 msec -- LAP : HealthWarningController : ShowHealthWarning : start animation Frame 0?
+[SceUserServiceServer] -> FINISHED (JobId: 1) 0x0?
+[SceLncUtil] blockAppSuspend: name={SceSaveDaSta}, appId={0x60000100}, refCount={1}?
+[SceUserServiceServer] -> IDLE (JobId: 1) 0x0?
+ERIAL_PRINT_TIME_TICK#: 28845 msec -- AppMain.Main : app.Launched : end?
+IME:ime_framework.cpp(407):CbCheckLoginUser :login event arrived.?
+#LOGIN MGR# loginMethod = 2?
+#LOGIN MGR# userId = 0x1ab07dc7?
+#LOGIN MGR# isGuestUser = 0?
+#LOGIN MGR# setDataRet = 0?
+#LOGIN MGR# #### LoginProcess end ####?
+#LOGIN MGR# [IsJediPlus] isJediPlus : 0 / deviceId : 0x9000000000100?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x9000000000100][type:2][subType:10]?
+#LOGIN MGR# : \device_manager.cpp(1626) : onDeviceAdded : ERROR : Invalid processing mode :-1?
+#LOGIN MGR# [IsJediPlus] isJediPlus : 0 / deviceId : 0x3000000050100?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x3000000050100][type:0][subType:7]?
+#LOGIN MGR# : \device_manager.cpp(1626) : onDeviceAdded : ERROR : Invalid processing mode :-1?
+#LOGIN MGR# [IsJediPlus] isJediPlus : 0 / deviceId : 0x4000000080000?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x4000000080000][type:0][subType:8]?
+#LOGIN MGR# : \device_manager.cpp(1626) : onDeviceAdded : ERROR : Invalid processing mode :-1?
+#LOGIN MGR# : \login_mgr.cpp(515) : NotifyLoggedin : OnDeviceAdded(NotifyLoggedin) event send.?
+[AutoLogin] End(4)?
+[SceLncUtil] unblockAppSuspend: name={SceSaveData}, appId={0x60000100}, refCount={0}?
+[Performance Warning] framedrop count 194?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [] -> [TopMenuBG : Scene]?
+[SceShellUI] I/PSM.UI :      Scene [TopMenuBG : Scene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[1.95msec] Layout[0.00msec/0widgets] : Sce.Vsh.ShellUI.AppSystem.LayerManager.RootScene : RootScene?
+[ShareBlockingCache] FinishRecoverSync?
+[AppDb][Server] Rcv Event 12?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[40], style=[Normal], weight=[Light], handle=[0x97512e2f]?
+[Performance Warning] framedrop count 13?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : BGScene : BGScene?
+Initialize XfGraphics?
+Initialize XfGraphics?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.44msec] Layout[0.00msec/0widgets] : BGLayerPlugin : BGLayerPlugin?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.02msec] Layout[0.00msec/0widgets] : Noname : ProfileCachePlugin?
+[Web] Setting FMEM-GPU limit to 100 MiB?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[Performance Warning] framedrop count 6?
+[Performance Warning] framedrop count 4?
+[WebProcessMgr] ReleaseWebProcess()?
+ERROR: sceSblPltAuthSmVeriR1C2GenR2(283) retVal -43?
+ERROR: pltauth_ioctl_nolock(363) sceSblAuthMgrPltAuthVeriR1C2GenR2 -43?
+GetLocaleElement() failed in SetLocale?
+UserInfoPanelDecorator.Start()?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.03msec] Layout[0.00msec/0widgets] : BasePlugin : BasePlugin?
+dbPreparationEvent.cexOrKratos=0, dbPreparationEvent.userId=-1, dbPreparationEvent.isPrimaryUser=False, dbPreparationEvent.eventType=0?
+?
+[Performance Warning] framedrop count 45?
+[SceShellUI] W/PSM.UI : Invalid widget type! _Count?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : ThemePlugin : ThemePlugin?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : BigApp : BigAppContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : AppScreen : ApplicationScreenScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : AppErrorDialog : ErrorDialogScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : CdlgScreen : CommonDialogScreenScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : CdlgErrorDialog : ErrorDialogScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SplashScreen : SplashScreenScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Spectating : ContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : MiniApp : MiniAppContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : AppScreen : ApplicationScreenScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : AppErrorDialog : ErrorDialogScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : CdlgScreen : CommonDialogScreenScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : CdlgErrorDialog : ErrorDialogScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SplashScreen : SplashScreenScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : AppMask : ApplicationMaskScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.02msec] Layout[0.00msec/0widgets] : Noname : GameLayerPlugin?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : Noname : DebugPlugin?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[33], style=[Normal], weight=[Light], handle=[0x97511a2f]?
+[Performance Warning] framedrop count 6?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : GlsPlugin : GlsShellUICollectorPlugin?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.02msec] Layout[0.00msec/0widgets] : VnaPlugin : VnaPlugin?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : MenuStackScene : MenuStackScene?
+[Performance Warning] framedrop count 1?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : MenuScene : MenuScene?
+SERIAL_PRINT_TIME_TICK#: 30662 msec -- StartFarsightUI : start?
+[Sce.Vsh.Db.Shared.ConnectionManager] Open /fiSpRPSVmc/priv/mms/app.db, ReadOnly ?
+[Theme/I] : OnLogin : ffffffff?
+[Theme/I] : OnLogin : 1ab07dc7?
+[Theme/I] : ** Mount started **?
+[Theme/I] : Mount : [UID:ffffffff:ANONYMOUS]?
+[Theme/I] : Mount : Anonymous user?
+[Theme/I] : Mount[ANONYMOUS] : [ThemeColor] : Blue?
+[Theme/I] : Mount[ANONYMOUS] : [BgTexture] : [HomeScreen:N/A][FuncScreen:N/A]?
+[SceShellCore] Change run-level 80 -> 100?
+[SceShellCore] HW Indicator: White?
+[Sce.Vsh.Db.Shared.ConnectionManager] Open /fiSpRPSVmc/common/mms/av_content.db, ReadOnly ?
+[SceShellCore] START AV Capture Manager?
+[SceLncService] launchApp(NPXS21003)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21003?
+[Syscore App] processSpawn(pid, 0x60000302, 0x10302030, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21003_000, titleId = NPXS21003?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21003/eboot.bin?
+[Syscore App] new pid=0x2c[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x2c?
+[AppMgr Trace]: New Process, pid=0x2c, created.?
+[AppMgr Trace]: New App, appId=0x60000302, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceShellCore] START Game Live Streaming?
+[SceLncService] launchApp(NPXS21000)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21000?
+[Syscore App] processSpawn(pid, 0x60000403, 0x10403040, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21000_000, titleId = NPXS21000?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21000/eboot.bin?
+[Syscore App] new pid=0x2d[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x2d?
+[AppMgr Trace]: New Process, pid=0x2d, created.?
+[AppMgr Trace]: New App, appId=0x60000403, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceShellCore] START Party Daemon?
+[SceLncService] launchApp(NPXS21002)?
+[Sce.Vsh.Db.Shared.ConnectionManager] Close key[/fiSpRPSVmc/priv/mms/app.dbReadOnly]?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21002?
+[Syscore App] processSpawn(pid, 0x60000504, 0x10504050, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21002_000, titleId = NPXS21002?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21002/eboot.bin?
+[Syscore App] new pid=0x2e[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_ESXEC?
+[BOOT TIME]   ShellUI:   31772 msec: vsh resume progress: resumed. (OpenForegroundSession finished)?
+#LOGIN MGR# Event Received : SCE_LOGIN_MGR_EVENT_START_EVENT_WATCH?
+#LOGIN MGR# OnStartInitialize() deviceId : 0xffffffffffffffff?
+#LOGIN MGR# [LoginMgr] startEventWatch() mode:1?
+#LOGIN MGR#  Set event flag [SCE_BOOT_STAT_LOGIN_MGR]?
+#LOGIN MGR# [IsJediPlus] isJediPlus : 0 / deviceId : 0x9000000000100?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x9000000000100][type:2][subType:10]?
+#LOGIN MGR# [IsJediPlus] isJediPlus : 0 / deviceId : 0x3000000050100?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x3000000050100][type:0][subType:7]?
+D/125878 X?
+#LOGIN MGR# isIduMode = 0?
+#LOGIN MGR# getHidDeviceNum() : 2?
+#LOGIN MGR# [RunBusTransitionNewDevice] ret : -2135556047 / deviceUniqueId : 0x0000000000000000?
+#LOGIN MGR# The device(0x3000000050100) was auto assigned to User 0x1ab07dc7.?
+#LOGIN MGR# [Assign] DeviceId:0x0003000000050100 / UserId:0x1ab07dc7?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+#LOGIN MGR# sceMbusBindDeviceWithUserId( 0x0003000000050100, 0x1ab07dc7 ) : 0(0x00000000)?
+#LOGIN MGR# : \login_mgr.cpp(478) : NotifyDeviceAdd : OnDeviceAdded event send.?
+Event OnControllerActivated isAutoAssignComplete:1, m_systemState:1000, isSendEvent:1?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x3000000050100)?
+#LOGIN MGR# [DeviceQueueMgr::Dequeue(new)] deviceId : 0x0003000000050100 / isForce : 0 / isDeviceRemoved : 0?
+#LOGIN MGR# [IsJediPlus] isJediPlus : 0 / deviceId : 0x4000000080000?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x4000000080000][type:0][subType:8]?
+D/125878 X?
+#LOGIN MGR# isIduMode = 0?
+#LOGIN MGR# getHidDeviceNum() : 2?
+#LOGIN MGR# [RunBusTransitionNewDevice] ret : -2135556047 / deviceUniqueId : 0x0000000000000000?
+#LOGIN MGR# The device(0x4000000080000) was auto assigned to User 0x1ab07dc7.?
+#LOGIN MGR# [Assign] DeviceId:0x0004000000080000 / UserId:0x1ab07dc7?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+#LOGIN MGR# sceMbusBindDeviceWithUserId( 0x0004000000080000, 0x1ab07dc7 ) : 0(0x00000000)?
+#LOGIN MGR# : \login_mgr.cpp(478) : NotifyDeviceAdd : OnDeviceAdded event send.?
+Event OnControllerActivated isAutoAssignComplete:1, m_systemState:1000, isSendEvent:1?
+#LOGIN MGR# [DeviceQueueMgr::Dequeue(new)] deviceId : 0x0004000000080000 / isForce : 0 / isDeviceRemoved : 0?
+m_utlityServer.Start(): 0(0x00000000)?
+#LOGIN MGR# LoginMgrUtilityServerThr start?
+#LOGIN MGR# : \event_thread.cpp(205) : Run : Event Received : SCE_LOGIN_MGR_EVENT_WATCH_THREAD_READY?
+#LOGIN MGR# [RunDisableWaitData]?
+#LOGIN MGR# [DequeueDisableWaitData] deviceId : 0xffffffffffffffff / size : 0 ?
+#LOGIN MGR# [RunDisableWaitData] ret : -2135556087 / deviceId : 0xffffffffffffffff ?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x2000000000000][type:2][subType:1]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x2000000000001][type:2][subType:1]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x2000000000000][UserId:0x000000ff]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x2000000000000 / userId : 0x000000ff ?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x2000000000002][type:2][subType:1]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x2000000000001][UserId:0x000000ff]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x2000000000001 / userId : 0x000000ff ?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x1030f][type:2][subType:16]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x2000000000002][UserId:0x000000ff]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x2000000000002 / userId : 0x000000ff ?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x2030e][type:2][subType:13]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x1030f][UserId:0x000000ff]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x1030f / userId : 0x000000ff ?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x4000000080000)?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x9000000000100][type:2][subType:10]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x2030e][UserId:0x000000ff]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x2030e / userId : 0x000000ff ?
+[Syscore App] Add event : pid=0x2e?
+[AppMgr Trace]: New Process, pid=0x2e, created.?
+[AppMgr Trace]: New App, appId=0x60000504, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x9000000000100][UserId:0x000000ff]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x9000000000100 / userId : 0x000000ff ?
+[SceShellCore] START Video Core Server?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x3000000050100][type:0][subType:7]?
+D/125878 X?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x4000000080000][type:0][subType:8]?
+D/125878 X?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x1?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT?
+#LOGIN MGR# [IsPuConnectHdmi] start checkDeviceId : 0x7000 ?
+#LOGIN MGR# [IsPuConnectHdmi] sceAvSettingGetDeviceInfo -> 0(0x00000000) ?
+#LOGIN MGR# [IsPuConnectHdmi] videoOutCapability = 0x1 ?
+#LOGIN MGR# [IsPuConnectHdmi] end checkDeviceId : 0x7000 -> isReady = 0 ?
+#LOGIN MGR# [NotifyMorpheusConnectStatusChangedForHmuSetupDialog] deviceId : 0xffffffffffffffff / userId : 0xffffffff / avSettingPuType : 0 / connectStatus : 6 ?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x2?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x3000000050100][UserId:0x1ab07dc7]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x3000000050100 / userId : 0x1ab07dc7 ?
+[SceLncService] launchApp(NPXS21004)?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x4000000080000][UserId:0x1ab07dc7]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x4000000080000 / userId : 0x1ab07dc7 ?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[Sce.Vsh.Db.Shared.ConnectionManager] Open /fiSpRPSVmc/priv/mms/app.db, ReadOnly ?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21004?
+[Syscore App] processSpawn(pid, 0x60000605, 0x10605060, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21004_000, titleId = NPXS21004?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21004/eboot.bin?
+[Syscore App] new pid=0x2f[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EEXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x2f?
+[AppMgr Trace]: New Process, pid=0x2f, created.?
+[AppMgr Trace]: New App, appId=0x60000605, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceShellCore] START Remote Play Daemon?
+[SceLncService] launchApp(NPXS21006)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21006?
+[Syscore App] processSpawn(pid, 0x60000706, 0x10706070, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21006_000, titleId = NPXS21006?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21006/eboot.bin?
+[Syscore App] new pid=0x30[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Theme/I] : Mount[ANONYMOUS] : [Icons] : default icons?
+[Theme/I] : Mount[ANONYMOUS] : [BgSceneGraph] : [HomeScreen:N/A][FuncScreen:N/A]?
+[Theme/I] : Mount[ANONYMOUS] : [Color] : [Font:FFFFFFFF][FontShadow:00000000][ThemedFocus:0000BAFF]?
+[Theme/I] : Mount[ANONYMOUS] : [Dimmer] : [Home:00000000][Function:00000000][Title:00000000]?
+[Theme/I] : Mount[ANONYMOUS] : [Bgm/SE] : [bgmHome:D][seDecide:D][seCancel:D][seCursor:D]?
+[Theme/I] : ** Mount finished : [ANONYMOUS][Type:Original] **?
+[Syscore App] Add event : pid=0x30?
+[AppMgr Trace]: New Process, pid=0x30, created.?
+[AppMgr Trace]: New App, appId=0x60000706, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceShellCore] START PS Cloud Daemon?R
+[SceLncService] launchApp(NPXS21010)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21010?
+[Syscore App] processSpawn(pid, 0x60000807, 0x10807080, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21010_000, titleId = NPXS21010?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21010/eboot.bin?
+[Syscore App] new pid=0x31[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x31?
+[AppMgr Trace]: New Process, pid=0x31, created.?
+[AppMgr Trace]: New App, appId=0x60000807, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceShellCore] START SP ZeroConf?
+[SceLncService] launchApp(NPXS21016)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21016?
+[Syscore App] processSpawn(pid, 0x60000908, 0x10908090, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21016_000, titleId = NPXS21016?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21016/eboot.bin?
+[Syscore App] new pid=0x32[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Start sceApplicationAddProcess /app0/webrtc_daemon.self?
+[Syscore App] Add event : pid=0x32?
+[AppMgr Trace]: New Process, pid=0x32, created.?
+[AppMgr Trace]: New App, appId=0x60000908, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[Syscore App] calling add process?
+[Syscore App] processSpawn(pid, 0x60000504, 0x105040a1, appParam, processParam, 0, 0, 0, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21002_000, titleId = NPXS21002?
+[Syscore App] processParam: elfPath = /app0/webrtc_daemon.self, fullPath = /system/vsh/app/NPXS21002/webrtc_daemon.self?
+[Syscore App] new pid=0x33[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[SceShellCore] START Social Screen Manager?
+[SceLncService] launchApp(NPXS21019)?
+[Syscore App] Add event : pid=0x33?
+[AppMgr Trace]: New Process, pid=0x33, created.?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21019?
+[Syscore App] processSpawn(pid, 0x60000a09, 0x10a090b0, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21019_000, titleId = NPXS21019?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21019/eboot.bin?
+[Syscore App] new pid=0x34[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x34?
+[AppMgr Trace]: New Process, pid=0x34, createId.?
+[AppMgr Trace]: New App, appId=0x60000a09, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceLncService] W:\Build\J02688430\vsh\shell\shell_core\lnc_service\lnc_manager.cpp(2188) getAppId: LNC_ISOK::0x80940004->0xffffffff?
+[SceShellCore] START Music Core Server?
+[SceLncService] launchApp(NPXS21007)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[SysAcore App] createApp NPXS21007?
+[Syscore App] processSpawn(pid, 0x60000b0a, 0x10b0a0c0, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21007_000, titleId = NPXS21007?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21007/eboot.bin?
+[Syscore App] new pid=0x35[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x35?
+[AppMgr Trace]: New Process, pid=0x35, created.?
+[AppMgr Trace]: New App, appId=0x60000b0a, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceShellCore] START Voice and Agent?
+[SceLncService] launchApp(NPXS21020)?
+[SceLncService] category={gdd} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_DAEMON} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] No heart beat of Shell UI has been observed for 1099 msec.?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS21020?
+[Syscore App] processSpawn(pid, 0x60000c0b, 0x10c0b0d0, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x2, rootPath = /mnt/sandbox/NPXS21020_000, titleId = NPXS21020?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS21020/eboot.bin?
+[Syscore App] new pid=0x36[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x36?
+[AppMgr Trace]: New Process, pid=0x36, created.?
+[AppMgr Trace]: New App, appId=0x60000c0b, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[SceSysCore] spawn /system/sys/fs_cleaner.elf OK?
+fs_cleaner: fs_clean(172)  * cleaned mountpoints=0/654, files=0?
+[UMD MAIN] launching VdecProxy PID=0x38?
+[UMD MAIN] launching VencProxy PID=0x39?
+[mbus] onNewClient. clientNum 8 over 8?
+[mbus] onNewClient. clientNum 9 over 8?
+[SceLncService] W:\Build\J02688430\vsh\shell\shell_core\lnc_service\lnc_manager.cpp(2188) getAppId: LNC_ISOK::0x80940004->0xffffffff?
+@ busStatusChangeSubscribe:L4750?
+L_PRINT_TIM[SceLncService] No heart beat of Shell UI has been observed for 2009 msec.?
+E_TICK#: 31129 msec -- StartFarsightUI : end?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[1912.42msec] Layout[0.00msec/0widgets] : QuickMenuPlugin : QuickMenuPlugin?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : ActiveUserChanged : From : [NONE(userId = ffffffff)] (Mount processing..)?
+[Theme/I] : ActiveUserChanged : To   : [NONE(userId = 1ab07dc7)] (Mount processing..)?
+[LoginMgr] OnLoginMgrDequeueEvent?
+[LoginMgr:EventQueue] Dequeue - param : {"EventType":3,"deviceId":844424930459904,"isDeviceRemoved":false,"isForce":false}?
+[LoginMgr:Queue] Dequeue - queueType : Level2 / eventType : QueueEventTypeSelectUser / eventJson : [{"EventType":3,"deviceId":844424930459904,"isDeviceRemoved":false,"isForce":false}] / isForce : False / isDeviceRemoved : False?
+[LoginMgr] OnLoginMgrDequeueEvent?
+[LoginMgr:EventQueue] Dequeue - param : {"EventType":3,"deviceId":1125899907366912,"isDeviceRemoved":false,"isForce":false}?
+[LoginMgr:Queue] Dequeue - queueType : Level2 / eventType : QueueEventTypeSelectUser / eventJson : [{"EventType":3,"deviceId":1125899907366912,"isDeviceRemoved":false,"isForce":false}] / isForce : False / isDeviceRemoved : False?
+[BGFT] [RDL2] [SoC] onAdd() <<< start checking user = 1ab07dc3, Primary >>?
+[Theme/I] : ** Mount started **?
+[Theme/I] : Mount : [UID:1ab07dc7:BLUE]?
+[Theme/I] : Mount : Flow theme user.?
+[Theme/I] : Mount[BLUE] : [ThemeColor] : Blue?
+[Theme/I] : Mount[BLUE] : [BgTexture] : [HomeScreen:N/A][FuncScreen:N/A]?
+[Theme/I] : Mount[BLUE] : [Icons] : default icons?
+[Theme/I] : Mount[BLUE] : [BgSceneGraph] : [HomeScreen:N/A][FuncScreen:N/A]?
+[Theme/I] : Mount[BLUE] : [Color] : [Font:FFFFFFFF][FontShadow:00000000][ThemedFocus:0000BAFF]?
+[Theme/I] : Mount[BLUE] : [Dimmer] : [Home:00000000][Function:00000000][Title:00000000]?
+[Theme/I] : Mount[BLUE] : [Bgm/SE] : [bgmHome:D][seDecide:D][seCancel:D][seCursor:D]?
+[Theme/I] : ** Mount finished : [BLUE][Type:Original] **?
+[SceShellUI] I/PSM.UI : [WebRunLoop] Initialize?
+[Syscore App] Start sceApplicationAddProcess /fiSpRPSVmc/common/lib/SecureUIProcess.self?
+[Syscore App] calling add process?
+[Syscore App] processSpawn(pid, 0x60000201, 0x102010e1, appParam, processParam, 0, 0, 0, param, debug, 0)?
+[Syscore App] appParam: appType = 0x5, rootPath = /mnt/sandbox/NPXS20001_000, titleId = NPXS20001?
+[Syscore App] processParam: eSlfPath = /fiSpRPSVmc/common/lib/SecureUIProcess.self, fullPath = /system/common/lib/SecureUIProcess.self?
+[Syscore App] new pid=0x3a[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[ShellUI][SharedWebView][BVT] Constructor : 0 ms?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=0 start?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=0 end?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=1 start?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=1 end?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xSa), phase=2 start?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=2 end?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=3 start?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=3 end?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=4 start?
+[Syscore Umd] Event id=SCE_UMD_SYSTEM_VSH_READY(0xa), phase=4 end?
+[BOOT TIME]   ShellUI:   33446 msec: vsh resume progress: ready to boot game?
+[Performance Warning] framedrop count 133?
+[Syscore App] Add event : pid=0x3a?
+[AppMgr Trace]: New Process, pid=0x3a, created.?
+[Sce.Vsh.Db.Shared.ConnectionManager] Open /fiSpRPSVmc/priv/mms/notification.db, ReadWrite ?
+EERRIIAAL_LP_RPIRINT_NTTI_MTEI_MET_ICTKIC#K:#:  3328271652  mmsesce c ---- P roLcAPes sB: HaceaklgthrWoarunindnIgniConttrolle r:  :end S?
+howHealthWarning : finish animation?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: HealthWarning : Scene?
+[AppDb] EraseMediaDiscThumbnailAndTitleName()[269]: called?
+[AppDb] eraseAllFilesInDir()[115]: opendir error: path = [/user/temp/media_event_listener/thumbnail/]?
+[AppDb][Server] Rcv Event 3?
+enableMediaEvent()[923]: [MediaEvent] enableMediaEvent()?
+enableMediaEvent()[926]: [MediaEvent] enableMediaEvent() locked.?
+enableDiscEvent()[665]: [MediaEvent] enableDiscEvent() locked.?
+[AppDb] DequeueCmdMsgFromShellUI()[518]: app_db_client: [queue]: 0, [msg] cmd: 13, opt:4, index: 0?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::unregisterDiscInsertionCallback() 1238):?
+	callback for disc insertion event has not been registered yet.?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::unregisterDiscEjectionCallback() 1279):?
+	callback for disc insertion event has not been registered yet.?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::unregisterDiscMountCallback() 1130):?
+	callback for mount event has been not registered yet.?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::unregisterDiscUnmountCallback() 1190):?
+	callback for umount event has not been registered yet.?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::getDiscStatus(int *) 1403):?
+	no-disc state.?
+enableUsbStorage()[749]: [MediaEvent] enableUsbStorage() locked.?
+ERROR AutoMounterMelUtil(int32_t sceAutomounterMelUtil::unregisterUsbStorageMountCallback() 1320):?
+	callback for mount event has been not registered yet.?
+ERROR AutoMounterMelUtil(int32_t sceAutomounterMelUtil::unregisterUsbStorageUnmountCallback() 1361):?
+	callback for umount event has not been registered yet.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::enable() 426):?
+	PsmEventNotifier::enable()?
+InitializeExternalHddManager()[1248]: [MediaEvent] InitializeExternalHddManager()?
+InitializeExternalHddManager()[1250]: [MediaEvent] InitializeExternalHddManager()start?
+-- boot sequence finished --?
+[Performance Warning] framedrop count 7?
+[Performance Warning] framedrop count 2?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : Notification : NotificationScene?
+[SceShellUI] W/PSM.UI : WARNING : Widget LayoutBuild : [6.73msec/2widgets] : VoiceRecognitionFooter(Panel)?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : VoiceRecognitionUI : VoiceRecognitionScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : CdlgShellContainer : ContainerScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : CdlgShellContainer : ContainerScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : ScreenShotScene : ScreenShotScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[3.38msec] Layout[0.00msec/0widgets] : ShareNavigationScene : ShareNavigationScene?
+[Theme/I] : OnUnload : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : OnPreload : [BLUE(userId = 1ab07dc7)]?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[11.17msec] Layout[0.00msec/0widgets] : TopMenuControlPlugin : TopMenuControlPlugin?
+GetLocaleElement() failed in SetLocale?
+[Performance Warning] framedrop count 4?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[30], style=[Normal], weight=[Light], handle=[0x9751842f]?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[26], style=[Normal], weight=[Light], handle=[0x94517b2f]?
+[SceShellUI] W/PSM.UI : WARNING : Widget LayoutBuild : [7.29msec/11widgets] : NotificationMsgPanel(Panel)?
+[Performance Warning] framedrop count 1?
+[Theme/I] : ** Unload started : [ANONYMOUS][Type:Original] **?
+[Theme/I] : ** Unload finished : [ANONYMOUS][Type:Original] **?
+[Theme/I] : ** Preload started : [BLUE][Type:Original] **?
+[Theme/I] : Preload[BLUE] : [BgTexture] : no entry?
+[Theme/I] : Preload[BLUE] : [Icons] : default icons?
+[Theme/I] : Preload[BLUE] : [BgSceneGraph] : no entry?
+[Theme/I] : Preload[BLUE] : [Color] : [Font:FFFFFFFF][FontShadow:00000000]?
+[Theme/I] : Preload[BLUE] : [Dimmer] : [Home:00000000][Function:00000000][Title:00000000]?
+[Theme/I] : Preload[BLUE] : [Bgm] : default sounds?
+[AudioOut] sceAudioOutOpen() with restricted flag:pid=0x2b ch=8?
+[SceShellUI] I/PSM.UI : LoadAsync of custom SE is finished.?
+[Theme/I] : ** Preload finished : [BLUE][Type:Original] **?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : TopMenuFrameScene : VoiceRecognitionFrameScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : LiveArea : ContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : ContentsArea : ContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : SystemArea : ContainerScene?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : TopMenuFG : Scene?
+[SceShellUI][BVT] TopMenuPlugin Loaded.?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : TopMenuPlugin : TopMenuPlugin?
+[Performance Warning] framedrop count 2?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.66msec] Layout[0.00msec/0widgets] : TopMenuControlPlugin : TopMenuControlPlugin?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.22msec] : HealthWarning : Scene?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[22], style=[Normal], weight=[Medium], handle=[0x9451762f]?
+[SceShellUI] W/PSM.UI : WARNING : Scene LayoutBuild : [7.12msec/52widgets] : SystemArea : SystemAreaScene?
+InitializeExternalHddManager()[1288]: [MediaEvent] usbId=0x0,last_connect=0,now_connect=0?
+InitializeExternalHddManager()[1361]: [MediaEvent] InitializeExternalHddManager()end.ret=0x0,promote_result=0x0?
+[SceLncService] Enable SecureWebProcess.self to expand CPU?
+[Syscore App] Start sceApplicationAddProcess /fiSpRPSVmc/common/lib/SecureWebProcess.self?
+[Syscore App] calling add process?
+[Syscore App] processSpawn(pid, 0x60000201, 0x102010f2, appParam, processParam, 0, 0, 0, param, debug, 0)?
+[Syscore App] appParam: appType = 0x5, rootPath = /mnt/sandbox/NPXS20001_000, titleId = NPXS20001?
+[Syscore App] processParam: elfPath = /fiSpRPSVmc/common/lib/SecureWebProcess.self, fullPath = /system/common/lib/SecureWebProcess.self?
+[Syscore App] new pid=0x3b[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[22], style=[Normal], weight=[Light], handle=[0x9451602f]?
+[Syscore App] Add event : pid=0x3b?
+[AppMgr Trace]: New Process, pid=0x3b, created.?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[7.12msec/52widgets] : SystemArea : SystemAreaScene?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[26], style=[Normal], weight=[Normal], handle=[0x94515a2f]?
+[Performance Warning] framedrop count 4?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.50msec/1widgets] : LiveAreaScene : LiveAreaScene?
+[Performance Warning] framedrop count 1?
+PRINT_TIME_TICK#S: 33961 msec -- BootEffect : start?
+ERIAL_PRINT_TIME_TICK#: 33962 msec -- BootEffect : start?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [TopMenuBG : Scene] -> [ContentAreaScene : ContentAreaScene]?
+[SceShellUI] I/PSM.UI :      Scene [ContentAreaScene : ContentAreaScene] : Alive?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.18msec/1widgets] : ContentAreaScene : ContentAreaScene?
+[Performance Warning] framedrop count 8?
+[Performance Warning] framedrop count 2?
+GetPlusInfoJob : Run(Start)?
+GetPlusInfoJob : Run(End)?
+GetPlusInfoJob : Finish / Cancelled False / Result True?
+[UpdateUserInfoforPlus] upd_userId : 447774151 / type : None?
+[Performance Warning] framedrop count 1?
+D/88391:NPXS20108?
+UserContentRetriever.GetUrl(): https://nsx.sec.np.dl.playstation.net/nsx/cp/np/v1/manifestList.json?
+UserContentRetriever.FetchContentLength() failed, msg:Error: Success?
+[Sce.Vsh.Db.Shared.ConnectionManager] Open /fiSpRPSVmc/priv/messages/1ab07dc7/messages.db(),/fiSpRPSVmc/priv/messages/1ab07dc7/attachment.db(attach1), ReadOnly ?
+[Syscore App] Start sceApplicationAddProcess /fiSpRPSVmc/common/lib/orbis-jsc-compiler.self?
+[Syscore App] calling add process?
+[Syscore App] processSpawn(pid, 0x60000201, 0x10201103, appParam, processParam, 0, 0, 0, param, debug, 0)?
+[Syscore App] appParam: appType = 0x5, rootPath = /mnt/sandbox/NPXS20001_000, titleId = NPXS20001?
+[Syscore App] processParam: elfPath = /fiSpRPSVmc/common/lib/orbis-jsc-compiler.self, fullPath = /system/common/lib/orbis-jsc-compiler.self?
+[Syscore App] new pid=0x3c[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x3c?
+[AppMgr Trace]: New Process, pid=0x3c, created.?
+#LOGIN MGR# : \event_thread.cpp(129) : Run : EveSnt Received : SCE_LOGIN_MGR_EVENT_RESUME_EVENT_WATCH?
+#LOGIN MGR# [RunDisableWaitData]?
+#LOGIN MGR# [DequeueDisableWaitData] deviceId : 0xffffffffffffffff / size : 0 ?
+#LOGIN MGR# [RunDisableWaitData] ret : -2135556087 / deviceId : 0xffffffffffffffff ?
+PRINT_TIME_TICK#: 35810 msec -- BootEffect : end?
+PRINT_TIME_TICK#: 35810 msec -- FinishBootEffect : Shell UI is Ready.?
+ERIAL_PRINT_TIME_TICK#: 35810 msec -- BootEffect : end?
+SERIAL_PRINT_TIME_TICK#: 35848 msec -- FinishBootEffect : Shell UI is Ready.?
+[BVT] Cold boot time : 35856 msec?
+[BVT] frame drop : 434?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[60], style=[Normal], weight=[Light], handle=[0x94511b2f]?
+[ShellUI][SharedWebView][BVT] OnFinishedLoad : 3994 ms?
+[SceShellUI] I/RNPS : CCTOR WarmUp - unable to find type by name: ReactNative.Views.Web.Dialog.Font, ReactNative.PUI.?
+[ProfileCacheManager] JobUpdate.Run(0x1AB07DC7, FirstTime)?
+[ProfileCacheManager] JobUpdate.Finish(0x1AB07DC7)?
+[SceShellCore] Libc Heap Status: free 52%, in-use 2941.5 KB, trend +5693.3 KB/min, peak 2999.7 KB, when 31 [sec]?
+[SceSysCore] System CPU cores: c0?
+DBG AutoMounter(_delayedTimeout 131):?
+	initialDetectStatus is set to 0x2.?
+MSG AutoMounter(int32_t AutoMount::EventManager::notifyEvent(uint32_t, const void *, size_t) 609):?
+	melUtilPreUmntHandler starts without dispatching thread.?
+MSG AutoMounter(int32_t AutoMount::EventManager::notifyEvent(uint32_t, const void *, size_t) 611):?
+	melUtilPreUmntHandler ended.?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(notstarted) = 0x80550006?
+[BGFT] [RDL2] [SoC] onCancel() <<< start checking user = 1ab07dc3 >>?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(usercancelled) = 0x80550006?
+[BGFT] [RDL2] [SoC] onAdd() <<< start checking user = 1ab07dc7, Primary >>?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(notstarted) = 0x80550006?
+[BGFT] [RDL2] [SoC] onCancel() <<< start checking user = 1ab07dc7 >>?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(usercancelled) = 0x80550006?
+[BGFT] [RDL2] [SoC] onAdd() <<< start checking user = 1ab07dc9, Primary >>?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(notstarted) = 0x80550006?
+[BGFT] [RDL2] [SoC] onCancel() <<< start checking user = 1ab07dc9 >>?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(usercancelled) = 0x80550006?
+[BGFT] [RDL2] [SoC] onAdd() <<< start checking user = 1ab07dca, Not Primary >>?
+[BGFT] [RDL2] [SoC] onCancel() <<< start checking user = 1ab07dca >>?
+[BGFT] [RDL2] [SoC] Error : getNotificationDetail(usercancelled) = 0x8055000a?
+[SL][13:17:56:465][Thread 0x0001884c][INFO][TRACE][ALWAYS][INITIALIZE][SubThread][END  ][Heap]sanity OK, free 2247712 (36%), in-use 3978208 (64%), peak 3984512 (64%), when 51 [sec]?
+[SceWorkaroundCtl] PERIODIC_DOWNLOAD_INTERVAL_SEC={86400} elapsed={50} isFirstTime={1}?
+[SceWorkaroundCtl] start DownloadFile?
+[SceWorkaroundCtl] ifModifiedSince={Thu, 10 Dec 2020 08:29:25 +0000}?
+[SceWorkaroundCtl] statusCode={404}?
+[SceWorkaroundCtl] W:\Build\J02688430\vsh\shell\shell_core\workaround_ctl\http_client.cpp(140) Get: WC_CHECK::0x814c0005 (statusCode == SCE_HTTP_STATUS_CODE_OK value is false)?
+[SceWorkaroundCtl] W:\Build\J02688430\vsh\shell\shell_core\workaround_ctl\workaround_ctl_manager.cpp(288) DownloadFile: WC_ISOK::0x814c0005?
+[SceWorkaroundCtl] update lastDownloadTime?
+[SceWorkaroundCtl] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceSystemStateMgr] No user input for 60 seconds?
+[BVT] CPU Time : 2619 usec. ?
+[SceNetEv] PERIODIC_DOWNLOAD_INTERVAL_SEC={86400} contentId={8}, serviceName={netev}?
+[SceNetEv] start DownloadFile, contentId={8}, serviceName={netev}?
+[SceNetEv] ifModifiedSince={Tue, 02 Mar 2021 16:11:59 +0000}?
+[SceShellCore] VM Stats: RSS 562.1, kernel 264.3, wire count 317.5, swap out 0.0, page table CPU 2280/6144 GPU 367/2048?
+[SceShellCore] FMEM   1.3/   4.5 NPXS20977 SceSysAvControl.elf?
+[SceShellCore] FMEM  10.7/  74.3 NPXS20991 SceSysCore.elf?
+[SceShellCore] FMEM   9.3/  54.3 NPXS20973 orbis_audiod.elf?
+[SceShellCore] FMEM   3.2/  11.2 NPXS20976 GnmCompositor.elf?
+[SceShellCore] FMEM  47.1/ 344.6 NPXS20000 SceShellCore?
+[SceShellCore] FMEM 336.9/ 831.9 NPXS20001 SceShellUI?
+[SceShellCore] FMEM   3.4/   8.3 NPXS21003 SceAvCapture?
+[SceShellCore] FMEM   8.8/  24.6 NPXS21000 SceGameLiveStreaming?
+[SceShellCore] FMEM  14.1/  43.5 NPXS21002 ScePartyDaemon?
+[SceShellCore] FMEM   4.2/  25.4 NPXS21004 SceVideoCoreServer?
+[SceShellCore] FMEM  12.0/  51.3 NPXS21006 SceRemotePlay?
+[SceShellCore] FMEM   7.3/  19.5 NPXS21010 SceCloudClientDaemon?
+[SceShellCore] FMEM   3.3/  10.9 NPXS21016 SceSpZeroConf?
+[SceShellCore] FMEM   8.5/ 156.0 NPXS21002 webrtc_daemon.self?
+[SceShellCore] FMEM   6.9/  18.1 NPXS21019 SceSocialScreenMgr?
+[SceShellCore] FMEM   4.9/   9.8 NPXS21007 SceMusicCoreServer?
+[SceShellCore] FMEM   7.1/  14.4 NPXS21020 SceVoiceAndAgent?
+[SceShellCore] FMEM   2.1/   5.1 NPXS20967 fs_cleaner.elf?
+[SceShellCore] FMEM   2.0/  10.2 NPXS20974 SceVdecProxy.elf?
+[SceShellCore] FMEM   2.0/  10.3 NPXS20975 SceVencProxy.elf?
+[SceShellCore] FMEM  24.7/ 265.9 NPXS20001 SecureUIProcess.self?
+[SceShellCore] FMEM  31.8/ 525.9 NPXS20001 SecureWebProcess.self?
+[SceShellCore] FMEM  10.5/ 358.8 NPXS20001 orbis-jsc-compiler.self?
+[SceNetEv] statusCode={404}?
+[SceNetEv] W:\Build\J02688430\vsh\shell\shell_core\netev\netev_http_client.cpp(140) Get: NETEV_CHECK::0x8041440a (statusCode == SCE_HTTP_STATUS_CODE_OK value is false)?
+[SceNetEv] W:\Build\J02688430\vsh\shell\shell_core\netev\netev_manager.cpp(345) DownloadFile: NETEV_ISOK::0x8041440a?
+[SceNetEv] W:\Build\J02688430\vsh\shell\shell_core\netev\netev_manager.cpp(493) Run: NETEV_CONTINUE::0x8041440a?
+[SceNetEv] PERIODIC_CHECK_INTERVAL_SEC={480}?
+[SceShellCore] Libc Heap Status: free 37%, in-use 3801.7 KB, trend +3679.1 KB/min, peak 3905.7 KB, when 62 [sec]?
+[SceShellCore] Delete /user/TRASH/0/_temp.dat?
+[SceShellUI] I/PSM.UI : UI system timer elapsed 00:01:00?

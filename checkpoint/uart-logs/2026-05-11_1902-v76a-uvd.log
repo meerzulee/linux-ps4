@@ -1,0 +1,1061 @@
+[SceShellCore] Libc Heap Status: free 38%, in-use 3769.1 KB, trend +845.2 KB/min, peak 3905.7 KB, when 93 [sec]?
+ugen0.3: <Sony Interactive Entertainment, Wireless Controller, > at usbus0 (disconnected)?
+uaudio0: at uhub3, port 1, addr 2 (disconnected)?
+* removeDevice:L1428 [MBUS] Receive device disconnect event.(deviceId=0x10000000pcm3: detached?
+usb_hid0: at uhub3, port 1, addr 2 (disconnected)?
+00003)?
+@ jackDisconnected:L2697?
+* mbusOnJackDisconnected:L5627 jackDisconnected failed. ret = 0xfffffffd?
+* registerDevice:L1621 not found sub device id.?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=1 ADD, deviceId=0x90300)?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x90300][type:1][subType:2]?
+D/125878 X?
+ScePsP[TID:0x18873]: Open Pad [0x0000000000090300, 0, 0]: ret=0x03030301?
+#LOGIN MGR# SetDisableVibration( 0x0000000000090300, 1 )?
+ScePsP[TID:0x18873]: ConnectedDeviceStatus: count=2?
+  [c][DeviceId          ][UserId    ][Model     ]?
+#LOGIN MGR# sceSystemStateMgrSendCecOneTouchPlayCommand : 0(0x00000000)?
+  [o][0x0000000000090300][0xffffffff][DUALSHOCK4]?
+#LOGIN MGR# isIduMode = 0?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+#LOGIN MGR# getControllerNum() : 1?
+#LOGIN MGR# [RunBusTransitionNewDevice] ret : -2135556047 / deviceUniqueId : 0x0000a05a5cb97fc0?
+#LOGIN MGR# [IsSameControllerDeviceConnected] _total=0?
+#LOGIN MGR# The device(0x90300) was auto assigned to User 0x1ab07dc7.?
+#LOGIN MGR# [Assign] DeviceId:0x0000000000090300 / UserId:0x1ab07dc7?
+#LOGIN MGR# [Controller::onHoldDevice] userId = 0x1ab07dc7 / holdAudioOutDeivice : 0?
+#LOGIN MGR# [AudioDeviceStateChange] updState : 0 / functionType : 1 / scrachData : 128?
+#LOGIN MGR# [AudioDeviceStateChange] function : 0 / isEnabled : 0 / realState : 0?
+#LOGIN MGR# [AudioDeviceStateChange] updState : 0 / functionType : 2 / scrachData : 64?
+#LOGIN MGR# [AudioDeviceStateChange] function : 0 / isEnabled : 0 / realState : 0?
+@ connectDeviceByFunction:L1258?
+@ checkAudioOutHandleStatus:L2487?
+#LOGIN MGR# sceMbusBindDeviceWithUserId( 0x0000000000090300, 0x1ab07dc7 ) : 0(0x00000000)?
+#LOGIN MGR# SetDisableVibration( 0x0000000000090300, 0 )?
+#LOGIN MGR# EnablePadKeyRemapping start( 1, 0x90300, 0x1ab07dc7, 1 )?
+#LOGIN MGR# IsKeyRemapEnable start( 0x1ab07dc7 )?
+#LOGIN MGR# IsKeyRemapEnable end( 0x1ab07dc7 ) -> 0 ?
+#LOGIN MGR# EnablePadKeyRemapping end( 1, 0x90300, 0x1ab07dc7, 1 ) -> 0(0x00000000)?
+#LOGIN MGR# : \login_mgr.cpp(478) : NotifyDeviceAdd : OnDeviceAdded event send.?
+Event OnControllerActivated isAutoAssignComplete:1, m_systemState:1000, isSendEvent:1?
+#LOGIN MGR# [DeviceQueueMgr::Dequeue(new)] deviceId : 0x0000000000090300 / isForce : 0 / isDeviceRemoved : 0?
+[LoginMgr] OnLoginMgrDequeueEvent?
+[LoginMgr:EventQueue] Dequeue - param : {"EventType":3,"deviceId":590592,"isDeviceRemoved":false,"isForce":false}?
+[LoginMgr:Queue] Dequeue - queueType : Level2 / eventType : QueueEventTypeSelectUser / eventJson : [{"EventType":3,"deviceId":590592,"isDeviceRemoved":false,"isForce":false}] / isForce : False / isDeviceRemoved : False?
+#LOGIN MGR# [IsNeedControllerLightCalibration] isNeed : 0 / type : 0?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_STATUS_UPDATED [DeviceId:0x90300]?
+#LOGIN MGR# Battery status changed.?
+Battery status : 0?
+Battery level : 100?
+ScePsP[TID:0x18873]: sceMbusEvent has been received. (eventId=16 OWNERCHG, deviceId=0x90300)?
+ScePsP[TID:0x18873]: ConnectedDeviceStatus: count=2?
+  [c][DeviceId          ][UserId    ][Model     ]?
+  [o][0x0000000000090300][0x1ab07dc7][DUALSHOCK4]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+  [ ][0xffffffffffffffff][0xffffffff][none      ]?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_OWNER_CHANGED [DeviceId:0x90300][UserId:0x1ab07dc7]?
+#LOGIN MGR# [OnDeviceOwnerChanged] deviceId : 0x90300 / userId : 0x1ab07dc7 ?
+D/88391:?
+D/88391:AZIF00003?
+D/88391:?
+D/88391:NPXS20123?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [ContentAreaScene : ContentAreaScene] -> []?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : StorePlugin : StorePlugin?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [] -> [Noname : StoreScene]?
+[SceShellUI] I/PSM.UI :      Scene [Noname : StoreScene] : Alive?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : Noname : StoreScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : Noname : FrameScene?
+[ShellUI][SharedWebView][BVT] OnNotifyDidFinishLoading : 79834 ms?
+[ShellUI][SharedWebView][BVT] OnNotifyDidFinishLoading : 80362 ms?
+[Theme/I] : Apply [BLUE] : [Option:000001]: with preloaded user?
+[SceShellUI] I/PSM.UI : ----- WebView Created AC CanvasTexture2D -----2 (1920:1080)?
+[ShellUI][SharedWebView][BVT] OnNotifyDidFinishLoading : 81647 ms?
+[JSEx]<Shared> AsyncRes(getDrmContentData) {"type" : "callback","cbid" : "1778505533539_13","res" : {"code":-2131034111,"error":"invalid_length_id"}}?
+[ShellUI][SharedWebView][BVT] OnFinishedLoad : 83481 ms?
+[SceLncService] launchApp(CUSA00127)?
+[SceLncService] category={gde} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,1} appBootMode={0}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_MINI_APP} [] appVer={01.53}?
+[SceLncService] mem_mode = {NORMAL}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDirCheck()?
+[SceLncService] PrepareProcessLaunchDirCheck() returned?
+[SceSystemStateMgr] Power Mode Change: FULL_GAME?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   0 NA  0 18  800  673  609  800  800    711  711     673 1400   1375   NA  NA   3 05b/975  05d/956  00710fa0?
+[SceLncService] PrepareProcessLaunchDir()?
+[Theme/I] : Apply [BLUE] : [Option:000001]: with preloaded user?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [Noname : StoreScene] -> [SplashScreen : SplashScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [SplashScreen : SplashScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : ActiveUserChanged : From : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : ActiveUserChanged : To   : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[ScePatchChecker] (*) check (title_id='CUSA00127', app_version='01.53', check_option=0): status=0, trigger=1 userId=0xffffffff return 0x8095170d?
+[BGFT] [571] GameStartBoot(CUSA00127, 7) start?
+[BGFT] [573] GameStartBoot(CUSA00127, 7) end?
+[ScePatchChecker] check (title_id='CUSA00127', app_version='01.53', check_option=0): status=0, dl_status=0, trigger=1 userId=0xffffffff return 0x8095170d?
+[PFS] mount [0x000027b21e8bd8d7] finished 1 1 1 1 0 1 1?
+[PFS] mount [0x000027b21e95c589] finished 1 0 0 1 0 1 1?
+ioctl(DIOCGSECTORSIZE): Inappropriate ioctl for device?
+sceFsUfsCheckFixedCylinderGroupSize: sceFsGetDeviceSectorsize() failed[80020019], assume DEV_BSIZE?
+[sceProcessStarter] MountDownloadData() title_id = [CUSA00127] data_path = [/user/download/CUSA00127/download0.dat] mount_path = [/mnt/sandbox/download/CUSA00127]?
+[BGFT] [606] GameWillStart(CUSA00127, 7) start?
+[BGFT] [608] GameWillStart(CUSA00127, 7) end?
+[SceLncService] PrepareProcessLaunchDir() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp CUSA00127?
+[Syscore App]  ExpandCpuSetMode : disable?
+[Syscore App] processSpawn(pid, 0x60000d0c, 0x10d0c110, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/CUSA00127_000, titleId = CUSA00127?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /mnt/sandbox/pfsmnt/CUSA00127-app0-patch0-union/eboot.bin?
+[Syscore App] new pid=0x40[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[KERNEL] dmem_start_app_process pid: 64, map=0xffffda13138284f0, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0x40?
+[AppMgr Trace]: New Process, pid=0x40, created.?
+[AppMgr Trace]: New App, appId=0x60000d0c, created?
+[Syscore App]  ExpandCpuSetMode : disable?
+[BGFT] [1094] (disable throttling) App focused?
+[SL] AppFocusChanged [NPXS20001] -> [CUSA00127]?
+[mbus] onNewClient. clientNum 10 over 8?
+[sceProcessStarter] OnIpcSessionClose()?
+[PS]Error: W:\Build\J02688430\vsh\shell\shell_core\process_starter\process_starter_util.cpp at 1031?
+unmount : 0x16(0x80020016)(/mnt/sandbox/CUSA00127_000/temp0)?
+[PS]Error: W:\Build\J02688430\vsh\shell\shell_core\process_starter\process_mount.cpp at 2073?
+UnmountWithRetry :ret = (0x80020016)?
+[PS]Error: W:\Build\J02688430\vsh\shell\shell_core\process_starter\process_mount.cpp at 6466?
+uNmount() ret = 80020016?
+[avs] no need to change 10,0,204023359885?
+[SceLncService] launchApp(NPXS22010)?
+[SceLncService] category={gdg} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_CDLG} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS22010?
+[Syscore App] processSpawn(pid, 0x60000e0d, 0x10e0d120, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x7, rootPath = /mnt/sandbox/NPXS22010_000, titleId = NPXS22010?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS22010/eboot.bin?
+[Syscore App] new pid=0x41[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x41?
+[AppMgr Trace]: New Process, pid=0x41, created.?
+[AppMgr Trace]: New App, appId=0x60000e0d, created?
+[Syscor[e App]  ExpandCpuSetMode : disable?
+** cpv:e1 **?
+** set_mode ** 0x40/-1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-u?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av control] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x1?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT?
+#LOGIN MGR# [IsPuConnectHdmi] start checkDeviceId : 0x7000 ?
+#LOGIN MGR# [IsPuConnectHdmi] sceAvSettingGetDeviceInfo -> 0(0x00000000) ?
+#LOGIN MGR# [IsPuConnectHdmi] videoOutCapability = 0x1 ?
+#LOGIN MGR# [IsPuConnectHdmi] end checkDeviceId : 0x7000 -> isReady = 0 ?
+av control k] : set_mode -> set_mode?
+[av control k] : change supplementary_info and skip csc_direct?
+[av control] : lt_req=0 hdmi_misc_up_req=0 vr_flg_up_req=0 vr_switch=0 csc_dir_req=2 hdr_dir_req=0?
+[av control] : flip_set_mode_start(UPDATE_ONLY)?
+[av control] : HdmiSetCscDirect is skipped ?
+*** Hdmi Setup(kern) : 0 ***?
+[avc] ConfigSetSystemMute(0)?
+[avc] ConfigSetSystemMute() done?
+[SceShellUI] I/PSM.UI : VideoOutMode   : IsSystemDefault=False, IsVr=False?
+[SceShellUI] I/PSM.UI : VideoOutStatus : [1920 1080] : freq 59.94?
+[SceSysAvControl] : hdmi video config skipped?
+** set_mode done (204686170237:105) **?
+#LOGIN MGR# [NotifyMorpheusConnectStatusChangedForHmuSetupDialog] deviceId : 0xffffffffffffffff / userId : 0xffffffff / avSettingPuType : 0 / connectStatus : 6 ?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x2?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [SplashScreen : SplashScreenScene] -> [AppScreen : ApplicationScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [AppScreen : ApplicationScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[SceShellUI] I/PSM.UI : [NoDraw] : ClearFrameBuffer=False?
+#PROFILE CACHE#: \profile_cache_server_event.cpp(38) : onNewClient : ?
+[mbus] onNewClient. clientNum 11 over 8?
+sync call performance warning tid:0x00018839 kid:0x000000f1 name:SceSysCoreApp method id:0xAA11000C time:0000000000019898 micro sec?
+sync call performance warning tid:0x00018839 kid:0x000000f1 name:SceSysCoreApp method id:0xAA11000C time:0000000000017056 micro sec?
+sync call performance warning tid:0x00018839 kid:0x000000f1 name:SceSysCoreApp method id:0xAA11000C time:0000000000096459 micro sec?
+[SceLncService] suspendApp() appId={0x60000e0d}, causeCode={0x0000000d}?
+[SceLncService] lockSuspendBlock(0x60000e0d)?
+[SceLncService] lockSuspendBlock: appId={0x60000e0d}?
+[SceLncService] sceApplicationSuspend(0x60000e0d)?
+[Syscore App] Suspend App : 0x60000e0d NPXS22010?
+[Syscore App] Suspend process : 0x41?
+[Syscore App] Suspend process : 0x41 => 0?
+[AppMgr Trace]: AppId=0x60000e0d suspended?
+[Syscore App] Suspend App : 0x60000e0d NPXS22010 => SCE_OK?
+[Syscore App]  ExpandCpuSetMode : disable?
+[SceLncService] sceApplicationSuspend(0x60000e0d) returned?
+MSG AutoMounter(int32_t AppIdManager::getPidWithIndex(SceApplicationId, int, pid_t *) 174):?
+	appId(0x60000e0d) with index(0) is not registered.?
+MSG AutoMounter(int32_t AutoMount::UsbMass::fakeEjection(SceApplicationId) 716):?
+	getPidWithIndex(0x60000e0d, 0) returned 0x80f40002.?
+[SceLncService] unlockSuspendBlock: appId={0x60000e0d}?
+[SceShellCore] VM Stats: RSS 978.3, kernel 265.6, wire count 344.9, swap out 0.0, page table CPU 2640/6144 GPU 371/2048?
+[SceShellCore] FMEM   1.3/   4.5 NPXS20977 SceSysAvControl.elf?
+[SceShellCore] FMEM  10.7/  74.3 NPXS20991 SceSysCore.elf?
+[SceShellCore] FMEM   9.4/  54.6 NPXS20973 orbis_audiod.elf?
+[SceShellCore] FMEM   3.2/  11.2 NPXS20976 GnmCompositor.elf?
+[SceShellCore] FMEM  48.2/ 344.8 NPXS20000 SceShellCore?
+[SceShellCore] FMEM 345.8/ 836.6 NPXS20001 SceShellUI?
+[SceShellCore] FMEM   3.4/   8.3 NPXS21003 SceAvCapture?
+[SceShellCore] FMEM   8.8/  24.6 NPXS21000 SceGameLiveStreaming?
+[SceShellCore] FMEM  14.2/  43.5 NPXS21002 ScePartyDaemon?
+[SceShellCore] FMEM   4.3/  25.4 NPXS21004 SceVideoCoreServer?
+[SceShellCore] FMEM  13.3/  51.3 NPXS21006 SceRemotePlay?
+[SceShellCore] FMEM   7.9/  19.5 NPXS21010 SceCloudClientDaemon?
+[SceShellCore] FMEM   3.3/  10.9 NPXS21016 SceSpZeroConf?
+[SceShellCore] FMEM   8.5/ 156.0 NPXS21002 webrtc_daemon.self?
+[SceShellCore] FMEM   6.9/  18.1 NPXS21019 SceSocialScreenMgr?
+[SceShellCore] FMEM   4.9/   9.8 NPXS21007 SceMusicCoreServer?
+[SceShellCore] FMEM   7.1/  14.4 NPXS21020 SceVoiceAndAgent?
+[SceShellCore] FMEM   2.1/   5.1 NPXS20967 fs_cleaner.elf?
+[SceShellCore] FMEM   2.0/  10.2 NPXS20974 SceVdecProxy.elf?
+[SceShellCore] FMEM   2.0/  10.3 NPXS20975 SceVencProxy.elf?
+[SceShellCore] FMEM  48.9/ 284.8 NPXS20001 SecureUIProcess.self?
+[SceShellCore] FMEM 161.0/ 595.7 NPXS20001 SecureWebProcess.self?
+[SceShellCore] FMEM  79.9/ 364.3 NPXS20001 orbis-jsc-compiler.self?
+[SceShellCore] FMEM  58.5/1103.2 CUSA00127 eboot.bin?
+[SceShellCore] FMEM 122.9/ 215.6 NPXS22010 SceCdlgApp?
+[SceShellCore] Libc Heap Status: free 37%, in-use 3843.3 KB, trend +42.3 KB/min, peak 4200.3 KB, when 124 [sec]?
+[Syscore App] App Crash : PID=0x40, reason=0xb?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_APP_CRASH?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_APP_CRASH?
+[SceLncService] AppCrash: pid={0x00000040} appId={0x60000d0c} appLocalPid={0x10d0c110}?
+[SceLncService] getCoredumpSequence() isDebuggable={0} isKeepProcess={0} isUserDebugRequest={0} isLimitKeepProcess={0} enableCrashReport={1}?
+[SceLncService] CoredumpSequence = {DUMP_PROCESS}?
+[SceLncService] getCoredumpMode() isSystem={0x00000000}, reason={0x0000000b}?
+[SceLncSemrvice] notifyAppCrash() pid={0x00000040}, appId={0x60000d0c}, appLocalPid={0x10d0c110}, coredump.path,name,mode={/user/data/sce_coredumps/CUSA00127_1778505570/,CUSA00127_1778505570.sorbisdmp,1}, enableCrashReport={1}, skipVshDump={0}?
+[SceLncService] enableCrashReport={1}, crashReportMode={0}, isAllowed={1}?
+[SceLncService] kick coredump start.?
+[SceLncService] notifyAppCrash() titleId={CUSA00127}, crashReportMode={0}?
+[SceLncService] suspendblock is not blocked.?
+[Crash Reporter] API: CreateReportLogFile. Reason[1]?
+[SceLncService] sceApplicationKickCoredump2()?
+mDBG: Debughandler activated(64)?
+[playGoSnapshot] title_id=[CUSA00127], filename=[/user/data/sce_coredumps/CUSA00127_1778505570/playgo-status.xml]?
+[playGoSnapshot] task_id=[0x000002c2]?
+mDBG: Debughandler watchdog start.?
+[playGoSnapshot] extractor.open=[0x00000000]?
+[BGFT] [INFO] Remastered Package?
+[playGoSnapshot] play_go.snapshot=[0x00000000]?
+[Crash Reporter] API:MoveGpuCrashAnalysisFiles [0x00000040]?
+[SceLncService] W:\Build\J02688430\vsh\shell\shell_core\lnc_service\lnc_coredump.cpp(370) notifyAppCrash: LNC_RTRACE::0x812e0105?
+DBG: Debughandler starting(100897:SceCoredumpHandle[Crash Reporter] API:GetCrashReportProcessInformation?
+r)?
+mDBG: Debug handler finished(64:100897)?
+[SceLncUtil] W:\Build\J02688430\vsh\common_lib\lnc_util\src\lnc_util_ipc_client.cpp(744) getGpuCrashFullDumpAppStatus: LNC_ISOK::0x80940004?
+[CRASHREPORT_UI] : Is Application Category?
+[CRASHREPORT_UI(Info)][CrashReportArgument::=== Normal ===================================]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::BETA              : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::DeveloperMode     : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AutoSending reg   : [Off]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CrashMode         : [CrashModeApplication]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::TitleID           : [CUSA00127]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppID             : [1610616076]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppPID            : [282116368]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppName           : [Netflix]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CoredumpPath      : [/user/data/sce_coredumps/CUSA00127_1778505570/]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CoredumpFileName  : [CUSA00127_1778505570.sorbisdmp]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CrashErrorCode    : [SCE_SHELL_UTIL_ERROR_APPLICATION_CRASH]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppType           : [MiniApp]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::LncCoredumpReason : [AppCrash]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ExceptionCode     : [11]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::RecordingDuration : [0]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::StartingMode      : [event]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::Category          : [gde]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsTrashData       : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsAutoSending     : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsProcessKill     : [True]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsUIShow          : [True]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::Debug Offline Test: [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfoResult         : [0]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfo.isAutoSending : [0]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfo.isProcessKill : [1]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfo.isUIShow      : [1]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::========================================]?
+[CRASHREPORT_UI(Info)][CrashReportEventManager::Enqueue(1)]?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [AppScreen : ApplicationScreenScene] -> [ContentAreaScene : ContentAreaScene]?
+[SceShellUI] I/PSM.UI :      Scene [ContentAreaScene : ContentAreaScene] : Alive?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : ActiveUserChanged : From : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : ActiveUserChanged : To   : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[BGFT] [1085] (disable throttling) ShellUI focused?
+[SceLncService] suspendApp() appId={0x60000e0d}, causeCode={0x00000000}?
+GetPlusInfoJob : Run(Start)?
+GetPlusInfoJob : Run(End)?
+[SL] AppFocusChanged [CUSA00127] -> [NPXS20001]?
+GetPlusInfoJob : Finish / Cancelled False / Result True?
+[UpdateUserInfoforPlus] upd_userId : 447774151 / type : None?
+[CRASHREPORT_UI(Info)][CrashReportEventManager::Dequeue(0)]?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StatePrepare]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateVideoStopping]]?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : CrashReport : CrashReportPlugin?
+[coredump] start: /user/data/sce_coredumps/CUSA00127_1778505570/CUSA00127_1778505570.sorbisdmp?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [ContentAreaScene : ContentAreaScene] -> [CrashReportApplicationScene : CrashReportApplicationScene]?
+[SceShellUI] I/PSM.UI :      Scene [CrashReportApplicationScene : CrashReportApplicationScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : ActiveUserChanged : From : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : ActiveUserChanged : To   : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101001]: with not preloaded user?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : CrashReportApplicationScene : CrashReportApplicationScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : CrashReportBackGroundScene : CrashReportBackGroundScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : CrashReportNavigationScene : CrashReportNavigationScene?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateStopVideoComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateFilterCheck]]?
+[Syscore App] Coredump Progress : PID=0x40, 0 %?
+[SceLncService] W:\Build\J02688430\vsh\shell\shell_core\lnc_service\lnc_util_ipc_event_handler.cpp(43) create: LNC_RTRACE::0x80aa000c?
+[SceLncUtil] W:\Build\J02688430\vsh\common_lib\lnc_util\src\lnc_util_ipc_client.cpp(422) getAppStatus: LNHC_ISOK::0x80940004?
+ID LOG: myMalloc.193 :HID:huge memory allocation=403200?
+[Syscore App] Coredump Progress : PID=0x40, 5 %?
+[Syscore App] Coredump Progress : PID=0x40, 10 %?
+[Syscore App] Coredump Progress : PID=0x40, 15 %?
+[Syscore App] Coredump Progress : PID=0x40, 20 %H?
+[Syscore App] Coredump Progress : PID=0x40, 25 %?
+[Syscore App] Coredump Progress : PID=0x40, 30 %?
+[Syscore App] Coredump Progress : PID=0x40, 35 %?
+[Syscore App] Coredump Progress : PID=0x40, 40 %?
+[Syscore App] Coredump Progress : PID=0x40, 45 %?
+[Syscore App] Coredump Progress : PID=0x40, 50 %?
+[Syscore App] Coredump Progress : PID=0x40, 55 %?
+ID LOG: myMalloc.193 :HID:huge memory allocation=403200?
+[Syscore App] Coredump Progress : PID=0x40, 60 %?
+[Syscore App] Coredump Progress : PID=0x40, 65 %?
+[Syscore App] Coredump Progress : PID=0x40, 70 %?
+[Syscore App] Coredump Progress : PID=0x40, 75 %?
+[Syscore App] Coredump Progress : PID=0x40, 80 %?
+[Syscore App] Coredump Progress : PID=0x40, 85 %?
+[Syscore App] Coredump Progress : PID=0x40, 90 %?
+[Syscore App] Coredump Progress : PID=0x40, 95 %?
+[Syscore App] Coredump Complete : PID=0x40, exitStatus=0?
+[coredump] end  : 0x00000000?
+[Crash Reporter] API:GetCrashReportFilterInfoStart?
+[Crash Reporter] NetDevice:--- WIRE ---?
+[SceLncService] BG MiniApp Status: CUSA00127, RSS 53 MiB (+0.219 MiB), PageOut -0.219 MiB?
+[Crash Reporter] Error: 8095170d?
+[Crash Reporter] ### ERROR ### failed to Post (0x8095170d)?
+[Crash Reporter] CFSS SERVER ACCESS: 0x8095170d?
+[Crash Reporter] ### ERROR ### CFSS:query (0x8095170d)?
+[BGFT] [203] task_queue=[168], task_queue_crash=[8]?
+[Crash Reporter] CFSS result=0x00000000, filter=0x00000000?
+[Crash Reporter] CheckConfig:READY?
+[Crash Reporter] API:GetCrashReportResult?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::return code : 0x0]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::filterInfo  : 0x0]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::needed      : 1]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::uiType      : 0]?
+[CRASHREPORT_UI(Info)][Sce.Vsh.ShellUI.CrashReport.CrashReportAPIManager::IsFullMemoryDump::[0]]?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateFilterCheck]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateFilterCheckComplete]]?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateFilterCheckComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateFullDumpJudgement]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateFullDumpJudgement]]?
+[CRASHREPORT_UI(Info)][Sce.Vsh.ShellUI.CrashReport.CrashReportAPIManager::IsFullMemoryDump::[0]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateFullDumpComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateFullDumpComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateProgressCancel]]?
+[Crash Reporter] API:MakeManifestFile?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::KILL APPID = 1610616076]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::KillApp[]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::waitCoreDump = True]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::PROCESS KILL OK]?
+[CSceLncService] KillApp() appId={0x60000d0c}, withSuspend={1}, forceKill={0} killReason={0}?
+[SceLncService] BlockingKill() appId={0x60000d0c}, titleId={CUSA00127}, is_coredumpFinished={1}, forceKill={0}?
+[SceLncService] convertToSysCoreKillReason: {0x00000000}->{0x00000000}?
+[Syscore App] Kill App : 0x60000d0c CUSA00127?
+[Syscore App] Kill process: 0x40?
+** cpv:e1 **?
+[mbus] onSessionKilled. pid=64?
+** set_mode ** -1/-1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-s?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av control] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+@ removeSession:L184?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x1?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT?
+#LOGIN MGR# [IsPuConnectHdmi] start checkDeviceId : 0x7000 ?
+#LOGIN MGR# [IsPuConnectHdmi] sceAvSettingGetDeviceInfo -> 0(0x00000000) ?
+#LOGIN MGR# [IsPuConnectHdmi] videoOutCapability = 0x1 ?
+#LOGIN MGR# [IsPuConnectHdmi] end checkDeviceId : 0x7000 -> isReady = 0 ?
+#LOGIN MGR# [NotifyMorpheusConnectStatusChangedForHmuSetupDialog] deviceId : 0xffffffffffffffff / userId : 0xffffffff / avSettingPuType : 0 / connectStatus : 6 ?
+onteaxv cont.cct:r1ol89 (ajm kC]on :te xtCleanup) set_mo- dCeo -> sedt_mode?
+e[c aMv PcEontrol kG]4  :AAC Decoder  wacs not hproapngeerly  suunpregpistlereemd.?
+entary_info and skip csc_direct?
+[av control] : lt_req=0 hdmi_misc_up_req=0 vr_flg_up_req=0 vr_switch=0 csc_dir_req=2 hdr_dir_req=0?
+[av control] : flip_set_mode_start(UPDATE_ONLY)?
+[KERNEL] dmem_handle_vmspace_exited pid: 64, ptype=1, 0xffffda13138284f0->pt_l[av control] : HdmiSetCscDirect is skipped ?
+*** Hdmi Setup(kern) : 0 ***?
+oaded is[SceShellUI] I/PSM.UI : VideoOutMode   : IsSystemDefault=True, IsVr=False?
+[SceShellUI] I/PSM.UI : VideoOutStatus : [1920 1080] : freq 59.94?
+[avc] ConfigSetSystemMute(0)?
+[avc] ConfigSetSystemMute() done?
+[SceSysAvControl] : hdmi video config skipped?
+** set_mode done (246249330235:201) **?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x2?
+ TRUE?
+[KERNEL] dmem_handle_vmspace_exited map #0 0xffffda13138284f0?
+[KERNEL] dmem_handle_vmspace_exited pid: 64, app_maps_count[1], 1 -> 0?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x40?
+[Syscore App] Kill process: 0x40 => 0?
+[Syscore App] process delete event : pid=0x40?
+[AppMgr Trace]: pid=0x40, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_CAPP_UNLOADED?
+[AppMgr Trace]: AppId=0x60000d0c  deleted?
+[Syscore App] Kill App : 0xffffffff  => 0?
+[Syscore App] blockingKill(0x60000d0c, 1) complete?
+[AppMgr] checkAppTerminated invalid app.?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[Syscore App]  ExpandCpuSetMode : enable?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[SceLncService] start unmountAllForShellCoreInternal()?
+[SceLncService] end unmountAllForShellCoreInternal()?
+[SceSystemStateMgr] Power Mode Change: NAVIGATION?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   1 NA  0  8  711  673  533  711  711    609  711     673 1400   1375   NA  NA   2 05b/968  067/887  00710fa0?
+[libSceSaveData] wait 0 msec for session killed?
+[SceRnpsAppMgr] UnblockAllAppInstall(): CUSA00127(appId=0x60000d0c)?
+[SceLncService] KillApp() appId={0x60000e0d}, withSuspend={1}, forceKill={1} killReason={0}?
+[SceLncService] BlockingKill() appId={0x60000e0d}, titleId={NPXS22010}, is_coredumpFinished={0}, forceKill={1}?
+[SceLncService] convertToSysCoreKillReason: {0x00000000}->{0x00000000}?
+[Syscore App] Kill App : 0x60000e0d NPXS22010?
+[Syscore App] Kill process: 0x41?
+[mbus] onSessionKilled. pid=65?
+@ removeSession:L184?
+#PROFILE CACHE#: \profile_cache_server_event.cpp(92) : onSessionKilled : ?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::Call OnAppKillEnd Handler]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::Call OnAppKillEnd Handler Start]?
+ontext.cc:189 (ajmContextCleanup) - Codec MP3 Decoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec ATRAC9 Decoder was not properly unregistered.?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x41?
+[Syscore App] Kill process: 0x41 => 0?
+[AppMgr Trace]: pid=0x41, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[AppMgr Trace]: AppId=0x60000e0d  deleted?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[Syscore App] Kill App : 0xffffffff  => 0?
+[Syscore App] blockingKill(0x60000e0d, 1) complete?
+[AppMgr] checkAppTerminated invalid app.?
+[Syscore App]  ExpandCpuSetMode : enable?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[SceLncService] start unmountAllForShellCoreInternal()?
+[SceLncService] end unmountAllForShellCoreInternal()?
+[SceLncService] onAppExit() appId={0x60000d0c}?
+[libSceSaveData] wait 0 msec for session killed?
+[SceRnpsAppMgr] UnblockAllAppInstall(): NPXS22010(appId=0x60000e0d)?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::Call OnAppKillEnd Handler]?
+[Syscore App] process delete event : pid=0x41?
+[SceLncService] ProcessTerm()?
+[SceLncService] ProcessTerm() returned?
+[SceLncService] convertToSysCoreKillReason: {0x00000000}->{0x00000000}?
+[SceLncService] Cleaning /av_contents/content_tmp?
+[SceLncService] onAppExit() appId={0x60000e0d}?
+[SceLncService] ProcessTerm()?
+[sceProcessStarter] ProcessTerm() big/mini app title_id = [CUSA00127] root_dir = [/mnt/sandbox/CUSA00127_000]?
+[sceProcessStarter] UnMountDownloadData() mount_path = [/mnt/sandbox/download/CUSA00127]?
+[PFS] umount[0x000027b21e95c589] finished 0?
+[PFS] umount[0x000027b21e8bd8d7] finished 0?
+[BGFT] [641] GameStopped(CUSA00127, 7) start?
+[BGFT] [643] GameStopped(CUSA00127, 7) end?
+[SceLncService] ProcessTerm() returned?
+[SceLncService] convertToSysCoreKillReason: {0x00000000}->{0x00000000}?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateProgressCancel]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateAppCoreComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateAppCoreComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateProcessKillEnd]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateProcessKillEnd]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateProcessKillEndComplete]]?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [CrashReportApplicationScene : CrashReportApplicationScene] -> [Noname : CrashReportAppliWaitScene]?
+[SceShellUI] I/PSM.UI :      Scene [Noname : CrashReportAppliWaitScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101001]: with not preloaded user?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : Noname : CrashReportAppliWaitScene?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateProcessKillEndComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateMakeManifestComplete]]?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateMakeManifestComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateAppCoreOK]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateAppCoreOK]]?
+[Crash Reporter] API:GetCrashReportInfoStart?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetCrashReportInfoStart::m_return : 0]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateNetworkCheck]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateNetworkCheck]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateNetworkComplete]]?
+[Crash Reporter] CDN:query [CUSA00127_1778505570]?
+[Crash Reporter] NetDevice:--- WIRE ---?
+[Crash Reporter] CDN SERVER ACCESS: result(0x00000000) status(404)?
+[Crash Reporter] --- NEEDED TO UPLOAD --- CDN:Status (404)?
+[Crash Reporter] CheckConfig:READY?
+[Crash Reporter] API:GetCrashReportResult?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::return code : 0x0]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::filterInfo  : 0x0]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::needed      : 0]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::GetResultInternal::uiType      : 0]?
+[CRASHREPORT_UI(Info)][CheckSubAccount::sceNpManagerIntGetSigninState retSignin=0, SigninState=SCE_NP_SIGNIN_STATE_SIGNED_OUT]?
+[CRASHREPORT_UI(Info)][CheckSubAccount::sceNpManagerIntIsSubAccount retval=0, SubAccount=False]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::Master Account!]?
+[CRASHREPORT_UI(Info)][GetAttachFileInformation::AttachFileType = NotBoth]?
+[CRASHREPORT_UI(Info)][GetAttachFileInformation::bShowRequest   = False]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::=== Cold ===================================]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::BETA              : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::DeveloperMode     : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AutoSending reg   : [Off]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CrashMode         : [CrashModeApplication]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::TitleID           : [CUSA00127]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppID             : [1610616076]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppPID            : [282116368]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppName           : [Netflix]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CoredumpPath      : [/user/data/sce_coredumps/CUSA00127_1778505570/]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CoredumpFileName  : [CUSA00127_1778505570.sorbisdmp]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::CrashErrorCode    : [SCE_SHELL_UTIL_ERROR_APPLICATION_CRASH]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::AppType           : [MiniApp]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::LncCoredumpReason : [AppCrash]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ExceptionCode     : [11]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::RecordingDuration : [0]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::StartingMode      : [event]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::Category          : [gde]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsTrashData       : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsAutoSending     : [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsProcessKill     : [True]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::IsUIShow          : [True]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::Debug Offline Test: [False]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfoResult         : [0]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfo.isAutoSending : [0]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfo.isProcessKill : [1]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::ProcessInfo.isUIShow      : [1]]?
+[CRASHREPORT_UI(Info)][CrashReportArgument::========================================]?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusNone]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateNetworkComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateSuggestActionPre]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateSuggestActionPre]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateSuggestAction]]?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [Noname : CrashReportAppliWaitScene] -> [CrashReportSuggestActionScene : CrashReportSuggestActionScene]?
+[SceShellUI] I/PSM.UI :      Scene [CrashReportSuggestActionScene : CrashReportSuggestActionScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101001]: with not preloaded user?
+[SceShellUI] W/PSM.UI : ** NOTICE: LoadSync : Parent_CrashReportSuggestActionScene : FrameModalScene?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [CrashReportSuggestActionScene : CrashReportSuggestActionScene] -> [Parent_CrashReportSuggestActionScene : FrameModalScene]?
+[SceShellUI] I/PSM.UI :      Scene [Parent_CrashReportSuggestActionScene : FrameModalScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101001]: with not preloaded user?
+[SceShellUI] I/PSM.UI : Created font: name=[__System__], size=[30], style=[Normal], weight=[Medium], handle=[0x9451de2f]?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : CrashReportSuggestActionScene : CrashReportSuggestActionScene?
+[CRASHREPORT_UI(Info)][SceneEventArgs::SceneStatus = SceneStatusSugBack]?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [Parent_CrashReportSuggestActionScene : FrameModalScene] -> [CrashReportSuggestActionScene : CrashReportSuggestActionScene]?
+[SceShellUI] I/PSM.UI :      Scene [CrashReportSuggestActionScene : CrashReportSuggestActionScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101001]: with not preloaded user?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateSuggestAction]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateVideoOptimizationAbort]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateVideoOptimizationAbort]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateVideoOptimizationAbortComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[START -> StateVideoOptimizationAbortComplete]]?
+[CRASHREPORT_UI(Info)][CrashReportStateApplicationError::[-END- -> StateHome]]?
+[Crash Reporter] API:CleanupCrashReport?
+[Crash Reporter] util_optimizer_if:cleanupOptimizedVideo?
+[Crash Reporter] --- NOTICE --- util_optimizer_if:[recordingvideo-crash-optimized.mp4] is not found?
+[Crash Reporter] USER_CANCEL:PROCESSED [CUSA00127]?
+[Crash Reporter] CleanUpCore:DELETE [/user/data/sce_coredumps/CUSA00127_1778505570]?
+[CRASHREPORT_UI(Info)][CrashReportAPIManager::Cleanup return : 0]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::KILL APPID = 1610616076]?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [CrashReportSuggestActionScene : CrashReportSuggestActionScene] -> [Noname : CrashReportAppliWaitScene]?
+[SceShellUI] I/PSM.UI :      Scene [Noname : CrashReportAppliWaitScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101001]: with not preloaded user?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::===== SaveVideoRecording Information =====]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::titleId                = CUSA00127]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::appMode                = True]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::CrashReason            = True]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::RecordedPath           = ]?
+[CRASHREPORT_UI(Info)][CrashReportPlugin::==========================================]?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: CrashReportBackGroundScene : CrashReportBackGroundScene?
+[SceShellUI] I/PSM.UI : **** Ignored unload request because of unload is already enqueued : Parent_CrashReportSuggestActionScene?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [Noname : CrashReportAppliWaitScene] -> [ContentAreaScene : ContentAreaScene]?
+[SceShellUI] I/PSM.UI :      Scene [ContentAreaScene : ContentAreaScene] : Alive?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : ActiveUserChanged : From : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : ActiveUserChanged : To   : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: Parent_CrashReportSuggestActionScene : FrameModalScene?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: CrashReportApplicationScene : CrashReportApplicationScene?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: Noname : CrashReportAppliWaitScene?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: CrashReportSuggestActionScene : CrashReportSuggestActionScene?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: CrashReportNavigationScene : CrashReportNavigationScene?
+[CRASHREPORT_UI(Info)][CrashReportEventManager::Reset(0)]?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: CrashReport : CrashReportPlugin?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.66msec] : CrashReportBackGroundScene : CrashReportBackGroundScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.04msec] : Parent_CrashReportSuggestActionScene : FrameModalScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.03msec] : CrashReportApplicationScene : CrashReportApplicationScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.04msec] : Noname : CrashReportAppliWaitScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.04msec] : CrashReportSuggestActionScene : CrashReportSuggestActionScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.04msec] : CrashReportNavigationScene : CrashReportNavigationScene?
+[CRASHREPORT_UI(Info)][CrashReportEventManager::Clear(0)]?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.76msec] : CrashReport : CrashReportPlugin?
+GetPlusInfoJob : Run(Start)?
+GetPlusInfoJob : Run(End)?
+GetPlusInfoJob : Finish / Cancelled False / Result True?
+[UpdateUserInfoforPlus] upd_userId : 447774151 / type : None?
+[SceShellUI] I/PSM.UI : ----- WebView Created AC CanvasTexture2D -----2 (1920:1080)?
+D/88391:?
+D/88391:AZIF00003?
+D/88391:?
+D/88391:NPXS20123?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: Noname : StoreScene?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: Noname : FrameScene?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: StorePlugin : StorePlugin?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [ContentAreaScene : ContentAreaScene] -> []?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[1.43msec] : Noname : StoreScene?
+[SceShellUI] I/PSM.UI : **** SceneQueue Reordered : rule 1-A: Noname to QueueTop.?
+[SceShellUI] I/PSM.UI : ** Unload enqueue: Noname : FrameScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[1.02msec] : Noname : FrameScene?
+[SceShellUI] I/PSM.UI : **** SceneQueue Reordered : rule 1-A: Noname to QueueTop.?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.07msec] : Noname : FrameScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.48msec] : Noname : FrameScene?
+[SceShellUI] I/PSM.UI : SceneQ : Unloaded[0.24msec] : StorePlugin : StorePlugin?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : StorePlugin : StorePlugin?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [] -> [Noname : StoreScene]?
+[SceShellUI] I/PSM.UI :      Scene [Noname : StoreScene] : Alive?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.01msec] Layout[0.00msec/0widgets] : Noname : StoreScene?
+[SceShellUI] I/PSM.UI : SceneQ : Loaded[0.00msec] Layout[0.00msec/0widgets] : Noname : FrameScene?
+[Theme/I] : Apply [BLUE] : [Option:000001]: with preloaded user?
+[SceShellUI] I/PSM.UI : ----- WebView Created AC CanvasTexture2D -----2 (1920:1080)?
+[SceLncService] launchApp(CUSA00127)?
+[SceLncService] category={gde} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,1} appBootMode={0}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_MINI_APP} [] appVer={01.53}?
+[SceLncService] mem_mode = {NORMAL}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDirCheck()?
+[SceLncService] PrepareProcessLaunchDirCheck() returned?
+[SceSystemStateMgr] Power Mode Change: FULL_GAME?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   0 NA  0 18  800  673  609  800  800    711  711     673 1400   1375   NA  NA   3 05b/975  05d/962  00710fa0?
+[SceLncService] PrepareProcessLaunchDir()?
+[BGFT] [571] GameStartBoot(CUSA00127, 7) start?
+[BGFT] [573] GameStartBoot(CUSA00127, 7) end?
+[Theme/I] : Apply [BLUE] : [Option:000001]: with preloaded user?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [Noname : StoreScene] -> [SplashScreen : SplashScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [SplashScreen : SplashScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : ActiveUserChanged : From : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : ActiveUserChanged : To   : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[PFS] mount [0x000027b21e24a671] finished 1 1 1 1 0 1 1?
+[PFS] mount [0x000027b21e24a338] finished 1 0 0 1 0 1 1?
+[ScePatchChecker] (*) check (title_id='CUSA00127', app_version='01.53', check_option=0): status=0, trigger=1 userId=0xffffffff return 0x8095170d?
+[ScePatchChecker] check (title_id='CUSA00127', app_version='01.53', check_option=0): status=0, dl_status=0, trigger=1 userId=0xffffffff return 0x8095170d?
+ioctl(DIOCGSECTORSIZE): Inappropriate ioctl for device?
+sceFsUfsCheckFixedCylinderGroupSize: sceFsGetDeviceSectorsize() failed[80020019], assume DEV_BSIZE?
+[sceProcessStarter] MountDownloadData() title_id = [CUSA00127] data_path = [/user/download/CUSA00127/download0.dat] mount_path = [/mnt/sandbox/download/CUSA00127]?
+[BGFT] [606] GameWillStart(CUSA00127, 7) start?
+[BGFT] [608] GameWillStart(CUSA00127, 7) end?
+[SceLncService] PrepareProcessLaunchDir() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp CUSA00127?
+[Syscore App]  ExpandCpuSetMode : disable?
+[Syscore App] processSpawn(pid, 0x60000f0c, 0x10f0c130, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/CUSA00127_000, titleId = CUSA00127?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /mnt/sandbox/pfsmnt/CUSA00127-app0-patch0-union/eboot.bin?
+[Syscore App] new pid=0x45[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[KERNEL] dmem_start_app_process pid: 69, map=0xffffda1313828278, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0x45?
+[AppMgr Trace]: New Process, pid=0x45, created.?
+[AppMgr Trace]: New App, appId=0x60000f0c, created?
+[Syscore App]  ExpandCpuSetMode : disable?
+[BGFT] [1094] (disable throttling) App focused?
+[SL] AppFocusChanged [NPXS20001] -> [CUSA00127]?
+[mbus] onNewClient. clientNum 10 over 8?
+[sceProcessStarter] OnIpcSessionClose()?
+[PS]Error: W:\Build\J02688430\vsh\shell\shell_core\process_starter\process_starter_util.cpp at 1031?
+unmount : 0x16(0x80020016)(/mnt/sandbox/CUSA00127_000/temp0)?
+[PS]Error: W:\Build\J02688430\vsh\shell\shell_core\process_starter\process_mount.cpp at 2073?
+UnmountWithRetry :ret = (0x80020016)?
+[PS]Error: W:\Build\J02688430\vsh\shell\shell_core\process_starter\process_mount.cpp at 6466?
+uNmount() ret = 80020016?
+[avs] no need to change 10,0,261391642561?
+[SceLncService] launchApp(NPXS22010)?
+[SceLncService] category={gdg} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_CDLG} [] appVer={00.00}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS22010?
+[Syscore App] processSpawn(pid, 0x6000100d, 0x1100d140, appParam, processParam, 0, 0, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x7, r[ootPath = /mnt/sandbox/NPXS22010_000, titleId = NPXS22010?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system/vsh/app/NPXS22010/eboot.bin?
+[Syscore App] new pid=0x46[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x46?
+[AppMgr Trace]: New Process, pid=0x46, created.?
+[AppMgr Trace]: New App, appId=0x6000100d, created?
+[Syscore App]  ExpandCpuSetMode : disable?
+** cpv:e1 **?
+** set_mode ** 0x45/-1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-u?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av control] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+av control k] : set_mode -> set_mode?
+[av control k] : change supplementary_info and skip csc_direct?
+[av control] : lt_req=0 hdmi_misc_up_req=0 vr_flg_up_req=0 vr_switch=0 csc_dir_req=2 hdr_dir_req=0?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x1?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT?
+#LOGIN MGR# [IsPuConnectHdmi] start checkDeviceId : 0x7000 ?
+#LOGIN MGR# [IsPuConnectHdmi] sceAvSettingGetDeviceInfo -> 0(0x00000000) ?
+#LOGIN MGR# [IsPuConnectHdmi] videoOutCapability = 0x1 ?
+#LOGIN MGR# [IsPuConnectHdmi] end checkDeviceId : 0x7000 -> isReady = 0 ?
+[av control] : flip_set_mode_start(UPDATE_ONLY)?
+#LOGIN MGR# [NotifyMorpheusConnectStatusChangedForHmuSetupDialog] deviceId : 0xffffffffffffffff / userId : 0xffffffff / avSettingPuType : 0 / connectStatus : 6 ?
+[av control] : HdmiSetCscDirect is skipped ?
+*** Hdmi Setup(kern) : 0 ***?
+[SceShellUI] I/PSM.UI : VideoOutMode   : IsSystemDefault=False, IsVr=False?
+[SceShellUI] I/PSM.UI : VideoOutStatus : [1920 1080] : freq 59.94?
+[avc] ConfigSetSystemMute(0)?
+[avc] ConfigSetSystemMute() done?
+[SceSysAvControl] : hdmi video config skipped?
+** set_mode done (261839137488:105) **?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x2?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [SplashScreen : SplashScreenScene] -> [AppScreen : ApplicationScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [AppScreen : ApplicationScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[SceShellUI] I/PSM.UI : [NoDraw] : ClearFrameBuffer=False?
+#PROFILE CACHE#: \profile_cache_server_event.cpp(38) : onNewClient : ?
+[mbus] onNewClient. clientNum 11 over 8?
+sync call performance warning tid:0x00018839 kid:0x000000f1 name:SceSysCoreApp method id:0xAA11000C time:0000000000044371 micro sec?
+[SceLncService] suspendApp() appId={0x6000100d}, causeCode={0x0000000d}?
+[SceLncService] lockSuspendBlock(0x6000100d)?
+[SceLncService] lockSuspendBlock: appId={0x6000100d}?
+[SceLncService] sceApplicationSuspend(0x6000100d)?
+[Syscore App] Suspend App : 0x6000100d NPXS22010?
+[Syscore App] Suspend process : 0x46?
+[Syscore App] Suspend process : 0x46 => 0?
+[AppMgr Trace]: AppId=0x6000100d suspended?
+[Syscore App] Suspend App : 0x6000100d NPXS22010 => SCE_OK?
+[Syscore App]  ExpandCpuSetMode : disable?
+[SceLncService] sceApplicationSuspend(0x6000100d) returned?
+MSG AutoMounter(int32_t AppIdManager::getPidWithIndex(SceApplicationId, int, pid_t *) 174):?
+	appId(0x6000100d) with index(0) is not registered.?
+MSG AutoMounter(int32_t AutoMount::UsbMass::fakeEjection(SceApplicationId) 716):?
+	getPidWithIndex(0x6000100d, 0) returned 0x80f40002.?
+[SceLncService] unlockSuspendBlock: appId={0x6000100d}?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3892.7 KB, trend +125.7 KB/min, peak 4200.3 KB, when 155 [sec]?
+[0]_aio_multi_poll() line=4967 i=90 err=0x3?
+[0]_aio_multi_poll() line=4967 i=0 err=0x3?
+[0]_aio_multi_poll() line=4981 i=0 err=0x3?
+[0]_aio_multi_poll() line=4981 i=1 err=0x3?
+?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~?
+  _________________  .____  ________    ___ ______________ _______?
+ /  _____________  \ |    | \______ \  /   |   \_   _____/ \      \?
+/   \  ___  /   |   \|    |  |    |  \/    ~    \    __)_  /   |   \?
+\    \_\  \/    |    \    |__|    `   \    Y    /        \/    |    \?
+ \______  /\_______  /_______ \_____  /\___|_  /_______  /\____|__  /?
+        \/         \/        \/     \/       \/        \/         \/?
+?
+                              Coded By?
+        _________.__  ____________________________ ________?
+       /   _____/|__|/   _________    _________   \_____   \?
+       \_____  \ |  |\_____  \   |    |  |       _/ /   |   \?
+       /        \|  |/        \  |    |  |    |   \/    |    \?
+      /_______  /|__/_______  /  |____|  |____|_  /\_________/?
+              \/            \/                  \/?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~?
+?
+[GoldHEN] Installing GoldHEN in Kernel...?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[GoldHEN] FakePKG hooks installed!?
+[GoldHEN] FakeSelf hooks installed!?
+[GoldHEN] SceShellCore patches installed!?
+[GoldHEN] Kernel patches installed!?
+[GoldHEN] SceShellUI patches installed!?
+[GoldHEN] SceRemotePlay patches installed!?
+[GoldHEN] Klog server on port 3232?
+[GoldHEN] All done!?
+[GoldHEN] <binloader> Server started at 9090 port?
+** cpv:e1 **?
+[** set_mode ** -1/-1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-s?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av contCrol] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+[mbus] onSessionKilled. pid=69?
+@ removeSession:L184?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x1?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT?
+#LOGIN MGR# [IsPuConnectHdmi] start checkDeviceId : 0x7000 ?
+#LOGIN MGR# [IsPuConnectHdmi] sceAvSettingGetDeviceInfo -> 0(0x00000000) ?
+#LOGIN MGR# [IsPuConnectHdmi] videoOutCapability = 0x1 ?
+#LOGIN MGR# [IsPuConnectHdmi] end checkDeviceId : 0x7000 -> isReady = 0 ?
+#LOGIN MGR# [NotifyMorpheusConnectStatusChangedForHmuSetupDialog] deviceId : 0xffffffffffffffff / userId : 0xffffffff / avSettingPuType : 0 / connectStatus : 6 ?
+ontexat.v contcrco:l 189k] ( aj:mCo senttext_Clemodaenu p) -- Cod>ec  sMPEG4 et_AmAoCd Deec?oder 
+w[aav s cnontrolot  kpro]perly : ch unangre esgisteupplemrenetardy_.?i
+nfo and skip csc_direct?
+[av control] : lt_req=0 hdmi_misc_up_req=0 vr_flg_up_req=0 vr_switch=0 csc_dir_req=2 hdr_dir_req=0?
+[av control] : flip_set_mode_start(UPDATE_ONLY)?
+[KERNEL] dmem_handle_vmspace_exited pid: 69, ptype=1, 0xffffda1313828278->pt_loaded is TRUE?
+[KERNEL] dmem_handle_vmspace_exited map #0 0xffffda1313828278?
+[K[SceShellUI] I/PSM.UI : VideoOutMode   : IsSystemDefault=True, IsVr=False?
+[SceShellUI] I/PSM.UI : VideoOutStatus : [1920 1080] : freq 59.94?
+[av control] : HdmiSetCscDirect is skipped ?
+*** Hdmi Setup(kern) : 0 ***?
+[avc] ConfigSetSystemMute(0)?
+[avc] ConfigSetSystemMute() done?
+[SceSysAvControl] : hdmi video config skipped?
+** set_mode done (301059121234:149) **?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_VIDEO_OUT_EVENT eventType=0x2?
+ERNEL] dmem_handle_vmspace_exited pid: 69, app_maps_count[1], 1 -> 0?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x45?
+[Syscore App] process delete event : pid=0x45?
+[AppMgr Trace]: pid=0x45, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[AppMgr Trace]: AppId=0x60000f0c  deleted?
+[AppMgr] checkAppTerminated invalid app.?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[Syscore App]  ExpandCpuSetMode : enaCble?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[SceLncService] onAppExit() appId={0x60000f0c}?
+[SceLncService] start unmountAllForShellCoreInternal()?
+[SceLncService] end unmountAllForShellCoreInternal()?
+[SceSystemStateMgr] Power Mode Change: NAVIGATION?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   1 NA  0  8  711  673  533  711  711    609  711     673 1400   1375   NA  NA   2 05b/975  067/900  00710fa0?
+[libSceSaveData] wait 0 msec for session killed?
+[SceRnpsAppMgr] UnblockAllAppInstall(): CUSA00127(appId=0x60000f0c)?
+[SceLncService] KillApp() appId={0x6000100d}, withSuspend={1}, forceKill={1} killReason={0}?
+[SceLncService] BlockingKill() appId={0x6000100d}, titleId={NPXS22010}, is_coredumpFinished={0}, forceKill={1}?
+[SceLncService] convertToSysCoreKillReason: {0x00000000}->{0x00000000}?
+[Syscore App] Kill App : 0x6000100d NPXS22010?
+[Syscore App] Kill process: 0x46?
+[mbus] onSessionKilled. pid=70?
+@ removeSession:L184?
+[VCS]closeSession() [APP->VCS] clientPid = 0x46.?
+#PROFILE CACHE#: \profile_cache_server_event.cpp(92) : onSessionKilled : ?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [AppScreen : ApplicationScreenScene] -> [ContentAreaScene : ContentAreaScene]?
+[SceShellUI] I/PSM.UI :      Scene [ContentAreaScene : ContentAreaScene] : Alive?
+SetDeviceIndexBehavior: mode=SpecificUser, param=0x1ab07dc7?
+[Theme/I] : ActiveUserChanged : From : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : ActiveUserChanged : To   : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : Apply [BLUE] : [Option:111111]: with preloaded user?
+[UIProcess] malloc stats freeSize:38722752 (92%) inuseSize:3220288 peakSize:4070464 [pid:0x3a]?
+ontext.cc:189 (ajmContextCleanup) - Codec MP3 Decoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec ATRAC9 Decoder was not properly unregistered.?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x46?
+[Syscore App] Kill process: 0x46 => 0?
+[AppMgr Trace]: pid=0x46, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[AppMgr Trace]: AppId=0x6000100d  deleted?
+[Syscore App] Kill App : 0xffffffff  => 0?
+[Syscore App] blockingKill(0x6000100d, 1) complete?
+[AppMgr] checkAppTerminated invalid app.?
+[Syscore App]  ExpandCpuSetMode : enable?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[SceLncService] start unmountAllForShellCoreInternal()?
+[SceLncService] end unmountAllForShellCoreInternal()?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_APP_UNLOADED?
+[SL] AppFocusChanged [CUSA00127] -> [NPXS20001]?
+[Syscore App] process delete event : pid=0x46?
+[libSceSaveData] wait 0 msec for session killed?
+[SceRnpsAppMgr] UnblockAllAppInstall(): NPXS22010(appId=0x6000100d)?
+[BGFT] [1085] (disable throttling) ShellUI focused?
+[VCS]checkFocusStatus() [LNC->VCS] Focus Change. appType = 1(SHELL_UI). appId = 0x60000201.?
+GetPlusInfoJob : Run(Start)?
+GetPlusInfoJob : Run(End)?
+GetPlusInfoJob : Finish / Cancelled False / Result True?
+[UpdateUserInfoforPlus] upd_userId : 447774151 / type : None?
+[SceLncService] ProcessTerm()?
+[SceLncService] ProcessTerm() returned?
+[SceLncService] convertToSysCoreKillReason: {0x00000000}->{0x00000000}?
+[SceLncService] ProcessTerm()?
+[sceProcessStarter] ProcessTerm() big/mini app title_id = [CUSA00127] root_dir = [/mnt/sandbox/CUSA00127_000]?
+[sceProcessStarter] UnMountDownloadData() mount_path = [/mnt/sandbox/download/CUSA00127]?
+[SceShellUI] I/PSM.UI : ----- WebView Created AC CanvasTexture2D -----2 (1920:1080)?
+[PFS] umount[0x000027b21e24a338] finished 0?
+[PFS] umount[0x000027b21e24a671] finished 0?
+[BGFT] [641] GameStopped(CUSA00127, 7) start?
+[BGFT] [643] GameStopped(CUSA00127, 7) end?
+[SceLncService] ProcessTerm() returned?
+[SceLncService] onAppExit() appId={0x6000100d}?
+[VCS]checkApplicationStatus() [LNC->VCS] App was Killed. appId = 0x60000f0c.?
+[VCS]checkApplicationStatus() [LNC->VCS] App was Killed. appId = 0x6000100d.?
+[SceShellCore] VM Stats: RSS 791.1, kernel 264.3, wire count 321.4, swap out 0.0, page table CPU 2354/6144 GPU 367/2048?
+[SceShellCore] FMEM   1.3/   4.5 NPXS20977 SceSysAvControl.elf?
+[SceShellCore] FMEM  10.7/  76.3 NPXS20991 SceSysCore.elf?
+[SceShellCore] FMEM   9.3/  54.3 NPXS20973 orbis_audiod.elf?
+[SceShellCore] FMEM   3.2/  11.2 NPXS20976 GnmCompositor.elf?
+[SceShellCore] FMEM  29.0/ 344.8 NPXS20000 SceShellCore?
+[SceShellCore] FMEM 332.0/ 846.3 NPXS20001 SceShellUI?
+[SceShellCore] FMEM   3.5/   8.3 NPXS21003 SceAvCapture?
+[SceShellCore] FMEM   8.8/  24.6 NPXS21000 SceGameLiveStreaming?
+[SceShellCore] FMEM  14.2/  43.5 NPXS21002 ScePartyDaemon?
+[SceShellCore] FMEM   4.3/  25.4 NPXS21004 SceVideoCoreServer?
+[SceShellCore] FMEM  11.0/  51.3 NPXS21006 SceRemotePlay?
+[SceShellCore] FMEM   8.1/  37.0 NPXS21010 SceCloudClientDaemon?
+[SceShellCore] FMEM   3.3/  10.9 NPXS21016 SceSpZeroConf?
+[SceShellCore] FMEM   8.5/ 156.0 NPXS21002 webrtc_daemon.self?
+[SceShellCore] FMEM   6.9/  18.1 NPXS21019 SceSocialScreenMgr?
+[SceShellCore] FMEM   5.0/   9.8 NPXS21007 SceMusicCoreServer?
+[SceShellCore] FMEM   7.1/  14.4 NPXS21020 SceVoiceAndAgent?
+[SceShellCore] FMEM   2.1/   5.1 NPXS20967 fs_cleaner.elf?
+[SceShellCore] FMEM   2.0/  10.2 NPXS20974 SceVdecProxy.elf?
+[SceShellCore] FMEM   2.0/  10.3 NPXS20975 SceVencProxy.elf?
+[SceShellCore] FMEM  44.8/ 284.9 NPXS20001 SecureUIProcess.self?
+[SceShellCore] FMEM 179.4/ 597.8 NPXS20001 SecureWebProcess.self?
+[SceShellCore] FMEM  94.5/ 364.5 NPXS20001 orbis-jsc-compiler.self?
+[SceShellCore] Libc Heap Status: free 37%, in-use 3812.5 KB, trend -31.3 KB/min, peak 4218.0 KB, when 186 [sec]?
+ugen0.3: <Kingston, DataTraveler 3.0, E0D55EA573F0194049CD0236>(VID=0x0951 PID=0x1666 depth=1 port=4 speed=4) at usbus0?
+umass1: <Kingston DataTraveler 3.0, class 0/0, rev 3.20/1.10, addr 5> on usbus0?
+umass1: sim_unit:0x00000001 device_unit:0x00000001?
+umass1:  SCSI over Bulk-Only; quirks = 0x0000?
+umass1:3:1:-1: Attached to scbus3?
+(probe0:umass-sim1:1:0:0): REPORT LUNS. CDB: a0 0 0 0 0 0 0 0 0 10 0 0 ?
+(probe0:umass-sim1:1:0:0): CAM status: SCSI Status Error?
+(probe0:umass-sim1:1:0:0): SCSI status: Check Condition?
+(probe0:umass-sim1:1:0:0): SCSI sense: ILLEGAL REQUEST asc:20,0 (Invalid command operation code)?
+da1 at umass-sim1 bus 1 scbus3 target 0 lun 0?
+da1: <Kingston DataTraveler 3.0 0000> Removable Direct Access SCSI-6 device ?
+da1: 400.000MB/s transfers?
+da1: 118240MB (242155520 512 byte sectors: 255H 63S/T 15073C)?
+?
+DBG AutoMounter(checkSpecAndHub 494):?
+	device(/dev/da1) is SUPER_SPEED.?
+DBG AutoMounter(checkSpecAndHub 504):?
+	deviceFilePath[/dev/da1] is connected to the USB port in general?
+WARNING AutoMounter(bool AutoMounter::DevctlReader::UsbStartupHandler::isStartUp() 76):?
+	fake implementation.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_connection(void **) 360):?
+	Notify PsmEvent OnUsbStorageInserted?
+MSG AutoMounter(int32_t AutoMounter::Util::checkFsFormat(const char *, uint32_t *) 888):?
+	device(/dev/da1) has unknown format(0).?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_mountFileSystem(std::string, bool, std::string &, uint32_t *, uint64_t *, uint64_t *, uint64_t *) 542):?
+	/dev/da1 has unknown format.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 763): _mountFileSystem(deviceFilePath, false, mountPoint, &fsFormatType, &space, &freeSpace, &availableSpace) returned 0x80f4001c.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_acquireEncryptDevice(std::string, uint32_t *, uint32_t *, std::string &, uint64_t *) 592):?
+	device(/dev/da1) is not qualified for encrypt device. ng_capability(0x2)?
+verify_metadata: sceSblExternalHDDVerifyMetadata(0) failed 800f0435?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::checkEncryption(std::string, bool *) 347):?
+	sceFsExternalStorageVerifyMetadata(/dev/da1) returned 0x80020050. device is not encrypted.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 795): _acquireEncryptDevice(deviceFilePath, &encryptDeviceFormat, &encryptDeviceStatus, encryptDeviceFilePath, &encryptDeviceId) returned 0x80f4001a.?
+DBG AutoMounter(notifyMount 435):?
+	eventArg.additionalFeatures[0x2000].?
+MSG AutoMounter(int32_t AutoMounter::DevctlReader::handleCreateUsbDevice(const char *) 174): AutoMounter::UsbHandler::requestMount(deviceFilePath.c_str(), true) returned 0x80f4001a.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_mount(void **) 270):?
+	Notify PsmEvent OnUsbStorageMounted?
+?
+DBG AutoMounter(checkSpecAndHub 494):?
+	device(/dev/da1) is SUPER_SPEED.?
+DBG AutoMounter(checkSpecAndHub 504):?
+	deviceFilePath[/dev/da1] is connected to the USB port in general?
+WARNING AutoMounter(bool AutoMounter::DevctlReader::UsbStartupHandler::isStartUp() 76):?
+	fake implementation.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_connection(void **) 360):?
+	Notify PsmEvent OnUsbStorageInserted?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::tryExfatMount(std::string, bool, std::string &, uint64_t *, uint64_t *, uint64_t *) 129):?
+	device(/dev/da1p1) is mounted to /mnt/usb0 with exfat.?
+DBG AutoMounter(notifyMount 435):?
+	eventArg.additionalFeatures[0x2040].?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_mount(void **) 270):?
+	Notify PsmEvent OnUsbStorageMounted?
+callbackUsbStorageMountInternal()[374]: [MediaEvent] callbackUsbStorageMountInternal() devNum=0?
+callbackUsbStorageMountInternal()[377]: [MediaEvent] callbackUsbStorageMountInternal() locked.?
+MSG AutoMounterMelUtil(void sceAutomounterMelUtil::callbackMountAll(void **) 279):?
+		device(/dev/da1p1): exfat(mediaType=0x1001) is mounted at /mnt/usb0.?
+MSG AutoMounterWrapper(void callbackUsbMount(SceUsbStorageEventDatas *, void *) 102):?
+	DeviceId=0x17ed9277?
+?
+[SceLncUtil] blockAppSuspend: name={SceSaveData}, appId={0x60000100}, refCount={1}?
+[SceLncUtil] unblockAppSuspend: name={SceSaveData}, appId={0x60000100}, refCount={0}?
+DBG AutoMounter(checkSpecAndHub 494):?
+	device(/dev/da1) is SUPER_SPEED.?
+DBG AutoMounter(checkSpecAndHub 504):?
+	deviceFilePath[/dev/da1] is connected to the USB port in general?
+WARNING AutoMounter(bool AutoMounter::DevctlReader::UsbStartupHandler::isStartUp() 76):?
+	fake implementation.?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_connection(void **) 360):?
+	Notify PsmEvent OnUsbStorageInserted?
+MSG AutoMounter(int32_t AutoMounter::Util::checkFsFormat(const char *, uint32_t *) 888):?
+	device(/dev/da1p2) has unknown format(0).?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_mountFileSystem(std::string, bool, std::string &, uint32_t *, uint64_t *, uint64_t *, uint64_t *) 542):?
+	/dev/da1p2 has unknown format.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 763): _mountFileSystem(deviceFilePath, false, mountPoint, &fsFormatType, &space, &freeSpace, &availableSpace) returned 0x80f4001c.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::_acquireEncryptDevice(std::string, uint32_t *, uint32_t *, std::string &, uint64_t *) 592):?
+	device(/dev/da1p2) is not qualified for encrypt device. ng_capability(0x12)?
+verify_metadata: sceSblExternalHDDVerifyMetadata(0) failed 800f0435?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::(anonymous namespace)::checkEncryption(std::string, bool *) 347):?
+	sceFsExternalStorageVerifyMetadata(/dev/da1p2) returned 0x80020050. device is not encrypted.?
+MSG AutoMounter(int32_t _AutoMounter::UsbHandler::requestMount(const char *, bool) 795): _acquireEncryptDevice(deviceFilePath, &encryptDeviceFormat, &encryptDeviceStatus, encryptDeviceFilePath, &encryptDeviceId) returned 0x80f4001a.?
+DBG AutoMounter(notifyMount 435):?
+	eventArg.additionalFeatures[0x2000].?
+MSG AutoMounter(void AutoMount::PsmEventNotifier::callback_mount(void **) 270):?
+	Notify PsmEvent OnUsbStorageMounted?
+MSG AutoMounter(int32_t AutoMounter::DevctlReader::handleCreateUsbDevice(const char *) 174): AutoMounter::UsbHandler::requestMount(deviceFilePath.c_str(), true) returned 0x80f4001a.?
+[SceShellCore] Libc Heap Status: free 37%, in-use 3819.8 KB, trend -41.9 KB/min, peak 4218.0 KB, when 217 [sec]?
+D/88391:?
+[UIProcess] malloc stats freeSize:38827264 (93%) inuseSize:3115776 peakSize:4070464 [pid:0x3a]?
+D/88391:AZIF00003?
+[SceShellCore] VM Stats: RSS 792.3, kernel 265.7, wire count 324.3, swap out 0.0, page table CPU 2356/6144 GPU 367/2048?
+[SceShellCore] FMEM   1.3/   4.5 NPXS20977 SceSysAvControl.elf?
+[SceShellCore] FMEM  10.7/  76.3 NPXS20991 SceSysCore.elf?
+[SceShellCore] FMEM   9.3/  54.3 NPXS20973 orbis_audiod.elf?
+[SceShellCore] FMEM   3.2/  11.2 NPXS20976 GnmCompositor.elf?
+[SceShellCore] FMEM  29.0/ 346.8 NPXS20000 SceShellCore?
+[SceShellCore] FMEM 333.1/ 847.4 NPXS20001 SceShellUI?
+[SceShellCore] FMEM   3.5/   8.3 NPXS21003 SceAvCapture?
+[SceShellCore] FMEM   8.8/  24.6 NPXS21000 SceGameLiveStreaming?
+[SceShellCore] FMEM  14.2/  43.5 NPXS21002 ScePartyDaemon?
+[SceShellCore] FMEM   4.3/  25.4 NPXS21004 SceVideoCoreServer?
+[SceShellCore] FMEM  11.0/  51.3 NPXS21006 SceRemotePlay?
+[SceShellCore] FMEM   8.1/  37.0 NPXS21010 SceCloudClientDaemon?
+[SceShellCore] FMEM   3.3/  10.9 NPXS21016 SceSpZeroConf?
+[SceShellCore] FMEM   8.5/ 156.0 NPXS21002 webrtc_daemon.self?
+[SceShellCore] FMEM   6.9/  18.1 NPXS21019 SceSocialScreenMgr?
+[SceShellCore] FMEM   5.0/   9.8 NPXS21007 SceMusicCoreServer?
+[SceShellCore] FMEM   7.1/  14.4 NPXS21020 SceVoiceAndAgent?
+[SceShellCore] FMEM   2.1/   5.1 NPXS20967 fs_cleaner.elf?
+[SceShellCore] FMEM   2.0/  10.2 NPXS20974 SceVdecProxy.elf?
+[SceShellCore] FMEM   2.0/  10.3 NPXS20975 SceVencProxy.elf?
+[SceShellCore] FMEM  44.8/ 284.9 NPXS20001 SecureUIProcess.self?
+[SceShellCore] FMEM 179.4/ 597.8 NPXS20001 SecureWebProcess.self?
+[SceShellCore] FMEM  94.5/ 364.6 NPXS20001 orbis-jsc-compiler.self?
