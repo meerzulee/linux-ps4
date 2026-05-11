@@ -320,6 +320,13 @@
 # Bisection patch: tests whether LMI's address-extension is responsible
 # for the persistent fault at byte 0x300000000 vmid 4.
 0300-gpu-liverpool/0037-amdgpu-uvd-v4-2-liverpool-vcpu-v76b-zero-lmi-ext.patch
+# 0038: v76d-α — extend vmid 1..15 VA range to 32 GB on Liverpool/Gladius.
+# Second-pass Ghidra found Sony's gbase_create_vmid programs per-vmid PT
+# ranges of 8/32/64 GB; mainline's max_pfn-1 (≈ 8 GB on PS4) is too tight
+# for UVD's firmware access at virtual 0x300000000 (12 GB). Widening
+# VC[1..15]_END_ADDR lets the firmware access land inside the dummy-page
+# fallback instead of tripping the range-protection fault.
+0300-gpu-liverpool/0038-amdgpu-gmc-v7-0-liverpool-extend-vmid-va-range.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
