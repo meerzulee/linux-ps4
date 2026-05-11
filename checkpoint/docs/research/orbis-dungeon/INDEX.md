@@ -112,7 +112,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | gc | 🔍 | partial via UVD dig — `2026-05-11-ghidra-uvd-dungeon-map.md`, `2026-05-12-uvd-pre-init-dig.md` |
 | dbggc | 🗝️ | rooms/dbggc.md |
 | dce | 🔍 first-pass | rooms/dce.md |
-| av_control | 🗝️ | rooms/av_control.md |
+| av_control | 🔍 first-pass | rooms/av_control.md |
 | hdmi | 🔍 first-pass ⭐ | rooms/hdmi.md (**high-value for Linux DRM port**) |
 | screenshot | 🗝️ | rooms/screenshot.md |
 
@@ -218,6 +218,11 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 6: + av_control first-pass — AV mode + HDR controller.
+  IOCTL magic 0x9A, ~30 commands. 96-byte mega-IOCTL `update_info`
+  decoded with 22 fields. Bonus: full Sony HDR colorspace table
+  extracted from printk strings (IDs 0..0xC: srgb/cergb/yccbt2020/
+  rgbbt2020/HDR10 variants). Link-training detection logic mapped.
 - 2026-05-12 iter 5: + dce first-pass — Display Controller Engine.
   Per-context flip queue, IH packet dispatcher confirms standard AMD
   layout (client_id<<48 | src_id<<40 | data). Mainline amdgpu DC code
