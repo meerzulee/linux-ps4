@@ -332,6 +332,11 @@
 # extended to 16 GB the shared PT spans the firmware's hardcoded 0x300000000
 # access. Missing PTEs fall through to dummy_page_addr instead of faulting.
 0300-gpu-liverpool/0039-amdgpu-gmc-v7-0-liverpool-gart-size-16gb.patch
+# 0040: v76d-β-2 Option A — collapse VC1..VC15 PAGE_TABLE_DEPTH to 0 (flat
+# walk like VC0) on Liverpool/Gladius, then bind dummy page at GART virtual
+# offset 0x300000000 so the UVD firmware's hardcoded VA read resolves
+# instead of faulting on missing PD entry. Two diagnostic prints confirm.
+0300-gpu-liverpool/0040-amdgpu-gmc-v7-0-liverpool-uvd-pt-fix-option-a.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
