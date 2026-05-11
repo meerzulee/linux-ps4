@@ -398,6 +398,11 @@
 # might matter). A11 with k=15 (slowest) should slow cache cycle ~15x
 # if k is a pure clock divider.
 0300-gpu-liverpool/0050-amdgpu-uvd-v4-2-a14-mc-resume-noudec-plus-a11-k15.patch
+# 0051: v76d-β-2-A15 — write Sony's IOCTL-returned constants (0x300308000
+# user-buffer-start, 0x20000 size) at region 2/3[0] instead of A8's plain
+# sizes. Replaces 0048's writes with better-grounded magic values that
+# Sony's actual userspace observes via IOCTL surface.
+0300-gpu-liverpool/0051-amdgpu-uvd-v4-2-a15-sony-ioctl-constants-as-magic.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
