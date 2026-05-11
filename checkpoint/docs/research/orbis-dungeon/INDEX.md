@@ -132,7 +132,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 ### Floor 5: Storage / DMA
 | Room | Status | File |
 |---|---|---|
-| sdma | 🗝️ | rooms/sdma.md |
+| sdma | 🔍 first-pass | rooms/sdma.md |
 | mbus | 🔍 first-pass | rooms/mbus.md |
 
 ### Floor 6: Input
@@ -218,6 +218,10 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 3: + sdma first-pass — System DMA service. IH tasklet
+  with 16-slot ring, packet types 0xF3 (heartbeat) / 0xE0 (completion).
+  Three completion sub-types (mutex/notify/condvar). Submit packet
+  format decoded: opcode + queue ID + src addr + 20-bit length.
 - 2026-05-12 iter 2: + mbus first-pass — Sony's AV hotplug event router.
   event_id 9 = HDMI; tracks deviceId counter; 3ms debounce; suspend/resume
   eventhandler hooks. Confirmed Sony has an HDMI state machine we'll
