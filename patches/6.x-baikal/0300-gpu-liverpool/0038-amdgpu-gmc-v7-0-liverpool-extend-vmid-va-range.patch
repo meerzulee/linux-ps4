@@ -1,0 +1,116 @@
+amdgpu: gmc_v7_0 — extend Liverpool/Gladius vmid 1-15 VA range to 32 GB (v76d-α)
+
+The UVD VCPU firmware on PS4 deterministically accesses GPU virtual byte
+0x300000000 (= 12 GB) once started. v74..v76b confirmed this is hard-coded
+in the firmware and not derivable from any register we control (LMI_VBASE,
+LMI_ADDR_EXT, LMI_EXT40_ADDR, BO size — all ruled out).
+
+A second-pass Ghidra dig on orbis-12.02.elf (see
+checkpoint/docs/research/orbis-kernel/2026-05-11-ghidra-uvd-dungeon-map.md)
+located Sony's full GMC bring-up architecture:
+
+- gbase_init_global_vm_context0 (FUN_c886e900) sets all 16 vmids to point
+  to a 4 KB safe page at chip boot, all DISABLED.
+- gbase_create_vmid (FUN_c8867260) is called per-vmid as processes attach.
+  It allocates a fresh per-vmid page directory (NOT shared), then writes
+  mmVM_CONTEXT[vmid]_{PAGE_TABLE_BASE,START,END}_ADDR. The VA range comes
+  from gbase_attach_process_vmid (FUN_c886f150), and is:
+
+    *  8 GB for userland processes with default cred
+    * 32 GB for userland processes with a special cred flag
+    * 64 GB for kernel-credentialed processes
+    * 64 GB for vmid 1 specifically (gbase_create_vmid_simple)
+    * 32 GB for vmid 14 specifically
+    *  1 TB for vmid 0 (kernel)
+
+The relevant detail: 0x300000000 (12 GB) is OUT OF RANGE for an 8 GB vmid,
+IN RANGE for 32/64 GB. Sony's UVD subsystem necessarily runs in one of the
+larger-range vmids — process cred, vmid 1, or one of the 32/64 GB slots.
+
+Mainline gmc_v7_0_gart_enable's Liverpool block, by contrast, sets all
+vmid 1..15 END_ADDR to (max_pfn - 1). On a PS4 with 8 GB GDDR5 unified
+memory, max_pfn ≈ 0x200000 (= 8 GB in 4 KB pages), so VC[i]_END caps the
+vmid VA at the 8 GB boundary. UVD firmware accesses past this trigger the
+"GPU Protection fault. vmid:4 client:..." in the IH at exactly page
+0x300000.
+
+This patch widens the Liverpool/Gladius vmid 1..15 END_ADDR to 32 GB - 1
+page (= 0x800000 - 1 = 0x7fffff in page units), matching Sony's
+medium-range process vmid layout. It also includes VC1 in the override
+(mainline's LVP block starts at i=2; we change it to i=1 so VC1's
+upstream-default END_ADDR is consistent with the rest).
+
+  #define PS4_VMID_VA_END_PAGES   (0x800000 - 1)  /* 32 GB / 4 KB - 1 */
+
+Caveat — the page table itself stays sized for max_pfn entries. PTEs at
+virtual indices above max_pfn are zero (unallocated). For those, the GMC
+falls back to mmVM_CONTEXT1_PROTECTION_FAULT_DEFAULT_ADDR (the existing
+adev->dummy_page_addr) — i.e., reads return zeros from the dummy page, and
+writes go nowhere. This is the same behaviour amdgpu uses for any
+unmapped GART access; we just allow the VA range to extend further before
+the range-protection fault fires.
+
+Expected hardware signals when this lands:
+
+  ✅ if the firmware's 0x300000000 reads succeed against the dummy page and
+     the VCPU keeps executing past the previous timeout: huge win. The
+     subsequent failure mode (whatever it is) tells us what the firmware
+     actually expected at 0x300000000.
+
+  🟡 if the fault address moves (e.g., to 0x300400000 or some other
+     in-range address): the previous fault was the range-protection trip;
+     a new fault means firmware reached its "real" failure mode after
+     range-OK.
+
+  ❌ if the fault stays at page 0x300000 with vmid same as before: the
+     range-protection isn't the gate. Likely cause: ENABLE_CONTEXT bit
+     is gated by some other path, or the firmware does an explicit PT
+     walk that requires a real PTE (not a dummy page fallback). Next
+     step would be v76d-β: pre-populate PT entries in the firmware
+     region pointing to real UVD firmware physical pages.
+
+The change is two-character-wide (replaces `adev->vm_manager.max_pfn`
+with the new define, and starts the first loop at i=1 instead of i=2)
+plus one #define. Easy to revert if it causes regressions in the GFX or
+SDMA paths.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -687,16 +687,32 @@
+ 			       table_addr >> 12);
+ 	}
+
++	/*
++	 * v76d-α: Liverpool/Gladius vmid 1..15 VA range override.
++	 *
++	 * UVD VCPU firmware accesses GPU virtual 0x300000000 (12 GB)
++	 * once started. With mainline's max_pfn-1 (~8 GB on PS4) this is
++	 * out-of-range -> range-protection fault at vmid IH.
++	 *
++	 * Sony's gbase_create_vmid (orbis FUN_c8867260) programs each
++	 * vmid with an 8/32/64 GB range depending on credential class;
++	 * UVD runs in one of the 32/64 GB vmids in Sony's stack. We
++	 * use 32 GB as the conservative choice -- large enough to cover
++	 * the firmware's 0x300000000 access, smaller than the 64 GB
++	 * kernel slot.
++	 */
++#define PS4_VMID_VA_END_PAGES		(0x800000UL - 1) /* 32 GB / 4 KB - 1 */
++
+ 	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
+-		for (i = 2; i < 8; i++) {
++		for (i = 1; i < 8; i++) {
+ 			WREG32(mmVM_CONTEXT0_PAGE_TABLE_START_ADDR + i, 0);
+ 			WREG32(mmVM_CONTEXT0_PAGE_TABLE_END_ADDR + i,
+-			       adev->vm_manager.max_pfn - 1);
++			       PS4_VMID_VA_END_PAGES);
+ 		}
+ 		for (i = 0; i < 8; i++) {
+ 			WREG32(mmVM_CONTEXT8_PAGE_TABLE_START_ADDR + i, 0);
+ 			WREG32(mmVM_CONTEXT8_PAGE_TABLE_END_ADDR + i,
+-			       adev->vm_manager.max_pfn - 1);
++			       PS4_VMID_VA_END_PAGES);
+ 		}
+ 	}
+
