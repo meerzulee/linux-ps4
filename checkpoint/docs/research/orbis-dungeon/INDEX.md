@@ -113,7 +113,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | dbggc | 🗝️ | rooms/dbggc.md |
 | dce | 🗝️ | rooms/dce.md |
 | av_control | 🗝️ | rooms/av_control.md |
-| hdmi | 🗝️ | rooms/hdmi.md |
+| hdmi | 🔍 first-pass ⭐ | rooms/hdmi.md (**high-value for Linux DRM port**) |
 | screenshot | 🗝️ | rooms/screenshot.md |
 
 ### Floor 3: Video codecs
@@ -218,6 +218,10 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 4: + hdmi first-pass ⭐ — Sony's HDMI bridge controller.
+  Magic 0x8D, ~30 IOCTLs decoded, 7-state event-driven state machine
+  via SceHdmiEvent kthread, HDCP/EDID/mode-set/audio handlers identified.
+  HIGH VALUE: directly informs our ps4_bridge.c work.
 - 2026-05-12 iter 3: + sdma first-pass — System DMA service. IH tasklet
   with 16-slot ring, packet types 0xF3 (heartbeat) / 0xE0 (completion).
   Three completion sub-types (mutex/notify/condvar). Submit packet
