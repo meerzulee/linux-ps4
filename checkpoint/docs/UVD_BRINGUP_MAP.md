@@ -6,6 +6,44 @@ tree" sections get rewritten in place.
 
 ---
 
+## Where we are NOW (updated 2026-05-12 01:30 — PAUSED after 17 iterations)
+
+**Status: UVD bring-up PAUSED.** 17 iterations across ~4 days (A1..A17 +
+B1) — STATUS bit 1 has never fired. After exhausting all cheap tests
+and the deep Ghidra dig of Sony's pre-UVD init paths, the most likely
+explanation is that the fw is gated on **chip state set during Orbis
+runtime that we can't replicate from Linux** (SMU clocks/voltages via
+SBL, ATOM BIOS execution, or a UVD-specific handshake).
+
+**Full postmortem:** `checkpoint/docs/research/2026-05-12-a17-result.md`
+
+**Last hw test:** A17 (skip STATUS poll, fall through to ring_test).
+Result: ring_test fails -110 with no VM fault (fw isn't processing
+packets at all). Kernel boots past amdgpu failure — WiFi works, login
+works, Hyprland starts but crashes with SIGABRT (no GPU accel). The
+"white screen" is HDMI driven but no desktop composed.
+
+**Active config:**
+- B1 patch 0052 — **DISABLED** in series (broke vmid 15 ring_test)
+- A17 patch 0053 — applied (turns fatal timeout into recoverable warn)
+
+**Next-session priority if UVD work resumes:**
+1. **A18 — UVD soft-fail**: make uvd_v4_2_hw_init always return 0. Lets
+   amdgpu probe succeed, display works, Hyprland boots, only video
+   decode breaks. Highest-value pragmatic move.
+2. Or simply mark UVD module DISABLED in Kconfig (cleaner equivalent).
+
+After UVD soft-fail, pivot to: HDMI verification, Ethernet (sky2 Baikal
+GbE driver work), mt7668 WiFi+BT port, suspend/resume.
+
+**Reopen UVD work IF**:
+- Someone ports Sony's SBL driver protocol to Linux (months of work)
+- A Cadence Xtensa disassembler emerges for the UVD microcode
+- Someone documents PS4's UVD bring-up via ATOM BIOS execution
+- Community / upstream finds the actual gate
+
+---
+
 ## Where we are NOW (updated 2026-05-12 00:15, B1 built — awaiting hardware test)
 
 **Last action: built B1** (per-vmid 2-level PD).

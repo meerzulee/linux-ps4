@@ -1,0 +1,87 @@
+amdgpu: uvd_v4_2 — A17 skip STATUS-bit-1 deadlock, proceed to ring init
+
+After A-arc + B1 hardware testing, STATUS bit 1 has NEVER fired across
+13+ iterations. The Ghidra dig of Sony's uvd_vcpu_start_dispatch (this
+session) reveals:
+  - Sony's IOCTL handler returns IMMEDIATELY after start_dispatch (no
+    Sony-side STATUS poll exists — confirmed by A12)
+  - Sony's userspace would then queue the first ring packet via the
+    standard UVD submission path
+
+Hypothesis: STATUS bit 1 only fires AFTER the fw processes its first
+ring packet. Mainline waits for bit 1 BEFORE submitting → deadlock
+against fw's post-ring signal. The cache pattern oscillating without
+ever fully syncing is consistent with the fw waiting in a periodic-sync
+loop for something that never comes (= the first packet).
+
+A17 changes the if(!succeeded) error path: still print diagnostic info
+(useful for comparing register state), but DO NOT return -ETIMEDOUT.
+Fall through to the post-success path so:
+  - Ring buffer setup runs (mmUVD_RBC_RB_* registers programmed)
+  - amdgpu can then proceed to ring_test
+  - ring_test submits a packet → fw processes it → maybe sets STATUS
+    bit 1 retroactively
+
+Expected hardware signals:
+
+  ✅ ring_test SUCCEEDS — fw was ready all along; STATUS bit 1 was
+     a red herring. Continue to make amdgpu pass UVD probe.
+
+  🟡 ring_test FAILS with a CLEAR fw error (engine hang, ring stall,
+     visible IH packet) — fw not ready, but at least we know what
+     specifically is wrong instead of "no signal".
+
+  ❌ ring_test FAILS with same vmid 15 fault as B1 — host-side
+     mainline ring submission is itself broken in our config (separate
+     issue from UVD bring-up). Pivot to fixing that.
+
+B1 (patch 0052) is DISABLED in series for this test — we want a clean
+A-arc baseline (flat walk) without B1's vmid 15 ring-test fault
+confounder.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -949,17 +949,30 @@
+ 			u32 vbase_lo    = RREG32(0x3c69);
+ 			u32 ext40_addr  = RREG32(mmUVD_LMI_EXT40_ADDR);
+ 
+-			DRM_ERROR("ps4 uvd: Liverpool VCPU did not start "
+-				  "(no STATUS bit 1 after %dms)\n",
+-				  V76D_A5_TIMEOUT_MS);
+-			DRM_ERROR("  STATUS=0x%08x SOFT_RESET=0x%08x "
+-				  "LMI_STATUS=0x%08x\n",
+-				  status, soft_reset, lmi_status);
+-			DRM_ERROR("  LMI_VM_VBASE_HI=0x%08x LMI_VM_VBASE_LO=0x%08x "
+-				  "(v76a: wrote 0, fw_gpu_addr=0x%llx for ref)\n",
+-				  vbase_hi, vbase_lo, fw_gpu_addr);
+-			DRM_ERROR("  LMI_EXT40_ADDR=0x%08x\n", ext40_addr);
+-			return -ETIMEDOUT;
++			/*
++			 * v76e-A17: STATUS bit 1 didn't fire — DO NOT bail.
++			 *
++			 * Hypothesis from Ghidra dig: Sony's userspace queues the
++			 * first ring packet immediately after start_dispatch returns
++			 * (no Sony-side STATUS poll exists). STATUS bit 1 may only
++			 * fire AFTER the fw processes its first ring packet —
++			 * mainline's pre-ring poll would then deadlock against fw's
++			 * post-ring signal. Skipping the poll and proceeding to
++			 * ring init lets ring_test submit a packet and either:
++			 *   - succeed (= fw was ready, poll was wrong)
++			 *   - fault visibly (= fw really not ready, but at least
++			 *     we get a real signal instead of timeout)
++			 */
++			DRM_WARN("ps4 uvd: STATUS bit 1 didn't fire after %dms — "
++				 "A17 proceeding to ring init anyway\n",
++				 V76D_A5_TIMEOUT_MS);
++			DRM_WARN("  STATUS=0x%08x SOFT_RESET=0x%08x LMI_STATUS=0x%08x\n",
++				 status, soft_reset, lmi_status);
++			DRM_WARN("  LMI_VM_VBASE_HI=0x%08x LMI_VM_VBASE_LO=0x%08x "
++				 "(v76a: wrote 0, fw_gpu_addr=0x%llx for ref)\n",
++				 vbase_hi, vbase_lo, fw_gpu_addr);
++			DRM_WARN("  LMI_EXT40_ADDR=0x%08x\n", ext40_addr);
++			/* fall through to post-success path and ring buffer init */
+ 		}
+ 	}
+ #undef V76D_A5_SAMPLES

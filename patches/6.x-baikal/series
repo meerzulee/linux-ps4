@@ -403,13 +403,19 @@
 # sizes. Replaces 0048's writes with better-grounded magic values that
 # Sony's actual userspace observes via IOCTL surface.
 0300-gpu-liverpool/0051-amdgpu-uvd-v4-2-a15-sony-ioctl-constants-as-magic.patch
-# 0052: v76e-B1 — Sony-style per-vmid 2-level page directory. Allocates a
-# 32 KB PD + 16 KB PT in VRAM (block_size=11, matching Sony's CNTL=0x32fffeda
-# decoded from FUN_c8867260 gbase_create_vmid). Repoints VC1..VC15 PT_BASE
-# at the new PD and switches VM_CONTEXT1_CNTL to DEPTH=1 + BLOCK_SIZE=2,
-# undoing β-2-A's flat-walk override. PD has only one entry (index 0x600)
-# pointing at our PT, which maps the 776 mirror-BO pages for region 1+2+3.
-0300-gpu-liverpool/0052-amdgpu-uvd-v4-2-b1-per-vmid-pd.patch
+# 0052: v76e-B1 — Sony-style per-vmid 2-level page directory. DISABLED after
+# 2026-05-12 hw test: STATUS bit 1 still didn't fire AND the minimal PD broke
+# mainline's vmid 15 ring_test (fault at VA 0 → amdgpu probe died with -110).
+# Confirmed PD walk shape isn't the gate. Patch kept in tree for reference;
+# do not re-enable unless paired with a fix that mirrors flat GART for
+# low-VA mainline accesses (would be "B1.1").
+# 0300-gpu-liverpool/0052-amdgpu-uvd-v4-2-b1-per-vmid-pd.patch
+# 0053: v76e-A17 — skip STATUS-bit-1 deadlock, proceed to ring init even if
+# bit 1 didn't fire. Hypothesis: STATUS bit 1 only fires AFTER fw processes
+# its first ring packet (Sony's userspace queues immediately, no kernel poll).
+# Lets ring_test submit a packet — either fw was ready (success) or we get
+# a clear fault signal instead of timeout.
+0300-gpu-liverpool/0053-amdgpu-uvd-v4-2-a17-skip-status-poll.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
