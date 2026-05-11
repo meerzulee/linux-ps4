@@ -447,6 +447,206 @@ GMC programmer      c88584e0  (memory_pstate.c - SMU IX writes)
 
 ---
 
+## 12. GMC INIT FOUND — Sony's full GMC architecture (added in second pass)
+
+After the initial map, byte-pattern hunting confirmed Sony's full GMC bring-up.
+The vmid 4 mystery is now resolved.
+
+### 12.1 The four canonical gbase functions
+
+| Function | Address | Role |
+|---|---|---|
+| `gbase_init_global_vm_context0` | `c886e900` | Chip-boot GMC reset: all 16 vmids→safe page, all DISABLED, L2 cache init, AGP aperture, fault handlers |
+| `gbase_create_vmid` | `c8867260` | Per-VMID: allocate own PD, program `mmVM_CONTEXT[i]_{PAGE_TABLE_BASE,START,END}_ADDR`, clear DISABLE bit, TLB invalidate |
+| `gbase_map` | `c886a540` | VMID-aware mapper. Walks per-vmid PD, calls `gbase_write_pte` for each page |
+| `gbase_write_pte` | `c88661c0` | Innermost: `pd[idx] = (pa & ~0xfff) \| (flags & 0xfff)` |
+
+### 12.2 The CIK register numbering (now confirmed by code, not strings)
+
+Sony writes these dword indices (matches mainline `gmc_7_0_d.h`):
+
+| Reg | VMID range | Notes |
+|---|---|---|
+| `0x54f + vmid` | VC0..VC7 PT_BASE | `vmid << 12` |
+| `0x506 + vmid` | VC8..VC15 PT_BASE | non-contiguous with VC0..VC7 |
+| `0x557 + vmid` | VC0..VC7 PT_START | `va_start >> 12` |
+| `0x50e + vmid` | VC8..VC15 PT_START | |
+| `0x55f + vmid` | VC0..VC7 PT_END | `(va_start + va_size - 1) >> 12` |
+| `0x51c + vmid` | VC8..VC15 PT_END | |
+| `0x504` | VC0_CNTL | global write: `0x32fffeda`, then `\|= 1` at end |
+| `0x505` | VC1_CNTL | global write: `0x32fffeda`, then `\|= 1` at end |
+| `0x50c` | VC0_CNTL2 | `0x13` |
+| `0x50d` | VC1_CNTL2 | `0x13` |
+| `0x535` | VM_CONTEXTS_DISABLE | bit per vmid, 1=disabled |
+| `0x500` | VM_L2_CNTL | `0xc0b8603` |
+| `0x501` | VM_L2_CNTL2 | `3` |
+| `0x502` | VM_L2_CNTL3 | `0x120000` |
+| `0x546/0x547` | VC0/VC1_PAGE_TABLE_DEFAULT_ADDR | safe-page address |
+| `0x80a` | MC_VM_AGP_TOP | `0x3fffff` |
+| `0x80b` | MC_VM_AGP_BOT | `0` |
+| `0x80c` | MC_VM_AGP_BASE | `0` |
+| `0x80f` | MC_VM_SYSTEM_APERTURE_DEFAULT_ADDR | safe-page |
+| `0x819` | MC_VM_MX_L1_TLB_CNTL | RMW: clear bit 0, then `& 0xffffff84 \| 0x5b` |
+| `0x1412` | (TLB invalidate trigger) | written `=1` after every map |
+
+### 12.3 The VMID allocation model
+
+`gc_open` (FUN_c8878140, source `sys/internal/modules/gc/gc.c`) is the per-process
+GPU client open syscall. It calls:
+
+```
+gc_open(proc):
+  ...
+  if (proc has no vmid yet):
+    gbase_attach_process_vmid(ctx)              [FUN_c886f150]
+      → gbase_alloc_vmid(&vmid, ...)            [FUN_c8865dc0]
+        (bitmap pulls from DAT_ca76fd00/04/08)
+      → gbase_create_vmid(vmid, 0, va_size, ...)  [FUN_c8867260]
+        - alloc PD via gc_allocate_system_memory_for_dir
+        - clear PD entries
+        - write VC[vmid]_PT_BASE = pd_phys >> 12
+        - write VC[vmid]_PT_START = 0
+        - write VC[vmid]_PT_END   = (va_size-1) >> 12
+        - clear VM_CONTEXTS_DISABLE bit
+        - TLB invalidate this vmid
+        - if vmid ∉ {0,15}: map kernel work area at GPU VA 0x7ffffc000
+  ...
+  reg[0x505] |= 0x10249248   // VC1_CNTL: enable fault handling
+```
+
+**VA range per vmid (from FUN_c886f150):**
+
+| Cred class | "iVar1" flag | VA range |
+|---|---|---|
+| Kernel-credentialed process | (n/a) | `0..0x10000000000` = **64 GB** |
+| Userland process, special flag set | `iVar1 != 0` | `0..0x8000000000` = **32 GB** |
+| Userland process, no flag | `iVar1 == 0` | `0..0x2000000000` = **8 GB** |
+
+`gbase_create_vmid_simple` (FUN_c886f2c0) is a parallel entry without process
+ownership, called from `FUN_c8619740`. Its VA-range rules:
+
+| vmid | VA range |
+|---|---|
+| 1 | 64 GB |
+| 14 | 32 GB |
+| other | 8 GB |
+
+**VMID assignments observed in code:**
+
+| VMID | Owner | Set by |
+|---|---|---|
+| 0 | Kernel GPU VA (1 TB!) | `FUN_c88487b0` PCI attach → `gbase_create_vmid(0, 0, 0xfc00000000, ...)` |
+| 1-13 | Pool A (any process via `gc_open`) | `gbase_alloc_vmid` from bitmap |
+| 14 | Reserved 32 GB slot | `gbase_create_vmid_simple(14, ...)` |
+| 15 | SAMU | `FUN_c885af40` → `gbase_create_vmid(15, ...)` |
+
+So **"vmid 4" in our v76 fault is whichever vmid the first GPU process happened
+to get** — it's a dynamic alloc, not hardcoded. The constant is the *VA address*
+the UVD firmware accesses (`0x300000000` = 12 GB).
+
+### 12.4 What this means for our 6.x Linux port
+
+Mainline `gmc_v7_0_gart_enable` (drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c) has this
+Liverpool-specific block (line ~691):
+
+```c
+if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
+    for (i = 1; i < 16; i++) {
+        WREG32(mmVM_CONTEXT0_PAGE_TABLE_BASE_ADDR + i,
+               adev->gart.table_addr >> 12);            // shared with VC0
+        WREG32(mmVM_CONTEXT0_PAGE_TABLE_START_ADDR + i, 0);
+        WREG32(mmVM_CONTEXT0_PAGE_TABLE_END_ADDR + i,
+               (max_pfn - 1));                          // widen range
+    }
+}
+```
+
+The shared-PT model: all 16 VMIDs point to VMID 0's GART table, and the range
+ends at `max_pfn - 1`. On PS4 with 8 GB GDDR5: `max_pfn = 0x200000 - 1` (8 GB
+in 4 KB pages). So the VC1..VC15 range is `0..(8 GB - 1)`.
+
+**UVD firmware accesses VA `0x300000000` (= 12 GB). That's OUT OF RANGE for the
+8 GB max_pfn vmid 1..15.** When the firmware accesses `0x300000000`, the GMC sees:
+- vmid (whatever it is) has START=0, END=(8GB - 1)
+- requested VA 12 GB > END → out-of-range → VM fault
+- → "GPU Protection fault" in the IH → exactly our v76 symptom
+
+Sony's vmids have ranges of **8 GB, 32 GB, or 64 GB**. The 8 GB range is even
+TIGHTER than what we have (slightly), but the 32 GB / 64 GB ranges ARE big
+enough to cover 0x300000000. So in Sony's working case, UVD probably runs in a
+32 GB or 64 GB vmid (a process with the "iVar1 != 0" cred flag, or vmid 1).
+
+### 12.5 The v76d fix candidate
+
+In the Liverpool-specific block of `gmc_v7_0_gart_enable`:
+
+```c
+// Was:
+WREG32(mmVM_CONTEXT0_PAGE_TABLE_END_ADDR + i, (max_pfn - 1));
+
+// Try (v76d):
+WREG32(mmVM_CONTEXT0_PAGE_TABLE_END_ADDR + i, (0x8000000000ULL >> 12) - 1);
+// = 32 GB - 1 page, matching Sony's "32 GB process" range
+```
+
+**Tradeoff to verify**: the PT itself is still only sized for `max_pfn` pages.
+Extending the END_ADDR just tells GMC "look up VAs up to 32 GB" — but for VAs
+beyond `max_pfn`, the PD entries are uninitialized/zero, which the GMC reads
+as "no mapping". GMC then either:
+
+1. Returns the **DEFAULT_ADDR** safe page (if VC[i]_CNTL bit `PAGE_TABLE_DEPTH=0`
+   mode is set — Sony's `0x32fffeda` includes that), avoiding the fault, or
+2. Faults on missing PTE (depending on PROTECTION_FAULT_ENABLE setting).
+
+For UVD specifically, we need the firmware accesses to *resolve to real memory*.
+That means either:
+- Pre-populate PT entries at VA 0x300000000..0x300400000 to point to the
+  firmware's physical pages (v76c-β proposal), or
+- Set `mmVM_CONTEXT[i]_PAGE_TABLE_DEFAULT_ADDR` to the firmware's physical addr
+  so out-of-range reads silently succeed (cheaper to try first, but reads will
+  all hit the same page — won't work for writes or for varied access patterns).
+
+**Recommend: v76d-α** = extend END_ADDR to 32 GB AND populate PT entries for
+firmware region. Two-line GMC change + one PT-population call.
+
+### 12.6 New address map (additions from second pass)
+
+```
+gbase_init_global_vm_context0  c886e900   chip-boot GMC bring-up
+gbase_create_vmid              c8867260   per-vmid PT_BASE writer
+gbase_create_vmid (thunk)      c8867240
+gbase_create_vmid_simple       c886f2c0
+gbase_attach_process_vmid      c886f150
+gbase_alloc_vmid               c8865dc0
+gbase_map                      c886a540
+gbase_write_pte                c88661c0
+gbase_init_mmio (sets DAT_*)   c88667b0
+gbase_set_dc_hit_region        c886bc10
+gc_open                        c8878140
+samu_init                      c885af40    creates vmid 15
+chip_specific_init             c8849210    calls gbase_init_global_vm_context0
+pci_gpu_attach                 c88487b0    creates vmid 0 (1 TB!)
+
+gbase per-vmid metadata        ca76fe30+   stride 0xf longs (120 B)
+  +0x00  vmid
+  +0x08  va_start
+  +0x10  va_size
+  +0x30  pd_kva
+  +0x38  pd_handle
+  +0x40  pd_gpu_phys   ← page-table-directory physical addr
+  +0x68  dirent_array  ← per-PD-entry tracking
+
+DAT_ca76fe08  safe page (4 KB, allocated in gbase_init_mmio).
+              Used as VC[i]_PAGE_TABLE_DEFAULT_ADDR for all initially-disabled vmids.
+
+Free-vmid bitmaps:
+DAT_ca76fd00 = 0x40000000   pool A (kernel-cred vmid)
+DAT_ca76fd04 = 0x3ffc0000   pool B (user process vmid)
+DAT_ca76fd08 = 0x20000      pool C (system: 14, etc.)
+```
+
+---
+
 ## Appendix A — full register sequences
 
 Decompiled inline at this commit; see Ghidra MCP for live state. Three start
