@@ -1,0 +1,126 @@
+amdgpu: gmc_v7_0 — Liverpool UVD page-table fix (v76d-β-2 Option A)
+
+v76d-β-1 confirmed extending the GART to 16 GB still produces the same
+fault as before (PROTECTIONS=0x02 at FAULT_ADDR=0x300000, vmid 4). The
+PROTECTIONS field decoding via gmc_7_0_sh_mask.h:
+  PROTECTIONS_MASK = 0xff, SHIFT = 0
+so the value 0x02 = bit 1 set = "PT walk failed at invalid entry"
+(NOT range protection). VC4's range and the GART boundary are both
+in-range; the failure is the GMC's PT walker reading an invalid PD
+entry.
+
+Root cause (now understood):
+- Upstream gmc_v7_0_gart_enable sets VC1 PAGE_TABLE_DEPTH=1 (2-level
+  PD/PT), which propagates to VC1..VC15 since they share VC1's CNTL
+  template.
+- But upstream also sets the SAME flat GART table_addr as PT_BASE for
+  VC1..VC15 (lines 681-688). A flat GART can't serve as a 2-level PD
+  because PD-entry semantics differ from PTE semantics. The walker
+  reads garbage and faults.
+
+Option A fix (this patch):
+1. Override VC1 PAGE_TABLE_DEPTH=0 on Liverpool/Gladius. Now VC1..VC15
+   walk the GART as flat (matching VC0). One register write.
+2. Bind adev->dummy_page_addr at GART virtual offset 0x300000000 via
+   amdgpu_gart_bind. The UVD firmware's read at 0x300000000 will now
+   resolve to the dummy page (zeros) instead of faulting.
+3. Invalidate TLB so the new PTE takes effect.
+
+The dummy-page bind is the same trick mainline uses for
+mmVM_CONTEXT*_PROTECTION_FAULT_DEFAULT_ADDR — read returns zeros, write
+goes nowhere. We just route a specific GART page index to the same
+underlying physical page.
+
+Expected hardware signals:
+
+  ✅ The "VM fault ... vmid 4 page 3145728" disappears or moves to a
+     DIFFERENT page (firmware reads 0x300000000 successfully, then
+     accesses something else). The Liverpool VCPU may start
+     (STATUS bit 1 set) — that would be a major win.
+
+  🟡 Fault moves to nearby pages (0x300001..0x300400) — the firmware
+     reads more of the region than just one page. We expand the bind
+     to cover more pages and try again.
+
+  ❌ Same fault: vmid 4, page 0x300000, identical PROTECTIONS=0x02.
+     Then either:
+       - PAGE_TABLE_DEPTH override didn't apply (verify dmesg for
+         "VC1..VC15 PAGE_TABLE_DEPTH overridden")
+       - amdgpu_gart_bind didn't write our PTE (check for the
+         "bound dummy page" message)
+       - The firmware does a write (not read) at 0x300000000, and our
+         dummy page binding has WRITE bit unset. Add AMDGPU_PTE_WRITEABLE.
+
+  💀 GFX, SDMA, or DCE regression — they may have relied on
+     PAGE_TABLE_DEPTH=1 for per-vmid isolation. If so, fall back to
+     v76d-β-2-B (allocate per-vmid PD without changing depth).
+
+Two diagnostic prints added so dmesg confirms the override applied:
+  "ps4: VC1..VC15 PAGE_TABLE_DEPTH overridden to 0 (flat walk) for UVD compatibility"
+  "ps4: bound dummy page at GART virtual 0x300000000 (pa=0x...) for UVD fw access"
+
+Cost: ~30 lines, single function (gmc_v7_0_gart_enable).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -743,6 +743,58 @@
+ 	tmp = REG_SET_FIELD(tmp, VM_CONTEXT1_CNTL, PAGE_TABLE_BLOCK_SIZE,
+ 			    adev->vm_manager.block_size - 9);
+ 	WREG32(mmVM_CONTEXT1_CNTL, tmp);
++
++	/*
++	 * v76d-β-2-A: Liverpool/Gladius UVD page-table fix.
++	 *
++	 * Upstream sets PAGE_TABLE_DEPTH=1 for VC1 (which propagates to
++	 * VC1..VC15 since they share VC1's CNTL template), meaning a
++	 * 2-level PD/PT walk. But it ALSO programs the same flat GART
++	 * `table_addr` as the per-vmid PT_BASE for VC1..VC15 — a flat
++	 * GART can't serve as a 2-level PD because PD entry semantics
++	 * differ from PTE semantics. The walker reads garbage and faults.
++	 *
++	 * v76d-β-1 result confirmed: with GART = 16 GB (in-range) and
++	 * VC4 range = 32 GB (in-range), the UVD firmware's read at
++	 * 0x300000000 still faults with PROTECTIONS=0x02 (= "PT walk
++	 * failed at invalid entry"). The PD entry at byte 0xC000 of
++	 * the GART (= GART page index 0x1800) is zero because nothing
++	 * is bound there.
++	 *
++	 * Option A fix:
++	 *   1. Override VC1 PAGE_TABLE_DEPTH to 0, so VC1..VC15 walk
++	 *      the GART as flat (matching VC0).
++	 *   2. Bind adev->dummy_page_addr at GART virtual offset
++	 *      0x300000000 so the firmware's read returns zeros from a
++	 *      real page instead of faulting on a missing PTE.
++	 *
++	 * Cost: minimal — 1 extra register write + 1 PTE write at
++	 * GART page index 0x300000.
++	 *
++	 * Risk: GFX/SDMA may have relied on DEPTH=1 for per-vmid
++	 * isolation. If they regress, fall back to v76d-β-2-B
++	 * (per-vmid PD allocation) or v76d-β-2-C (gart_bind without
++	 * DEPTH override).
++	 */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		dma_addr_t fw_dummy = adev->dummy_page_addr;
++
++		tmp = RREG32(mmVM_CONTEXT1_CNTL);
++		tmp = REG_SET_FIELD(tmp, VM_CONTEXT1_CNTL,
++				    PAGE_TABLE_DEPTH, 0);
++		WREG32(mmVM_CONTEXT1_CNTL, tmp);
++		DRM_INFO("ps4: VC1..VC15 PAGE_TABLE_DEPTH overridden to 0 "
++			 "(flat walk) for UVD compatibility\n");
++
++		amdgpu_gart_bind(adev, 0x300000000ULL, 1, &fw_dummy,
++				 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
++				 AMDGPU_PTE_READABLE);
++		amdgpu_gart_invalidate_tlb(adev);
++		DRM_INFO("ps4: bound dummy page at GART virtual 0x300000000 "
++			 "(pa=0x%llx) for UVD fw access\n",
++			 (unsigned long long)fw_dummy);
++	}
++
+ 	if (amdgpu_vm_fault_stop == AMDGPU_VM_FAULT_STOP_ALWAYS)
+ 		gmc_v7_0_set_fault_enable_default(adev, false);
+ 	else
