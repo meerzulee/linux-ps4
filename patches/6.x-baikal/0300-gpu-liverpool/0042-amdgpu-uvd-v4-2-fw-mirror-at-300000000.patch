@@ -1,0 +1,181 @@
+amdgpu: uvd_v4_2 — copy fw to GTT BO and bind at GART 0x300000000 (v76d-β-2-A2)
+
+v76d-β-2-A1.5 confirmed the fault is GONE when we bind both 0x300000000
+and VA 0 to a zero-filled dummy page, but the VCPU still silently stalls
+(STATUS=0x4, never reaches bit 1). The interpretation: the firmware is
+reading zeros at 0x300000000 — its hardcoded address for region 1
+(firmware target) — and zero bytes aren't valid microcode/data, so it
+can't execute meaningful work.
+
+This patch makes the firmware read REAL contents at 0x300000000.
+
+Implementation:
+- New helper uvd_v4_2_setup_fw_mirror_liverpool() in uvd_v4_2.c
+- Allocates a 1920 KB GTT BO (matching Sony's region 1 size of 0x1E0000)
+- memcpy the actual UVD firmware bytes (from adev->uvd.fw->data) into the
+  start of the BO; leaves the rest zero (save/restore area)
+- Calls amdgpu_gart_bind to point GART entries at 0x300000000 to this
+  BO's physical pages — overwrites the dummy binding installed by
+  v76d-β-2-A in gmc_v7_0_gart_enable
+- amdgpu_gart_invalidate_tlb so the new PTEs take effect
+
+Called once-only via static guard `uvd_fw_mirror_done`. The BO is
+intentionally never freed — it's a permanent per-device mirror for the
+duration of the kernel's life.
+
+Hooked into uvd_v4_2_start_liverpool early (before the VCPU start
+sequence), so the bind is in place by the time the firmware begins
+executing.
+
+Sony's UVD region layout (Ghidra-derived):
+  Region 1 (firmware,  1920 KB) → vmid 4 / 0x300000000..0x3001E0000
+  Region 2 (heap/IB,   1168 KB) → vmid 4 / 0x3001E0000..0x300304000
+  Region 3 (msgq,        16 KB) → vmid 4 / 0x300304000..0x300308000
+
+For this patch we ONLY bind region 1 (the firmware). If the firmware
+also requires regions 2/3 to be reachable from 0x3001E0000+, we'll see
+a new fault at one of those addresses on the next iteration.
+
+Expected hardware signals:
+
+  ✅ VCPU sets STATUS bit 1 within 2 seconds — firmware boots
+     successfully and the ring test proceeds. UVD works!
+
+  🟡 Fault appears at 0x3001E0000 or 0x300304000 — firmware progressed
+     past region 1 and needs region 2 or 3 mapped. Cheap fix: extend
+     this patch to also alloc and bind regions 2/3.
+
+  🟡 Different fault elsewhere — firmware did execute, but its state
+     machine hit some other config dependency we haven't mapped.
+
+  ❌ Same silent stall — the firmware needs something fundamentally
+     different at 0x300000000 (not just its own bytes). May need to
+     prepend a header or use a different offset within region 1.
+
+Diagnostic prints on success:
+  "ps4 uvd: bound fw mirror at GART virtual 0x300000000
+   (BO gpu_addr=0x..., fw_size=N, region1_size=1966080)"
+
+Memory cost: ~1920 KB GTT per boot, never freed.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -23,6 +23,8 @@
+
+ #include <linux/firmware.h>
+
++#include <drm/ttm/ttm_tt.h>
++
+ #include "amdgpu.h"
+ #include "amdgpu_uvd.h"
+ #include "cikd.h"
+@@ -447,13 +449,106 @@
+  * Full per-register rationale + Ghidra rename map:
+  *   checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md
+  */
++/*
++ * v76d-β-2-A2: UVD firmware mirror BO at GART virtual 0x300000000.
++ *
++ * Sony's UVD layout (Ghidra-derived):
++ *   - Region 1 (firmware target, 1920 KB) → vmid 4 / 0x300000000..0x3001E0000
++ *   - Region 2 (heap/IB,         1168 KB) → vmid 4 / 0x3001E0000..0x300304000
++ *   - Region 3 (msgq,              16 KB) → vmid 4 / 0x300304000..0x300308000
++ *
++ * The UVD VCPU firmware reads its own bytes at GPU virtual 0x300000000
++ * during bring-up. v76d-β-2-A bound a zero-filled dummy page there and
++ * the firmware's structural fault went away — but the VCPU still stalled
++ * because zeros aren't valid microcode/data.
++ *
++ * This patch allocates a 1920 KB GTT BO (matching Sony's region 1 size),
++ * copies the actual UVD firmware bytes into the start of it, leaves the
++ * rest zero (the save/restore area), and rebinds the GART entries at
++ * 0x300000000 to point at this BO instead of the dummy page. The VCPU
++ * then reads its real firmware contents and (hopefully) executes.
++ */
++#define PS4_UVD_REGION1_SIZE	0x1E0000UL		/* 1920 KB */
++#define PS4_UVD_FW_MIRROR_VA	0x300000000ULL		/* Sony's region 1 VA */
++
++static struct amdgpu_bo *uvd_fw_mirror_bo;
++static bool uvd_fw_mirror_done;
++
++static int uvd_v4_2_setup_fw_mirror_liverpool(struct amdgpu_device *adev)
++{
++	const struct common_firmware_header *hdr;
++	u64 mirror_gpu_addr;
++	void *mirror_cpu_addr;
++	u32 ucode_offset, ucode_size;
++	int r, num_pages;
++
++	if (uvd_fw_mirror_done)
++		return 0;
++
++	if (!adev->uvd.fw || !adev->uvd.fw->data) {
++		DRM_ERROR("ps4 uvd: fw not loaded; cannot set up mirror\n");
++		return -EINVAL;
++	}
++
++	hdr = (const struct common_firmware_header *)adev->uvd.fw->data;
++	ucode_offset = le32_to_cpu(hdr->ucode_array_offset_bytes);
++	ucode_size = le32_to_cpu(hdr->ucode_size_bytes);
++
++	r = amdgpu_bo_create_kernel(adev, PS4_UVD_REGION1_SIZE, PAGE_SIZE,
++				    AMDGPU_GEM_DOMAIN_GTT,
++				    &uvd_fw_mirror_bo,
++				    &mirror_gpu_addr,
++				    &mirror_cpu_addr);
++	if (r) {
++		DRM_ERROR("ps4 uvd: failed to alloc fw mirror BO: %d\n", r);
++		return r;
++	}
++
++	/*
++	 * Zero out the whole region (Sony's region 1 includes a save/restore
++	 * area beyond the firmware text — leaving it zero matches what the
++	 * firmware would see on fresh allocation).
++	 */
++	memset(mirror_cpu_addr, 0, PS4_UVD_REGION1_SIZE);
++	/* Copy the firmware bytes into the start. */
++	memcpy(mirror_cpu_addr, adev->uvd.fw->data + ucode_offset, ucode_size);
++
++	/*
++	 * Rebind GART at 0x300000000 — overwrites the dummy bind from
++	 * gmc_v7_0_gart_enable (v76d-β-2-A) with the real firmware mirror
++	 * pages. The VC1..VC15 flat walk will now find real microcode/data
++	 * at this VA.
++	 */
++	num_pages = PS4_UVD_REGION1_SIZE / PAGE_SIZE;
++	amdgpu_gart_bind(adev, PS4_UVD_FW_MIRROR_VA, num_pages,
++			 uvd_fw_mirror_bo->tbo.ttm->dma_address,
++			 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
++			 AMDGPU_PTE_READABLE);
++	amdgpu_gart_invalidate_tlb(adev);
++
++	DRM_INFO("ps4 uvd: bound fw mirror at GART virtual 0x%llx "
++		 "(BO gpu_addr=0x%llx, fw_size=%u, region1_size=%lu)\n",
++		 PS4_UVD_FW_MIRROR_VA, mirror_gpu_addr,
++		 ucode_size, PS4_UVD_REGION1_SIZE);
++
++	uvd_fw_mirror_done = true;
++	return 0;
++}
++
+ static int uvd_v4_2_start_liverpool(struct amdgpu_device *adev)
+ {
+ 	struct amdgpu_ring *ring = &adev->uvd.inst->ring;
+ 	uint32_t rb_bufsz;
+ 	u32 tmp;
+ 	u64 fw_gpu_addr = adev->uvd.inst->gpu_addr;
+-	int i;
++	int i, r;
++
++	/* v76d-β-2-A2: rebind 0x300000000 with real firmware contents. */
++	r = uvd_v4_2_setup_fw_mirror_liverpool(adev);
++	if (r) {
++		DRM_ERROR("ps4 uvd: fw mirror setup failed (%d) — VCPU may stall\n", r);
++		/* continue anyway; dummy from gmc_v7_0_gart_enable is still there */
++	}
+
+ 	/*
+ 	 * v74 diagnostics: hardware test of v73 showed the LMI base writes
