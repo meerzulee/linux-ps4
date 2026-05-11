@@ -38,4 +38,12 @@ Thumbs.db
 # Local agent state and scratch
 .claude/
 debug/
-vendor/
+
+# Reference vendor snapshots (local download cache, NOT tracked by default)
+vendor/*
+# ...but build dependencies under vendor/ ARE tracked (allow-listed):
+!vendor/ps4-payload-sdk/
+# Build artifacts inside tracked SDK dirs stay ignored:
+vendor/ps4-payload-sdk/libPS4/build/
+vendor/ps4-payload-sdk/libPS4/*.a
+vendor/ps4-payload-sdk/libPS4/*.o
