@@ -133,7 +133,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | Room | Status | File |
 |---|---|---|
 | sdma | 🗝️ | rooms/sdma.md |
-| mbus | 🗝️ | rooms/mbus.md |
+| mbus | 🔍 first-pass | rooms/mbus.md |
 
 ### Floor 6: Input
 | Room | Status | File |
@@ -218,6 +218,10 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 2: + mbus first-pass — Sony's AV hotplug event router.
+  event_id 9 = HDMI; tracks deviceId counter; 3ms debounce; suspend/resume
+  eventhandler hooks. Confirmed Sony has an HDMI state machine we'll
+  want to mirror for our DRM bridge work.
 - 2026-05-12 iter 1: Created dungeon map. Mapped ENTRANCE (boot path),
   regmgr first-pass. 26+ Floor 2-10 rooms still to explore.
   Partial UVD + gc + sbl/driver mappings exist from prior UVD dig
