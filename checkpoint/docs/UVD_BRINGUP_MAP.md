@@ -76,6 +76,7 @@ Numbered chronologically. Each row = one boot test.
 | v76d-β-2-A7 | Write `0x1` at region 2[0] + region 3[0] | fw polls msgq[0] for "host ready"? | 0047 | ❌ **REGRESSION** — cache no longer reaches 0x3f7f. fw reads those slots; expects ≠ 1 | 2026-05-11_2221-v76d-beta2-a7-msgq-magic |
 | (interlude) | test-baikal kernel + our initramfs (no UVD patches) | sanity check different kernel | — | 6667-line log, review pending | 2026-05-11_2253-test-baikal |
 | v76d-β-2-A7-revert | Disable 0047 in series | Restore A6 cache-sync behavior | (series only) | ✅ cache `0x3f7f` returns at t=400ms; STATUS still 0x4 | 2026-05-11_2257-v76d-beta2-a7-revert |
+| **v76d-β-2-A8** | **Combined: write region 2/3 SIZES (0x124000/0x4000) at slot 0 + k clock divider 4→1** | A7c (size fields) + A9 (fastest clock) | **0048** | **(STAGED, awaiting boot)** | — |
 
 **Legend:** ❌ no change, 🟡 some change but not the gate, 🟢 progress
 
