@@ -1,76 +1,46 @@
-amdgpu: uvd_v4_2 — add Liverpool/Gladius VCPU bring-up branch (v73)
+amdgpu: uvd_v4_2 — Liverpool/Gladius VCPU bring-up (v74 with mc_resume + diag prints)
 
-v72c-uvd hardware test (UART log
-checkpoint/uart-logs/2026-05-11_1600-v72c-uvd.log) proved Sony's
-wrapped 1.101.42 firmware loads correctly in our patched mainline
-amdgpu but the VCPU still faults reading from GPU page 0x300800 on
-its first instruction fetch. Root cause: mainline's uvd_v4_2_start()
-never programs the LMI MMU base address — the VCPU starts but has no
-mapping for its own internal address space.
+Adds CHIP_LIVERPOOL/CHIP_GLADIUS branch in uvd_v4_2_start that calls
+uvd_v4_2_start_liverpool — direct transliteration of Sony's
+uvd_vcpu_start_baikal (FUN_c88f8610 in orbis-12.02.elf, RE'd via Ghidra
+MCP). Full per-register rationale in
+checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md.
 
-Reverse-engineered Sony's complete VCPU bring-up from orbis-12.02.elf
-via Ghidra MCP. The per-chip-revision dispatcher is at FUN_c88f6db0
-(renamed uvd_vcpu_start_dispatch); for our Baikal hardware (rev 1,
-Late Liverpool — CPUID family >= 0x710f30) it calls:
+Iteration log:
+  v73: Sony writes only. Hardware test showed measurable progress —
+       VM-fault page moved 0x300800 -> 0x300000 (page-aligned to fw
+       buffer base) and VM-fault vmid moved 14 -> 4 (mainline's UVD
+       vmid). Proves our 0x3c68/0x3c69 (LMI_VM_VBASE_HI/LO) writes
+       take effect. But VCPU still doesn't clear STATUS bit 1.
+       UART log: checkpoint/uart-logs/2026-05-11_1636-v73-uvd.log
 
-  uvd_vcpu_prep_baikal    @ 0xc88f7490   (one-write prep)
-  uvd_vcpu_start_baikal   @ 0xc88f8610   (full ~100-register sequence)
-
-Full per-register rationale + Ghidra rename map for rev 0 (Liverpool
-early) and rev 2 (Gladius) variants:
-  checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md
-
-This patch:
-  - Adds uvd_v4_2_start_liverpool() — direct transliteration of
-    uvd_vcpu_start_baikal, plus mainline-style ring buffer setup at
-    the end so amdgpu's ring test runs against a configured RBC.
-  - Adds asic_type dispatch at the top of uvd_v4_2_start() so
-    CHIP_LIVERPOOL and CHIP_GLADIUS take the Sony path; other CIK
-    chips still get the original mainline path unchanged.
-
-Critical writes vs mainline:
-
-  WREG32(0x3c69, lower_32_bits(fw_gpu_addr));    LMI_VM_VBASE_LO
-  WREG32(0x3c68, upper_32_bits(fw_gpu_addr));    LMI_VM_VBASE_HI
-
-These two are the single most important thing this patch does —
-without them the VCPU's LMI MMU has no mapping for the firmware
-buffer's GPU address and faults on its first internal access.
-
-Other Liverpool-specific writes mainline doesn't do (full list in
-the source comments, per-register):
-
-  - LMI clock init: 0x3bd3/4/5, 0x3992, 0x39c5, 0x3993 = 0x2011002
-  - Audio/DMA mux: 0x3d6d/6f/68/66/77/79/7a/7b/7c/7d/7e (Sony values)
-  - VCPU PLL divider: 0x3d3c, 0x3d62, 0x3d63, 0x3da3, 0x3da1
-    + index/data sub-regs 0x99, 0x9a, 0x162
-    (Sony reads ctx[+0x40] for the divider; we use k=4 as mid-range
-     guess — adjust if VCPU misbehaves)
-  - Cache region descriptors: 0x3d82..0x3d87 (Baikal-specific sizes;
-    Gladius differs but uses same code path for now)
-  - DMA register 0x3da9 = 0x11010000 (Sony scrambles with hw RNG;
-    we use the always-OR base value)
-  - GFX-side UVD client enable: bit 3 of register 0x1401
-  - 3-stage soft-reset clear (bits 0, 2, 3, 0x2000 progressively
-    cleared)
-  - Post-success: register 0x9e0 host-link config, register 0x501
-    final enable
+  v74: Adds two changes on top of v73:
+       1. Call mainline uvd_v4_2_mc_resume() before Sony's cache
+          region writes. mc_resume programs mmUVD_LMI_ADDR_EXT
+          (bits 28-31), mmUVD_LMI_EXT40_ADDR (bits 32-39), and the
+          UDEC config registers that Sony's sequence doesn't touch.
+          If GMC vmid 4 needs these to translate, this is the
+          missing piece. Sony's subsequent cache reg writes
+          intentionally OVERWRITE mc_resume's values for the cache
+          regs (we want Sony's Baikal-tested hardcoded numbers
+          there, plus mc_resume's high-bit setup as a side effect).
+       2. Diagnostic DRM_INFO at function entry showing fw_gpu_addr,
+          and DRM_ERROR on timeout showing UVD_STATUS, UVD_SOFT_RESET,
+          LMI_STATUS, LMI_VM_VBASE_HI/LO, and LMI_EXT40_ADDR. Lets
+          us see in dmesg what value we wrote and what state the
+          VCPU got to before timing out.
 
 Test plan:
-  - Build kernel, swap to wrapped Sony 1.101.42 firmware initramfs
-    (output/initramfs-uvd-baikal.cpio.gz — already prepared)
-  - Boot, expect dmesg:
-        [drm] Found UVD firmware Version: 1.101 Family ID: 9
-        ps4 uvd: Liverpool VCPU started (fw_gpu_addr=0x...)
-        UVD initialized successfully.
-  - NO `VM fault` messages, NO `UVD not responding`, amdgpu probe
-    succeeds, HDMI works, /dev/dri/renderD128 appears.
-
-If VCPU still doesn't start, candidate adjustments:
-  - clock divider k (try 1, 2, 8 instead of 4)
-  - 0x3da9 nonce (try random small values)
-  - Gladius variant has 0x3dab |= 1 (we use |= 3) — if Gladius hangs
-    test that
+  - Build, restage. bzImage swap only (initramfs already has the
+    Sony-wrapped 1.101.42 firmware on USB).
+  - Boot, SSH in, dmesg | grep "ps4 uvd:"
+  - If VCPU now starts: amdgpu probe succeeds, /dev/dri/renderD128
+    appears, ring test passes.
+  - If still failing: the diagnostic prints tell us either
+    (a) we're writing a garbage value (gpu_addr is 0 or unaligned)
+        -> Sony's ctx[+0x88] is something else, need to dig in Ghidra
+    (b) we're writing a sensible value but VCPU still faults
+        -> GMC vmid 4 needs explicit page-table setup, separate fix
 
 Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 ---
@@ -107,7 +77,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  	/* set uvd busy */
  	WREG32_P(mmUVD_STATUS, 1<<2, ~(1<<2));
  
-@@ -396,6 +413,281 @@
+@@ -396,6 +413,330 @@
  	rb_bufsz = order_base_2(ring->ring_size);
  	rb_bufsz = (0x1 << 8) | rb_bufsz;
  	WREG32_P(mmUVD_RBC_RB_CNTL, rb_bufsz, ~0x11f1f);
@@ -152,6 +122,18 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 +	u32 tmp;
 +	u64 fw_gpu_addr = adev->uvd.inst->gpu_addr;
 +	int i;
++
++	/*
++	 * v74 diagnostics: hardware test of v73 showed the LMI base writes
++	 * have measurable effect (VM-fault page moved 0x300800 -> 0x300000,
++	 * vmid moved 14 -> 4 = mainline UVD vmid) but the VCPU still
++	 * doesn't signal ready. Print the actual addresses we're working
++	 * with so we can confirm the value we're sending to 0x3c68/0x3c69
++	 * is sane and not garbage.
++	 */
++	DRM_INFO("ps4 uvd: liverpool start: fw_gpu_addr=0x%llx "
++		 "vcpu_bo=%p ring_gpu_addr=0x%llx\n",
++		 fw_gpu_addr, adev->uvd.inst->vcpu_bo, ring->gpu_addr);
 +
 +	/*
 +	 * Sony's chip-revision-keyed "prep" function. For Baikal (rev 1)
@@ -275,6 +257,24 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 +	WREG32(0x3c5e, 3);
 +
 +	/*
++	 * v74: call mainline mc_resume FIRST — it programs
++	 * mmUVD_LMI_ADDR_EXT (bits 28-31), mmUVD_LMI_EXT40_ADDR (bits
++	 * 32-39), and the UDEC address-config registers that Sony's
++	 * sequence doesn't touch. v73 hardware test showed our Liverpool
++	 * writes alone moved the VM-fault page from arbitrary 0x300800
++	 * to page-aligned 0x300000 in vmid 4 (UVD's vmid) — meaning the
++	 * LMI base IS being honored — but GMC vmid 4 still has no mapping
++	 * for that page. mc_resume populates the high-address-bits registers
++	 * that may be what GMC needs to find the firmware buffer.
++	 *
++	 * Sony's cache region descriptors below intentionally OVERWRITE
++	 * mc_resume's mmUVD_VCPU_CACHE_OFFSET0/SIZE0 etc. — we want Sony's
++	 * Baikal-tested hardcoded values for the cache regs, but want
++	 * mc_resume's address-extension setup as a side effect.
++	 */
++	uvd_v4_2_mc_resume(adev);
++
++	/*
 +	 * Cache region descriptors. Sony's Baikal-specific values; the
 +	 * Gladius variant uses different constants (0x20fa00 / 0x417a00)
 +	 * but for now we assume CHIP_GLADIUS uses these too — adjust
@@ -351,8 +351,27 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 +		mdelay(1);
 +	}
 +	if (i == 2000) {
++		/*
++		 * v74 diagnostics: print the state of the UVD registers
++		 * we care about, so we can tell what stage the VCPU got
++		 * to before failing.
++		 */
++		u32 status      = RREG32(mmUVD_STATUS);
++		u32 soft_reset  = RREG32(mmUVD_SOFT_RESET);
++		u32 lmi_status  = RREG32(0x3daf); /* LMI status alias */
++		u32 vbase_hi    = RREG32(0x3c68);
++		u32 vbase_lo    = RREG32(0x3c69);
++		u32 ext40_addr  = RREG32(mmUVD_LMI_EXT40_ADDR);
++
 +		DRM_ERROR("ps4 uvd: Liverpool VCPU did not start "
 +			  "(no STATUS bit 1 after 2s)\n");
++		DRM_ERROR("  STATUS=0x%08x SOFT_RESET=0x%08x "
++			  "LMI_STATUS=0x%08x\n",
++			  status, soft_reset, lmi_status);
++		DRM_ERROR("  LMI_VM_VBASE_HI=0x%08x LMI_VM_VBASE_LO=0x%08x "
++			  "(expected fw_gpu_addr=0x%llx)\n",
++			  vbase_hi, vbase_lo, fw_gpu_addr);
++		DRM_ERROR("  LMI_EXT40_ADDR=0x%08x\n", ext40_addr);
 +		return -ETIMEDOUT;
 +	}
 +
