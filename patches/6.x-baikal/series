@@ -286,6 +286,12 @@
 # first time in v60.
 0300-gpu-liverpool/0032-amdgpu-ps4-skip-tx-enable-too.patch
 
+# v71: uncomment UVD/VCE IP block adds in 0001 (done in-place) +
+# add CHIP_LIVERPOOL/CHIP_GLADIUS firmware-name mapping so amdgpu_uvd_sw_init
+# and amdgpu_vce_sw_init no longer fall through to default: -EINVAL.
+# Required after v70 confirmed IP block adds alone produce probe failure.
+0300-gpu-liverpool/0033-amdgpu-uvd-vce-liverpool-firmware-name.patch
+
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
 

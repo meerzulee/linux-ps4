@@ -895,3 +895,31 @@ Visual proof at second-cycle bridge_enable in v60 log:
 Per-iteration result files: checkpoint/docs/research/2026-05-10-v46
 through v60-*.md. The v60 result file documents the full bisection
 narrative across 16 iterations.
+
+## 2026-05-11 — v70 (UVD/VCE IP block adds) → exposed firmware-name gate
+
+Triggered by community Q on uvd/vce: another contributor (bzz) is on
+this in parallel. Hypothesis from the room: "we're pretty close" =
+probably this same firmware-name plumbing.
+
+v70: stripped /* ... */ wrappers around uvd_v4_2_ip_block and
+vce_v2_0_ip_block adds in cik_set_ip_blocks (patch 0001 lines 788–789
+and 806–807) for both CHIP_LIVERPOOL and CHIP_GLADIUS. Otherwise
+untouched.
+
+Result: IP blocks 6/7 register correctly, HDMI bridge programs
+normally (chunks A/B/C all rc=20), but amdgpu_uvd_sw_init returns
+-EINVAL at t=9.740s because amdgpu_uvd.c / amdgpu_vce.c have no
+CHIP_LIVERPOOL/GLADIUS case in their firmware-name switch — falls
+through to default: -EINVAL before liverpool_{uvd,vce}.bin is even
+requested. amdgpu probe unwinds with 12 amdgpu_irq_put warnings, no
+fbcon → blank HDMI. Internal WiFi + SSH stayed up.
+
+v71 candidate: patches/6.x-baikal/0300-gpu-liverpool/0033-amdgpu-uvd-vce-liverpool-firmware-name.patch
+adds the CHIP_LIVERPOOL/CHIP_GLADIUS cases + the corresponding
+#define / MODULE_FIRMWARE macros. Built but not yet tested on
+hardware. Expected outcomes outlined in
+checkpoint/docs/research/2026-05-11-v70-uvd-vce-result.md.
+
+Rollback path if v71 still breaks display: bzImage-prev on USB is
+v68 (post-v67); bzImage-stable is v60 HDMI-working baseline.

@@ -1119,3 +1119,50 @@ end-to-end including DP_VIDEO_ON. Bridge passes; HDMI lights.
 Full analysis chain: `checkpoint/docs/research/2026-05-10-v46-...md`
 through `2026-05-10-v60-...md`. The v60 result file is the canonical
 write-up of the breakthrough.
+
+## v70 — UVD/VCE registration works, but there's a second gate (2026-05-11)
+
+CLAUDE.md's "v16 working config" note had said `liverpool_uvd.bin` /
+`liverpool_vce.bin` were shipped in initramfs but the IP blocks
+themselves were *commented out* in `cik_set_ip_blocks` for CHIP_LIVERPOOL
+and CHIP_GLADIUS. v70 simply uncommented the four `ip_block_add` calls
+in patch 0001 (lines 788–789 and 806–807).
+
+What worked: the IP blocks register correctly. UART confirms
+`detected ip block number 6 <uvd_v4_2>` and `7 <vce_v2_0>` at t=7.547s.
+HDMI bridge programming also still ran fine (chunks A/B/C all rc=20,
+elapsed times within v60 envelope).
+
+What broke: `[drm:amdgpu_device_init.cold] *ERROR* sw_init of IP block
+<uvd_v4_2> failed -22` at t=9.740s. Whole amdgpu probe unwound,
+no fbcon → blank HDMI even though the bridge was correctly programmed.
+
+Root cause: `amdgpu_uvd_sw_init` (`drivers/gpu/drm/amd/amdgpu/amdgpu_uvd.c:194`)
+and `amdgpu_vce_sw_init` (`amdgpu_vce.c:105`) both have a
+`switch (adev->asic_type)` selecting the firmware filename, and the
+CIK-class arm covers Bonaire/Kabini/Kaveri/Hawaii/Mullins but **not**
+CHIP_LIVERPOOL/CHIP_GLADIUS. Falls through to `default: return -EINVAL`.
+The shipped firmware blobs are never even requested.
+
+**Lesson: when porting a new chip into amdgpu, registering the IP
+block is necessary but not sufficient.** Most IP-block code paths
+(uvd, vce, sdma, gfx) do an asic_type → firmware-name lookup early
+in `sw_init`. Add cases there *at the same time* you register the
+block, or expect a `-EINVAL` failure that masquerades as a generic
+"init failed" cascade.
+
+v71 candidate fix is in
+`patches/6.x-baikal/0300-gpu-liverpool/0033-amdgpu-uvd-vce-liverpool-firmware-name.patch`
+— adds `case CHIP_LIVERPOOL: case CHIP_GLADIUS: fw_name = "amdgpu/liverpool_{uvd,vce}.bin"; break;`
+to both switches, plus the matching `#define` and `MODULE_FIRMWARE` macros.
+75 lines total, doesn't touch any other codepath.
+
+**Second lesson: blank HDMI ≠ HDMI patch regression.** The v60 bridge
+patches all ran exactly as expected in v70. The display went dark
+because probe failed *after* bridge enable, before fbcon could bind.
+If a future iteration breaks display with the bridge logs still
+clean, look for an `amdgpu_device_ip_init` failure in dmesg, not a
+DP-state regression.
+
+See `checkpoint/docs/research/2026-05-11-v70-uvd-vce-result.md` for
+full signal counts, boot timing, and v71 expected-outcome matrix.

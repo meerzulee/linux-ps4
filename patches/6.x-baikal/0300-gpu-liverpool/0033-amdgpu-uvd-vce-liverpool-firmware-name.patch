@@ -1,0 +1,75 @@
+ps4: amdgpu UVD/VCE — add liverpool/gladius firmware-name mapping
+
+v70 enabled the uvd_v4_2 and vce_v2_0 IP blocks in cik_set_ip_blocks
+for CHIP_LIVERPOOL and CHIP_GLADIUS but probe failed with -EINVAL at
+uvd_v4_2 sw_init.  Root cause: amdgpu_uvd_sw_init and amdgpu_vce_sw_init
+have a switch (adev->asic_type) selecting the firmware filename, with no
+case for CHIP_LIVERPOOL/CHIP_GLADIUS — falls through to default: -EINVAL
+before the firmware blob (which ships in initramfs as
+liverpool_{uvd,vce}.bin) is ever requested.
+
+Add LIVERPOOL/GLADIUS cases mapping to amdgpu/liverpool_{uvd,vce}.bin
+under CONFIG_DRM_AMDGPU_CIK alongside the Sea Islands family.  Both
+chips share the same firmware (Gladius is the PS4 Slim refresh of the
+Liverpool APU, same GCN 1.1-class silicon family).
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_uvd.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_uvd.c
+@@ -68,6 +68,7 @@
+ #define FIRMWARE_KAVERI	"amdgpu/kaveri_uvd.bin"
+ #define FIRMWARE_HAWAII	"amdgpu/hawaii_uvd.bin"
+ #define FIRMWARE_MULLINS	"amdgpu/mullins_uvd.bin"
++#define FIRMWARE_LIVERPOOL	"amdgpu/liverpool_uvd.bin"
+ #endif
+ #define FIRMWARE_TONGA		"amdgpu/tonga_uvd.bin"
+ #define FIRMWARE_CARRIZO	"amdgpu/carrizo_uvd.bin"
+@@ -120,6 +121,7 @@
+ MODULE_FIRMWARE(FIRMWARE_KAVERI);
+ MODULE_FIRMWARE(FIRMWARE_HAWAII);
+ MODULE_FIRMWARE(FIRMWARE_MULLINS);
++MODULE_FIRMWARE(FIRMWARE_LIVERPOOL);
+ #endif
+ MODULE_FIRMWARE(FIRMWARE_TONGA);
+ MODULE_FIRMWARE(FIRMWARE_CARRIZO);
+@@ -222,6 +224,10 @@
+ 	case CHIP_MULLINS:
+ 		fw_name = FIRMWARE_MULLINS;
+ 		break;
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
++		fw_name = FIRMWARE_LIVERPOOL;
++		break;
+ #endif
+ 	case CHIP_TONGA:
+ 		fw_name = FIRMWARE_TONGA;
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_vce.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_vce.c
+@@ -47,6 +47,7 @@
+ #define FIRMWARE_KAVERI	"amdgpu/kaveri_vce.bin"
+ #define FIRMWARE_HAWAII	"amdgpu/hawaii_vce.bin"
+ #define FIRMWARE_MULLINS	"amdgpu/mullins_vce.bin"
++#define FIRMWARE_LIVERPOOL	"amdgpu/liverpool_vce.bin"
+ #endif
+ #define FIRMWARE_TONGA		"amdgpu/tonga_vce.bin"
+ #define FIRMWARE_CARRIZO	"amdgpu/carrizo_vce.bin"
+@@ -67,6 +68,7 @@
+ MODULE_FIRMWARE(FIRMWARE_KAVERI);
+ MODULE_FIRMWARE(FIRMWARE_HAWAII);
+ MODULE_FIRMWARE(FIRMWARE_MULLINS);
++MODULE_FIRMWARE(FIRMWARE_LIVERPOOL);
+ #endif
+ MODULE_FIRMWARE(FIRMWARE_TONGA);
+ MODULE_FIRMWARE(FIRMWARE_CARRIZO);
+@@ -119,6 +121,10 @@
+ 	case CHIP_MULLINS:
+ 		fw_name = FIRMWARE_MULLINS;
+ 		break;
++	case CHIP_LIVERPOOL:
++	case CHIP_GLADIUS:
++		fw_name = FIRMWARE_LIVERPOOL;
++		break;
+ #endif
+ 	case CHIP_TONGA:
+ 		fw_name = FIRMWARE_TONGA;
