@@ -6,21 +6,36 @@ tree" sections get rewritten in place.
 
 ---
 
-## Where we are NOW (updated 2026-05-11 22:35, before A7 test)
+## Where we are NOW (updated 2026-05-11 23:00, after A7-revert)
 
-**Last result: A6** (commit `551ae2c`, build `7cd190...`)
-- ✅ UDEC config divergence eliminated — cache reaches Sony's synced
-  state earlier and longer
-- ❌ STATUS bit 1 still doesn't set; VCPU stuck at STATUS=0x4
+**Last result: A7-revert** (commit `c7650f3` + series-disabled 0047,
+build `0c895f27...`).
+- ✅ Cache sync restored — reaches Sony's `0x3f7f` pattern at some
+  point in the 2-sec window (timing varies per boot)
+- ❌ STATUS bit 1 still doesn't fire
 
-**Pending: A7** (build `2f4e6263...` STAGED on USB, **awaits boot test**)
-- Writes `0x00000001` at region 2[0] (heap) and region 3[0] (msgq)
-- Tests whether fw polls these for a "host ready" signal
+**Sampling jitter observation**: across A5/A6/A7-revert the cache
+reaches `0x3f7f` at different sample slots (t=1200 / t=800-1200 /
+t=400). That's our 400ms sampling under-resolving a transient event,
+not a real behavior difference. **Real signal: cache reaches synced
+state once within the 2-sec poll, then drops back.**
 
-**One-line state:** VCPU is alive, executes microcode cleanly, LMI cache
-reaches Sony's "synced" pattern (0x240) at t=800ms sustained — but
-microcode never asserts STATUS bit 1. **Looking for the trigger
-condition the microcode evaluates.**
+**Side experiment done**: test-baikal kernel was tested at 22:53 —
+slice in `checkpoint/uart-logs/2026-05-11_2253-test-baikal.log` (6667
+lines — significant — review pending).
+
+**One-line state:** All structural memory mapping fixed. VCPU is
+alive, executes microcode, cache reaches synced. Microcode never
+asserts STATUS bit 1. We've confirmed firmware reads region 2/3
+content (A7 regression proved it).
+
+**Next move candidates** (cheap first):
+- **A7c**: write **actual region SIZES** at region 2[0]/3[0]
+  (`0x124000`/`0x4000`) — addresses the "those slots are size fields"
+  hypothesis with real values
+- **A9**: change `k` clock divider (4 → 1, 8, or 15)
+- **Review test-baikal log** — may reveal what a different kernel
+  does differently with the same hardware
 
 ---
 
@@ -58,7 +73,9 @@ Numbered chronologically. Each row = one boot test.
 | v76d-β-2-A4 | Mirror extended to 3.1 MB (regions 1+2+3) | Region 2/3 might be needed | 0044 | ❌ no change — **regions 2/3 not needed for init** | 2026-05-11_2143-v76d-beta2-a4-all-3-regions |
 | v76d-β-2-A5 | Sample 10 VCPU regs every 400ms during STATUS poll | Diagnostic — what is fw doing? | 0045 | 🟢 0x3d67 cycles 0x196f↔0x3f7f (cache fills); only 0x3d67 changes | 2026-05-11_2157-v76d-beta2-a5-instrument |
 | v76d-β-2-A6 | Drop mc_resume + reorder 0x3bd3/4/5 to 4-5-3 | Code-review-found divergences | 0046 | 🟢 cache reaches synced state earlier (t=800 vs t=1200) & sustains | 2026-05-11_2210-v76d-beta2-a6-skip-mc-resume |
-| **v76d-β-2-A7** | **Write `0x1` at region 2[0] + region 3[0]** | **fw polls msgq[0] for "host ready"?** | **0047** | **(STAGED, awaiting boot)** | — |
+| v76d-β-2-A7 | Write `0x1` at region 2[0] + region 3[0] | fw polls msgq[0] for "host ready"? | 0047 | ❌ **REGRESSION** — cache no longer reaches 0x3f7f. fw reads those slots; expects ≠ 1 | 2026-05-11_2221-v76d-beta2-a7-msgq-magic |
+| (interlude) | test-baikal kernel + our initramfs (no UVD patches) | sanity check different kernel | — | 6667-line log, review pending | 2026-05-11_2253-test-baikal |
+| v76d-β-2-A7-revert | Disable 0047 in series | Restore A6 cache-sync behavior | (series only) | ✅ cache `0x3f7f` returns at t=400ms; STATUS still 0x4 | 2026-05-11_2257-v76d-beta2-a7-revert |
 
 **Legend:** ❌ no change, 🟡 some change but not the gate, 🟢 progress
 
@@ -76,19 +93,28 @@ Each is a hypothesis we tested and definitively eliminated:
 6. **Region 2/3 mapping** (v76d-β-2-A4) — mapping them changes nothing
 7. **mc_resume UDEC config** (v76d-β-2-A6 PARTIAL FIX) — real divergence, improves cache, not the gate
 8. **Clock-enable order** (v76d-β-2-A6) — Sony's 4-5-3 order applied
+9. **Magic `0x00000001` at region 2[0]/3[0]** (v76d-β-2-A7) — REGRESSION; fw reads those slots
+   and expects something other than `1`. Likely they're SIZE fields, not flags.
 
 ---
 
 ## Decision tree of remaining hypotheses
 
 ### Currently being tested
-- **A7**: msgq[0]/heap[0] = 1 (host ready signal)
+- **A7-revert**: disable 0047 patch — confirm we get back to A6 behavior
 
-### Cheapest next iterations (if A7 doesn't fix)
+### Cheapest next iterations (post-revert)
 
-- **A7b**: write magic at OTHER plausible offsets (region 1 end, last word of msgq, etc.) — variations of A7
-- **A8**: try `liverpool_uvd_rev0.bin` or `liverpool_uvd_gladius.bin` instead of `liverpool_uvd_baikal.bin` — maybe wrong firmware for this silicon revision
-- **A9**: change `k` (clock divider in subreg 0x99/0x9a/0x162) from 4 to other values — Sony reads from ctx[+0x40] which is set per-vmid; we don't know the right value
+- **A7c**: write **actual region sizes** at the start of region 2/3 —
+  i.e., `*region2 = 0x124000` (region 2 size in bytes) and
+  `*region3 = 0x4000` (region 3 size). Better-grounded than A7's
+  arbitrary `1`. If those slots are SIZE fields, writing the correct
+  size unblocks fw.
+- **A9**: change `k` (clock divider used in 0x3d3c, subreg 0x99/9a/162,
+  0x3da3, 0x3da1) from 4 to other values — try 1 (fastest), 8, 15
+- **A7b**: write magic at OTHER offsets (e.g., region 1 end, msgq[max-1])
+- **A8**: try `liverpool_uvd_rev0.bin` or `liverpool_uvd_gladius.bin`
+  instead — unlikely (Baikal silicon needs rev 1) but cheap to test
 
 ### Moderate effort
 

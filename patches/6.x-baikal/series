@@ -375,7 +375,13 @@
 # 3[0] (msgq). A6 showed VCPU alive + cache syncing but STATUS bit 1
 # never sets. Hypothesis: fw polls one of these locations for a "host
 # ready" signal. If A7 unblocks, narrow down to single location next.
-0300-gpu-liverpool/0047-amdgpu-uvd-v4-2-host-ready-magic-region2-3.patch
+#
+# 2026-05-11 22:21 RESULT: ❌ REGRESSION — cache stops reaching 0x3f7f
+# synced pattern entirely (stuck at 0x196f). Writing 1 at heap[0] or
+# msgq[0] broke fw cache fill. Likely interpretation: those slots are
+# SIZE FIELDS, not magic flags. fw read "1 byte" → couldn't allocate
+# cache backing → aborted. PATCH DISABLED below; kept in tree for ref.
+# 0300-gpu-liverpool/0047-amdgpu-uvd-v4-2-host-ready-magic-region2-3.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
