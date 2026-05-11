@@ -51,17 +51,26 @@ content (A7 regression proved it).
 deliberate wait loop, expecting some specific event/signal we don't
 provide.
 
-**Next move candidates** (cheap first):
-- **A10**: Look at Sony's mmUVD_SCRATCH register values at end of
-  bring-up — if Sony writes a "host_ready" magic to a scratch register,
-  that's the missing event
-- **A11**: Try `k = 15` (slowest divider) for comparison — would let us
-  characterize what `k` actually does (clock divider vs vmid vs something
-  else entirely)
-- **A12**: Look at Sony's KMD for any function that runs BETWEEN start
-  and the userspace IOCTL — maybe there's a "vcpu_kick" or similar
-- **A13**: Check what writes UVD_STATUS bit 1 in Sony's firmware blob
-  via raw byte search
+**Tested and ruled out (2026-05-11 23:35):**
+- **A10**: ❌ Sony doesn't WRITE mmUVD_SCRATCH — only reads for
+  diagnostics. No "host_ready" magic in SCRATCH.
+- **A12**: ❌ No post-start function. Sony's IOCTL handler calls
+  start_dispatch then immediately sets state=2. No vcpu_kick.
+- **A13**: ⏸️ Requires VCPU ISA disassembler (Cadence/Tensilica) to
+  search the firmware microcode itself. Not tractable without
+  tooling.
+
+**Remaining candidates** (in order of cheapness/info-value):
+- **A11**: Try `k = 15` (slowest divider). Cycle period should change
+  predictably if k is purely a clock divider. Helps characterize.
+- **A14**: Re-enable mainline mc_resume but PRESERVE UDEC writes
+  (or compute UDEC value from a different GFX config field) — maybe
+  Sony's GFX leaves UDEC at a Liverpool-specific value we need.
+- **A15**: Try other non-1 magic values at region 2[0]/3[0] —
+  e.g., 0x80000000, sizes-in-pages (0x124 / 0x4), or Sony's
+  literal constants from the IOCTL surface.
+- **A16**: Examine SBL/ICC commands Sony might issue around UVD init.
+- **B1** (deeper): per-vmid PD allocation mimicking Sony's gbase.
 
 **Strategic pivot (deferred per user)**: graceful-fail amdgpu so DRM
 comes up without UVD. Available if/when we exhaust UVD options.
