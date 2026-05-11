@@ -47,3 +47,8 @@ vendor/*
 vendor/ps4-payload-sdk/libPS4/build/
 vendor/ps4-payload-sdk/libPS4/*.a
 vendor/ps4-payload-sdk/libPS4/*.o
+
+# Sony Orbis kernel dumps — research input, not redistributable.
+# Reproduce by running tools/orbis-kernel-dumper/ on your own console.
+checkpoint/docs/research/orbis-kernel/*.elf
+checkpoint/docs/research/orbis-kernel/*.bin
