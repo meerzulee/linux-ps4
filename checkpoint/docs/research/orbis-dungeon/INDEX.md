@@ -111,7 +111,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 |---|---|---|
 | gc | 🔍 | partial via UVD dig — `2026-05-11-ghidra-uvd-dungeon-map.md`, `2026-05-12-uvd-pre-init-dig.md` |
 | dbggc | 🗝️ | rooms/dbggc.md |
-| dce | 🗝️ | rooms/dce.md |
+| dce | 🔍 first-pass | rooms/dce.md |
 | av_control | 🗝️ | rooms/av_control.md |
 | hdmi | 🔍 first-pass ⭐ | rooms/hdmi.md (**high-value for Linux DRM port**) |
 | screenshot | 🗝️ | rooms/screenshot.md |
@@ -218,6 +218,10 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 5: + dce first-pass — Display Controller Engine.
+  Per-context flip queue, IH packet dispatcher confirms standard AMD
+  layout (client_id<<48 | src_id<<40 | data). Mainline amdgpu DC code
+  applies. ih.c register/unregister functions identified.
 - 2026-05-12 iter 4: + hdmi first-pass ⭐ — Sony's HDMI bridge controller.
   Magic 0x8D, ~30 IOCTLs decoded, 7-state event-driven state machine
   via SceHdmiEvent kthread, HDCP/EDID/mode-set/audio handlers identified.
