@@ -232,3 +232,39 @@ banner `[ATI LIB=UVDFW,1.101.42]`).
 - Don't list speculative future work in the ladder — only actual tests
 - Mark dead ends explicitly
 - Cite UART log filename for every row
+
+---
+
+## Workflow improvements queued (do these once UVD is done)
+
+These don't affect UVD bring-up but cut friction once we resume normal
+development. Discussed 2026-05-11 ~23:10, deferred until UVD is closed.
+
+1. **`scripts/scp-bzimage.sh`** — mirror of `swap-bzimage.sh` but via
+   SSH (USB stays in PS4):
+   ```
+   ssh ps4 sudo mkdir -p /mnt/ps4boot
+   ssh ps4 sudo mount /dev/sda1 /mnt/ps4boot
+   scp output/6.x-baikal/bzImage ps4:/mnt/ps4boot/bzImage
+   ssh ps4 'sudo sync && sudo umount /mnt/ps4boot'
+   ```
+   Faster than the physical-swap cycle (which is ~30 sec each way and
+   wears the USB connector). Falls back to physical only if PS4 won't
+   boot to SSH.
+
+2. **Auto-mount USB FAT32 on PS4** — add to PS4's `/etc/fstab`:
+   ```
+   LABEL=PS4BOOT  /boot  vfat  defaults,noatime  0  0
+   ```
+   Then `/boot` always has the kernel mounted. Update workflow becomes
+   single-line: `scp output/6.x-baikal/bzImage ps4:/boot/bzImage`.
+
+3. **`scripts/scp-initramfs.sh`** — same for initramfs.
+
+4. **Safety**: keep `bzImage-stable` and `rollback-kernel.sh` ready —
+   if a build doesn't boot to SSH, we need physical access to recover.
+
+Caveat: these all assume PS4 reaches SSH. Since v76b, we've had clean
+SSH every iteration (UVD failure rolls back amdgpu but doesn't crash
+the kernel). If we hit a regression that kills SSH, fall back to
+physical swap until fixed.
