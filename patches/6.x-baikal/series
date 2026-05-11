@@ -365,6 +365,12 @@
 # tells us if the VCPU is hung early (all static) or progressing but
 # not signaling ready (some values change but bit 1 never sets).
 0300-gpu-liverpool/0045-amdgpu-uvd-v4-2-instrument-status-poll.patch
+# 0046: v76d-β-2-A6 — line-by-line review found 2 divergences from
+# Sony's start_baikal: (1) we call uvd_v4_2_mc_resume which writes 3
+# UDEC_ADDR_CONFIG registers Sony NEVER touches (mainline's tile
+# config might corrupt Liverpool's UVD decode engine); (2) 0x3bd3/4/5
+# clock-enable order was 3-4-5, Sony does 4-5-3. Both fixed.
+0300-gpu-liverpool/0046-amdgpu-uvd-v4-2-skip-mc-resume-fix-clock-order.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
