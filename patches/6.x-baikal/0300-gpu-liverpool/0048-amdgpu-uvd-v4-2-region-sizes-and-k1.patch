@@ -1,0 +1,79 @@
+amdgpu: uvd_v4_2 — region sizes at slot 0 + k=1 clock divider (v76d-β-2-A8)
+
+Two combined changes:
+
+== A7c part: write actual region SIZES at region 2[0] and region 3[0] ==
+A7 (0047, now disabled) wrote 0x00000001 at those slots and caused a
+regression — cache no longer reached Sony's synced pattern. That
+proved the fw reads those slots; the natural interpretation is they
+hold SIZE FIELDS, not magic flags. Sony's userspace would write the
+actual region sizes there.
+
+  *region2[0] = PS4_UVD_REGION2_SIZE  (0x124000 = 1168 KB heap)
+  *region3[0] = PS4_UVD_REGION3_SIZE  (0x4000   = 16 KB msgq)
+
+== A9 part: change VCPU clock divider k from 4 to 1 ==
+Sony reads ctx[+0x40] & 0xf into the LMI VCPU CACHE VMID register
+(0x3d3c) and several index/data subregs. The value is a clock
+divider hint (per Ghidra plate comment on gladius variant). We
+hardcoded k=4 as a mid-range guess.
+
+A6 showed VCPU alive but never asserts STATUS bit 1. One possible
+cause: VCPU clock running too slow → init routine times out
+internally before completing. k=1 is the fastest division.
+
+Combined experiment. If STATUS bit 1 sets → at least one of the two
+worked. Narrow down in follow-up.
+
+Expected hardware signals:
+  ✅ UVD initialized successfully — combo works (narrow down which)
+  🟡 Different sample table — fw advanced; learn next step
+  ❌ Same STATUS=0x4 stall — neither was the gate; pivot to
+     reviewing test-baikal log or trying different k values
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -519,6 +519,21 @@
+ 	memcpy(mirror_cpu_addr, adev->uvd.fw->data + ucode_offset, ucode_size);
+
+ 	/*
++	 * v76d-β-2-A8 (A7c part): write the SIZE of each region at its
++	 * start. A7 (now disabled) wrote 0x00000001 there and broke fw
++	 * cache fill — that regression proved fw reads these slots. The
++	 * natural interpretation is they're SIZE fields, not flags.
++	 * Sony's userspace would write region2_size and region3_size
++	 * there before the VCPU release. Try that.
++	 */
++	*(u32 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE) =
++		PS4_UVD_REGION2_SIZE;	/* heap_size at region2[0] */
++	*(u32 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE + PS4_UVD_REGION2_SIZE) =
++		PS4_UVD_REGION3_SIZE;	/* msgq_size at region3[0] */
++	DRM_INFO("ps4 uvd: A8 wrote sizes — region2[0]=0x%lx, region3[0]=0x%lx\n",
++		 PS4_UVD_REGION2_SIZE, PS4_UVD_REGION3_SIZE);
++
++	/*
+ 	 * Rebind GART at 0x300000000 for the full 3-region span (3.1 MB).
+ 	 * Overwrites the dummy bind from gmc_v7_0_gart_enable (v76d-β-2-A).
+ 	 * The VC1..VC15 flat walk now finds:
+@@ -635,12 +650,15 @@
+ 	/*
+ 	 * VCPU clock divider. Sony reads ctx[+0x40] which is set
+ 	 * elsewhere in their kernel — we don't have access to it here.
+-	 * Use k = 4 as a mid-range guess; this register family controls
+-	 * VCPU PLL division. If we see weird boot timing or hangs,
+-	 * adjust here (range 1..15 is the field width).
++	 *
++	 * v76d-β-2-A8 (A9 part): try k = 1 (fastest divider) instead of
++	 * the previous k = 4. A6 showed VCPU is alive but never
++	 * asserts STATUS bit 1; one possibility is the VCPU clock is
++	 * running too slow at k=4 and the fw's init routine times out
++	 * internally. k=1 is the fastest division (full clock).
+ 	 */
+ 	{
+-		uint32_t k = 4;
++		uint32_t k = 1;
+
+ 		WREG32(0x3d3c, k);
+ 		/* v76a: removed spurious 0x3d62/0x3d63 writes — Sony's

@@ -382,6 +382,11 @@
 # SIZE FIELDS, not magic flags. fw read "1 byte" → couldn't allocate
 # cache backing → aborted. PATCH DISABLED below; kept in tree for ref.
 # 0300-gpu-liverpool/0047-amdgpu-uvd-v4-2-host-ready-magic-region2-3.patch
+# 0048: v76d-β-2-A8 — A7c + A9 combined: write region SIZES at region 2[0]
+# and region 3[0] (0x124000 and 0x4000) AND change k clock divider 4→1.
+# A7 regression proved fw reads those slots; if they're size fields, real
+# sizes unblock. AND k=4 might be too slow for VCPU init — try fastest.
+0300-gpu-liverpool/0048-amdgpu-uvd-v4-2-region-sizes-and-k1.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
