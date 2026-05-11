@@ -39,30 +39,32 @@ content (A7 regression proved it).
 
 ---
 
-## Where we are NOW (updated 2026-05-11 23:15, after A8)
+## Where we are NOW (updated 2026-05-11 23:30, after A9)
 
-**Last result: A8 (sizes + k=1)** — 🟡 didn't help UVD but **had observable effect**.
-- Cache now reaches synced state TWICE (t=400 + t=1600) instead of once
-- Sizes at region 2/3[0] are SAFE (no A7-style regression)
-- k=1 (fastest clock) → faster cache cycle (as expected)
-- **UVD STATUS=0x4 unchanged** — bit 1 still doesn't fire
+**Last result: A9 (10s poll)** — ❌ **time is NOT the gate**.
+- 10 sec STATUS poll, 10 samples at 1-sec intervals
+- STATUS=0x4 the entire 10 sec; bit 1 never sets
+- Cache cycle visible: synced (0x3f7f) at t=1000 and t=6000, ~5 sec apart
+- Steady-state loop — fw periodically fills+syncs cache, drops back, repeats
 
-**Bonus discovery**: user reported "white screen before /init" — first
-visible HDMI signal across the v76 arc. SSH confirms no `/dev/fb*` and
-no `/dev/dri/card0` exist, so it's just the panel sitting at the
-bridge's last-configured state (Orbis-side init + amdgpu_bridge_enable
-reaches it before amdgpu rolls back on UVD failure).
+**Fully ruled out**: VCPU isn't slow-starting. Microcode is in a
+deliberate wait loop, expecting some specific event/signal we don't
+provide.
 
-**test-baikal interlude log unread useful — it's mostly Orbis SDK
-error messages, suggesting test-baikal didn't reach Linux on that
-boot. No useful comparison data.**
+**Next move candidates** (cheap first):
+- **A10**: Look at Sony's mmUVD_SCRATCH register values at end of
+  bring-up — if Sony writes a "host_ready" magic to a scratch register,
+  that's the missing event
+- **A11**: Try `k = 15` (slowest divider) for comparison — would let us
+  characterize what `k` actually does (clock divider vs vmid vs something
+  else entirely)
+- **A12**: Look at Sony's KMD for any function that runs BETWEEN start
+  and the userspace IOCTL — maybe there's a "vcpu_kick" or similar
+- **A13**: Check what writes UVD_STATUS bit 1 in Sony's firmware blob
+  via raw byte search
 
-**Strategic pivot suggested**: instead of more UVD micro-iterations,
-make amdgpu **gracefully tolerate UVD failure** (return success from
-hw_init even if VCPU didn't start). The rest of amdgpu (GFX, SDMA,
-DCE) would stay alive → `/dev/dri/card0` appears → we get real
-display output. UVD itself stays broken until we crack it, but the
-system becomes USEFUL meanwhile.
+**Strategic pivot (deferred per user)**: graceful-fail amdgpu so DRM
+comes up without UVD. Available if/when we exhaust UVD options.
 
 ---
 
@@ -104,7 +106,7 @@ Numbered chronologically. Each row = one boot test.
 | (interlude) | test-baikal kernel + our initramfs (no UVD patches) | sanity check different kernel | — | 6667-line log, review pending | 2026-05-11_2253-test-baikal |
 | v76d-β-2-A7-revert | Disable 0047 in series | Restore A6 cache-sync behavior | (series only) | ✅ cache `0x3f7f` returns at t=400ms; STATUS still 0x4 | 2026-05-11_2257-v76d-beta2-a7-revert |
 | v76d-β-2-A8 | Combined: write region 2/3 SIZES (0x124000/0x4000) at slot 0 + k clock divider 4→1 | A7c (size fields) + A9 (fastest clock) | 0048 | 🟡 sizes neutral (no regression like A7's `1`); cache now reaches synced TWICE (t=400 + t=1600) instead of once. STATUS still 0x4. **Did NOT hurt; faster cache cycling consistent with k=1.** Bonus: user observed "white screen before /init" — first HDMI signal across iterations, but no `/dev/fb*` exists so panel is just sitting at bridge's last config (not Linux fbcon) | 2026-05-11_2310-v76d-beta2-a8-sizes-k1 |
-| **v76d-β-2-A9** | **Extend STATUS poll 2s → 10s, sample every 1s (10 samples)** | If fw needs more startup time, longer wait reveals; else rules out "needs more time" | **0049** | **(STAGED, awaiting USB plug + boot)** | — |
+| v76d-β-2-A9 | Extend STATUS poll 2s → 10s, sample every 1s (10 samples) | If fw needs more startup time, longer wait reveals; else rules out "needs more time" | 0049 | ❌ **Time NOT the gate.** 10s → STATUS still 0x4. Cache cycles ~5 sec (synced at t=1000, t=6000). Steady-state loop. | 2026-05-11_2326-v76d-beta2-a9-10sec-poll |
 
 **Legend:** ❌ no change, 🟡 some change but not the gate, 🟢 progress
 
