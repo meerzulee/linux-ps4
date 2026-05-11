@@ -125,7 +125,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 ### Floor 4: Audio
 | Room | Status | File |
 |---|---|---|
-| audioout | 🗝️ | rooms/audioout.md |
+| audioout | 🔍 first-pass | rooms/audioout.md |
 | ajm | 🗝️ | rooms/ajm.md |
 | s3da | 🗝️ | rooms/s3da.md |
 
@@ -218,6 +218,11 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 8: + audioout first-pass — Audio Output stack.
+  3-layer: uaudio (USB) / sound/pcm (vanilla FreeBSD) / snd_hda/hdac
+  (Sony-quirked). Stock FreeBSD code mostly. Linux's snd_hda_intel
+  already handles PCI 00:01.1 HDMI audio per A17 boot log. No port
+  work needed; deeper dig into hdac.c quirks deferred.
 - 2026-05-12 iter 7: + vce first-pass — Video Compression Engine (encoder).
   Sister to UVD. 9 IP block func pointers (amdgpu-style), GFX reg
   0xf802 bits 0+2 = VCE clock enable. Chip family signature 0x740f00 =
