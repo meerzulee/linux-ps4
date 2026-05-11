@@ -1,0 +1,180 @@
+amdgpu: uvd_v4_2 — sample VCPU regs every 400ms during STATUS poll (v76d-β-2-A5)
+
+A4 ruled out region mapping. The VCPU runs cleanly for 2 sec with zero
+memory faults but never sets STATUS bit 1. We need data on what the
+VCPU is actually doing during those 2 seconds.
+
+This patch instruments the existing STATUS poll: at five timepoints
+(t=0, 400, 800, 1200, 1600 ms), it captures 10 VCPU state registers
+and prints them all in a compact table after the poll completes
+(either success or timeout). No timing impact — register reads happen
+in the same poll loop, just at sample marks.
+
+Registers sampled (chosen to match Sony's `get_lvp_uvd_status`):
+  0x3daf = mmUVD_STATUS         (target: bit 1 set on success)
+  0x3d67 = LMI VCPU cache state (Sony's wait_ready polls for 0xf bits)
+  0x3d42 = UVD_LMI_CTRL
+  0x3d40 = UVD_LMI_CTRL2        (Sony writes bit 1 on success)
+  0x3d3d = UVD_RBC_RB_CNTL
+  0x3d98 = UVD_VCPU_CNTL
+  0x3da0 = UVD_SOFT_RESET
+  0x3bc6 = UVD interrupt status
+  0x3e41 = UVD ring/fifo
+  0x3d45 = UVD_LMI_???
+
+Output format (one row per sample):
+  ps4 uvd: VCPU bring-up samples (5×400ms during 2s wait):
+    ms |  STATUS  | 0x3d67  | 0x3d42  | 0x3d40  | 0x3d3d  | 0x3d98  | 0x3da0  | 0x3bc6  | 0x3e41  | 0x3d45
+     0 |00000004 |00000000 |.........|.........|.........|.........|.........|.........|.........|.........
+   400 |...
+  1600 |...
+
+What to look for:
+  - STATUS bit 1 ever sets → success (would have broken out of poll)
+  - STATUS bit changes between samples → VCPU progressing
+  - 0x3d67 cycles through values → cache filling
+  - 0x3da0 bits clear progressively → SOFT_RESET being released
+  - 0x3d3d changes → ring/buffer state progressing
+  - All static across 5 samples → VCPU hung at one specific step;
+    compare the static values to Sony's expected end-of-bring-up
+    to identify which step we're stuck at.
+
+No behavior change beyond instrumentation. Result still ETIMEDOUT on
+failure. Pure observability patch.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -813,36 +813,104 @@
+
+ 	mdelay(16);
+
+-	/* Poll mmUVD_STATUS bit 1 for VCPU ready (2 s total timeout). */
+-	for (i = 0; i < 2000; i++) {
+-		if (RREG32(mmUVD_STATUS) & 2)
+-			break;
+-		mdelay(1);
+-	}
+-	if (i == 2000) {
++	/*
++	 * Poll mmUVD_STATUS bit 1 for VCPU ready (2 s total timeout).
++	 *
++	 * v76d-β-2-A5: sample VCPU state registers at five snapshots
++	 * spaced 400 ms apart during the wait. Any value that changes
++	 * between snapshots tells us what the VCPU is busy doing
++	 * (filling cache, polling a flag, waiting for DMA, etc.).
++	 * If everything stays static, the VCPU is hung early.
++	 *
++	 * Sampled registers (from Sony's get_lvp_uvd_status):
++	 *   0x3daf = mmUVD_STATUS
++	 *   0x3d67 = LMI VCPU cache state (Sony's wait_ready polls for 0xf)
++	 *   0x3d42 = UVD_LMI_CTRL
++	 *   0x3d40 = UVD_LMI_CTRL2 (Sony writes bit 1 on success)
++	 *   0x3d3d = UVD_RBC_RB_CNTL
++	 *   0x3d98 = UVD_VCPU_CNTL
++	 *   0x3da0 = UVD_SOFT_RESET
++	 *   0x3bc6 = UVD interrupt status
++	 *   0x3e41 = UVD ring/fifo
++	 *   0x3d45 = UVD_LMI_???
++	 */
++#define V76D_A5_SAMPLES 5
++#define V76D_A5_INTERVAL_MS 400
++	{
++		u32 sample_status[V76D_A5_SAMPLES] = { 0 };
++		u32 sample_3d67[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3d42[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3d40[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3d3d[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3d98[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3da0[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3bc6[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3e41[V76D_A5_SAMPLES]   = { 0 };
++		u32 sample_3d45[V76D_A5_SAMPLES]   = { 0 };
++		int sample_idx = 0;
++		int next_sample_ms = 0;
++		bool succeeded = false;
++
++		for (i = 0; i < 2000; i++) {
++			u32 s = RREG32(mmUVD_STATUS);
++			if (i == next_sample_ms && sample_idx < V76D_A5_SAMPLES) {
++				sample_status[sample_idx] = s;
++				sample_3d67[sample_idx]   = RREG32(0x3d67);
++				sample_3d42[sample_idx]   = RREG32(0x3d42);
++				sample_3d40[sample_idx]   = RREG32(0x3d40);
++				sample_3d3d[sample_idx]   = RREG32(0x3d3d);
++				sample_3d98[sample_idx]   = RREG32(0x3d98);
++				sample_3da0[sample_idx]   = RREG32(0x3da0);
++				sample_3bc6[sample_idx]   = RREG32(0x3bc6);
++				sample_3e41[sample_idx]   = RREG32(0x3e41);
++				sample_3d45[sample_idx]   = RREG32(0x3d45);
++				sample_idx++;
++				next_sample_ms += V76D_A5_INTERVAL_MS;
++			}
++			if (s & 2) {
++				succeeded = true;
++				break;
++			}
++			mdelay(1);
++		}
++
+ 		/*
+-		 * v74 diagnostics: print the state of the UVD registers
+-		 * we care about, so we can tell what stage the VCPU got
+-		 * to before failing.
++		 * Print samples regardless of success/failure — if successful,
++		 * the samples show how the VCPU progressed (useful baseline);
++		 * if not, they reveal where it stalled.
+ 		 */
+-		u32 status      = RREG32(mmUVD_STATUS);
+-		u32 soft_reset  = RREG32(mmUVD_SOFT_RESET);
+-		u32 lmi_status  = RREG32(0x3daf); /* LMI status alias */
+-		u32 vbase_hi    = RREG32(0x3c68);
+-		u32 vbase_lo    = RREG32(0x3c69);
+-		u32 ext40_addr  = RREG32(mmUVD_LMI_EXT40_ADDR);
+-
+-		DRM_ERROR("ps4 uvd: Liverpool VCPU did not start "
+-			  "(no STATUS bit 1 after 2s)\n");
+-		DRM_ERROR("  STATUS=0x%08x SOFT_RESET=0x%08x "
+-			  "LMI_STATUS=0x%08x\n",
+-			  status, soft_reset, lmi_status);
+-		DRM_ERROR("  LMI_VM_VBASE_HI=0x%08x LMI_VM_VBASE_LO=0x%08x "
+-			  "(v76a: wrote 0, fw_gpu_addr=0x%llx for ref)\n",
+-			  vbase_hi, vbase_lo, fw_gpu_addr);
+-		DRM_ERROR("  LMI_EXT40_ADDR=0x%08x\n", ext40_addr);
+-		return -ETIMEDOUT;
++		DRM_INFO("ps4 uvd: VCPU bring-up samples (5×400ms during 2s wait):\n");
++		DRM_INFO("  ms |  STATUS  | 0x3d67  | 0x3d42  | 0x3d40  | 0x3d3d  | 0x3d98  | 0x3da0  | 0x3bc6  | 0x3e41  | 0x3d45\n");
++		for (i = 0; i < sample_idx; i++)
++			DRM_INFO(" %4d |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x |%08x\n",
++				 i * V76D_A5_INTERVAL_MS,
++				 sample_status[i], sample_3d67[i], sample_3d42[i],
++				 sample_3d40[i], sample_3d3d[i], sample_3d98[i],
++				 sample_3da0[i], sample_3bc6[i], sample_3e41[i],
++				 sample_3d45[i]);
++
++		if (!succeeded) {
++			u32 status      = RREG32(mmUVD_STATUS);
++			u32 soft_reset  = RREG32(mmUVD_SOFT_RESET);
++			u32 lmi_status  = RREG32(0x3daf);
++			u32 vbase_hi    = RREG32(0x3c68);
++			u32 vbase_lo    = RREG32(0x3c69);
++			u32 ext40_addr  = RREG32(mmUVD_LMI_EXT40_ADDR);
++
++			DRM_ERROR("ps4 uvd: Liverpool VCPU did not start "
++				  "(no STATUS bit 1 after 2s)\n");
++			DRM_ERROR("  STATUS=0x%08x SOFT_RESET=0x%08x "
++				  "LMI_STATUS=0x%08x\n",
++				  status, soft_reset, lmi_status);
++			DRM_ERROR("  LMI_VM_VBASE_HI=0x%08x LMI_VM_VBASE_LO=0x%08x "
++				  "(v76a: wrote 0, fw_gpu_addr=0x%llx for ref)\n",
++				  vbase_hi, vbase_lo, fw_gpu_addr);
++			DRM_ERROR("  LMI_EXT40_ADDR=0x%08x\n", ext40_addr);
++			return -ETIMEDOUT;
++		}
+ 	}
++#undef V76D_A5_SAMPLES
++#undef V76D_A5_INTERVAL_MS
+
+ 	/* Post-success: finalize host link + interrupt enable. */
+ 	WREG32(0x3d40, RREG32(0x3d40) | 2);
