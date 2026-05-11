@@ -181,7 +181,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | Room | Status | File |
 |---|---|---|
 | regmgr | 🔍 first-pass | rooms/regmgr.md |
-| ipmimgr | 🗝️ | rooms/ipmimgr.md |
+| ipmimgr | 🔍 first-pass | rooms/ipmimgr.md |
 | sdbgp | 🗝️ | rooms/sdbgp.md |
 | mas | 🗝️ | rooms/mas.md |
 
@@ -218,6 +218,11 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 9: + ipmimgr first-pass — Inter-Process Messaging
+  Manager. PS4's main IPC backbone (Binder/D-Bus equivalent).
+  14 sub-files. syscallCreateServer flow decoded — server registry,
+  pending connect-request matching, vthread/kid lifecycle. Useful for
+  understanding cross-module userspace flow but no Linux port needed.
 - 2026-05-12 iter 8: + audioout first-pass — Audio Output stack.
   3-layer: uaudio (USB) / sound/pcm (vanilla FreeBSD) / snd_hda/hdac
   (Sony-quirked). Stock FreeBSD code mostly. Linux's snd_hda_intel
