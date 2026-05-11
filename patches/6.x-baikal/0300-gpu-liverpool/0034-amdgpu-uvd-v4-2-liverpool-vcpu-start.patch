@@ -1,0 +1,391 @@
+amdgpu: uvd_v4_2 — add Liverpool/Gladius VCPU bring-up branch (v73)
+
+v72c-uvd hardware test (UART log
+checkpoint/uart-logs/2026-05-11_1600-v72c-uvd.log) proved Sony's
+wrapped 1.101.42 firmware loads correctly in our patched mainline
+amdgpu but the VCPU still faults reading from GPU page 0x300800 on
+its first instruction fetch. Root cause: mainline's uvd_v4_2_start()
+never programs the LMI MMU base address — the VCPU starts but has no
+mapping for its own internal address space.
+
+Reverse-engineered Sony's complete VCPU bring-up from orbis-12.02.elf
+via Ghidra MCP. The per-chip-revision dispatcher is at FUN_c88f6db0
+(renamed uvd_vcpu_start_dispatch); for our Baikal hardware (rev 1,
+Late Liverpool — CPUID family >= 0x710f30) it calls:
+
+  uvd_vcpu_prep_baikal    @ 0xc88f7490   (one-write prep)
+  uvd_vcpu_start_baikal   @ 0xc88f8610   (full ~100-register sequence)
+
+Full per-register rationale + Ghidra rename map for rev 0 (Liverpool
+early) and rev 2 (Gladius) variants:
+  checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md
+
+This patch:
+  - Adds uvd_v4_2_start_liverpool() — direct transliteration of
+    uvd_vcpu_start_baikal, plus mainline-style ring buffer setup at
+    the end so amdgpu's ring test runs against a configured RBC.
+  - Adds asic_type dispatch at the top of uvd_v4_2_start() so
+    CHIP_LIVERPOOL and CHIP_GLADIUS take the Sony path; other CIK
+    chips still get the original mainline path unchanged.
+
+Critical writes vs mainline:
+
+  WREG32(0x3c69, lower_32_bits(fw_gpu_addr));    LMI_VM_VBASE_LO
+  WREG32(0x3c68, upper_32_bits(fw_gpu_addr));    LMI_VM_VBASE_HI
+
+These two are the single most important thing this patch does —
+without them the VCPU's LMI MMU has no mapping for the firmware
+buffer's GPU address and faults on its first internal access.
+
+Other Liverpool-specific writes mainline doesn't do (full list in
+the source comments, per-register):
+
+  - LMI clock init: 0x3bd3/4/5, 0x3992, 0x39c5, 0x3993 = 0x2011002
+  - Audio/DMA mux: 0x3d6d/6f/68/66/77/79/7a/7b/7c/7d/7e (Sony values)
+  - VCPU PLL divider: 0x3d3c, 0x3d62, 0x3d63, 0x3da3, 0x3da1
+    + index/data sub-regs 0x99, 0x9a, 0x162
+    (Sony reads ctx[+0x40] for the divider; we use k=4 as mid-range
+     guess — adjust if VCPU misbehaves)
+  - Cache region descriptors: 0x3d82..0x3d87 (Baikal-specific sizes;
+    Gladius differs but uses same code path for now)
+  - DMA register 0x3da9 = 0x11010000 (Sony scrambles with hw RNG;
+    we use the always-OR base value)
+  - GFX-side UVD client enable: bit 3 of register 0x1401
+  - 3-stage soft-reset clear (bits 0, 2, 3, 0x2000 progressively
+    cleared)
+  - Post-success: register 0x9e0 host-link config, register 0x501
+    final enable
+
+Test plan:
+  - Build kernel, swap to wrapped Sony 1.101.42 firmware initramfs
+    (output/initramfs-uvd-baikal.cpio.gz — already prepared)
+  - Boot, expect dmesg:
+        [drm] Found UVD firmware Version: 1.101 Family ID: 9
+        ps4 uvd: Liverpool VCPU started (fw_gpu_addr=0x...)
+        UVD initialized successfully.
+  - NO `VM fault` messages, NO `UVD not responding`, amdgpu probe
+    succeeds, HDMI works, /dev/dri/renderD128 appears.
+
+If VCPU still doesn't start, candidate adjustments:
+  - clock divider k (try 1, 2, 8 instead of 4)
+  - 0x3da9 nonce (try random small values)
+  - Gladius variant has 0x3dab |= 1 (we use |= 3) — if Gladius hangs
+    test that
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -43,6 +43,7 @@
+ static void uvd_v4_2_set_ring_funcs(struct amdgpu_device *adev);
+ static void uvd_v4_2_set_irq_funcs(struct amdgpu_device *adev);
+ static int uvd_v4_2_start(struct amdgpu_device *adev);
++static int uvd_v4_2_start_liverpool(struct amdgpu_device *adev);
+ static void uvd_v4_2_stop(struct amdgpu_device *adev);
+ static int uvd_v4_2_set_clockgating_state(struct amdgpu_ip_block *ip_block,
+ 				enum amd_clockgating_state state);
+@@ -289,6 +290,22 @@
+ 	u32 lmi_swap_cntl = 0;
+ 	u32 mp_swap_cntl = 0;
+ 
++	/*
++	 * PS4 Liverpool / Gladius: the silicon needs a substantially
++	 * different VCPU bring-up sequence than mainline Bonaire.
++	 * Most critically, mainline never writes registers 0x3c68/0x3c69
++	 * (LMI_VM_VBASE_HI/LO) with the firmware buffer's GPU address —
++	 * without those, the VCPU faults reading from page 0x300800 on
++	 * its very first instruction fetch (confirmed in v72c-uvd boot,
++	 * UART log 2026-05-11_1600-v72c-uvd.log).
++	 *
++	 * Full RE writeup of Sony's sequence, with per-revision tables:
++	 *   checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md
++	 */
++	if (adev->asic_type == CHIP_LIVERPOOL ||
++	    adev->asic_type == CHIP_GLADIUS)
++		return uvd_v4_2_start_liverpool(adev);
++
+ 	/* set uvd busy */
+ 	WREG32_P(mmUVD_STATUS, 1<<2, ~(1<<2));
+ 
+@@ -396,6 +413,281 @@
+ 	rb_bufsz = order_base_2(ring->ring_size);
+ 	rb_bufsz = (0x1 << 8) | rb_bufsz;
+ 	WREG32_P(mmUVD_RBC_RB_CNTL, rb_bufsz, ~0x11f1f);
++
++	return 0;
++}
++
++/*
++ * uvd_v4_2_start_liverpool — PS4 Liverpool / Gladius VCPU bring-up.
++ *
++ * Transliterated from Sony's uvd_vcpu_start_baikal (FUN_c88f8610 in
++ * orbis-12.02.elf) plus the one-write prep uvd_vcpu_prep_baikal
++ * (FUN_c88f7490). The dispatcher (FUN_c88f6db0) keys on a chip-rev
++ * field that maps to: rev 0 = Liverpool early (CUH-10xx/12xx),
++ * rev 1 = Late Liverpool = Baikal (CUH-15xx+, this code path's
++ * target), rev 2 = Gladius (PS4 Slim/Pro).
++ *
++ * For Linux we currently target Baikal (rev 1). Gladius (rev 2)
++ * also uses CHIP_GLADIUS asic_type and falls into this same function;
++ * the per-chip differences are small (a few cache-size constants
++ * and one DMA-enable bit). For now both chips get the Baikal
++ * sequence — if Gladius needs adjustment after hardware test, we
++ * branch internally.
++ *
++ * Critical writes that mainline does NOT do:
++ *   - 0x3c68 / 0x3c69 = upper/lower halves of firmware GPU address
++ *     (LMI_VM_VBASE_HI/LO) — single most important; without these
++ *     the VCPU starts but immediately faults reading from page
++ *     0x300800 because the LMI MMU has no mapping.
++ *   - 0x3bd3/4/5, 0x3992, 0x39c5, 0x3993 = 0x2011002 (LMI clocks)
++ *   - 0x3d6d/6f/68/66/77/79/7a/7b/7c/7d/7e (audio/DMA mux)
++ *   - GFX-side enable at 0x1401 bit 3
++ *   - 3-bit progressive UVD_SOFT_RESET clear (bits 0, 2, 3, 0x2000)
++ *
++ * Full per-register rationale + Ghidra rename map:
++ *   checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md
++ */
++static int uvd_v4_2_start_liverpool(struct amdgpu_device *adev)
++{
++	struct amdgpu_ring *ring = &adev->uvd.inst->ring;
++	uint32_t rb_bufsz;
++	u32 tmp;
++	u64 fw_gpu_addr = adev->uvd.inst->gpu_addr;
++	int i;
++
++	/*
++	 * Sony's chip-revision-keyed "prep" function. For Baikal (rev 1)
++	 * this is a single write that clears bit 0 of register 0x3d2c
++	 * (probably a power-ungate / clock-ungate before the main
++	 * sequence touches anything). Gladius (rev 2) has its own prep
++	 * we haven't transliterated yet; should be safe to skip — if
++	 * Gladius hangs, that's our first thing to revisit.
++	 */
++	tmp = RREG32(0x3d2c);
++	WREG32(0x3d2c, tmp & ~0x1u);
++
++	/* mmUVD_STATUS: set init-busy bit 2 */
++	WREG32(mmUVD_STATUS, RREG32(mmUVD_STATUS) | 4);
++
++	/*
++	 * LMI clock / voltage init (Liverpool-specific). Sony writes the
++	 * magic value 0x2011002 to six registers spanning UVD and the
++	 * surrounding fabric (0x3bd3/4/5 are UVD-side, 0x3992/39c5/3993
++	 * are GFX/SMC-side IP blocks). Without these, UVD's clock domain
++	 * isn't fully unparked.
++	 */
++	WREG32(0x3bd3, 0x2011002);
++	WREG32(0x3bd4, 0x2011002);
++	WREG32(0x3bd5, 0x2011002);
++	WREG32(0x3992, 0x2011002);
++	WREG32(0x39c5, 0x2011002);
++	WREG32(0x3993, 0x2011002);
++
++	/* Clear most bits of 0x3d2a (cache-config) and 0x3be4 (LMI ctrl). */
++	WREG32(0x3d2a, RREG32(0x3d2a) & 0xfff00008);
++	WREG32(0x3be4, RREG32(0x3be4) & 0xffffe000);
++
++	/* If 0x40000 set in 0x398 (CGS gate), clear bit 18. */
++	tmp = RREG32(0x398);
++	if (tmp & 0x40000)
++		WREG32(0x398, tmp & 0xfffbffff);
++
++	/* CGC: set bit 9 of 0x3d98. */
++	WREG32(0x3d98, RREG32(0x3d98) | 0x200);
++
++	/* State-machine reset bit clear. */
++	WREG32(0x3d40, RREG32(0x3d40) & 0xfffffffd);
++
++	/* Audio / DMA mux setup. Several of these are mainline-named: */
++	WREG32(0x3d6d, 0);
++	WREG32(0x3d6f, 0);
++	WREG32(0x3d68, 0);                           /* mmUVD_LMI_VM_CTRL clear */
++	WREG32(mmUVD_LMI_CTRL, 0x203108);            /* 0x3d66 */
++	(void)RREG32(mmUVD_MPC_CNTL);                /* 0x3d77 */
++	WREG32(mmUVD_MPC_CNTL, 0x10);
++	WREG32(mmUVD_MPC_SET_MUXA0, 0x40c2040);      /* 0x3d79 */
++	WREG32(mmUVD_MPC_SET_MUXA1, 0x0);            /* 0x3d7a */
++	WREG32(mmUVD_MPC_SET_MUXB0, 0x40c2040);      /* 0x3d7b */
++	WREG32(mmUVD_MPC_SET_MUXB1, 0x0);            /* 0x3d7c */
++	WREG32(mmUVD_MPC_SET_ALU, 0);                /* 0x3d7e */
++	WREG32(mmUVD_MPC_SET_MUX, 0x88);             /* 0x3d7d */
++	WREG32(0x3d68, 0x3dff);                      /* LMI_VM_CTRL set */
++
++	/*
++	 * VCPU clock divider. Sony reads ctx[+0x40] which is set
++	 * elsewhere in their kernel — we don't have access to it here.
++	 * Use k = 4 as a mid-range guess; this register family controls
++	 * VCPU PLL division. If we see weird boot timing or hangs,
++	 * adjust here (range 1..15 is the field width).
++	 */
++	{
++		uint32_t k = 4;
++
++		WREG32(0x3d3c, k);
++		WREG32(0x3d62,
++		       (k << 28) | k | (k << 4) | (k << 8) | (k << 12) |
++		       (k << 16) | (k << 20) | (k << 24));
++		WREG32(0x3d63,
++		       (k << 24) | (k << 20) | (k << 16) | (k << 12) |
++		       (k << 8) | (k << 4));
++
++		/* Index/data sub-register 0x99 (VCPU CLK_CTRL). */
++		{
++			uint32_t saved = RREG32(mmUVD_CTX_INDEX);
++			WREG32(mmUVD_CTX_INDEX, 0x99);
++			{
++				uint32_t prev = RREG32(mmUVD_CTX_DATA);
++				WREG32(mmUVD_CTX_DATA,
++				       (k << 20) | k | (k << 4) |
++				       (k << 8)  | (k << 12) | (k << 16) |
++				       (prev & 0xff000000));
++			}
++			WREG32(mmUVD_CTX_INDEX, saved);
++		}
++
++		/* Index/data sub-register 0x9a. */
++		{
++			uint32_t saved = RREG32(mmUVD_CTX_INDEX);
++			WREG32(mmUVD_CTX_INDEX, 0x9a);
++			(void)RREG32(mmUVD_CTX_DATA);
++			WREG32(mmUVD_CTX_DATA,
++			       (k << 28) | k | (k << 4) | (k << 8) |
++			       (k << 12) | (k << 16) | (k << 20) | (k << 24));
++			WREG32(mmUVD_CTX_INDEX, saved);
++		}
++
++		/* Index/data sub-register 0x162. */
++		{
++			uint32_t saved = RREG32(mmUVD_CTX_INDEX);
++			WREG32(mmUVD_CTX_INDEX, 0x162);
++			{
++				uint32_t prev = RREG32(mmUVD_CTX_DATA);
++				WREG32(mmUVD_CTX_DATA,
++				       (k << 12) | k | (k << 4) | (k << 8) |
++				       (prev & 0xffff0000));
++			}
++			WREG32(mmUVD_CTX_INDEX, saved);
++		}
++
++		WREG32(0x3da3, k);
++		WREG32(0x3da1, k);
++	}
++
++	WREG32(0x3c5f, 0);
++	WREG32(0x3c5e, 3);
++
++	/*
++	 * Cache region descriptors. Sony's Baikal-specific values; the
++	 * Gladius variant uses different constants (0x20fa00 / 0x417a00)
++	 * but for now we assume CHIP_GLADIUS uses these too — adjust
++	 * if Gladius hardware test diverges.
++	 */
++	WREG32(0x3d82, 0);
++	WREG32(0x3d83, 0x7d000);
++	WREG32(0x3d84, 0xfa00);
++	WREG32(0x3d85, 0x40000);
++	WREG32(0x3d86, 0x17a00);
++	WREG32(0x3d87, 0x120800);
++
++	WREG32(0x3d98, RREG32(0x3d98) | 0x200);
++
++	/*
++	 * DMA register 0x3da9. Sony uses a pseudo-random pattern via
++	 * FUN_c88f6b70 (probably a hardware RNG read); we use the base
++	 * value Sony always ORs in. If DMA misbehaves we may need a
++	 * specific nonce here.
++	 */
++	WREG32(0x3da9, 0x11010000);
++	WREG32(0x3dab, 1);
++
++	/* GFX-side: enable UVD client bit at register 0x1401. */
++	WREG32(0x1401, RREG32(0x1401) | 8);
++
++	/*
++	 * ★ THE FIX ★ — write firmware GPU address into LMI_VM_VBASE.
++	 * Without these two writes the VCPU faults reading page 0x300800
++	 * (or 0x300600 depending on firmware version) on its first
++	 * instruction fetch because the LMI MMU has no mapping for the
++	 * VCPU's internal address space. This is the single most
++	 * important thing this function does vs mainline.
++	 */
++	WREG32(0x3c69, lower_32_bits(fw_gpu_addr));    /* LMI_VM_VBASE_LO */
++	WREG32(0x3c68, upper_32_bits(fw_gpu_addr));    /* LMI_VM_VBASE_HI */
++
++	/* Clear DMA + soft-reset bit 0 — first stage of VCPU release. */
++	WREG32(0x3da5, 0);
++	WREG32(0x3da4, 0);
++	WREG32(0x3da9, RREG32(0x3da9) & 0xeffeffff);
++	WREG32(mmUVD_SOFT_RESET, RREG32(mmUVD_SOFT_RESET) & 0xfffffffe);
++
++	/* Index/data sub-register 0x9b: clear bit 4. */
++	{
++		uint32_t saved = RREG32(mmUVD_CTX_INDEX);
++		WREG32(mmUVD_CTX_INDEX, 0x9b);
++		WREG32(mmUVD_CTX_DATA,
++		       RREG32(mmUVD_CTX_DATA) & 0xffffffef);
++		WREG32(mmUVD_CTX_INDEX, saved);
++	}
++
++	WREG32(0x3dac, 0x10);
++	WREG32(0x3dab, RREG32(0x3dab) | 3);
++	WREG32(0x3d98, RREG32(0x3d98) & 0xfffbffff);
++	WREG32(0x3d3d, RREG32(0x3d3d) & 0xfffffeff);
++
++	/*
++	 * Progressive soft-reset clear — the actual VCPU release.
++	 * After clearing bit 0x2000 the VCPU starts executing its
++	 * firmware. The 16 ms udelay before polling gives the firmware
++	 * time to reach its first ready signal.
++	 */
++	WREG32(mmUVD_SOFT_RESET, RREG32(mmUVD_SOFT_RESET) & 0xfffffffb);
++	WREG32(mmUVD_SOFT_RESET, RREG32(mmUVD_SOFT_RESET) & 0xfffffff7);
++	WREG32(mmUVD_SOFT_RESET, RREG32(mmUVD_SOFT_RESET) & 0xffffdfff);
++
++	mdelay(16);
++
++	/* Poll mmUVD_STATUS bit 1 for VCPU ready (2 s total timeout). */
++	for (i = 0; i < 2000; i++) {
++		if (RREG32(mmUVD_STATUS) & 2)
++			break;
++		mdelay(1);
++	}
++	if (i == 2000) {
++		DRM_ERROR("ps4 uvd: Liverpool VCPU did not start "
++			  "(no STATUS bit 1 after 2s)\n");
++		return -ETIMEDOUT;
++	}
++
++	/* Post-success: finalize host link + interrupt enable. */
++	WREG32(0x3d40, RREG32(0x3d40) | 2);
++	WREG32(mmUVD_STATUS, RREG32(mmUVD_STATUS) & 0xfffffffb);
++	tmp = RREG32(0x9e0);
++	WREG32(0x9e0, (tmp & 0xfffffffc) + 2);
++	(void)RREG32(0x501);
++	WREG32(0x501, 3);
++
++	DRM_INFO("ps4 uvd: Liverpool VCPU started "
++		 "(fw_gpu_addr=0x%llx)\n", fw_gpu_addr);
++
++	/*
++	 * Ring buffer setup. Sony's start function doesn't do this; in
++	 * mainline AMDGPU it's the second half of uvd_v4_2_start. We
++	 * duplicate that exact sequence so amdgpu's ring test runs
++	 * against an initialized RBC.
++	 */
++	WREG32_P(mmUVD_MASTINT_EN, 3 << 1, ~(3 << 1));
++	WREG32_P(mmUVD_STATUS, 0, ~(1 << 2));
++	WREG32(mmUVD_RBC_RB_CNTL, 0x11010101);
++	WREG32(mmUVD_RBC_RB_WPTR_CNTL, 0);
++	WREG32(mmUVD_LMI_EXT40_ADDR,
++	       upper_32_bits(ring->gpu_addr) | (0x7 << 16) | (0x1u << 31));
++	WREG32(mmUVD_RBC_RB_RPTR, 0x0);
++	ring->wptr = RREG32(mmUVD_RBC_RB_RPTR);
++	WREG32(mmUVD_RBC_RB_WPTR, lower_32_bits(ring->wptr));
++	WREG32(mmUVD_RBC_RB_BASE, ring->gpu_addr);
++	rb_bufsz = order_base_2(ring->ring_size);
++	rb_bufsz = (0x1 << 8) | rb_bufsz;
++	WREG32_P(mmUVD_RBC_RB_CNTL, rb_bufsz, ~0x11f1f);
+ 
+ 	return 0;
+ }

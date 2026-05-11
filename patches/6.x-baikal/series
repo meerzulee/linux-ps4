@@ -299,6 +299,16 @@
 # Required after v70 confirmed IP block adds alone produce probe failure.
 0300-gpu-liverpool/0033-amdgpu-uvd-vce-liverpool-firmware-name.patch
 
+# v73: PS4 Liverpool / Gladius VCPU bring-up — branch in uvd_v4_2_start
+# to a transliterated copy of Sony's uvd_vcpu_start_baikal (FUN_c88f8610
+# in orbis-12.02.elf). Most important: writes LMI_VM_VBASE_HI/LO
+# (regs 0x3c68/0x3c69) with the firmware buffer's GPU address — mainline
+# never does this on Bonaire and that's why v72c-uvd faulted at GPU
+# page 0x300800 despite Sony's 1.101.42 firmware loading correctly.
+# Full per-register rationale in
+# checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-vcpu-start-found.md.
+0300-gpu-liverpool/0034-amdgpu-uvd-v4-2-liverpool-vcpu-start.patch
+
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
 
