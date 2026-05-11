@@ -111,6 +111,13 @@
 # v9 has its own pr_info — disabled to avoid hunk conflict
 # 0200-ps4-drivers/9001-DEBUG-bpcie-msi-trace.patch
 
+# Wire pm_power_off → ICC shutdown_final so `systemctl poweroff` actually
+# powers the console down (vs leaving it at standby until EMC watchdog
+# cuts it ungracefully). Transliteration of Sony's icc_power_shutdown_final
+# from orbis-12.02.elf — RE notes in
+# checkpoint/docs/research/orbis-kernel/2026-05-11-orbis-poweroff-discovered.md.
+0200-ps4-drivers/0015-ps4-bpcie-pm-power-off-handler.patch
+
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch
 0300-gpu-liverpool/0002-radeon-add-liverpool-cik-support.patch

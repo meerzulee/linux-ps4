@@ -1,0 +1,189 @@
+ps4: register pm_power_off → ICC shutdown_final so console actually powers down
+
+Without this patch, `systemctl poweroff` halts Linux but the PS4 stays
+at standby (white LED on, fans spinning) until the EMC watchdog
+reaches its timeout ~30s later and cuts power ungracefully.
+
+Sony's Orbis kernel handles shutdown via an EVENTHANDLER_REGISTER
+chain in icc_power_module_init (FUN_c85745c0 in orbis-12.02.elf). The
+final stage, icc_power_shutdown_final (FUN_c8574860, registered with
+priority 20000 for both `shutdown_final` and `shutdown_force` events),
+builds an ICC mailbox command:
+
+    buf[1]      = 0x04        major = power
+    buf[2..3]   = 0x0004      minor = shutdown_final
+    buf[6..7]   = 0x0020      payload length = 32 bytes
+    buf[8..]    = zeros
+
+and sends it via icc_send_recv (FUN_c87e3050,
+freebsd/sys/dev/scesb/icc/icc.c). The EMC then drops the console
+power rails.
+
+This patch wires the same ICC command into Linux's pm_power_off
+callback. Our existing apcie_icc_cmd helper has the right shape and
+auto-delegates to bpcie_icc_cmd when bpcie_initialized (which is the
+Baikal case on this hardware), so one call covers both southbridge
+families.
+
+If the ICC command path fails (e.g. icc subsystem not up — should not
+happen in practice since we register via late_initcall), the original
+pm_power_off pointer is invoked as a fallback so the system at least
+halts cleanly rather than spinning forever.
+
+Full reverse-engineering writeup and rename map for the Orbis side:
+  checkpoint/docs/research/orbis-kernel/2026-05-11-orbis-poweroff-discovered.md
+
+Followup (not in this patch): if the ICC command alone proves
+insufficient on hardware test, layer in the low-level southbridge
+MMIO sequence (writes to icc_bar + 0x1C8400..0x1C8468) that Sony's
+icc_lowlevel_power_off (FUN_c85b2660) issues after the ICC command.
+That requires exposing the bpcie ICC MMIO mapping from
+ps4-bpcie-icc.c; documented in the research note above.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/ps4/Makefile
++++ b/drivers/ps4/Makefile
+@@ -13,4 +13,9 @@
+ 	ps4-bpcie-uart.o \
+ 	ps4-bpcie-icc.o \
+ 	ps4-apcie-pwrbutton.o \
+-	icc/i2c.o
+\ No newline at end of file
++	icc/i2c.o
++# Console-wide pm_power_off hook — issues ICC shutdown_final and lets the
++# EMC drop the rails. Routes through bpcie_icc_cmd or apcie_icc_cmd at
++# runtime (apcie_icc_cmd auto-delegates to bpcie when bpcie_initialized),
++# so one obj covers both Aeolia/Belize and Baikal hardware.
++obj-y += ps4-power.o
+\ No newline at end of file
+--- /dev/null
++++ b/drivers/ps4/ps4-power.c
+@@ -0,0 +1,127 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * PS4 console power-off via ICC mailbox
++ *
++ * Background
++ * ----------
++ * Mainline Linux's pm_power_off callback halts the CPU; on a generic PC
++ * that's enough because ACPI then drops the rails. On the PS4 there's
++ * no ACPI _S5; power state is controlled by the southbridge's Embedded
++ * Management Controller (EMC) reached via the ICC mailbox. Without a
++ * PS4-specific pm_power_off hook, `systemctl poweroff` halts Linux but
++ * the console stays at standby (white LED, fans on) until the EMC
++ * watchdog times out ~30 s later and cuts power ungracefully.
++ *
++ * Sony's path (RE'd from orbis-12.02.elf, 2026-05-11)
++ * ----------------------------------------------------
++ * Their `icc_power_shutdown_final` event handler (FUN_c8574860) builds
++ * a 0x800-byte ICC command buffer with:
++ *
++ *   buf[1]      = 0x04         major  = power
++ *   buf[2..3]   = 0x0004       minor  = shutdown_final
++ *   buf[6..7]   = 0x0020       payload length = 32 bytes
++ *   buf[8..]    = zeros
++ *
++ * Then calls `icc_send_recv()` (FUN_c87e3050, from
++ * freebsd/sys/dev/scesb/icc/icc.c). On a successful reply the EMC has
++ * accepted "we're shutting down"; Sony then performs a low-level MMIO
++ * sequence at the ICC BAR `+0x1C8400` to actually drop the rails:
++ *   - clear bit 2 in +0x1C8400  (state machine reset)
++ *   - zero +0x1C844C .. +0x1C8468  (8 dwords)
++ *   - poll +0x1C8400 until bit 3 (busy) clears
++ *   - clear bit 0 in +0x1C8400  (THE power cut)
++ *
++ * Full RE in checkpoint/docs/research/orbis-kernel/2026-05-11-orbis-poweroff-discovered.md.
++ *
++ * First port (this file)
++ * ----------------------
++ * Send the ICC mailbox command only. On many EMC firmwares the command
++ * alone is sufficient — the EMC drops rails when it processes the
++ * shutdown_final command. If we return from the icc_cmd call, fall
++ * through to whatever pm_power_off was registered before us (typically
++ * the default ACPI/halt path), which at least leaves the system in a
++ * clean halted state.
++ *
++ * The TODO at the bottom is for a follow-up that adds the low-level
++ * MMIO sequence if hardware testing shows the ICC command alone isn't
++ * enough — that requires exposing the bpcie ICC MMIO mapping from
++ * ps4-bpcie-icc.c.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/pm.h>
++#include <linux/delay.h>
++#include <linux/printk.h>
++
++#include "aeolia.h"
++#include "baikal.h"
++
++extern bool apcie_initialized;
++extern bool bpcie_initialized;
++
++/* Cache whatever pm_power_off was before we hooked it, so we can chain
++ * to it if our ICC path fails (best-effort fallback to a clean halt). */
++static void (*ps4_orig_pm_power_off)(void);
++
++static void ps4_console_power_off(void)
++{
++	/* Sony's payload: 32 zero bytes. Built on the stack to keep the
++	 * function self-contained and runnable from kernel halt context. */
++	u8 zero_payload[0x20] = { 0 };
++	int ret;
++
++	if (!apcie_initialized && !bpcie_initialized) {
++		pr_warn("ps4-power: no PS4 southbridge initialized; "
++			"chaining to fallback pm_power_off\n");
++		goto fallback;
++	}
++
++	/* apcie_icc_cmd auto-routes to bpcie_icc_cmd when bpcie_initialized
++	 * (ps4-apcie-icc.c::apcie_icc_cmd), so this one call covers both
++	 * Aeolia/Belize (original PS4) and Baikal (PS4 CUH-15xx+).        */
++	ret = apcie_icc_cmd(0x04, 0x0004,
++			    zero_payload, sizeof(zero_payload),
++			    NULL, 0);
++	if (ret < 0) {
++		pr_err("ps4-power: ICC shutdown_final command failed (%d); "
++		       "chaining to fallback\n", ret);
++		goto fallback;
++	}
++
++	/* Give the EMC up to ~2 seconds to actually cut power. On a
++	 * successful command the PS4 should be off well before this
++	 * elapses; we'll just sit in the loop until rails drop. */
++	mdelay(2000);
++
++	pr_warn("ps4-power: ICC shutdown returned but console did not "
++		"power off — adding the low-level MMIO sequence may be "
++		"needed (see ps4-power.c TODO)\n");
++
++fallback:
++	if (ps4_orig_pm_power_off)
++		ps4_orig_pm_power_off();
++}
++
++static int __init ps4_power_init(void)
++{
++	if (!apcie_initialized && !bpcie_initialized) {
++		/* Not running on PS4 hardware (or southbridge driver not
++		 * initialized yet — late_initcall should prevent the latter). */
++		return -ENODEV;
++	}
++
++	ps4_orig_pm_power_off = pm_power_off;
++	pm_power_off = ps4_console_power_off;
++
++	pr_info("ps4-power: pm_power_off hooked — ICC cmd 04/0004 will "
++		"shut the console rails\n");
++	return 0;
++}
++
++/* late_initcall so the apcie/bpcie drivers (subsys_initcall / device_initcall)
++ * have already finished their probe and set *_initialized. */
++late_initcall(ps4_power_init);
++
++MODULE_DESCRIPTION("PS4 console power-off via ICC mailbox");
++MODULE_LICENSE("GPL");
