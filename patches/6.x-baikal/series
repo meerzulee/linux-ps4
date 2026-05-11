@@ -312,6 +312,10 @@
 # v74 result confirmed register writes are correct but the BO ends ~400 KB
 # before Sony's region 3 starts, causing VM fault at page 0x300000 vmid 4.
 0300-gpu-liverpool/0035-amdgpu-uvd-bo-size-liverpool-3-region.patch
+# 0036: v76a Ghidra-derived fixes to uvd_vcpu_start (Liverpool branch):
+# remove spurious 0x3d62/0x3d63 writes, fix 0x3da9 page-size encoding to
+# 0x1101080c, change LMI_VM_VBASE to 0 (matches Sony's ctx[+0x88]=0).
+0300-gpu-liverpool/0036-amdgpu-uvd-v4-2-liverpool-vcpu-v76a-fixes.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
