@@ -1,0 +1,91 @@
+amdgpu: gmc_v7_0 — bump Liverpool/Gladius GART size to 16 GB (v76d-β-1)
+
+v76d-α proved that range-protection isn't the gate. With the LVP/GL vmid
+1..15 END_ADDR widened to 32 GB, the UVD firmware's hardcoded GPU virtual
+0x300000000 access still hits the same fault as v76b. That means the
+fault is a real "no PTE present" miss on the PT walk, not a range trip.
+
+The PS4 GART is 512 MB by default (drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+line 408). That covers GPU virtual 0..0x1FFFFFFF only. The firmware
+reads at 0x300000000 (= 12 GB) which is way past the PT, so GMC has no
+entry to look up and raises VM_L2_PROTECTION_FAULT.
+
+Sony's UVD VCPU register writes (Ghidra'd in uvd_vcpu_start_baikal,
+FUN_c88f8610) show the cache regions stay under 1.4 MB total
+(mmUVD_VCPU_CACHE_OFFSET0..2). So the 0x300000000 access is NOT a cache
+read — it's some other VCPU buffer (stack, save/restore, DMA descriptor
+queue). Sony's gbase_map evidently has a real PTE there in vmid 4; we
+don't.
+
+This patch widens the Liverpool/Gladius GART from 512 MB to 16 GB so
+the shared PT (mainline amdgpu makes all VMIDs share the GART) spans
+0x300000000. Missing PTEs at that index will fall through to
+mmVM_CONTEXT*_PROTECTION_FAULT_DEFAULT_ADDR (adev->dummy_page_addr) —
+the standard "unmapped GART read" path that returns zeros to the
+requester instead of generating a fault.
+
+  case CHIP_LIVERPOOL:
+  case CHIP_GLADIUS:
+-     adev->gmc.gart_size = 512ULL << 20;     /* 512 MB */
++     adev->gmc.gart_size = 16ULL << 30;      /* 16 GB */
+      break;
+
+Cost: 4M PTEs × 8 bytes = 32 MB of GTT memory for the page table. On
+PS4's 8 GB unified that's 0.4% — comfortable. PT is sparse-populated
+by amdgpu_gart_init, so most of those 32 MB stay zero.
+
+Expected hardware signals:
+
+  ✅ "no STATUS bit 1 after 2s" disappears, VCPU starts. The
+     dummy_page_addr fallback is enough; firmware tolerates zero reads
+     at 0x300000000. Subsequent failure (if any) tells us what comes
+     next in the bring-up.
+
+  🟡 Fault changes form: a different vmid, different address, or a
+     different fault code. The firmware made progress past the
+     0x300000000 read but tripped on the next thing it needs.
+
+  ❌ Same vmid 4 page 3145728 fault, same VCPU timeout. Then either:
+     - the GART expansion didn't take effect (build/apply issue —
+       verify via "amdgpu: GART: 16384M" in dmesg)
+     - the firmware does an explicit walk that requires a real (non-zero)
+       PTE at 0x300000000. v76d-β-2: bind a small BO at that GPU VA
+       so the PT entry resolves to real memory.
+
+  💀 Boot regression in GFX, SDMA, or DCE. amdgpu_gart_init/_bind may
+     have hidden assumptions about size. If this happens, revert and
+     pivot to v76d-β-3 (per-vmid custom PD) — bigger change but
+     scoped to UVD's VMID.
+
+Built and md5-verified before submitting for hardware test.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -405,7 +405,24 @@
+ #ifdef CONFIG_DRM_AMDGPU_CIK
+ 		case CHIP_LIVERPOOL:
+ 		case CHIP_GLADIUS:
+-			adev->gmc.gart_size = 512ULL << 20;
++			/*
++			 * v76d-β-1: bump GART from 512 MB to 16 GB.
++			 *
++			 * Sony's UVD VCPU firmware accesses GPU virtual
++			 * 0x300000000 (12 GB) once started — neither cache
++			 * (covered by mmUVD_VCPU_CACHE_OFFSET*) nor VRAM
++			 * (0xF00000000+). v76d-α proved this is a real
++			 * no-PTE miss on the shared GART, not a range
++			 * trip. By extending GART to span 16 GB the
++			 * firmware's VA falls inside the PT, missing
++			 * entries fall through to dummy_page_addr instead
++			 * of faulting, and the VCPU at least gets PAST
++			 * the protection-fault stall.
++			 *
++			 * Cost: 4M PTEs * 8 bytes = 32 MB of GTT memory
++			 * for the page table. PS4 has 8 GB unified, so 0.4%.
++			 */
++			adev->gmc.gart_size = 16ULL << 30;
+ 			break;
+ 		case CHIP_BONAIRE: /* UVD, VCE do not support GPUVM */
+ 		case CHIP_HAWAII:  /* UVD, VCE do not support GPUVM */
