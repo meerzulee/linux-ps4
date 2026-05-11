@@ -1,0 +1,79 @@
+amdgpu: uvd_v4_2 — write "host ready" magic at region 2/3 boundaries (v76d-β-2-A7)
+
+A6 confirmed VCPU is alive (cache reaches Sony's synced pattern 0x240
+at t=800ms sustained) but STATUS bit 1 never sets — even with UDEC
+config corrected.
+
+Hypothesis A7: the firmware polls a memory location for a non-zero
+"host present / kernel ready" signal. With our region 1/2/3 memset
+to zero (except fw text in region 1 start), there's no such signal.
+
+Cheapest test: write 0x00000001 at two strategic boundaries:
+  - Region 2 offset 0 (heap[0]) at BO offset 0x1E0000
+  - Region 3 offset 0 (msgq[0]) at BO offset 0x304000
+
+Both are natural locations for the firmware to look for a host
+signal — heap[0] is what an allocator looks at; msgq[0] is the
+first slot in the host↔fw message queue.
+
+If A7 unblocks STATUS bit 1, follow up by narrowing down which
+location actually mattered (a single boot run will tell us if the
+magic works; a second run with only one of the two will identify
+which).
+
+Expected:
+
+  ✅ STATUS bit 1 sets — fw was polling one of these locations. Add
+     follow-up patch to narrow which one and use that as canonical.
+
+  🟡 Sample table different — fw advanced further but new stall
+     reveals next step.
+
+  ❌ Identical stall — fw polls elsewhere (or the gate isn't a
+     memory-polling pattern). Pivot to A8 (different fw revision)
+     or A9 (search for what sets STATUS bit 1).
+
+Cost: 2 u32 stores + DRM_INFO. ~15 LOC.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -519,6 +519,37 @@
+ 	memcpy(mirror_cpu_addr, adev->uvd.fw->data + ucode_offset, ucode_size);
+
+ 	/*
++	 * v76d-β-2-A7: write "host ready" magic at strategic region
++	 * boundaries.
++	 *
++	 * A6 confirmed the VCPU is alive (cache reaches Sony's synced
++	 * pattern 0x240 at t=800ms+ sustained) but STATUS bit 1 never
++	 * sets. One hypothesis: the firmware polls a memory location for
++	 * a non-zero "host present / kernel ready" signal before
++	 * completing init.
++	 *
++	 * Candidate offsets where the firmware might poll:
++	 *   - region 2 start (heap/IB): first word fw allocator looks at
++	 *   - region 3 start (msgq): first word in the message queue
++	 *
++	 * Write a recognizable non-zero pattern (0x00000001) at both
++	 * locations. If the firmware was waiting for any of them, we'll
++	 * see STATUS bit 1 set. If still stalls, the magic location is
++	 * elsewhere.
++	 */
++	{
++		u32 *region2_start = (u32 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE);
++		u32 *region3_start = (u32 *)(mirror_cpu_addr +
++					     PS4_UVD_REGION1_SIZE +
++					     PS4_UVD_REGION2_SIZE);
++		*region2_start = 0x00000001;	/* heap[0] = "non-zero" */
++		*region3_start = 0x00000001;	/* msgq[0] = "host present" */
++		DRM_INFO("ps4 uvd: A7 wrote magic at region2[0] (BO+0x%lx) and region3[0] (BO+0x%lx)\n",
++			 PS4_UVD_REGION1_SIZE,
++			 PS4_UVD_REGION1_SIZE + PS4_UVD_REGION2_SIZE);
++	}
++
++	/*
+ 	 * Rebind GART at 0x300000000 for the full 3-region span (3.1 MB).
+ 	 * Overwrites the dummy bind from gmc_v7_0_gart_enable (v76d-β-2-A).
+ 	 * The VC1..VC15 flat walk now finds:

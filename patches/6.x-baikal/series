@@ -371,6 +371,11 @@
 # config might corrupt Liverpool's UVD decode engine); (2) 0x3bd3/4/5
 # clock-enable order was 3-4-5, Sony does 4-5-3. Both fixed.
 0300-gpu-liverpool/0046-amdgpu-uvd-v4-2-skip-mc-resume-fix-clock-order.patch
+# 0047: v76d-β-2-A7 — write 0x00000001 at region 2[0] (heap) and region
+# 3[0] (msgq). A6 showed VCPU alive + cache syncing but STATUS bit 1
+# never sets. Hypothesis: fw polls one of these locations for a "host
+# ready" signal. If A7 unblocks, narrow down to single location next.
+0300-gpu-liverpool/0047-amdgpu-uvd-v4-2-host-ready-magic-region2-3.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
