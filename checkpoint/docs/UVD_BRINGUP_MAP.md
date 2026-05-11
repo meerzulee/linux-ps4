@@ -116,6 +116,7 @@ Numbered chronologically. Each row = one boot test.
 | v76d-β-2-A7-revert | Disable 0047 in series | Restore A6 cache-sync behavior | (series only) | ✅ cache `0x3f7f` returns at t=400ms; STATUS still 0x4 | 2026-05-11_2257-v76d-beta2-a7-revert |
 | v76d-β-2-A8 | Combined: write region 2/3 SIZES (0x124000/0x4000) at slot 0 + k clock divider 4→1 | A7c (size fields) + A9 (fastest clock) | 0048 | 🟡 sizes neutral (no regression like A7's `1`); cache now reaches synced TWICE (t=400 + t=1600) instead of once. STATUS still 0x4. **Did NOT hurt; faster cache cycling consistent with k=1.** Bonus: user observed "white screen before /init" — first HDMI signal across iterations, but no `/dev/fb*` exists so panel is just sitting at bridge's last config (not Linux fbcon) | 2026-05-11_2310-v76d-beta2-a8-sizes-k1 |
 | v76d-β-2-A9 | Extend STATUS poll 2s → 10s, sample every 1s (10 samples) | If fw needs more startup time, longer wait reveals; else rules out "needs more time" | 0049 | ❌ **Time NOT the gate.** 10s → STATUS still 0x4. Cache cycles ~5 sec (synced at t=1000, t=6000). Steady-state loop. | 2026-05-11_2326-v76d-beta2-a9-10sec-poll |
+| **v76d-β-2-A14+A11** | **Re-enable mc_resume (skip 3 UDEC writes) + k clock 1→15** | A14: hidden mc_resume side effects? A11: k=15 should slow cache cycle ~15x if k is pure clock divider | **0050** | **(STAGED via FTP, awaiting boot)** | — |
 
 **Legend:** ❌ no change, 🟡 some change but not the gate, 🟢 progress
 

@@ -1,0 +1,138 @@
+amdgpu: uvd_v4_2 — re-enable mc_resume (skip UDEC) + k=15 (v76d-β-2-A14+A11)
+
+Two changes combined:
+
+== A14: re-enable mainline mc_resume, SKIP the 3 UDEC writes ==
+A6 dropped the entire mc_resume() call because of UDEC_ADDR_CONFIG
+writes corrupting Liverpool's tile layout. mc_resume's other writes
+(cache offsets/sizes, LMI ADDR_EXT/EXT40) are overwritten by us
+below, but if mc_resume has any subtle side effect we haven't
+noticed (sequencing, write ordering, hidden state), A14 reintroduces
+that side effect WITHOUT the harmful UDEC writes.
+
+Inlined version of mc_resume minus the 3 UDEC writes. After the
+inlined block we still:
+  - Zero LMI_ADDR_EXT/EXT40 (v76b)
+  - Override cache offset/size with Sony's values (later in fn)
+
+So the net effect of A14 alone is null IF mc_resume has no hidden
+side effect. If it has one, this picks it up.
+
+== A11: change k clock divider from 1 to 15 (slowest) ==
+A9 ruled out "fw needs more time". If k is a pure clock divider,
+k=15 should make cache cycle ~15x slower than k=1 (we measured
+~5-sec cycle at k=1; expect ~75-sec at k=15, won't sync in 10-sec
+window). If cycle period is unchanged, k controls something other
+than clock division.
+
+Combined for faster iteration. If A14 has no effect, the cycle
+period change tells us about A11. If A11 doesn't change cycle, k
+isn't a clock divider — useful info either way.
+
+Expected hardware signals:
+
+  ✅ STATUS bit 1 sets — A14 had a hidden bonus or k=15 was the
+     right value. Narrow down in follow-up.
+
+  🟡 cache cycle period changes (~5s → ~75s or similar) → confirms k
+     is a clock divider; useful for next iteration's hypothesis.
+
+  ❌ Identical sample table (~5s cycle, STATUS=0x4) → A11 isn't a
+     clock divider, A14 had no hidden effect. Pivot to A15.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -651,14 +651,14 @@
+ 	 * VCPU clock divider. Sony reads ctx[+0x40] which is set
+ 	 * elsewhere in their kernel — we don't have access to it here.
+ 	 *
+-	 * v76d-β-2-A8 (A9 part): try k = 1 (fastest divider) instead of
+-	 * the previous k = 4. A6 showed VCPU is alive but never
+-	 * asserts STATUS bit 1; one possibility is the VCPU clock is
+-	 * running too slow at k=4 and the fw's init routine times out
+-	 * internally. k=1 is the fastest division (full clock).
++	 * v76d-β-2-A14+A11: try k = 15 (slowest divider). Tested 4 (mid)
++	 * and 1 (fastest). A9 ruled out "fw needs more time". If k is a
++	 * pure clock divider, k=15 should make cache cycle ~15x slower
++	 * than k=1 — useful to characterize what k actually controls.
++	 * If cycle period is unchanged → k isn't a clock divider.
+ 	 */
+ 	{
+-		uint32_t k = 1;
++		uint32_t k = 15;
+
+ 		WREG32(0x3d3c, k);
+ 		/* v76a: removed spurious 0x3d62/0x3d63 writes — Sony's
+@@ -713,34 +713,45 @@
+ 	WREG32(0x3c5e, 3);
+
+ 	/*
+-	 * v76d-β-2-A6: skip uvd_v4_2_mc_resume() — Sony's bring-up does
+-	 * NOT call anything equivalent. mc_resume writes:
+-	 *   - mmUVD_VCPU_CACHE_OFFSET0/SIZE0/1/2 — we OVERRIDE below with
+-	 *     Sony's hardcoded values, so this is harmless waste
+-	 *   - mmUVD_LMI_ADDR_EXT, mmUVD_LMI_EXT40_ADDR — we EXPLICITLY
+-	 *     zero below (v76b), matching Sony's post-reset state
+-	 *   - mmUVD_UDEC_ADDR_CONFIG, _DB_, _DBW_ — Sony's start_baikal
+-	 *     does NOT touch these. mainline writes them with Bonaire's
+-	 *     gb_addr_config (the GFX tile layout). On Liverpool that
+-	 *     value may be wrong for UVD's decode engine, corrupting
+-	 *     the UDEC's view of the framebuffer layout.
++	 * v76d-β-2-A14: re-enable mainline mc_resume but SKIP its 3 UDEC
++	 * writes. A6 confirmed UDEC writes were harmful (cache sync
++	 * timing was worse with them). The other things mc_resume writes
++	 * (cache offsets/sizes, LMI ADDR_EXT/EXT40) get OVERWRITTEN by us
++	 * below — but if mc_resume has any other side effect or sequencing
++	 * benefit we haven't noticed, A14 reintroduces it.
+ 	 *
+-	 * A5 instrumentation showed the VCPU is alive (cache state
+-	 * oscillating) but never reaches "ready" — consistent with the
+-	 * decode engine waiting for a DMA that targets a misconfigured
+-	 * tile layout. By skipping mc_resume entirely, the UDEC_ADDR_CONFIG
+-	 * registers retain whatever GFX init left them at (which should be
+-	 * correct for Liverpool), matching Sony's behavior.
+-	 *
+-	 * If A6 fixes the stall, mc_resume's UDEC writes are the culprit.
+-	 * If still stalls, we kept tile config as set by GFX init —
+-	 * no harm done, and we eliminated a known divergence.
+-	 *
+-	 * v76b zero writes to LMI_ADDR_EXT/EXT40_ADDR retained for
+-	 * explicit clarity (Sony relies on post-reset zero; we make it
+-	 * explicit so a previous bring-up failure can't leave stale
+-	 * state across re-init).
++	 * Inlined mc_resume minus UDEC:
+ 	 */
++	{
++		uint64_t addr;
++		uint32_t size;
++
++		addr = (adev->uvd.inst->gpu_addr + AMDGPU_UVD_FIRMWARE_OFFSET) >> 3;
++		size = AMDGPU_UVD_FIRMWARE_SIZE(adev) >> 3;
++		WREG32(mmUVD_VCPU_CACHE_OFFSET0, addr);
++		WREG32(mmUVD_VCPU_CACHE_SIZE0, size);
++
++		addr += size;
++		size = AMDGPU_UVD_HEAP_SIZE >> 3;
++		WREG32(mmUVD_VCPU_CACHE_OFFSET1, addr);
++		WREG32(mmUVD_VCPU_CACHE_SIZE1, size);
++
++		addr += size;
++		size = (AMDGPU_UVD_STACK_SIZE +
++			(AMDGPU_UVD_SESSION_SIZE * adev->uvd.max_handles)) >> 3;
++		WREG32(mmUVD_VCPU_CACHE_OFFSET2, addr);
++		WREG32(mmUVD_VCPU_CACHE_SIZE2, size);
++
++		addr = (adev->uvd.inst->gpu_addr >> 28) & 0xF;
++		WREG32(mmUVD_LMI_ADDR_EXT, (addr << 12) | (addr << 0));
++
++		addr = (adev->uvd.inst->gpu_addr >> 32) & 0xFF;
++		WREG32(mmUVD_LMI_EXT40_ADDR, addr | (0x9 << 16) | (0x1 << 31));
++
++		/* SKIPPED: UDEC_ADDR_CONFIG / _DB / _DBW (would corrupt Liverpool) */
++	}
++
++	/* v76b: still zero LMI_ADDR_EXT/EXT40 to match Sony's post-reset state. */
+ 	WREG32(mmUVD_LMI_ADDR_EXT, 0);
+ 	WREG32(mmUVD_LMI_EXT40_ADDR, 0);
