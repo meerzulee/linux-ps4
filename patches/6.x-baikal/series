@@ -353,6 +353,12 @@
 # permission), which means the fw is now WRITING to its own region but
 # our PTEs were read-only. Add WRITEABLE flag.
 0300-gpu-liverpool/0043-amdgpu-ps4-uvd-gart-pte-writeable.patch
+# 0044: v76d-β-2-A4 — extend fw mirror BO from 1920 KB to 3.1 MB to cover
+# all 3 Sony UVD regions (region 1 firmware, region 2 heap/IB, region 3
+# msgq). A3 had zero VM faults but VCPU still stalled at STATUS=0x4. If
+# the fw silently depends on region 2/3 being mapped (even with zeros),
+# this should let it complete bring-up.
+0300-gpu-liverpool/0044-amdgpu-uvd-v4-2-extend-mirror-all-3-regions.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
