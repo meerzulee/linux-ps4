@@ -1,0 +1,87 @@
+amdgpu: ps4 UVD GART bindings need PTE_WRITEABLE (v76d-β-2-A3)
+
+A2 confirmed the firmware is alive and executing — it copied its real
+1920 KB into a GTT BO bound at 0x300000000 and the VCPU's bring-up
+preamble ran. Then a NEW fault appeared:
+
+  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x00300000
+  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x090BB010
+  VM fault (0x10, vmid 4, pasid 0) at page 3145728, WRITE from 'UMC' (187)
+
+Different from every previous fault:
+  - PROTECTIONS=0x10 = bit 4 set, NOT bit 1 (PT walk) or bit 2/3
+    (PDE/PTE invalid). bit 4 = WRITE_PROTECTION_FAULT — write access
+    rejected on a read-only page.
+  - "write from 'UMC'" — firmware is now WRITING, not reading. The
+    firmware advanced past read-only init and is trying to update
+    its own state.
+  - 187 retries — firmware retries the write many times before giving up.
+
+This means the firmware is fully alive and trying to do real work.
+The fix is one line: our PTEs need AMDGPU_PTE_WRITEABLE in addition
+to AMDGPU_PTE_READABLE.
+
+This patch adds WRITEABLE to all three of our GART bindings:
+  - uvd_v4_2.c: the fw mirror at 0x300000000 (1920 KB) — primary write target
+  - gmc_v7_0.c: dummy at 0x300000000 (fallback before fw mirror takes over)
+  - gmc_v7_0.c: dummy at VA 0 (in case firmware also writes through
+    a null pointer dereference)
+
+Expected hardware signals:
+
+  ✅ VCPU sets STATUS bit 1 within 2 seconds — firmware boots,
+     ring test passes, UVD works!
+
+  🟡 Fault moves to a different VA inside region 1 (firmware writes
+     somewhere outside 0x300000000) — chase it.
+
+  🟡 Fault moves to 0x3001E0000 or 0x300304000 — firmware advanced
+     past region 1, needs region 2/3 bound (extend mirror).
+
+  ❌ Same "write protection fault" at 0x300000 — WRITEABLE flag isn't
+     enough; might need EXECUTABLE or some other PTE flag (look at
+     full PTE permission set Sony uses in gbase_map flags 0x161).
+
+Sony's gbase_map call from `gbase_create_vmid` for the per-vmid kernel
+work area uses flags 0x161 = bits 0, 5, 6, 8. That maps to:
+  bit 0 = VALID
+  bit 5 = READABLE
+  bit 6 = WRITEABLE
+  bit 8 = something else (maybe SNOOPED or cache hint)
+
+So Sony's flags include WRITEABLE. We do too with this patch. Bit 8
+might be a future iteration if we still see issues.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -788,7 +788,7 @@
+
+ 		amdgpu_gart_bind(adev, 0x300000000ULL, 1, &fw_dummy,
+ 				 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
+-				 AMDGPU_PTE_READABLE);
++				 AMDGPU_PTE_READABLE | AMDGPU_PTE_WRITEABLE);
+ 		DRM_INFO("ps4: bound dummy page at GART virtual 0x300000000 "
+ 			 "(pa=0x%llx) for UVD fw access\n",
+ 			 (unsigned long long)fw_dummy);
+@@ -809,7 +809,7 @@
+ 		 */
+ 		amdgpu_gart_bind(adev, 0x0ULL, 1, &fw_dummy,
+ 				 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
+-				 AMDGPU_PTE_READABLE);
++				 AMDGPU_PTE_READABLE | AMDGPU_PTE_WRITEABLE);
+ 		DRM_INFO("ps4: bound dummy page at GART virtual 0x0 "
+ 			 "(pa=0x%llx) for UVD fw null-deref\n",
+ 			 (unsigned long long)fw_dummy);
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -523,7 +523,7 @@
+ 	amdgpu_gart_bind(adev, PS4_UVD_FW_MIRROR_VA, num_pages,
+ 			 uvd_fw_mirror_bo->tbo.ttm->dma_address,
+ 			 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
+-			 AMDGPU_PTE_READABLE);
++			 AMDGPU_PTE_READABLE | AMDGPU_PTE_WRITEABLE);
+ 	amdgpu_gart_invalidate_tlb(adev);
+
+ 	DRM_INFO("ps4 uvd: bound fw mirror at GART virtual 0x%llx "
