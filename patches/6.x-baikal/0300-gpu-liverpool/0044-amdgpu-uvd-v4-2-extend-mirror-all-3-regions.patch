@@ -1,0 +1,111 @@
+amdgpu: uvd_v4_2 — extend fw mirror to cover all 3 Sony regions (v76d-β-2-A4)
+
+A3 closed all VM faults (zero fault count) but the VCPU still stalls
+at STATUS=0x4 without ever asserting bit 1 (ready). The firmware
+executes cleanly with no memory access errors, but never completes
+its init handshake.
+
+A4 hypothesis: maybe the firmware silently reads/writes regions 2 and
+3 during init and we just don't see the faults because... no wait,
+we DO see all faults via the VM_CONTEXT1_PROTECTION_FAULT IH path.
+The zero-fault count means region 2/3 aren't being touched.
+
+But that doesn't mean they're not REQUIRED for the firmware's idle
+handshake. The fw might be polling a flag in region 3 (message queue
+"ready" signal from host) without actually reading the page (e.g., a
+register-backed flag). Or it might be waiting for a memory write
+from us into region 2 (heap setup).
+
+This patch is the cheap "map everything Sony maps" test:
+- Extends the mirror BO from 0x1E0000 (region 1) to 0x308000 (all 3)
+- Region 2 (heap/IB, 1168 KB) and region 3 (msgq, 16 KB) initialized
+  to zero
+- Bind 776 pages (3.1 MB) at GART 0x300000000
+
+If still STATUS=0x4 stall after this, regions aren't the gate, and
+we pivot to A5 (instrument bring-up) or A6 (retarget cache offset).
+
+The BO size matches our v75 sizing of the UVD BO (3168 KB rounded up
+from 3.1 MB). So memory cost is unchanged relative to v75; we just
+shift the binding to the GART side.
+
+Expected:
+  ✅ STATUS bit 1 sets — UVD initialized. Ring test passes.
+  🟡 New behavior (different STATUS value, fault elsewhere) — fw
+     advanced further; tells us what's missing next.
+  ❌ Same STATUS=0x4 silent stall — regions not the gate; pivot to
+     A5 (instrument) or A6 (retarget cache).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -468,7 +468,12 @@
+  * 0x300000000 to point at this BO instead of the dummy page. The VCPU
+  * then reads its real firmware contents and (hopefully) executes.
+  */
+-#define PS4_UVD_REGION1_SIZE	0x1E0000UL		/* 1920 KB */
++#define PS4_UVD_REGION1_SIZE	0x1E0000UL		/* 1920 KB — firmware target */
++#define PS4_UVD_REGION2_SIZE	0x124000UL		/* 1168 KB — heap / IB stage */
++#define PS4_UVD_REGION3_SIZE	0x004000UL		/*   16 KB — message queue */
++#define PS4_UVD_REGIONS_TOTAL	(PS4_UVD_REGION1_SIZE + \
++				 PS4_UVD_REGION2_SIZE + \
++				 PS4_UVD_REGION3_SIZE)	/* 3.1 MB */
+ #define PS4_UVD_FW_MIRROR_VA	0x300000000ULL		/* Sony's region 1 VA */
+
+ static struct amdgpu_bo *uvd_fw_mirror_bo;
+@@ -494,7 +499,7 @@
+ 	ucode_offset = le32_to_cpu(hdr->ucode_array_offset_bytes);
+ 	ucode_size = le32_to_cpu(hdr->ucode_size_bytes);
+
+-	r = amdgpu_bo_create_kernel(adev, PS4_UVD_REGION1_SIZE, PAGE_SIZE,
++	r = amdgpu_bo_create_kernel(adev, PS4_UVD_REGIONS_TOTAL, PAGE_SIZE,
+ 				    AMDGPU_GEM_DOMAIN_GTT,
+ 				    &uvd_fw_mirror_bo,
+ 				    &mirror_gpu_addr,
+@@ -505,21 +510,23 @@
+ 	}
+
+ 	/*
+-	 * Zero out the whole region (Sony's region 1 includes a save/restore
+-	 * area beyond the firmware text — leaving it zero matches what the
+-	 * firmware would see on fresh allocation).
++	 * Zero out the whole 3-region area (Sony's region 1 has a save/restore
++	 * area beyond the firmware text, region 2 is heap/IB stage, region 3
++	 * is the message queue — all start zero on fresh allocation).
+ 	 */
+-	memset(mirror_cpu_addr, 0, PS4_UVD_REGION1_SIZE);
+-	/* Copy the firmware bytes into the start. */
++	memset(mirror_cpu_addr, 0, PS4_UVD_REGIONS_TOTAL);
++	/* Copy the firmware bytes into the start of region 1. */
+ 	memcpy(mirror_cpu_addr, adev->uvd.fw->data + ucode_offset, ucode_size);
+
+ 	/*
+-	 * Rebind GART at 0x300000000 — overwrites the dummy bind from
+-	 * gmc_v7_0_gart_enable (v76d-β-2-A) with the real firmware mirror
+-	 * pages. The VC1..VC15 flat walk will now find real microcode/data
+-	 * at this VA.
++	 * Rebind GART at 0x300000000 for the full 3-region span (3.1 MB).
++	 * Overwrites the dummy bind from gmc_v7_0_gart_enable (v76d-β-2-A).
++	 * The VC1..VC15 flat walk now finds:
++	 *   - 0x300000000..0x3001E0000 → firmware (region 1)
++	 *   - 0x3001E0000..0x300304000 → zeros   (region 2: heap/IB)
++	 *   - 0x300304000..0x300308000 → zeros   (region 3: msgq)
+ 	 */
+-	num_pages = PS4_UVD_REGION1_SIZE / PAGE_SIZE;
++	num_pages = PS4_UVD_REGIONS_TOTAL / PAGE_SIZE;
+ 	amdgpu_gart_bind(adev, PS4_UVD_FW_MIRROR_VA, num_pages,
+ 			 uvd_fw_mirror_bo->tbo.ttm->dma_address,
+ 			 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
+@@ -527,9 +534,9 @@
+ 	amdgpu_gart_invalidate_tlb(adev);
+
+ 	DRM_INFO("ps4 uvd: bound fw mirror at GART virtual 0x%llx "
+-		 "(BO gpu_addr=0x%llx, fw_size=%u, region1_size=%lu)\n",
++		 "(BO gpu_addr=0x%llx, fw_size=%u, total_regions=%lu, pages=%d)\n",
+ 		 PS4_UVD_FW_MIRROR_VA, mirror_gpu_addr,
+-		 ucode_size, PS4_UVD_REGION1_SIZE);
++		 ucode_size, PS4_UVD_REGIONS_TOTAL, num_pages);
+
+ 	uvd_fw_mirror_done = true;
+ 	return 0;
