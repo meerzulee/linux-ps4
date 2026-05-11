@@ -138,9 +138,9 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 ### Floor 6: Input
 | Room | Status | File |
 |---|---|---|
-| hid | 🗝️ | rooms/hid.md |
-| ctrlp | 🗝️ | rooms/ctrlp.md |
-| bluetooth_hid | 🗝️ | rooms/bluetooth_hid.md |
+| hid | 🔍 first-pass | rooms/hid-input.md (combined trio) |
+| ctrlp | 🔍 first-pass | rooms/hid-input.md |
+| bluetooth_hid | 🔍 first-pass (limited) | rooms/hid-input.md |
 
 ### Floor 7: Wireless
 | Room | Status | File |
@@ -218,6 +218,11 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 10: + hid+ctrlp+bluetooth_hid trio first-pass.
+  🔐 SceHidAuth kthread decoded — 6-state RSA+ECDSA challenge-response
+  for DS4 anti-counterfeit. Auto-trust IDs + 14-entry whitelist table.
+  3 failures → permanent lock. Linux skips this entirely; mainline
+  hid-sony / hid-playstation handle DS4 fully. Combined room file.
 - 2026-05-12 iter 9: + ipmimgr first-pass — Inter-Process Messaging
   Manager. PS4's main IPC backbone (Binder/D-Bus equivalent).
   14 sub-files. syscallCreateServer flow decoded — server registry,
