@@ -86,6 +86,45 @@ allocations the kernel made into its program-header-described regions.
 That's enough for Ghidra to find symbols, function boundaries, and most
 register-table constants.
 
+## Companion tool: `wrap-uvd-firmware.py`
+
+After you have `kernel.elf` on disk, the second tool in this directory
+extracts Sony's UVD firmware blob and wraps it so mainline AMDGPU can
+load it. Sony embeds the raw ucode in their kernel; mainline expects a
+`common_firmware_header`-prefixed file. The wrapper bridges that gap.
+
+The full RE write-up (chip-revision detection, three per-chip firmware
+locations, header field semantics) is in
+[`checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-firmware-discovered.md`](../../checkpoint/docs/research/orbis-kernel/2026-05-11-uvd-firmware-discovered.md).
+Short version:
+
+```bash
+# 1) Extract Sony's raw UVD ucode from kernel.elf — file offset and size
+#    depend on your chip rev (see research doc for the lookup table).
+#    For Late-Liverpool (Baikal), the offset is 0x8CBFF0, size 0x4CA38:
+ELF=checkpoint/docs/research/orbis-kernel/orbis-12.02.elf
+OUT=checkpoint/docs/research/orbis-kernel
+dd if=$ELF of=$OUT/liverpool_uvd_baikal.bin \
+   bs=1 skip=$((0x8CBFF0)) count=$((0x4CA38))
+
+# 2) Wrap it with a synthesized common_firmware_header so it parses
+#    identically to a stock AMDGPU firmware file:
+./tools/orbis-kernel-dumper/wrap-uvd-firmware.py \
+    --in  $OUT/liverpool_uvd_baikal.bin \
+    --out $OUT/liverpool_uvd_baikal_wrapped.bin \
+    --version 1.101.42 \
+    --family-id 9
+
+# 3) Drop the wrapped file into your initramfs as
+#    /lib/firmware/amdgpu/liverpool_uvd.bin, then rebuild + boot.
+```
+
+Expected boot dmesg after using the wrapped firmware:
+
+    [drm] Found UVD firmware Version: 1.101 Family ID: 9
+
+(was `Version: 1.64` with the legacy AMD blob.)
+
 ## Acknowledgements
 
 - **Scene-Collective** for [`ps4-kernel-dumper`](https://github.com/Scene-Collective/ps4-kernel-dumper)
