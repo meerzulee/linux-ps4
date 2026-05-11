@@ -39,6 +39,33 @@ content (A7 regression proved it).
 
 ---
 
+## Where we are NOW (updated 2026-05-11 23:15, after A8)
+
+**Last result: A8 (sizes + k=1)** — 🟡 didn't help UVD but **had observable effect**.
+- Cache now reaches synced state TWICE (t=400 + t=1600) instead of once
+- Sizes at region 2/3[0] are SAFE (no A7-style regression)
+- k=1 (fastest clock) → faster cache cycle (as expected)
+- **UVD STATUS=0x4 unchanged** — bit 1 still doesn't fire
+
+**Bonus discovery**: user reported "white screen before /init" — first
+visible HDMI signal across the v76 arc. SSH confirms no `/dev/fb*` and
+no `/dev/dri/card0` exist, so it's just the panel sitting at the
+bridge's last-configured state (Orbis-side init + amdgpu_bridge_enable
+reaches it before amdgpu rolls back on UVD failure).
+
+**test-baikal interlude log unread useful — it's mostly Orbis SDK
+error messages, suggesting test-baikal didn't reach Linux on that
+boot. No useful comparison data.**
+
+**Strategic pivot suggested**: instead of more UVD micro-iterations,
+make amdgpu **gracefully tolerate UVD failure** (return success from
+hw_init even if VCPU didn't start). The rest of amdgpu (GFX, SDMA,
+DCE) would stay alive → `/dev/dri/card0` appears → we get real
+display output. UVD itself stays broken until we crack it, but the
+system becomes USEFUL meanwhile.
+
+---
+
 ## The goal
 
 What "UVD done" looks like:
@@ -76,7 +103,7 @@ Numbered chronologically. Each row = one boot test.
 | v76d-β-2-A7 | Write `0x1` at region 2[0] + region 3[0] | fw polls msgq[0] for "host ready"? | 0047 | ❌ **REGRESSION** — cache no longer reaches 0x3f7f. fw reads those slots; expects ≠ 1 | 2026-05-11_2221-v76d-beta2-a7-msgq-magic |
 | (interlude) | test-baikal kernel + our initramfs (no UVD patches) | sanity check different kernel | — | 6667-line log, review pending | 2026-05-11_2253-test-baikal |
 | v76d-β-2-A7-revert | Disable 0047 in series | Restore A6 cache-sync behavior | (series only) | ✅ cache `0x3f7f` returns at t=400ms; STATUS still 0x4 | 2026-05-11_2257-v76d-beta2-a7-revert |
-| **v76d-β-2-A8** | **Combined: write region 2/3 SIZES (0x124000/0x4000) at slot 0 + k clock divider 4→1** | A7c (size fields) + A9 (fastest clock) | **0048** | **(STAGED, awaiting boot)** | — |
+| v76d-β-2-A8 | Combined: write region 2/3 SIZES (0x124000/0x4000) at slot 0 + k clock divider 4→1 | A7c (size fields) + A9 (fastest clock) | 0048 | 🟡 sizes neutral (no regression like A7's `1`); cache now reaches synced TWICE (t=400 + t=1600) instead of once. STATUS still 0x4. **Did NOT hurt; faster cache cycling consistent with k=1.** Bonus: user observed "white screen before /init" — first HDMI signal across iterations, but no `/dev/fb*` exists so panel is just sitting at bridge's last config (not Linux fbcon) | 2026-05-11_2310-v76d-beta2-a8-sizes-k1 |
 
 **Legend:** ❌ no change, 🟡 some change but not the gate, 🟢 progress
 
