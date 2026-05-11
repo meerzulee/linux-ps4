@@ -392,6 +392,12 @@
 # wait reveals it. If 10s still fails, rules out "needs more time"
 # definitively.
 0300-gpu-liverpool/0049-amdgpu-uvd-v4-2-extend-status-poll-10s.patch
+# 0050: v76d-β-2-A14+A11 — re-enable mc_resume (skip UDEC writes) +
+# change k clock divider 1→15. A14 tests if mc_resume has subtle side
+# effects we missed (the UDEC writes were harmful, but other writes
+# might matter). A11 with k=15 (slowest) should slow cache cycle ~15x
+# if k is a pure clock divider.
+0300-gpu-liverpool/0050-amdgpu-uvd-v4-2-a14-mc-resume-noudec-plus-a11-k15.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
