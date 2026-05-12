@@ -558,6 +558,12 @@
 # to let non-bit-18 IRQs surface.  Kthread reads BMSR twice per
 # iteration (latch-low defeat) and logs linkreg on every change.
 0750-network-ps4-mts/0005-ps4-mts-v85-histogram-isr-bit18-gate-debug.patch
+# v86: v85 BMSR double-read confirmed PHY-level link is DOWN (bit 2 = 0
+# in both halves of latch-current read).  Per deepseek-v41: our parent
+# prelude's BAR+0xf04 switch-chip reset destroys MT7531 PHY core PLL
+# state.  Add C45 SMI accessor + re-enable PLL via MMD 0x1f reg 0x403
+# (bits 4+6 set, bit 5 PLL_OFF cleared).
+0750-network-ps4-mts/0006-ps4-mts-v86-c45-accessor-phy-pll-enable.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
