@@ -1,0 +1,285 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v82 - parent prelude + full mts_mac_init + SMI heartbeat kthread
+
+v77/v77b (phase-1) bound the driver, drove SMI MDIO C22 cleanly, and
+identified the PHY as MediaTek MT7531 (id 0x03a29441).  But after
+~1 minute the SMI controller goes stuck returning 0x20008000 (DONE
+bit set, data field = WR_OP residue 0x2000).  v78..v81 attempted to
+keep MDC alive by piggy-backing on sky2 - every attempt failed because:
+
+  (a) Orbis's `gbe:phy_ctrl` kthread (FUN_c85f0480) reads BMSR via SMI
+      every 3 seconds - it is the SMI MDC heartbeat.  The SMI clock
+      domain on Baikal is transaction-gated, not enable-bit-gated.
+      Without ongoing bus activity, MDC powers down after ~1min.
+  (b) Sky2's sky2_mac_init writes BAR+0xf04 (= Baikal switch chip GPIO
+      reset) on every interface-up with no delays, silently killing
+      PHY visibility.
+  (c) Linux's sky2_reset misses the parent-prelude ordering from Orbis
+      FUN_c85131d0 (BAR+0xf10/0xf04 with 12ms/500ms delays, BAR+0x158
+      mode 2->1).
+
+These three findings come from the 4-agent Ghidra MCP dig of
+2026-05-12 (glm-5.1, gpt-5.5, kimi-k2.6, deepseek-v41).  Full writeup
+at checkpoint/docs/research/2026-05-12-v82-decision.md and the
+<agent>+ethernet_research.md files.
+
+This patch addresses all three on the standalone ps4_mts.c driver:
+
+  1. Adds mts_parent_prelude() replaying Orbis FUN_c85131d0's exact
+     register sequence with the documented 12ms + 500ms delays.
+  2. Extends mts_mac_init() to the full Orbis sequence: BAR+0x08 OR
+     0x07597c00, BAR+0x0c clear bit 7, BAR+0x10 mask 0xff..ff6e | 0x81,
+     BAR+0x30 = 0x10100, BAR+0x74 = 0x2277, BAR+0x78 clear bit 0,
+     BAR+0x07c = 25MHz, BAR+0x204 = 0x10001388 (full IRQ block enable),
+     BAR+0x54 = 0x7bfffe (per-IRQ mask).
+  3. Spawns an SMI heartbeat kthread that reads BMSR via SMI C22 every
+     3 seconds in a tight loop.  No state machine for the first
+     iteration - just a single read to keep MDC alive.  Once we
+     confirm MDC stays clocking for >5 minutes we'll extend it with
+     AN restart and link-change handling per the gbe:phy_ctrl decompile.
+
+Pass criterion (v82 boot test): live BAR readback after >5 minutes
+uptime shows SMI reading real PHY register values (BMSR ~0x7949,
+PHY ID 0x03a29441) - NOT stuck at 0x20008000.
+
+If MDC stays alive: confirmed kthread-heartbeat hypothesis, proceed
+to phase 3 (netdev allocation + ISR + TX/RX rings).
+
+If MDC still dies: the parent prelude is incomplete or one of the
+register transitions in mts_mac_init has a timing dependency we
+missed.  Live-poll the SMI register during init to find the exact
+moment of death.
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -15,6 +15,8 @@
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/jiffies.h>
++#include <linux/kthread.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+@@ -68,6 +70,17 @@
+ 
+ #define MTS_SMI_TIMEOUT_US	10000
+ 
++/* Parent-prelude register block (Orbis FUN_c85131d0, see v82 RE notes). */
++#define MTS_PRELUDE_60		0x060
++#define MTS_PRELUDE_64		0x064
++#define MTS_PRELUDE_68		0x068
++#define MTS_PRELUDE_6C		0x06c
++#define MTS_PRELUDE_11C		0x11c
++#define MTS_PRELUDE_120		0x120
++#define MTS_PRELUDE_158		0x158
++#define MTS_PRELUDE_F04		0xf04	/* switch chip GPIO reset */
++#define MTS_PRELUDE_F10		0xf10
++
+ /* Link status fields (BAR+0x04). */
+ #define MTS_LINK_UP		BIT(0)
+ #define MTS_LINK_SPEED_MASK	(3 << 2)
+@@ -84,12 +97,17 @@
+ #define MTS_MAC_PAUSE_INIT	0x00002277
+ #define MTS_MAC_CLK_INIT	25000000
+ #define MTS_IRQ_ENABLE_FULL_VAL	0x10001388
++#define MTS_IRQ_MASK_FULL_VAL	0x007bfffe
++
++#define MTS_PHY_CTRL_PERIOD_MS	3000	/* gbe:phy_ctrl cadence */
+ 
+ struct mts {
+ 	struct pci_dev *pdev;
+ 	void __iomem *bar;
+ 	struct timer_list link_poll;
+ 	u32 last_link;
++	struct task_struct *phy_ctrl_thread;
++	u8 phy_addr;
+ 	bool link_logged_once;
+ };
+ 
+@@ -141,19 +159,98 @@
+ }
+ 
+ /*
+- * MAC out-of-reset enough for SMI to respond.  This is the minimum prefix of
+- * Orbis's mts_mac_init that does NOT depend on efuse trim values.  The
+- * efuse-dependent PHY trim writes are deliberately omitted in phase 1 — they
+- * tune AFE/SerDes parameters and are not required for the PHY to enumerate via
+- * MDIO.  Adding them in phase 2 will need an efuse-read path through ICC.
++ * Parent prelude replayed from Orbis FUN_c85131d0(softc, 1).  This is the
++ * "switch GPIO + clock-domain glue" sequence that the Orbis parent driver
++ * (baikal_gbe_attach -> msk_init_hw) runs before any child MAC init.  Linux
++ * sky2_reset has the BAR+0x60..0x6c constants but misses the BAR+0xf10/0xf04
++ * GPIO reset with timing and the BAR+0x158 mode 2->1 clock-domain transition.
++ *
++ * The BAR+0xf04 switch-chip reset is the load-bearing one - without the 12ms
++ * and 500ms recovery delays, PHYs power-down without coming back, killing SMI
++ * MDC visibility.  This is what sky2_mac_init does wrong on every interface-up
++ * (no delays) and why v78..v81 couldn't keep MDC alive even with B0_IMSK gated.
++ */
++static void mts_parent_prelude(struct mts *mts)
++{
++	void __iomem *bar = mts->bar;
++	u32 v;
++
++	writel(1, bar + MTS_PRELUDE_F10);
++	writel(2, bar + MTS_PRELUDE_F10);
++
++	writel(1, bar + MTS_PRELUDE_F04);
++	msleep(12);
++	writel(2, bar + MTS_PRELUDE_F04);
++	msleep(500);
++
++	writel(0x00032100, bar + MTS_PRELUDE_60);
++	writel(0x00000006, bar + MTS_PRELUDE_64);
++	writel(0x00063b9c, bar + MTS_PRELUDE_68);
++	writel(0x00000300, bar + MTS_PRELUDE_6C);
++
++	writel(1, bar + MTS_PRELUDE_120);
++
++	v = readl(bar + MTS_PRELUDE_11C);
++	writel(v & 0xf8ff, bar + MTS_PRELUDE_11C);
++
++	v = readl(bar + MTS_PRELUDE_158);
++	writel((v & ~3u) | 2, bar + MTS_PRELUDE_158);
++	(void)readl(bar + MTS_PRELUDE_158);
++	v = readl(bar + MTS_PRELUDE_158);
++	writel((v & ~3u) | 1, bar + MTS_PRELUDE_158);
++	(void)readl(bar + MTS_PRELUDE_158);
++}
++
++/*
++ * Full mts_mac_init from Orbis FUN_c85ecb60.  v77's phase-1 version only did
++ * MASTER_RESET + IRQ_STATUS ack + INIT_AC = 9; that wasn't enough to keep the
++ * MAC clock domain alive past ~1 minute.  This version replays the rest of the
++ * Orbis sequence: MAC_CTRL1 enable bits, MAC_CTRL2 clear bit 7, MAC_CTRL3
++ * (clear bits 0/4/7 then set 0/7), MAC_MODE, MAC_PAUSE, RX_GATE bit 0 clear,
++ * MAC_CLK = 25MHz, and finally the full IRQ block enable at BAR+0x204 +
++ * per-IRQ mask at BAR+0x54.  The efuse-dependent PHY trim writes are still
++ * deferred - they tune AFE parameters and aren't required for SMI to work.
+  */
+ static void mts_mac_init(struct mts *mts)
+ {
+-	writel(0, mts->bar + MTS_MASTER_RESET);
+-	(void)readl(mts->bar + MTS_IRQ_STATUS);
+-	writel(readl(mts->bar + MTS_IRQ_STATUS), mts->bar + MTS_IRQ_STATUS);
++	void __iomem *bar = mts->bar;
++	u32 v;
++
++	writel(0, bar + MTS_MASTER_RESET);
++	(void)readl(bar + MTS_MASTER_RESET);
++
++	writel(readl(bar + MTS_IRQ_STATUS), bar + MTS_IRQ_STATUS);
++
++	v = readl(bar + MTS_MAC_CTRL1);
++	writel(v | MTS_MAC_CTRL1_INIT_OR, bar + MTS_MAC_CTRL1);
++
++	v = readl(bar + MTS_MAC_CTRL2);
++	writel(v & ~0x80u, bar + MTS_MAC_CTRL2);
++
++	v = readl(bar + MTS_MAC_CTRL3);
++	writel((v & MTS_MAC_CTRL3_INIT_AND) | MTS_MAC_CTRL3_INIT_OR,
++	       bar + MTS_MAC_CTRL3);
++
++	writel(MTS_MAC_MODE_INIT,  bar + MTS_MAC_MODE);
++	writel(MTS_MAC_PAUSE_INIT, bar + MTS_MAC_PAUSE);
++
++	v = readl(bar + MTS_RX_GATE);
++	writel(v & ~1u, bar + MTS_RX_GATE);
++
++	writel(MTS_MAC_CLK_INIT, bar + MTS_MAC_CLK);
++
+ 	udelay(680);
+-	writel(9, mts->bar + MTS_INIT_AC);
++	writel(9, bar + MTS_INIT_AC);
++
++	/*
++	 * Bring up the Baikal IRQ block.  Orbis's mts_intr does this lazily on
++	 * first interrupt; we do it eagerly at probe.  Both writes are needed
++	 * - BAR+0x204 enables the master IRQ block, BAR+0x54 is the per-IRQ
++	 * mask (= 0x7bfffe == all bits except 0 and 0x800000).
++	 */
++	writel(MTS_IRQ_ENABLE_FULL_VAL, bar + MTS_IRQ_ENABLE_FULL);
++	writel(MTS_IRQ_MASK_FULL_VAL,   bar + MTS_IRQ_MASK);
++	(void)readl(bar + MTS_IRQ_MASK);
+ }
+ 
+ /*
+@@ -220,6 +317,39 @@
+ 	mod_timer(&mts->link_poll, jiffies + HZ);
+ }
+ 
++/*
++ * SMI heartbeat thread.  Orbis's gbe:phy_ctrl (FUN_c85f0480) reads BMSR every
++ * 3 seconds in its main loop, which exercises the full SMI handshake (ARM,
++ * OP_RD, poll DONE, fetch data) and keeps the MDC clock domain from gating
++ * off.  Per the 2026-05-12 4-agent dig (glm-5.1 + kimi-k2.6), the SMI clock
++ * is transaction-gated, not enable-bit-gated - restoring registers can't
++ * recover MDC, only ongoing bus traffic can.
++ *
++ * Phase-1 of this thread is intentionally minimal: just BMSR every 3s, no AN
++ * restart, no link-change handling.  We want to first confirm the heartbeat
++ * hypothesis (does MDC survive >5min?) before adding state.  The full Orbis
++ * state machine (BMSR poll + AN restart on timeout + reg 9 advertise +
++ * BMCR 0x1200 restart) will follow if v82 boots clean.
++ */
++static int mts_phy_ctrl_fn(void *data)
++{
++	struct mts *mts = data;
++	u16 bmsr;
++	int ret;
++
++	while (!kthread_should_stop()) {
++		ret = mts_smi_c22_read(mts, 0x01, &bmsr);
++		if (ret == 0)
++			dev_dbg(&mts->pdev->dev,
++				"phy_ctrl: BMSR=0x%04x\n", bmsr);
++		else
++			dev_dbg(&mts->pdev->dev,
++				"phy_ctrl: SMI read timeout\n");
++		msleep_interruptible(MTS_PHY_CTRL_PERIOD_MS);
++	}
++	return 0;
++}
++
+ static int mts_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct mts *mts;
+@@ -246,6 +376,7 @@
+ 	dev_info(&pdev->dev, "Baikal MTS: BAR0=%pR, mapped at %p\n",
+ 		 &pdev->resource[0], mts->bar);
+ 
++	mts_parent_prelude(mts);
+ 	mts_mac_init(mts);
+ 
+ 	/* Scan PHY registers 0..31 via SMI; log non-trivial responses.  The
+@@ -278,6 +409,20 @@
+ 	mts->last_link = ~0U;
+ 	mod_timer(&mts->link_poll, jiffies + HZ);
+ 
++	/*
++	 * Spawn the SMI heartbeat thread.  Must outlive the link-poll timer so
++	 * SMI stays exercised even when no link transitions occur.  See
++	 * mts_phy_ctrl_fn comment for the kthread-heartbeat rationale.
++	 */
++	mts->phy_addr = 0;
++	mts->phy_ctrl_thread = kthread_run(mts_phy_ctrl_fn, mts,
++					   "ps4_mts_phy_ctrl");
++	if (IS_ERR(mts->phy_ctrl_thread)) {
++		dev_warn(&pdev->dev, "phy_ctrl kthread spawn failed (%ld) - SMI will die after ~1min\n",
++			 PTR_ERR(mts->phy_ctrl_thread));
++		mts->phy_ctrl_thread = NULL;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -285,6 +430,8 @@
+ {
+ 	struct mts *mts = pci_get_drvdata(pdev);
+ 
++	if (mts->phy_ctrl_thread)
++		kthread_stop(mts->phy_ctrl_thread);
+ 	timer_delete_sync(&mts->link_poll);
+ 	writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
+ 	writel(0, mts->bar + MTS_IRQ_MASK);
