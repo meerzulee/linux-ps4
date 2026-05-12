@@ -163,20 +163,20 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | sbl/driver | 🔍 first-pass ⭐ | rooms/sbl-driver.md (THE UVD blocker explained) |
 | sbl/service | 🔍 first-pass | rooms/sbl-service.md (20 files: keymgr, cryptmgr, pfs, npdrm, ccp, etc.) |
 | sbl/sm_service | 🔍 first-pass | rooms/sbl-authmgr.md (combined w/ authmgr) |
-| sbl/srtc | 🗝️ | rooms/sbl-srtc.md |
-| sbl/pup_update | 🗝️ | rooms/sbl-pup_update.md |
-| sbl/eipk_addsign | 🗝️ | rooms/sbl-eipk_addsign.md |
-| sbl/devact | 🗝️ | rooms/sbl-devact.md |
-| sbl/pltauth | 🗝️ | rooms/sbl-pltauth.md |
+| sbl/srtc | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/pup_update | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/eipk_addsign | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/devact | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/pltauth | 🔍 first-pass | rooms/sbl-leaves.md |
 | sbl/authmgr | 🔍 first-pass | rooms/sbl-authmgr.md (54 sceSblAuthMgr* APIs) |
-| sbl/vtrm | 🗝️ | rooms/sbl-vtrm.md |
-| sbl/rng | 🗝️ | rooms/sbl-rng.md |
-| sbl/idata | 🗝️ | rooms/sbl-idata.md |
-| sbl/usb_dongle | 🗝️ | rooms/sbl-usb_dongle.md |
-| sbl/qafutkn | 🗝️ | rooms/sbl-qafutkn.md |
-| sbl/npdrm | 🗝️ | rooms/sbl-npdrm.md |
-| sbl/zlib | 🗝️ | rooms/sbl-zlib.md |
-| sbl/lvp_config | 🗝️ | rooms/sbl-lvp_config.md |
+| sbl/vtrm | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/rng | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/idata | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/usb_dongle | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/qafutkn | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/npdrm | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/zlib | 🔍 first-pass | rooms/sbl-leaves.md |
+| sbl/lvp_config | 🔍 first-pass | rooms/sbl-leaves.md |
 
 ### Floor 10: System services
 | Room | Status | File |
@@ -218,6 +218,13 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 16: + sbl/leaves combined room (13 small modules:
+  srtc, pup_update, eipk_addsign, devact, pltauth, vtrm, rng, idata,
+  usb_dongle, qafutkn, npdrm, zlib, lvp_config). Most are Sony-
+  specific PSN/DRM/factory infrastructure with no Linux equivalent.
+  Only rng + zlib have mainline Linux equivalents (already drive same
+  HW). 🔒 LOCKED VAULT now FULLY MAPPED at first-pass level (~46 SBL
+  files across 4 iters).
 - 2026-05-12 iter 15: + sbl/authmgr + sbl/sm_service combined room.
   AuthMgr = Sony's SELF (signed ELF) verifier + drive crypto + PSN
   device activation. 54 sceSblAuthMgr* APIs extracted from strings.
