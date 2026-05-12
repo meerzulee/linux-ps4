@@ -1,0 +1,78 @@
+amdgpu: skip UVD + VCE entirely on Liverpool/Gladius (no SAMU auth)
+
+After SBL Phase 1 confirmed the SAMU stealth-auths writes from our
+context (see checkpoint/docs/research/sbl-port/2026-05-12-stealth-
+auth-confirmed.md), there's no software path to bring up UVD or
+VCE on PS4 Linux. A18/A19 soft-failed the hw_init step but the
+VCPU still ran partial bring-up, and the resulting VA-0x300000000
+fault retry rate eventually saturated the IH (2.6M faults/5s
+observed during sustained SBL probing on 2026-05-12).
+
+Skip both engines entirely by returning -ENODEV from early_init.
+amdgpu's ip-block framework disables the engine — sw_init,
+hw_init never run, no VCPU release, no fault storm.
+
+Userspace consequence: software video decode via libavcodec /
+software encode via libx264. Acceptable trade for a kernel that
+doesn't hang itself.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -96,6 +96,33 @@
+ static int uvd_v4_2_early_init(struct amdgpu_ip_block *ip_block)
+ {
+ 	struct amdgpu_device *adev = ip_block->adev;
++
++	/*
++	 * v76e-DISABLE-UVD: short-circuit UVD entirely on Liverpool/Gladius.
++	 *
++	 * After all the A-arc + SBL work, we've confirmed Sony's UVD firmware
++	 * cannot be brought up from PSFree's ring 0 — it needs SAMU-signed
++	 * SMU writes (see checkpoint/docs/research/sbl-port/2026-05-12-stealth-
++	 * auth-confirmed.md). A18 soft-failed hw_init but the VCPU still
++	 * runs partial bring-up; under sustained SBL-probe activity it ends
++	 * up retrying its hardcoded VA 0x300000000 access at a rate that
++	 * saturates the IH ring (2.6M faults/5s observed on 2026-05-12).
++	 *
++	 * Skip UVD entirely by returning -ENODEV from early_init — amdgpu's
++	 * ip-block framework disables the engine and never calls sw_init /
++	 * hw_init. No VCPU release, no fault storm, no soft-fail dance.
++	 *
++	 * Userspace consequence: software video decode via libavcodec.
++	 * Acceptable trade until SBL auth is cracked (likely never via
++	 * software-only paths).
++	 */
++	if (adev->asic_type == CHIP_LIVERPOOL ||
++	    adev->asic_type == CHIP_GLADIUS) {
++		DRM_INFO("ps4 uvd: skipping UVD entirely on Liverpool/Gladius "
++			 "(no SAMU auth -> no functional UVD; avoids fault storm)\n");
++		return -ENODEV;
++	}
++
+ 	adev->uvd.num_uvd_inst = 1;
+ 
+ 	uvd_v4_2_set_ring_funcs(adev);
+
+--- a/drivers/gpu/drm/amd/amdgpu/vce_v2_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/vce_v2_0.c
+@@ -408,6 +408,18 @@
+ {
+ 	struct amdgpu_device *adev = ip_block->adev;
+ 
++	/*
++	 * v76e-DISABLE-VCE: sibling of the UVD disable in uvd_v4_2.c. Same
++	 * reasoning — Sony's VCE firmware needs SAMU-signed SMU writes we
++	 * can't perform, A19 soft-fail wasn't enough under sustained SBL
++	 * activity. Skip the engine entirely.
++	 */
++	if (adev->asic_type == CHIP_LIVERPOOL ||
++	    adev->asic_type == CHIP_GLADIUS) {
++		DRM_INFO("ps4 vce: skipping VCE entirely on Liverpool/Gladius\n");
++		return -ENODEV;
++	}
++
+ 	adev->vce.num_rings = 2;
+ 
+ 	vce_v2_0_set_ring_funcs(adev);
