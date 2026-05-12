@@ -1,4 +1,11 @@
 
+v3 update: added S/Z/A debugfs commands for auth-gate probing
+  S <svc> <arg1> <val>      - issue any SBL service id
+  Z <addr_lo> <addr_hi>     - replay FUN_c89b7af0 workspace pointer setup
+  A                         - write SAMU[0x37]=1 (host completion ack)
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
 --- a/drivers/gpu/drm/amd/amdgpu/Makefile
 +++ b/drivers/gpu/drm/amd/amdgpu/Makefile
 @@ -297,7 +297,7 @@
@@ -32,7 +39,7 @@
 
 --- a/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
 +++ b/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
-@@ -0,0 +1,395 @@
+@@ -0,0 +1,498 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * PS4 SBL (Secure Boot Loader) driver — Phase 1 v2 mailbox primitives.
@@ -279,27 +286,112 @@
 +/* === debugfs ===
 + *
 + * /sys/kernel/debug/dri/0/ps4_sbl_smu
-+ *   write 'R <idx>'         -> issue SBL_SMU_READ
-+ *   write 'W <idx> <val>'   -> issue SBL_SMU_WRITE
-+ *   write 'P <off>'         -> raw direct read at rmmio + off
-+ *   write 'I <off> <val>'   -> raw direct write at rmmio + off
-+ *   write 'X <idx>'         -> raw indirect read at SAMU reg idx (via 0x22000/0x22004)
-+ *   write 'Y <idx> <val>'   -> raw indirect write at SAMU reg idx
-+ *   read                    -> last op detail
++ *   write 'R <idx>'             -> issue SBL_SMU_READ (svc 0xa404)
++ *   write 'W <idx> <val>'       -> issue SBL_SMU_WRITE (svc 0xa505)
++ *   write 'S <svc> <arg1> <val>'-> issue ARBITRARY SBL service id (full mailbox cycle)
++ *   write 'Z <addr_low> <addr_high>' -> SAMU-direct workspace pointer setup
++ *                                  (replay of Sony's FUN_c89b7af0)
++ *   write 'A'                   -> write SAMU[0x37]=1 (host completion ack)
++ *   write 'P <off>'             -> raw direct read at rmmio + off
++ *   write 'I <off> <val>'       -> raw direct write at rmmio + off
++ *   write 'X <idx>'             -> raw indirect read at SAMU reg idx (via 0x22000/0x22004)
++ *   write 'Y <idx> <val>'       -> raw indirect write at SAMU reg idx
++ *   read                        -> last op detail
 + *
 + * The raw P/I/X/Y commands are for sweep diagnostics — we use them to
 + * pin down which SAMU regs do what without rebuilding the kernel for
 + * every new offset to try.
++ *
++ * S/Z/A are auth-gate hypothesis tests informed by the 2026-05-12
++ * Ghidra dig (see checkpoint/docs/research/sbl-port/2026-05-12-ghidra-
++ * dig-auth-gate.md). S lets us try the newly-discovered service IDs
++ * 0xa202 / 0xa303. Z replays Sony's workspace setup in case SAMU
++ * gates writes on "workspace owner == us". A writes SAMU[0x37]=1 in
++ * case SAMU gates writes on "host has acked previous reply".
 + */
++
++/* Issue an arbitrary SBL service via the standard mailbox cycle. */
++static int ps4_sbl_issue(struct amdgpu_device *adev,
++			 u32 svc, u32 arg1, u32 val, u32 *out_val, u32 *out_status)
++{
++	u64 poll_us = 0;
++	int r;
++
++	mutex_lock(&ps4_sbl_lock);
++	sbl_direct_write(adev, PS4_SBL_MBX_CMD,  svc);
++	sbl_direct_write(adev, PS4_SBL_MBX_ARG1, arg1);
++	sbl_direct_write(adev, PS4_SBL_MBX_VAL,  val);
++	sbl_ind_write   (adev, PS4_SBL_SAMU_TRIGGER, 1);
++
++	r = ps4_sbl_wait_ack(adev, &poll_us);
++	*out_status = sbl_direct_read(adev, PS4_SBL_MBX_STATUS);
++	*out_val    = sbl_direct_read(adev, PS4_SBL_MBX_VAL);
++
++	ps4_sbl_last.op      = 'S';
++	ps4_sbl_last.idx     = arg1;
++	ps4_sbl_last.val     = *out_val;
++	ps4_sbl_last.status  = *out_status;
++	ps4_sbl_last.rc      = r;
++	ps4_sbl_last.poll_us = poll_us;
++	ps4_sbl_last.acked   = (r == 0);
++
++	DRM_INFO("ps4_sbl: svc=0x%04x arg1=0x%08x val_in=0x%08x -> val_out=0x%08x status=0x%08x rc=%d poll=%lluus\n",
++		 svc, arg1, val, *out_val, *out_status, r, poll_us);
++	mutex_unlock(&ps4_sbl_lock);
++	return r;
++}
++
++/* SAMU-direct workspace pointer setup (Sony's FUN_c89b7af0 replay). */
++static int ps4_sbl_workspace_setup(struct amdgpu_device *adev, u32 lo, u32 hi)
++{
++	u64 poll_us = 0;
++	int r;
++
++	mutex_lock(&ps4_sbl_lock);
++	sbl_ind_write(adev, 0x34, lo);
++	sbl_ind_write(adev, 0x33, hi);
++	sbl_ind_write(adev, PS4_SBL_SAMU_TRIGGER, 1);
++	r = ps4_sbl_wait_ack(adev, &poll_us);
++
++	ps4_sbl_last.op      = 'Z';
++	ps4_sbl_last.idx     = lo;
++	ps4_sbl_last.val     = hi;
++	ps4_sbl_last.status  = 0;
++	ps4_sbl_last.rc      = r;
++	ps4_sbl_last.poll_us = poll_us;
++	ps4_sbl_last.acked   = (r == 0);
++
++	DRM_INFO("ps4_sbl: workspace setup lo=0x%08x hi=0x%08x rc=%d poll=%lluus\n",
++		 lo, hi, r, poll_us);
++	mutex_unlock(&ps4_sbl_lock);
++	return r;
++}
++
++/* Write SAMU[0x37] = 1 — host-side completion ack from Sony's dispatcher. */
++static void ps4_sbl_complete_ack(struct amdgpu_device *adev)
++{
++	mutex_lock(&ps4_sbl_lock);
++	sbl_ind_write(adev, 0x37, 1);
++	ps4_sbl_last.op      = 'A';
++	ps4_sbl_last.idx     = 0x37;
++	ps4_sbl_last.val     = 1;
++	ps4_sbl_last.status  = 0;
++	ps4_sbl_last.rc      = 0;
++	ps4_sbl_last.poll_us = 0;
++	ps4_sbl_last.acked   = true;
++	DRM_INFO("ps4_sbl: completion ack SAMU[0x37]<-1\n");
++	mutex_unlock(&ps4_sbl_lock);
++}
 +
 +static ssize_t ps4_sbl_smu_write(struct file *file, const char __user *ubuf,
 +				 size_t len, loff_t *off)
 +{
 +	struct amdgpu_device *adev = file->private_data;
-+	char buf[64];
++	char buf[96];
 +	char op;
-+	u32 a = 0, b = 0;
++	u32 a = 0, b = 0, c = 0;
 +	int parsed, r = 0;
++	u32 out_val, out_status;
 +
 +	if (len == 0 || len >= sizeof(buf))
 +		return -EINVAL;
@@ -307,8 +399,8 @@
 +		return -EFAULT;
 +	buf[len] = '\0';
 +
-+	parsed = sscanf(buf, " %c %x %x", &op, &a, &b);
-+	if (parsed < 2)
++	parsed = sscanf(buf, " %c %x %x %x", &op, &a, &b, &c);
++	if (parsed < 1)
 +		return -EINVAL;
 +
 +	switch (op) {
@@ -376,6 +468,22 @@
 +		mutex_unlock(&ps4_sbl_lock);
 +		DRM_INFO("ps4_sbl: raw indirect write SAMU[0x%x] <- 0x%08x\n", a, b);
 +		break;
++	case 'S': case 's':
++		/* arbitrary service: a=svc_id, b=arg1, c=val */
++		if (parsed < 3)
++			return -EINVAL;
++		r = ps4_sbl_issue(adev, a, b, c, &out_val, &out_status);
++		break;
++	case 'Z': case 'z':
++		/* workspace pointer setup: a=lo32, b=hi32 (replays FUN_c89b7af0) */
++		if (parsed < 3)
++			return -EINVAL;
++		r = ps4_sbl_workspace_setup(adev, a, b);
++		break;
++	case 'A': case 'a':
++		/* SAMU[0x37] <- 1 (host completion ack from Sony's dispatcher) */
++		ps4_sbl_complete_ack(adev);
++		break;
 +	default:
 +		return -EINVAL;
 +	}
@@ -393,7 +501,8 @@
 +
 +	n = scnprintf(out, sizeof(out),
 +		"op=%c idx=0x%08x val=0x%08x status=0x%08x rc=%d acked=%d poll_us=%llu\n"
-+		"usage: 'R <idx>' / 'W <idx> <val>' / 'P <off>' / 'I <off> <val>' / 'X <idx>' / 'Y <idx> <val>' (hex)\n",
++		"usage: R<idx> W<idx><val> S<svc><arg1><val> Z<lo><hi> A "
++		"P<off> I<off><val> X<idx> Y<idx><val> (hex)\n",
 +		ps4_sbl_last.op ? ps4_sbl_last.op : '-',
 +		ps4_sbl_last.idx, ps4_sbl_last.val, ps4_sbl_last.status,
 +		ps4_sbl_last.rc, (int)ps4_sbl_last.acked, ps4_sbl_last.poll_us);
@@ -424,7 +533,8 @@
 +
 +	ps4_sbl_last.op = '-';
 +
-+	DRM_INFO("ps4_sbl: Phase 1-v2 mailbox primitives ready "
++	DRM_INFO("ps4_sbl: Phase 1-v3 mailbox primitives + auth-gate probes ready "
 +		 "(direct mbx=0x22070..0x2207c, ind window=0x22000/0x22004, "
-+		 "trigger=SAMU[0x32], ack=SAMU[0x4a])\n");
++		 "trigger=SAMU[0x32], ack=SAMU[0x4a]). "
++		 "New cmds: S<svc> for any service id, Z<lo><hi> for workspace setup, A for completion ack.\n");
 +}
