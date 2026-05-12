@@ -416,6 +416,12 @@
 # Lets ring_test submit a packet — either fw was ready (success) or we get
 # a clear fault signal instead of timeout.
 0300-gpu-liverpool/0053-amdgpu-uvd-v4-2-a17-skip-status-poll.patch
+# 0054: v76e-A18 — UVD soft-fail. Make uvd_v4_2_hw_init always return 0 even
+# on internal failure. After 17 iters, UVD is structurally blocked on SBL/SMU
+# access (see orbis-dungeon/rooms/sbl-driver.md). Soft-failing lets amdgpu
+# probe complete → DRM/display/Hyprland work; UVD stays non-functional but
+# software video decode covers it.
+0300-gpu-liverpool/0054-amdgpu-uvd-v4-2-a18-soft-fail-hw-init.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

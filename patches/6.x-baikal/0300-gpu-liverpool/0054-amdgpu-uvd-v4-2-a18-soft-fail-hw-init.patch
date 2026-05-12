@@ -1,0 +1,74 @@
+amdgpu: uvd_v4_2 — A18 soft-fail UVD hw_init so amdgpu probe survives
+
+After 17 iterations of UVD bring-up, the failure is structurally
+blocked by Sony's SBL/SAMU access requirements (see
+checkpoint/docs/research/orbis-dungeon/rooms/sbl-driver.md). The
+SAMU runs Sony's signed firmware, holds exclusive SMU access, and
+Linux has no SBL driver. UVD VCPU stays stuck waiting for chip
+state we cannot replicate.
+
+The previous behavior: hw_init returns -ETIMEDOUT (or -110 from
+ring_test), which kills amdgpu probe entirely. Result: no DRM, no
+display, Hyprland dies with SIGABRT, "white screen" because HDMI
+bridge is driven but desktop never composes.
+
+A18: change uvd_v4_2_hw_init to return 0 even when start_liverpool
+or ring_test fails. amdgpu thinks UVD initialized OK; rest of
+amdgpu (DRM/display/GFX/SDMA) continues. UVD itself is
+non-functional but anything that doesn't try to USE UVD works fine.
+
+Userspace consequence: video decode falls back to software (libavcodec
+/ vp9 / etc.). Acceptable trade for a working desktop on PS4 Linux.
+
+Expected hardware signals:
+
+  ✅ amdgpu probe completes (no "Fatal error during GPU init")
+  ✅ DRM connector ps4_bridge populates HDMI-A-1
+  ✅ Hyprland (or any DRM compositor) starts and composes desktop
+  ✅ HDMI displays the Linux desktop
+  🟡 UVD broken — confirmed by DRM_WARN at hw_init time
+  ❌ amdgpu still dies — something else is blocking; investigate
+     subsequent error in dmesg
+
+Combined with v76e-A17 (skip STATUS poll, fall through to ring init)
+this gives clean "UVD failed gracefully" semantics.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -196,8 +196,33 @@
+ 	amdgpu_ring_commit(ring);
+ 
+ done:
+-	if (!r)
++	if (!r) {
+ 		DRM_INFO("UVD initialized successfully.\n");
++	} else {
++		/*
++		 * v76e-A18: UVD soft-fail. After 17 iterations, UVD bring-up
++		 * is structurally blocked on chip state set during Orbis
++		 * runtime that we can't replicate without SBL/SMU access.
++		 *
++		 * Returning the error from hw_init kills amdgpu probe entirely
++		 * — no DRM, no display, no Hyprland. Returning 0 here lets the
++		 * rest of amdgpu (DRM/display/GFX/SDMA) continue. UVD itself
++		 * is non-functional but anything that doesn't try to USE UVD
++		 * works fine.
++		 *
++		 * Userspace consequence: video decode falls back to software
++		 * (libavcodec / vp9 / etc.). Acceptable trade for having a
++		 * working desktop on PS4 Linux.
++		 *
++		 * If you actually need hardware video decode on PS4, see
++		 * checkpoint/docs/research/orbis-dungeon/rooms/sbl-driver.md
++		 * for the structural reason this is blocked.
++		 */
++		DRM_WARN("ps4 uvd: hw_init failed (%d) — soft-failing per "
++			 "v76e-A18 to let amdgpu probe continue. UVD is "
++			 "non-functional; software video decode only.\n", r);
++		r = 0;
++	}
+ 
+ 	return r;
+ }
