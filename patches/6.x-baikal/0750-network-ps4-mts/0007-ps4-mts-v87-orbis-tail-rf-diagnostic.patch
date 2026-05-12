@@ -1,0 +1,199 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v87 - Orbis unconditional tail + RF diagnostic
+
+After v86 confirmed C45 SMI works and PLL was already on, the four AI
+research agents (hermes/glm/kimi/deepseek) ran a parallel Ghidra dig
+on Orbis to find what's still missing.
+
+Convergent findings:
+
+1. **deepseek**: partner's reg 5 = 0xc5e1 has BIT 13 SET = REMOTE FAULT.
+   The partner is actively rejecting our PHY's signal at the AN protocol
+   level.  This explains the infinite AN-complete -> AN-incomplete cycle:
+   we get partner's ACK so BMSR bit 5 sets briefly, but partner keeps
+   RF=1 in every base page, so the kthread restarts AN, repeat.
+
+2. **kimi**: we've been skipping Orbis's "unconditional tail" of
+   mts_mac_init that runs AFTER the efuse-gated block.  Five C45 writes:
+     - MMD 0x1e reg 0x189 = 0x110
+     - MMD 0x1e reg 0x122 = 0xffff
+     - MMD 0x1f reg 0x268 = 0x07f4
+     - MMD 0x07 reg 0x03c = 0
+     - MMD 0x1e reg 0x330 clear bit 0x1000
+   Plus C22 ANAR (reg 4) &= 0xf3ff (clear bits 10-13).
+   Plus BAR+0x04 R/M/W &= 0x7fffcfff (clear bits 8-9, 12-13) TWICE.
+   These all happen unconditionally on every Orbis boot.  v82-v86
+   skipped them.
+
+3. **glm + gpt5.5** confirm: no PMA/PCS (MMD 1/3) writes anywhere,
+   no force-link, no master/slave manipulation.  Interface mode is
+   already RGMII via parent prelude's BAR+0x11c &= 0xf8ff.  But Orbis
+   does NOT set RGMII delay (MMD 0x1e regs 0x13/0x14) - mainline mtk-ge
+   does, suggesting the MT7531's silicon defaults may be wrong without
+   it.
+
+This patch implements convergent action items 1 + 2:
+
+  - Adds the 5 C45 unconditional tail writes at end of mts_mac_init
+  - Adds C22 ANAR &= 0xf3ff
+  - Adds BAR+0x04 R/M/W &= 0x7fffcfff (twice, per Orbis)
+  - Adds final BMCR |= 0x1200 AN restart inside mac_init (Orbis order)
+  - kthread now reads PHY reg 5 (LP ABILITY) and reg 10 (1000BT status)
+    every iteration and logs on change.  This will show:
+      * Whether partner RF flag (reg 5 bit 13) toggles per iteration
+        (would mean it's transient, not stuck)
+      * Whether M/S config fault (reg 10 bit 13) is set
+  - REMOVES periodic AN restart (every 15s).  Now only on first
+    iteration OR UP->DOWN transition.  Lets PHY complete AN naturally
+    and lets deepseek's RF hypothesis play out.
+
+Pass criteria:
+
+  - dmesg shows "v87 tail: MMD 0x1e reg 0x330 0x???? -> 0x????"
+  - dmesg shows "v87 tail: ANAR 0x???? -> 0x???? (mask 0xf3ff)"
+  - dmesg shows "v87 tail: BMCR 0x???? -> 0x????"
+  - phy_ctrl: LP ABILITY (reg5)=0xc5e1 (RF=1 ...) - confirms RF state
+  - phy_ctrl: 1000BT_STAT (reg10)=0x???? - shows M/S config
+  - No more 15s AN restart cycle in dmesg (only iter=0 and transitions)
+  - If link comes up: tail writes were the missing piece
+  - If link still down BUT reg 5 stays at 0xc5e1 with RF=1 forever:
+    confirmed partner-rejection hypothesis -> v88 will try stop
+    advertising 1000BT (reg 9 = 0x0000)
+  - If RF flips to 0 occasionally: it's a transient, AN may converge
+    if we let it
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -457,8 +457,62 @@
+ 	 * can do AN handshake via MDIO but cannot generate a link signal.
+ 	 * See mts_phy_pll_enable() comment + v85 result doc for the full
+ 	 * diagnosis.
++	 *
++	 * v86 hardware: PLL was already on - this is a no-op write but kept
++	 * for future hardware where the bootloader may not have set it.
+ 	 */
+ 	mts_phy_pll_enable(mts);
++
++	/*
++	 * v87: Orbis "unconditional tail" from mts_mac_init (post efuse-gated
++	 * block).  The 4-agent v87 dig (deepseek + kimi + gpt5.5 + glm) all
++	 * confirm these five C45 writes plus the C22 ANAR mask plus the BAR+0x04
++	 * mask are what Orbis literally does after the MAC register setup, and
++	 * we've been skipping them since v82.  Some of these writes target
++	 * Realtek vendor registers that are no-ops on MT7531, but `0x3c0007`
++	 * (MMD 7 reg 0x3c = ANEG-MMD) and the bit-clear in MMD 0x1e reg 0x330
++	 * could be load-bearing.
++	 */
++	{
++		u16 v16;
++
++		/* C45 unconditional tail writes (verbatim from Orbis decompile). */
++		mts_smi_c45_write(mts, 0x1e, 0x189, 0x110);
++		mts_smi_c45_write(mts, 0x1e, 0x122, 0xffff);
++		mts_smi_c45_write(mts, 0x1f, 0x268, 0x07f4);
++		mts_smi_c45_write(mts, 0x07, 0x03c, 0x0000);
++		if (mts_smi_c45_read(mts, 0x1e, 0x330, &v16) == 0) {
++			mts_smi_c45_write(mts, 0x1e, 0x330, v16 & ~0x1000);
++			dev_info(&mts->pdev->dev,
++				 "v87 tail: MMD 0x1e reg 0x330 0x%04x -> 0x%04x (cleared bit 12)\n",
++				 v16, v16 & ~0x1000);
++		}
++
++		/* C22 ANAR mask: clear bits 10-13 per Orbis. */
++		if (mts_smi_c22_read(mts, 0x04, &v16) == 0) {
++			mts_smi_c22_write(mts, 0x04, v16 & 0xf3ff);
++			dev_info(&mts->pdev->dev,
++				 "v87 tail: ANAR 0x%04x -> 0x%04x (mask 0xf3ff)\n",
++				 v16, v16 & 0xf3ff);
++		}
++
++		/* BAR+0x04 R/M/W mask: clear bits 8-9 + 12-13 + 31.  Orbis does
++		 * this TWICE in mts_mac_init (steps 34 and 47 per glm dig). */
++		writel(readl(bar + MTS_LINK_STATUS) & 0x7fffcfff,
++		       bar + MTS_LINK_STATUS);
++		(void)readl(bar + MTS_LINK_STATUS);
++		writel(readl(bar + MTS_LINK_STATUS) & 0x7fffcfff,
++		       bar + MTS_LINK_STATUS);
++		(void)readl(bar + MTS_LINK_STATUS);
++
++		/* Final AN restart per Orbis (BMCR |= 0x1200). */
++		if (mts_smi_c22_read(mts, 0x00, &v16) == 0) {
++			mts_smi_c22_write(mts, 0x00, v16 | 0x1200);
++			dev_info(&mts->pdev->dev,
++				 "v87 tail: BMCR 0x%04x -> 0x%04x (AN restart)\n",
++				 v16, v16 | 0x1200);
++		}
++	}
+ }
+ 
+ /*
+@@ -734,17 +788,63 @@
+ 			}
+ 		}
+ 
++		/*
++		 * v87 diagnostic: read PHY reg 5 (LP ABILITY) and reg 10
++		 * (1000BT status) every iteration; log when they change.  Per
++		 * deepseek-v41: reg 5 bit 13 = REMOTE FAULT.  Per glm/RE doc:
++		 * reg 10 bit 13 = M/S config fault.  Watching these tells us
++		 * whether the partner keeps asserting RF or M/S resolution
++		 * is failing.
++		 */
++		{
++			u16 lpa = 0xffff, s1g = 0xffff;
++			static u16 prev_lpa = 0xffff, prev_s1g = 0xffff;
++
++			if (mts_smi_c22_read(mts, 0x05, &lpa) == 0 &&
++			    lpa != prev_lpa) {
++				dev_info(&mts->pdev->dev,
++					 "phy_ctrl: LP ABILITY (reg5)=0x%04x (RF=%d ACK=%d 100TX_FD=%d 100TX=%d 10T_FD=%d 10T=%d)\n",
++					 lpa,
++					 !!(lpa & 0x2000),
++					 !!(lpa & 0x4000),
++					 !!(lpa & 0x0100),
++					 !!(lpa & 0x0080),
++					 !!(lpa & 0x0040),
++					 !!(lpa & 0x0020));
++				prev_lpa = lpa;
++			}
++			if (mts_smi_c22_read(mts, 0x0a, &s1g) == 0 &&
++			    s1g != prev_s1g) {
++				dev_info(&mts->pdev->dev,
++					 "phy_ctrl: 1000BT_STAT (reg10)=0x%04x (MS_FAULT=%d MS_CFG=%d L_RX_OK=%d R_RX_OK=%d LP_FD=%d LP_HD=%d)\n",
++					 s1g,
++					 !!(s1g & 0x8000),
++					 !!(s1g & 0x4000),
++					 !!(s1g & 0x2000),
++					 !!(s1g & 0x1000),
++					 !!(s1g & 0x0800),
++					 !!(s1g & 0x0400));
++				prev_s1g = s1g;
++			}
++		}
++
+ 		if (!link_up) {
+ 			bool first = !mts->initial_an_done;
+ 			bool transition = was_up;
+-			bool retry = (mts->link_down_iterations % 5) == 0
+-				     && mts->link_down_iterations > 0;
+-
+-			if (first || transition || retry) {
++			/*
++			 * v87: REMOVED periodic AN restart.  v86 hardware showed
++			 * BMSR oscillating between 0x7949 / 0x7969 because we
++			 * restart AN every 15s before link can stabilize.  Now
++			 * only restart on (a) very first iteration (initial
++			 * bring-up) or (b) UP -> DOWN transition.  Let the PHY
++			 * complete AN naturally and observe partner RF behavior.
++			 */
++			if (first || transition) {
+ 				u16 bmcr_post = mts_phy_an_restart(mts);
+ 				dev_info(&mts->pdev->dev,
+-					 "phy_ctrl: AN restart (iter=%u, BMCR<-0x%04x)\n",
+-					 mts->link_down_iterations, bmcr_post);
++					 "phy_ctrl: AN restart (iter=%u, BMCR<-0x%04x, reason=%s)\n",
++					 mts->link_down_iterations, bmcr_post,
++					 first ? "first" : "down_transition");
+ 				mts->initial_an_done = true;
+ 			}
+ 			mts->link_down_iterations++;
