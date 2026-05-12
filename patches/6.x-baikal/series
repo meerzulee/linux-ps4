@@ -432,11 +432,18 @@
 # Hyprland's CPF faulted at VA 0x268000 in VMID 1. Restoring mainline
 # DEPTH=1 lets amdgpu_vm program per-vmid PDs on every submission.
 0300-gpu-liverpool/0056-amdgpu-gmc-v7-0-b11-alpha-revert-depth-override.patch
-# 0057: v76e-SBL-P1 — Sony SBL/SAMU mailbox primitives (synchronous SMU
-# read/write) + debugfs probe. First piece of the SBL port that unblocks
-# UVD/VCE; this iteration only tests whether the SAMU responds to Linux
-# mailbox writes at all. See checkpoint/docs/research/sbl-port/PLAN.md.
-0300-gpu-liverpool/0057-amdgpu-ps4-sbl-phase1-mailbox-primitives.patch
+# 0057: v76e-SBL-P1 — Sony SBL/SAMU mailbox primitives v1. Disabled after
+# 2026-05-12 hardware test + Ghidra re-dig revealed the trigger/ack
+# offsets are SAMU-INTERNAL register indices (accessed via the
+# indirect window at 0x22000/0x22004), not direct byte offsets in
+# rmmio. Superseded by 0058. Kept in tree for the result write-up
+# but not in the active series.
+# 0300-gpu-liverpool/0057-amdgpu-ps4-sbl-phase1-mailbox-primitives.patch
+# 0058: v76e-SBL-P1-v2 — split direct (mailbox data regs at
+# rmmio + 0x22070..0x2207c) from indirect (trigger + ack via
+# rmmio + 0x22000/0x22004 index/data window). This matches Sony's actual
+# gc/samu.c access pattern. Re-runs the "does SAMU respond?" probe.
+0300-gpu-liverpool/0058-amdgpu-ps4-sbl-phase1-v2-direct-and-indirect-access.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
