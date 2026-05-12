@@ -1,0 +1,75 @@
+amdgpu: vce_v2_0 — A19 soft-fail VCE hw_init (sibling of A18 for UVD)
+
+A18 hardware test (commit 8e5324e, log 2026-05-12_1251-...) confirmed
+the UVD soft-fail works — but exposed VCE has the SAME failure pattern:
+
+  [16.638797] [drm] ps4 uvd: hw_init failed (-110) — soft-failing per
+              v76e-A18 to let amdgpu probe continue. UVD is
+              non-functional; software video decode only.
+  [...10 seconds later...]
+  [27.251183] [drm:amdgpu_device_init.cold] *ERROR* hw_init of IP
+              block <vce_v2_0> failed -110
+  [27.260182] amdgpu_device_ip_init failed
+  [27.267182] Fatal error during GPU init
+
+VCE = encoder sibling of UVD. Per dungeon room rooms/vce.md, VCE goes
+through the same chip-variant dispatch (`get_chip_family() & ~0x7f ==
+0x740f00` → Baikal path) that depends on chip state from Sony's runtime
+SMU programming via SBL. Same structural blocker as UVD.
+
+A19: same soft-fail pattern in vce_v2_0_hw_init's ring_test loop.
+Return 0 instead of propagating the error. amdgpu probe continues
+through DRM/display/GFX/SDMA. VCE itself non-functional → software
+encode (libx264) covers any encoding need.
+
+Combined with A18, this should let amdgpu probe complete fully.
+HDMI bridge (already extensive crashniels work in ps4_bridge.c) gets
+used by DRM atomic commit and the desktop should compose.
+
+Expected hardware signals:
+  ✅ A18 UVD soft-fail line (already confirmed working)
+  ✅ NEW A19 VCE soft-fail line: "ps4 vce: ring[N] test failed ...
+     soft-failing per v76e-A19"
+  ✅ NO "Fatal error during GPU init"
+  ✅ amdgpu probe completes
+  ✅ DRM compositor (Hyprland) starts and stays alive
+  ✅ HDMI displays the desktop
+
+If amdgpu still dies on a third IP block, A20 for that one. But UVD +
+VCE were the two IP blocks we knew were Sony-specific (per dungeon
+mapping), so this should be the last soft-fail needed.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/vce_v2_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/vce_v2_0.c
+@@ -472,8 +472,27 @@
+ 
+ 	for (i = 0; i < adev->vce.num_rings; i++) {
+ 		r = amdgpu_ring_test_helper(&adev->vce.ring[i]);
+-		if (r)
+-			return r;
++		if (r) {
++			/*
++			 * v76e-A19: VCE soft-fail. Sibling of UVD's A18.
++			 * VCE on PS4 hits the same structural blocker — Sony's
++			 * SAMU programs SMU state at runtime that we can't
++			 * replicate without an SBL driver port.
++			 *
++			 * A18 fixed UVD but VCE's hw_init also fails -110, also
++			 * kills amdgpu probe. Same fix: return 0 so DRM/display/
++			 * GFX/SDMA all continue. VCE non-functional → software
++			 * video encode (libx264) covers it.
++			 *
++			 * See checkpoint/docs/research/orbis-dungeon/rooms/
++			 * vce.md + sbl-driver.md for the structural reason.
++			 */
++			DRM_WARN("ps4 vce: ring[%d] test failed (%d) — "
++				 "soft-failing per v76e-A19 to let amdgpu "
++				 "probe continue. VCE is non-functional; "
++				 "software video encode only.\n", i, r);
++			return 0;
++		}
+ 	}
+ 
+ 	DRM_INFO("VCE initialized successfully.\n");

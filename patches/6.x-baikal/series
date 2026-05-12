@@ -422,6 +422,10 @@
 # probe complete → DRM/display/Hyprland work; UVD stays non-functional but
 # software video decode covers it.
 0300-gpu-liverpool/0054-amdgpu-uvd-v4-2-a18-soft-fail-hw-init.patch
+# 0055: v76e-A19 — VCE soft-fail (sibling of A18 for UVD). VCE on PS4 hits the
+# same SBL/SMU structural blocker. A18 fixed UVD but VCE then kills amdgpu
+# probe at -110. Same fix in vce_v2_0_hw_init's ring_test loop.
+0300-gpu-liverpool/0055-amdgpu-vce-v2-0-a19-soft-fail-hw-init.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
