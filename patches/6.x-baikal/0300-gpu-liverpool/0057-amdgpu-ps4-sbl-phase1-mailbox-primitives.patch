@@ -1,0 +1,369 @@
+amdgpu: ps4_sbl — SAMU mailbox primitives + debugfs probe (SBL Phase 1)
+
+First piece of the Sony SBL port: the synchronous SMU read/write through
+the SAMU mailbox. Decoded from sceSblDriverReadSmuIx/WriteSmuIx via
+Ghidra (FUN_c89b80b0 / FUN_c89b81d0); details in
+checkpoint/docs/research/sbl-port/PLAN.md and
+checkpoint/docs/research/orbis-dungeon/rooms/sbl-driver.md.
+
+What this iteration tests:
+
+    Does the SAMU respond to Linux mailbox writes at all?
+
+If yes, Sony's boot-time init is enough and we have a working primitive
+to build the rest of the SBL on (Phase 2: async CCP, IRQ 0x98, workspace
+buffer; Phase 3: program GFX SMU clocks; Phase 4: wire amdgpu calls
+back into uvd_v4_2/vce_v2_0 so they stop soft-failing).
+
+If no, the SAMU is likely waiting on auth or on a state we'd have to
+replicate via sceSblDriverInitialize. That answer informs the next dig.
+
+Surface (no kernel changes other than the probe):
+  /sys/kernel/debug/dri/0/ps4_sbl_smu
+    write 'R <hex_idx>'         -> issue SBL_SMU_READ
+    write 'W <hex_idx> <hex_v>' -> issue SBL_SMU_WRITE
+    read                        -> last op detail (op/idx/val/status/rc/poll_us)
+
+Synchronous polling (udelay-1us, 100 ms timeout). No IRQ, no async
+kthread, no workspace BO yet — those are Phase 2+.
+
+MMIO interpretation caveat: Sony's samu_write/read uses *(base + off)
+with base = *(DAT_ca726878 + 0x10), and we don't have the Ghidra decode
+of the inner helper. We treat off as a byte offset into adev->rmmio
+(BAR5 on CIK). If that's wrong the probe will time out or return all
+0xFFFFFFFFs — that's the signal to revisit the BAR choice.
+
+Cost: 1 new file (~290 lines), 1 Makefile line, 1 #ifdef hook in
+amdgpu_debugfs_init. CONFIG_X86_PS4 gates everything.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/Makefile
++++ b/drivers/gpu/drm/amd/amdgpu/Makefile
+@@ -297,7 +297,7 @@
+ amdgpu-$(CONFIG_VGA_SWITCHEROO) += amdgpu_atpx_handler.o
+ amdgpu-$(CONFIG_ACPI) += amdgpu_acpi.o
+ amdgpu-$(CONFIG_HMM_MIRROR) += amdgpu_hmm.o
+-amdgpu-$(CONFIG_X86_PS4) += ps4_bridge.o
++amdgpu-$(CONFIG_X86_PS4) += ps4_bridge.o ps4_sbl.o
+ 
+ include $(FULL_AMD_PATH)/pm/Makefile
+ 
+
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_debugfs.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_debugfs.c
+@@ -2127,6 +2127,15 @@
+ 	debugfs_create_blob("amdgpu_discovery", 0444, root,
+ 			    &adev->debugfs_discovery_blob);
+ 
++#ifdef CONFIG_X86_PS4
++	/* v76e-SBL-P1: SAMU mailbox probe surface for Liverpool/Gladius. */
++	{
++		extern void ps4_sbl_debugfs_init(struct amdgpu_device *adev,
++						 struct dentry *root);
++		ps4_sbl_debugfs_init(adev, root);
++	}
++#endif
++
+ 	return 0;
+ }
+ 
+
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
+@@ -0,0 +1,295 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * PS4 SBL (Secure Boot Loader) driver — Phase 1 mailbox primitives.
++ *
++ * Reverse-engineered from Sony's sys/internal/modules/sbl/driver/
++ * sceSblDriverReadSmuIx (FUN_c89b80b0) / sceSblDriverWriteSmuIx
++ * (FUN_c89b81d0), decoded in
++ *   checkpoint/docs/research/sbl-port/PLAN.md
++ *   checkpoint/docs/research/orbis-dungeon/rooms/sbl-driver.md
++ *
++ * Phase 1 = synchronous SMU read/write through the SAMU mailbox at
++ * GPU mmio offsets 0x22070..0x2207c (with trigger at 0x32 and ack-poll
++ * at 0x4a). No IRQ handler, no async CCP path, no GART-pinned workspace
++ * — those are Phase 2+ territory.
++ *
++ * The one open question this iteration must answer:
++ *
++ *     Does the SAMU respond to Linux mailbox writes at all?
++ *
++ * If yes (ack bit clears, status returns something other than -1 / FF),
++ * Sony's runtime init at boot is enough and we have a working primitive
++ * to build the rest of the SBL on. If no (ack never clears, status is
++ * stuck FF), we need deeper RE on SAMU authentication / init replay.
++ *
++ * Probe surface: debugfs entry /sys/kernel/debug/dri/0/ps4_sbl_smu.
++ * Write "R <idx>" or "W <idx> <val>" (hex OK), read for the result of
++ * the last op. See ps4_sbl_smu_write() for the format.
++ *
++ * MMIO interpretation caveat: Ghidra decoded Sony's samu_write/read as
++ * `*(base + off) = val` where `base = *(DAT_ca726878 + 0x10)`. We treat
++ * `off` as a BYTE offset into amdgpu's rmmio aperture (BAR5 on CIK).
++ * If that assumption is wrong the probe will time out or return
++ * 0xFFFFFFFF on every read — that's the signal to re-examine the BAR
++ * choice or whether the offsets are dword-indexed.
++ */
++#include <linux/delay.h>
++#include <linux/debugfs.h>
++#include <linux/io.h>
++#include <linux/mutex.h>
++#include <linux/uaccess.h>
++
++#include <drm/drm_print.h>
++
++#include "amdgpu.h"
++
++/* Forward decls — exposed for future callers in uvd_v4_2 / vce_v2_0 once
++ * Phase 4 wires real SMU programming into hw_init. */
++int ps4_sbl_read_smu(struct amdgpu_device *adev, u32 idx, u32 *out);
++int ps4_sbl_write_smu(struct amdgpu_device *adev, u32 idx, u32 val);
++void ps4_sbl_debugfs_init(struct amdgpu_device *adev, struct dentry *root);
++
++/* Mailbox registers (byte offsets within adev->rmmio). */
++#define PS4_SBL_REG_CMD       0x22070   /* service id */
++#define PS4_SBL_REG_ARG1      0x22074   /* SMU register index */
++#define PS4_SBL_REG_VAL       0x22078   /* read result / write value */
++#define PS4_SBL_REG_STATUS    0x2207c   /* SBL-side error code */
++#define PS4_SBL_REG_TRIGGER   0x32      /* kick the SAMU */
++#define PS4_SBL_REG_ACK       0x4a      /* poll until !(val & 1) */
++
++#define PS4_SBL_SVC_SMU_READ  0xa404
++#define PS4_SBL_SVC_SMU_WRITE 0xa505
++
++/* Generous; SAMU is normally < 100 us synchronous. */
++#define PS4_SBL_POLL_TIMEOUT_US 100000
++
++static DEFINE_MUTEX(ps4_sbl_lock);
++
++/* Last-op state for the read side of the debugfs file. Single-device
++ * assumption — PS4 has one GPU and one SAMU. */
++static struct {
++	char  op;          /* 'R' / 'W' / '-' (none yet) */
++	u32   idx;
++	u32   val;
++	u32   status;      /* SBL-reported error word */
++	int   rc;          /* kernel-side return code */
++	u64   poll_us;     /* time spent waiting for ack */
++	bool  acked;       /* did the ack bit ever clear? */
++} ps4_sbl_last;
++
++static inline void sbl_writel(struct amdgpu_device *adev, u32 byte_off, u32 val)
++{
++	writel(val, adev->rmmio + byte_off);
++}
++
++static inline u32 sbl_readl(struct amdgpu_device *adev, u32 byte_off)
++{
++	return readl(adev->rmmio + byte_off);
++}
++
++/*
++ * Poll the ack register until bit 0 clears or we time out.
++ * Returns 0 on ack, -ETIMEDOUT otherwise. Records elapsed time in us
++ * into *elapsed_us for the debugfs reporter.
++ */
++static int ps4_sbl_wait_ack(struct amdgpu_device *adev, u64 *elapsed_us)
++{
++	ktime_t start = ktime_get();
++	int spins = PS4_SBL_POLL_TIMEOUT_US;
++	u32 ack;
++
++	while (spins-- > 0) {
++		ack = sbl_readl(adev, PS4_SBL_REG_ACK);
++		if (!(ack & 1)) {
++			*elapsed_us = ktime_to_us(ktime_sub(ktime_get(), start));
++			return 0;
++		}
++		udelay(1);
++	}
++
++	*elapsed_us = ktime_to_us(ktime_sub(ktime_get(), start));
++	return -ETIMEDOUT;
++}
++
++int ps4_sbl_read_smu(struct amdgpu_device *adev, u32 idx, u32 *out)
++{
++	u64 poll_us = 0;
++	u32 status;
++	int r;
++
++	if (!adev || !adev->rmmio || !out)
++		return -EINVAL;
++
++	mutex_lock(&ps4_sbl_lock);
++
++	sbl_writel(adev, PS4_SBL_REG_CMD,     PS4_SBL_SVC_SMU_READ);
++	sbl_writel(adev, PS4_SBL_REG_ARG1,    idx);
++	sbl_writel(adev, PS4_SBL_REG_TRIGGER, 1);
++
++	r = ps4_sbl_wait_ack(adev, &poll_us);
++	status = sbl_readl(adev, PS4_SBL_REG_STATUS);
++
++	ps4_sbl_last.op      = 'R';
++	ps4_sbl_last.idx     = idx;
++	ps4_sbl_last.status  = status;
++	ps4_sbl_last.rc      = r;
++	ps4_sbl_last.poll_us = poll_us;
++	ps4_sbl_last.acked   = (r == 0);
++
++	if (r) {
++		DRM_INFO("ps4_sbl: SMU read idx=0x%08x → ack TIMEOUT after %llu us\n",
++			 idx, poll_us);
++		goto out;
++	}
++	if (status) {
++		DRM_INFO("ps4_sbl: SMU read idx=0x%08x → sbl_status=0x%08x (poll %llu us)\n",
++			 idx, status, poll_us);
++		ps4_sbl_last.val = 0;
++		r = -EIO;
++		goto out;
++	}
++
++	*out = sbl_readl(adev, PS4_SBL_REG_VAL);
++	ps4_sbl_last.val = *out;
++	DRM_INFO("ps4_sbl: SMU read idx=0x%08x → val=0x%08x (poll %llu us)\n",
++		 idx, *out, poll_us);
++
++out:
++	mutex_unlock(&ps4_sbl_lock);
++	return r;
++}
++
++int ps4_sbl_write_smu(struct amdgpu_device *adev, u32 idx, u32 val)
++{
++	u64 poll_us = 0;
++	u32 status;
++	int r;
++
++	if (!adev || !adev->rmmio)
++		return -EINVAL;
++
++	mutex_lock(&ps4_sbl_lock);
++
++	sbl_writel(adev, PS4_SBL_REG_CMD,     PS4_SBL_SVC_SMU_WRITE);
++	sbl_writel(adev, PS4_SBL_REG_ARG1,    idx);
++	sbl_writel(adev, PS4_SBL_REG_VAL,     val);
++	sbl_writel(adev, PS4_SBL_REG_TRIGGER, 1);
++
++	r = ps4_sbl_wait_ack(adev, &poll_us);
++	status = sbl_readl(adev, PS4_SBL_REG_STATUS);
++
++	ps4_sbl_last.op      = 'W';
++	ps4_sbl_last.idx     = idx;
++	ps4_sbl_last.val     = val;
++	ps4_sbl_last.status  = status;
++	ps4_sbl_last.rc      = r;
++	ps4_sbl_last.poll_us = poll_us;
++	ps4_sbl_last.acked   = (r == 0);
++
++	if (r) {
++		DRM_INFO("ps4_sbl: SMU write idx=0x%08x val=0x%08x → ack TIMEOUT after %llu us\n",
++			 idx, val, poll_us);
++		goto out;
++	}
++	if (status) {
++		DRM_INFO("ps4_sbl: SMU write idx=0x%08x val=0x%08x → sbl_status=0x%08x (poll %llu us)\n",
++			 idx, val, status, poll_us);
++		r = -EIO;
++		goto out;
++	}
++
++	DRM_INFO("ps4_sbl: SMU write idx=0x%08x val=0x%08x → OK (poll %llu us)\n",
++		 idx, val, poll_us);
++
++out:
++	mutex_unlock(&ps4_sbl_lock);
++	return r;
++}
++
++/* === debugfs === */
++
++static ssize_t ps4_sbl_smu_write(struct file *file, const char __user *ubuf,
++				 size_t len, loff_t *off)
++{
++	struct amdgpu_device *adev = file->private_data;
++	char buf[64];
++	char op;
++	u32 idx = 0, val = 0;
++	int parsed, r;
++
++	if (len == 0 || len >= sizeof(buf))
++		return -EINVAL;
++	if (copy_from_user(buf, ubuf, len))
++		return -EFAULT;
++	buf[len] = '\0';
++
++	parsed = sscanf(buf, " %c %x %x", &op, &idx, &val);
++	if (parsed < 2)
++		return -EINVAL;
++
++	switch (op) {
++	case 'R': case 'r':
++		r = ps4_sbl_read_smu(adev, idx, &val);
++		break;
++	case 'W': case 'w':
++		if (parsed < 3)
++			return -EINVAL;
++		r = ps4_sbl_write_smu(adev, idx, val);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/* Surface the kernel-side error to the writer; the per-op detail is
++	 * available via read() of the same file. */
++	if (r && r != -EIO)
++		return r;
++	return len;
++}
++
++static ssize_t ps4_sbl_smu_read(struct file *file, char __user *ubuf,
++				size_t len, loff_t *off)
++{
++	char out[256];
++	int n;
++
++	n = scnprintf(out, sizeof(out),
++		"op=%c idx=0x%08x val=0x%08x status=0x%08x rc=%d acked=%d poll_us=%llu\n"
++		"usage: write 'R <idx>' to read, 'W <idx> <val>' to write (hex)\n",
++		ps4_sbl_last.op ? ps4_sbl_last.op : '-',
++		ps4_sbl_last.idx, ps4_sbl_last.val, ps4_sbl_last.status,
++		ps4_sbl_last.rc, (int)ps4_sbl_last.acked, ps4_sbl_last.poll_us);
++
++	return simple_read_from_buffer(ubuf, len, off, out, n);
++}
++
++static int ps4_sbl_smu_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static const struct file_operations ps4_sbl_smu_fops = {
++	.owner = THIS_MODULE,
++	.open  = ps4_sbl_smu_open,
++	.write = ps4_sbl_smu_write,
++	.read  = ps4_sbl_smu_read,
++	/* no .llseek — removed from the kernel in 6.12; default refuses seek. */
++};
++
++void ps4_sbl_debugfs_init(struct amdgpu_device *adev, struct dentry *root)
++{
++	if (adev->asic_type != CHIP_LIVERPOOL &&
++	    adev->asic_type != CHIP_GLADIUS)
++		return;
++
++	debugfs_create_file("ps4_sbl_smu", 0600, root, adev, &ps4_sbl_smu_fops);
++
++	ps4_sbl_last.op = '-';
++
++	DRM_INFO("ps4_sbl: Phase 1 mailbox primitives ready (rmmio=%p, "
++		 "CMD=0x%x ARG1=0x%x VAL=0x%x STATUS=0x%x TRIG=0x%x ACK=0x%x)\n",
++		 adev->rmmio,
++		 PS4_SBL_REG_CMD, PS4_SBL_REG_ARG1, PS4_SBL_REG_VAL,
++		 PS4_SBL_REG_STATUS, PS4_SBL_REG_TRIGGER, PS4_SBL_REG_ACK);
++}

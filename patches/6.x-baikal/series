@@ -432,6 +432,11 @@
 # Hyprland's CPF faulted at VA 0x268000 in VMID 1. Restoring mainline
 # DEPTH=1 lets amdgpu_vm program per-vmid PDs on every submission.
 0300-gpu-liverpool/0056-amdgpu-gmc-v7-0-b11-alpha-revert-depth-override.patch
+# 0057: v76e-SBL-P1 — Sony SBL/SAMU mailbox primitives (synchronous SMU
+# read/write) + debugfs probe. First piece of the SBL port that unblocks
+# UVD/VCE; this iteration only tests whether the SAMU responds to Linux
+# mailbox writes at all. See checkpoint/docs/research/sbl-port/PLAN.md.
+0300-gpu-liverpool/0057-amdgpu-ps4-sbl-phase1-mailbox-primitives.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
