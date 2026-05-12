@@ -1,0 +1,447 @@
+amdgpu: ps4_sbl — Phase 1 v2: split direct vs indirect SAMU register access
+
+v1 (commit cf452ef) assumed both the mailbox data regs (0x22070..0x2207c)
+AND the trigger/ack regs (0x32, 0x4a) were direct byte offsets in BAR5.
+Hardware test proved that wrong: 0x22070..0x22078 stuck as plain memory
+(no device behind them, our writes read back verbatim) and 0x32/0x4a hit
+random unrelated GPU regs. SAMU never saw a single command.
+
+Second Ghidra round on orbis-12.02.elf decoded gc/samu.c properly:
+Sony actually uses two distinct access mechanisms on the same BAR5:
+
+  1. DIRECT — samu_write/read_direct(off, val) at FUN_c885b8a0 /
+     FUN_c885b880. Plain *(rmmio + off) = val. Used for the mailbox
+     data regs at 0x22070..0x2207c.
+
+  2. INDIRECT — samu_ind_write/read(idx, val) at FUN_c885b960 /
+     FUN_c885b8d0. Writes idx to rmmio + 0x22000 (IND_INDEX), then
+     reads/writes data at rmmio + 0x22004 (IND_DATA). Used for the
+     trigger (idx 0x32) and ack-poll (idx 0x4a) — these are
+     SAMU-INTERNAL register addresses, NOT direct byte offsets.
+
+The full sceSblDriverReadSmuIx (FUN_c89b80b0) call sequence shows it
+explicitly: samu_write_direct(0x22070, 0xa404) is one function,
+samu_ind_write(0x32, 1) is a totally different one, and
+samu_ind_read(0x4a) is the poll. The dungeon doc conflated them as
+a single 'samu_write' helper, which was the trap.
+
+Phase 1 v2 fixes this by adding sbl_ind_write/sbl_ind_read helpers
+and routing trigger/ack through them. Direct accesses keep their
+byte-offset model (which v1 already had right; we just weren't
+kicking the SAMU).
+
+Debugfs surface is extended with raw probes for further sweeping:
+  R <idx>          - full SMU read transaction
+  W <idx> <val>    - full SMU write transaction
+  P <off>          - raw direct read at rmmio + off
+  I <off> <val>    - raw direct write at rmmio + off
+  X <idx>          - raw indirect read at SAMU[idx]
+  Y <idx> <val>    - raw indirect write at SAMU[idx]
+
+Test plan: 'R 0' and 'R 1' should now ack with a real status code
+(probably nonzero, since 0/1 aren't valid SMU indices). 'X 0x4a'
+should return the SAMU's actual ack state. 'X 0x32' should reveal
+whatever bit is set there at idle.
+
+Cost: ~30 lines added, no header changes, no config changes.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
+@@ -0,0 +1,395 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * PS4 SBL (Secure Boot Loader) driver — Phase 1 v2 mailbox primitives.
++ *
++ * Reverse-engineered from Sony's sys/internal/modules/sbl/driver/handler.c
++ * (sceSblDriverReadSmuIx / sceSblDriverWriteSmuIx) and gc/samu.c
++ * (samu_write_direct / samu_read_direct / samu_ind_write / samu_ind_read).
++ * Details + Ghidra addresses: checkpoint/docs/research/sbl-port/PLAN.md and
++ * checkpoint/docs/research/orbis-dungeon/rooms/sbl-driver.md.
++ *
++ * v1 of this driver (committed cf452ef) assumed both the mailbox data regs
++ * (0x22070..0x2207c) AND the trigger/ack regs (0x32, 0x4a) were direct
++ * byte offsets in BAR5. Hardware test proved that wrong: writes to BAR5
++ * + 0x22070..0x22078 stuck as plain memory (no device behind them) and
++ * the "trigger" + "ack" at BAR5 + 0x32 / 0x4a hit random unrelated GPU
++ * registers. SAMU never saw a single command.
++ *
++ * Second Ghidra dig of orbis-12.02.elf showed Sony actually uses TWO
++ * different access mechanisms on the same BAR:
++ *
++ *   1. DIRECT — `samu_write/read_direct(off, val)` at FUN_c885b8a0 /
++ *      FUN_c885b880. Plain *(BAR5_base + off) = val. Used for the
++ *      mailbox data regs at 0x22070..0x2207c.
++ *
++ *   2. INDIRECT — `samu_ind_write/read(idx, val)` at FUN_c885b960 /
++ *      FUN_c885b8d0. Writes `idx` to BAR5 + 0x22000 (IND_INDEX),
++ *      then reads/writes the data at BAR5 + 0x22004 (IND_DATA).
++ *      Used for the trigger (idx 0x32) and ack-poll (idx 0x4a),
++ *      which are SAMU-INTERNAL register addresses — not direct
++ *      byte offsets in the GPU register window.
++ *
++ * The full Sony SMU-read sequence (handler.c sceSblDriverReadSmuIx,
++ * FUN_c89b80b0):
++ *
++ *     samu_write_direct(0x22070, 0xa404)    // service id
++ *     samu_write_direct(0x22074, smu_idx)
++ *     samu_ind_write(0x32, 1)               // kick SAMU
++ *     while (samu_ind_read(0x4a) & 1):      // wait for SAMU to clear ack
++ *         block_on_signal()
++ *     err = samu_read_direct(0x2207c)
++ *     val = samu_read_direct(0x22078)
++ *
++ * Phase 1 keeps the synchronous polling style (no IRQ handler yet),
++ * 100 ms timeout, single shared mutex.
++ */
++#include <linux/delay.h>
++#include <linux/debugfs.h>
++#include <linux/io.h>
++#include <linux/mutex.h>
++#include <linux/uaccess.h>
++
++#include <drm/drm_print.h>
++
++#include "amdgpu.h"
++
++/* Forward decls — exposed for future callers in uvd_v4_2 / vce_v2_0 once
++ * Phase 4 wires real SMU programming into hw_init. */
++int ps4_sbl_read_smu(struct amdgpu_device *adev, u32 idx, u32 *out);
++int ps4_sbl_write_smu(struct amdgpu_device *adev, u32 idx, u32 val);
++void ps4_sbl_debugfs_init(struct amdgpu_device *adev, struct dentry *root);
++
++/* DIRECT mailbox-data registers (byte offsets within adev->rmmio). */
++#define PS4_SBL_MBX_CMD       0x22070   /* service id (write) */
++#define PS4_SBL_MBX_ARG1      0x22074   /* SMU register index (write) */
++#define PS4_SBL_MBX_VAL       0x22078   /* read result / write value */
++#define PS4_SBL_MBX_STATUS    0x2207c   /* SBL-side error code (read) */
++
++/* INDIRECT register window. Write the SAMU-internal reg index to IND_INDEX,
++ * then read/write the data via IND_DATA. Both are byte offsets in rmmio. */
++#define PS4_SBL_IND_INDEX     0x22000
++#define PS4_SBL_IND_DATA      0x22004
++
++/* SAMU-internal register indices (used via the indirect window). */
++#define PS4_SBL_SAMU_TRIGGER  0x32      /* write 1 to kick command */
++#define PS4_SBL_SAMU_ACK      0x4a      /* bit 0 set = busy, clear = done */
++
++#define PS4_SBL_SVC_SMU_READ  0xa404
++#define PS4_SBL_SVC_SMU_WRITE 0xa505
++
++/* Generous — Sony's path is sync polling with no documented bound. */
++#define PS4_SBL_POLL_TIMEOUT_US 100000
++
++static DEFINE_MUTEX(ps4_sbl_lock);
++
++/* Last-op state for the debugfs reader. Single-device assumption — PS4 has
++ * one GPU + one SAMU. */
++static struct {
++	char  op;          /* 'R' / 'W' / '-' */
++	u32   idx;
++	u32   val;
++	u32   status;
++	int   rc;
++	u64   poll_us;
++	bool  acked;
++} ps4_sbl_last;
++
++/* === raw helpers === */
++
++static inline void sbl_direct_write(struct amdgpu_device *adev, u32 off, u32 val)
++{
++	writel(val, adev->rmmio + off);
++}
++
++static inline u32 sbl_direct_read(struct amdgpu_device *adev, u32 off)
++{
++	return readl(adev->rmmio + off);
++}
++
++/* Indirect register access: write idx into IND_INDEX, then read/write at
++ * IND_DATA. Sony serialises this with `samuixmtx`; we already hold
++ * ps4_sbl_lock at every call site so no extra lock is needed. */
++static void sbl_ind_write(struct amdgpu_device *adev, u32 idx, u32 val)
++{
++	writel(idx, adev->rmmio + PS4_SBL_IND_INDEX);
++	writel(val, adev->rmmio + PS4_SBL_IND_DATA);
++}
++
++static u32 sbl_ind_read(struct amdgpu_device *adev, u32 idx)
++{
++	writel(idx, adev->rmmio + PS4_SBL_IND_INDEX);
++	return readl(adev->rmmio + PS4_SBL_IND_DATA);
++}
++
++/* === mailbox primitive === */
++
++/*
++ * Poll the SAMU ack register (indirect-accessed at SAMU index 0x4a) until
++ * bit 0 clears or we time out.
++ */
++static int ps4_sbl_wait_ack(struct amdgpu_device *adev, u64 *elapsed_us)
++{
++	ktime_t start = ktime_get();
++	int spins = PS4_SBL_POLL_TIMEOUT_US;
++	u32 ack;
++
++	while (spins-- > 0) {
++		ack = sbl_ind_read(adev, PS4_SBL_SAMU_ACK);
++		if (!(ack & 1)) {
++			*elapsed_us = ktime_to_us(ktime_sub(ktime_get(), start));
++			return 0;
++		}
++		udelay(1);
++	}
++
++	*elapsed_us = ktime_to_us(ktime_sub(ktime_get(), start));
++	return -ETIMEDOUT;
++}
++
++int ps4_sbl_read_smu(struct amdgpu_device *adev, u32 idx, u32 *out)
++{
++	u64 poll_us = 0;
++	u32 status;
++	int r;
++
++	if (!adev || !adev->rmmio || !out)
++		return -EINVAL;
++
++	mutex_lock(&ps4_sbl_lock);
++
++	sbl_direct_write(adev, PS4_SBL_MBX_CMD,  PS4_SBL_SVC_SMU_READ);
++	sbl_direct_write(adev, PS4_SBL_MBX_ARG1, idx);
++	sbl_ind_write   (adev, PS4_SBL_SAMU_TRIGGER, 1);
++
++	r = ps4_sbl_wait_ack(adev, &poll_us);
++	status = sbl_direct_read(adev, PS4_SBL_MBX_STATUS);
++
++	ps4_sbl_last.op      = 'R';
++	ps4_sbl_last.idx     = idx;
++	ps4_sbl_last.status  = status;
++	ps4_sbl_last.rc      = r;
++	ps4_sbl_last.poll_us = poll_us;
++	ps4_sbl_last.acked   = (r == 0);
++
++	if (r) {
++		DRM_INFO("ps4_sbl: SMU read idx=0x%08x -> ack TIMEOUT after %llu us\n",
++			 idx, poll_us);
++		goto out;
++	}
++	if (status) {
++		DRM_INFO("ps4_sbl: SMU read idx=0x%08x -> sbl_status=0x%08x (poll %llu us)\n",
++			 idx, status, poll_us);
++		ps4_sbl_last.val = 0;
++		r = -EIO;
++		goto out;
++	}
++
++	*out = sbl_direct_read(adev, PS4_SBL_MBX_VAL);
++	ps4_sbl_last.val = *out;
++	DRM_INFO("ps4_sbl: SMU read idx=0x%08x -> val=0x%08x (poll %llu us)\n",
++		 idx, *out, poll_us);
++
++out:
++	mutex_unlock(&ps4_sbl_lock);
++	return r;
++}
++
++int ps4_sbl_write_smu(struct amdgpu_device *adev, u32 idx, u32 val)
++{
++	u64 poll_us = 0;
++	u32 status;
++	int r;
++
++	if (!adev || !adev->rmmio)
++		return -EINVAL;
++
++	mutex_lock(&ps4_sbl_lock);
++
++	sbl_direct_write(adev, PS4_SBL_MBX_CMD,  PS4_SBL_SVC_SMU_WRITE);
++	sbl_direct_write(adev, PS4_SBL_MBX_ARG1, idx);
++	sbl_direct_write(adev, PS4_SBL_MBX_VAL,  val);
++	sbl_ind_write   (adev, PS4_SBL_SAMU_TRIGGER, 1);
++
++	r = ps4_sbl_wait_ack(adev, &poll_us);
++	status = sbl_direct_read(adev, PS4_SBL_MBX_STATUS);
++
++	ps4_sbl_last.op      = 'W';
++	ps4_sbl_last.idx     = idx;
++	ps4_sbl_last.val     = val;
++	ps4_sbl_last.status  = status;
++	ps4_sbl_last.rc      = r;
++	ps4_sbl_last.poll_us = poll_us;
++	ps4_sbl_last.acked   = (r == 0);
++
++	if (r) {
++		DRM_INFO("ps4_sbl: SMU write idx=0x%08x val=0x%08x -> ack TIMEOUT after %llu us\n",
++			 idx, val, poll_us);
++		goto out;
++	}
++	if (status) {
++		DRM_INFO("ps4_sbl: SMU write idx=0x%08x val=0x%08x -> sbl_status=0x%08x (poll %llu us)\n",
++			 idx, val, status, poll_us);
++		r = -EIO;
++		goto out;
++	}
++
++	DRM_INFO("ps4_sbl: SMU write idx=0x%08x val=0x%08x -> OK (poll %llu us)\n",
++		 idx, val, poll_us);
++
++out:
++	mutex_unlock(&ps4_sbl_lock);
++	return r;
++}
++
++/* === debugfs ===
++ *
++ * /sys/kernel/debug/dri/0/ps4_sbl_smu
++ *   write 'R <idx>'         -> issue SBL_SMU_READ
++ *   write 'W <idx> <val>'   -> issue SBL_SMU_WRITE
++ *   write 'P <off>'         -> raw direct read at rmmio + off
++ *   write 'I <off> <val>'   -> raw direct write at rmmio + off
++ *   write 'X <idx>'         -> raw indirect read at SAMU reg idx (via 0x22000/0x22004)
++ *   write 'Y <idx> <val>'   -> raw indirect write at SAMU reg idx
++ *   read                    -> last op detail
++ *
++ * The raw P/I/X/Y commands are for sweep diagnostics — we use them to
++ * pin down which SAMU regs do what without rebuilding the kernel for
++ * every new offset to try.
++ */
++
++static ssize_t ps4_sbl_smu_write(struct file *file, const char __user *ubuf,
++				 size_t len, loff_t *off)
++{
++	struct amdgpu_device *adev = file->private_data;
++	char buf[64];
++	char op;
++	u32 a = 0, b = 0;
++	int parsed, r = 0;
++
++	if (len == 0 || len >= sizeof(buf))
++		return -EINVAL;
++	if (copy_from_user(buf, ubuf, len))
++		return -EFAULT;
++	buf[len] = '\0';
++
++	parsed = sscanf(buf, " %c %x %x", &op, &a, &b);
++	if (parsed < 2)
++		return -EINVAL;
++
++	switch (op) {
++	case 'R': case 'r':
++		r = ps4_sbl_read_smu(adev, a, &b);
++		break;
++	case 'W': case 'w':
++		if (parsed < 3)
++			return -EINVAL;
++		r = ps4_sbl_write_smu(adev, a, b);
++		break;
++	case 'P': case 'p':
++		mutex_lock(&ps4_sbl_lock);
++		b = sbl_direct_read(adev, a);
++		ps4_sbl_last.op = 'P';
++		ps4_sbl_last.idx = a;
++		ps4_sbl_last.val = b;
++		ps4_sbl_last.status = 0;
++		ps4_sbl_last.rc = 0;
++		ps4_sbl_last.poll_us = 0;
++		ps4_sbl_last.acked = true;
++		mutex_unlock(&ps4_sbl_lock);
++		DRM_INFO("ps4_sbl: raw direct read rmmio+0x%x -> 0x%08x\n", a, b);
++		break;
++	case 'I': case 'i':
++		if (parsed < 3)
++			return -EINVAL;
++		mutex_lock(&ps4_sbl_lock);
++		sbl_direct_write(adev, a, b);
++		ps4_sbl_last.op = 'I';
++		ps4_sbl_last.idx = a;
++		ps4_sbl_last.val = b;
++		ps4_sbl_last.status = 0;
++		ps4_sbl_last.rc = 0;
++		ps4_sbl_last.poll_us = 0;
++		ps4_sbl_last.acked = true;
++		mutex_unlock(&ps4_sbl_lock);
++		DRM_INFO("ps4_sbl: raw direct write rmmio+0x%x <- 0x%08x\n", a, b);
++		break;
++	case 'X': case 'x':
++		mutex_lock(&ps4_sbl_lock);
++		b = sbl_ind_read(adev, a);
++		ps4_sbl_last.op = 'X';
++		ps4_sbl_last.idx = a;
++		ps4_sbl_last.val = b;
++		ps4_sbl_last.status = 0;
++		ps4_sbl_last.rc = 0;
++		ps4_sbl_last.poll_us = 0;
++		ps4_sbl_last.acked = true;
++		mutex_unlock(&ps4_sbl_lock);
++		DRM_INFO("ps4_sbl: raw indirect read SAMU[0x%x] -> 0x%08x\n", a, b);
++		break;
++	case 'Y': case 'y':
++		if (parsed < 3)
++			return -EINVAL;
++		mutex_lock(&ps4_sbl_lock);
++		sbl_ind_write(adev, a, b);
++		ps4_sbl_last.op = 'Y';
++		ps4_sbl_last.idx = a;
++		ps4_sbl_last.val = b;
++		ps4_sbl_last.status = 0;
++		ps4_sbl_last.rc = 0;
++		ps4_sbl_last.poll_us = 0;
++		ps4_sbl_last.acked = true;
++		mutex_unlock(&ps4_sbl_lock);
++		DRM_INFO("ps4_sbl: raw indirect write SAMU[0x%x] <- 0x%08x\n", a, b);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (r && r != -EIO)
++		return r;
++	return len;
++}
++
++static ssize_t ps4_sbl_smu_read(struct file *file, char __user *ubuf,
++				size_t len, loff_t *off)
++{
++	char out[256];
++	int n;
++
++	n = scnprintf(out, sizeof(out),
++		"op=%c idx=0x%08x val=0x%08x status=0x%08x rc=%d acked=%d poll_us=%llu\n"
++		"usage: 'R <idx>' / 'W <idx> <val>' / 'P <off>' / 'I <off> <val>' / 'X <idx>' / 'Y <idx> <val>' (hex)\n",
++		ps4_sbl_last.op ? ps4_sbl_last.op : '-',
++		ps4_sbl_last.idx, ps4_sbl_last.val, ps4_sbl_last.status,
++		ps4_sbl_last.rc, (int)ps4_sbl_last.acked, ps4_sbl_last.poll_us);
++
++	return simple_read_from_buffer(ubuf, len, off, out, n);
++}
++
++static int ps4_sbl_smu_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static const struct file_operations ps4_sbl_smu_fops = {
++	.owner = THIS_MODULE,
++	.open  = ps4_sbl_smu_open,
++	.write = ps4_sbl_smu_write,
++	.read  = ps4_sbl_smu_read,
++};
++
++void ps4_sbl_debugfs_init(struct amdgpu_device *adev, struct dentry *root)
++{
++	if (adev->asic_type != CHIP_LIVERPOOL &&
++	    adev->asic_type != CHIP_GLADIUS)
++		return;
++
++	debugfs_create_file("ps4_sbl_smu", 0600, root, adev, &ps4_sbl_smu_fops);
++
++	ps4_sbl_last.op = '-';
++
++	DRM_INFO("ps4_sbl: Phase 1-v2 mailbox primitives ready "
++		 "(direct mbx=0x22070..0x2207c, ind window=0x22000/0x22004, "
++		 "trigger=SAMU[0x32], ack=SAMU[0x4a])\n");
++}
