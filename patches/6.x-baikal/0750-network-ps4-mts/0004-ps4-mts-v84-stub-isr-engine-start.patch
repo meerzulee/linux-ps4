@@ -1,0 +1,269 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v84 - stub ISR + DMA rings + RX/TX engine start
+
+v83 confirmed that the AN-restart kthread approach works correctly:
+BMCR transitions to 0x1200, AN completes, partner advertises.  But
+link still never reaches UP.
+
+deepseek-v41's Ghidra dig of Orbis mts_init_rings_kick found the
+real blocker:
+
+  Orbis starts MAC RX/TX engines via:
+    BAR+0x34 |= 1   (RX engine start / RX_RESTART)
+    BAR+0x38 |= 1   (TX engine start / TX_START)
+  at the end of mts_init_rings_kick (FUN_c85ef1b0), called from
+  mts_ifup.
+
+  Without the RX engine running, the MAC does not monitor for PHY
+  link state changes - BAR+0x04 bit 0 (link up) never gets set even
+  when AN completes and the partner is advertising.
+
+v83 also exposed a second problem: enabling BAR+0x204 = 0x10001388
+(MAC IRQ block) without registering a Linux ISR floods the kernel
+with "call_irq_handler: No irq handler for vector" after ~7 minutes
+and eventually wedges SSH.
+
+This patch addresses both:
+
+1. Adds a stub ISR (mts_intr_stub) that W1C-acks BAR+0x50 and logs
+   link-change events (bit 2 of IRQ status).  Registered via
+   request_irq with IRQF_SHARED BEFORE mts_mac_init enables the
+   IRQ block.
+
+2. Allocates minimal DMA-coherent TX/RX descriptor rings (4KB each,
+   zeroed) via dmam_alloc_coherent.  The MAC engine has no work to
+   do (empty rings) but should be satisfied that the descriptor
+   pointers are valid memory.
+
+3. Writes the ring DMA addresses to BAR+0x3c/0x44 (TX lo/hi) and
+   BAR+0x40/0x48 (RX lo/hi) after mts_mac_init completes.
+
+4. Starts the engines by setting bit 0 of BAR+0x34 (RX) and BAR+0x38
+   (TX).  Reads back the values to confirm.
+
+5. mts_remove now stops the engines, frees the IRQ, and disables
+   the IRQ block in proper order.
+
+Pass criteria:
+  - dmesg shows "registered ISR on IRQ N" early in probe
+  - dmesg shows "engines started: BAR+0x34=0x???1 BAR+0x38=0x???1"
+    (bit 0 set in both reads)
+  - NO "call_irq_handler: No irq handler" floods (ISR is now ack'ing)
+  - eventually dmesg shows "ISR: link-change IRQ" or similar
+  - linkreg bit 0 transitions to 1 → link UP
+
+If the kernel hangs immediately after engine start, the MAC engine
+is trying to use the (empty/zero) descriptors and corrupting state.
+That tells us we need real ring entries (proper descriptor layout)
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -13,7 +13,9 @@
+  */
+ 
+ #include <linux/delay.h>
++#include <linux/dma-mapping.h>
+ #include <linux/init.h>
++#include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/jiffies.h>
+ #include <linux/kthread.h>
+@@ -38,7 +40,15 @@
+ #define MTS_RX_KICK		0x034
+ #define MTS_TX_KICK		0x038
+ #define MTS_TX_DESC_LO		0x03c
++#define MTS_RX_DESC_LO		0x040
+ #define MTS_TX_DESC_HI		0x044
++#define MTS_RX_DESC_HI		0x048
++
++/* Engine start bit (BAR+0x34, BAR+0x38 bit 0). */
++#define MTS_ENGINE_START	0x00000001
++
++/* IRQ status bits we care about for the stub ISR. */
++#define MTS_IRQ_LINK_CHANGE	0x00000004	/* BAR+0x50 bit 2 */
+ #define MTS_IRQ_STATUS		0x050
+ #define MTS_IRQ_MASK		0x054
+ #define MTS_MAC_PAUSE		0x074
+@@ -101,6 +111,15 @@
+ 
+ #define MTS_PHY_CTRL_PERIOD_MS	3000	/* gbe:phy_ctrl cadence */
+ 
++/*
++ * DMA descriptor ring sizes.  Orbis uses 256 entries per ring; for v84's
++ * engine-start hypothesis test we only need the engines to think they have
++ * valid memory to fetch descriptors from.  4KB per ring is more than enough
++ * for any plausible descriptor layout (16-32 bytes per entry).  Phase 3
++ * will replace this with proper sized rings + per-entry buffer management.
++ */
++#define MTS_RING_BYTES		4096
++
+ struct mts {
+ 	struct pci_dev *pdev;
+ 	void __iomem *bar;
+@@ -112,6 +131,15 @@
+ 	bool last_phy_link_up;	/* tracked by phy_ctrl kthread */
+ 	bool initial_an_done;	/* first AN restart fired? */
+ 	unsigned int link_down_iterations;
++
++	/* v84: minimal DMA rings + ISR for engine start. */
++	void *tx_ring_virt;
++	void *rx_ring_virt;
++	dma_addr_t tx_ring_dma;
++	dma_addr_t rx_ring_dma;
++	int irq;
++	bool irq_registered;
++	atomic_t isr_link_change_count;
+ };
+ 
+ /*
+@@ -321,6 +349,36 @@
+ }
+ 
+ /*
++ * Stub ISR.  Just W1C-acks BAR+0x50 to keep the MAC's IRQ block quiet so the
++ * Linux core doesn't flood "call_irq_handler: No irq handler for vector"
++ * once BAR+0x204 = 0x10001388 is set.  Logs link-change events (bit 2) since
++ * those are the signal we're hunting in v84.
++ */
++static irqreturn_t mts_intr_stub(int irq, void *dev_id)
++{
++	struct mts *mts = dev_id;
++	u32 status;
++
++	status = readl(mts->bar + MTS_IRQ_STATUS);
++	if (!status)
++		return IRQ_NONE;
++
++	/* W1C-ack everything we saw. */
++	writel(status, mts->bar + MTS_IRQ_STATUS);
++	(void)readl(mts->bar + MTS_IRQ_STATUS);
++
++	if (status & MTS_IRQ_LINK_CHANGE) {
++		u32 linkreg = readl(mts->bar + MTS_LINK_STATUS);
++
++		atomic_inc(&mts->isr_link_change_count);
++		dev_info(&mts->pdev->dev,
++			 "ISR: link-change IRQ (irq_status=0x%08x, linkreg=0x%08x)\n",
++			 status, linkreg);
++	}
++	return IRQ_HANDLED;
++}
++
++/*
+  * AN restart sequence.  Mirrors Orbis FUN_c85f0480 event 0x1 handler exactly:
+  * read 1000-BT control (reg 9) and ANAR (reg 4), OR-set the advertise bits if
+  * not present, then write BMCR (reg 0) with bit 12 (AN enable) + bit 9 (AN
+@@ -449,9 +507,92 @@
+ 	dev_info(&pdev->dev, "Baikal MTS: BAR0=%pR, mapped at %p\n",
+ 		 &pdev->resource[0], mts->bar);
+ 
++	/*
++	 * v84: ensure 32-bit DMA mask before allocating descriptor rings.
++	 * BAR+0x3c..0x48 have hi/lo halves so 64-bit is technically supported,
++	 * but 32-bit keeps us simple and inside the typical PCI DMA range.
++	 */
++	ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
++	if (ret)
++		return dev_err_probe(&pdev->dev, ret, "dma_set_mask_and_coherent(32)\n");
++
++	/*
++	 * Allocate minimal DMA-coherent TX/RX descriptor rings.  v84's hypothesis:
++	 * starting the RX engine is what lets the MAC monitor the PHY link signal
++	 * - even an empty ring should be enough for the link-status bit at
++	 * BAR+0x04 bit 0 to latch.
++	 */
++	mts->tx_ring_virt = dmam_alloc_coherent(&pdev->dev, MTS_RING_BYTES,
++						 &mts->tx_ring_dma, GFP_KERNEL);
++	if (!mts->tx_ring_virt)
++		return dev_err_probe(&pdev->dev, -ENOMEM, "TX ring alloc\n");
++	mts->rx_ring_virt = dmam_alloc_coherent(&pdev->dev, MTS_RING_BYTES,
++						 &mts->rx_ring_dma, GFP_KERNEL);
++	if (!mts->rx_ring_virt)
++		return dev_err_probe(&pdev->dev, -ENOMEM, "RX ring alloc\n");
++	dev_info(&pdev->dev,
++		 "DMA rings: TX=%pad RX=%pad (each %u bytes, zeroed)\n",
++		 &mts->tx_ring_dma, &mts->rx_ring_dma, MTS_RING_BYTES);
++
++	/*
++	 * Register the stub ISR BEFORE mts_mac_init enables the BAR+0x204 IRQ
++	 * block.  This prevents the IRQ-vector flood that crashed v83.
++	 *
++	 * pdev->irq is 0 by default on PS4 Baikal because the bpcie infrastructure
++	 * manages MSI through a custom IRQ domain.  We must call
++	 * pci_alloc_irq_vectors(MSI) to get an actual Linux IRQ number bound to
++	 * the device.  pci_irq_vector(pdev, 0) then returns the allocated vector.
++	 */
++	atomic_set(&mts->isr_link_change_count, 0);
++	ret = pci_alloc_irq_vectors(pdev, 1, 1, PCI_IRQ_MSI | PCI_IRQ_INTX);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "pci_alloc_irq_vectors failed: %d\n", ret);
++		return ret;
++	}
++	mts->irq = pci_irq_vector(pdev, 0);
++	if (mts->irq < 0) {
++		dev_err(&pdev->dev, "pci_irq_vector returned %d\n", mts->irq);
++		pci_free_irq_vectors(pdev);
++		return mts->irq;
++	}
++	ret = request_irq(mts->irq, mts_intr_stub, IRQF_SHARED, DRV_NAME, mts);
++	if (ret) {
++		dev_err(&pdev->dev, "request_irq(%d) failed: %d\n", mts->irq, ret);
++		pci_free_irq_vectors(pdev);
++		return ret;
++	}
++	mts->irq_registered = true;
++	dev_info(&pdev->dev, "registered ISR on IRQ %d (%s)\n", mts->irq,
++		 pdev->msi_enabled ? "MSI" : "INTx");
++
+ 	mts_parent_prelude(mts);
+ 	mts_mac_init(mts);
+ 
++	/*
++	 * Hand the descriptor ring DMA addresses to the MAC.  Per deepseek-v41's
++	 * Ghidra dig of mts_init_rings_kick: TX ring (lo+hi) at BAR+0x3c/0x44,
++	 * RX ring (lo+hi) at BAR+0x40/0x48.
++	 */
++	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_LO);
++	writel(upper_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
++	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_LO);
++	writel(upper_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
++
++	/*
++	 * v84 critical: start the RX and TX engines.  Without the RX engine
++	 * running, the MAC does not monitor the PHY link signal and BAR+0x04
++	 * bit 0 (link up) never gets set - even when the PHY completes AN and
++	 * the partner is advertising.  This is deepseek-v41's primary finding.
++	 */
++	writel(readl(mts->bar + MTS_RX_KICK) | MTS_ENGINE_START,
++	       mts->bar + MTS_RX_KICK);
++	writel(readl(mts->bar + MTS_TX_KICK) | MTS_ENGINE_START,
++	       mts->bar + MTS_TX_KICK);
++	dev_info(&pdev->dev,
++		 "engines started: BAR+0x34=0x%08x BAR+0x38=0x%08x\n",
++		 readl(mts->bar + MTS_RX_KICK),
++		 readl(mts->bar + MTS_TX_KICK));
++
+ 	/* Scan PHY registers 0..31 via SMI; log non-trivial responses.  The
+ 	 * SMI controller has no PHY-address field — register-number is the
+ 	 * only selector — so this is really an "is this register reachable"
+@@ -506,8 +647,21 @@
+ 	if (mts->phy_ctrl_thread)
+ 		kthread_stop(mts->phy_ctrl_thread);
+ 	timer_delete_sync(&mts->link_poll);
++
++	/* Stop RX/TX engines before disabling the IRQ block. */
++	writel(readl(mts->bar + MTS_RX_KICK) & ~MTS_ENGINE_START,
++	       mts->bar + MTS_RX_KICK);
++	writel(readl(mts->bar + MTS_TX_KICK) & ~MTS_ENGINE_START,
++	       mts->bar + MTS_TX_KICK);
++
+ 	writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
+ 	writel(0, mts->bar + MTS_IRQ_MASK);
++
++	if (mts->irq_registered) {
++		free_irq(mts->irq, mts);
++		pci_free_irq_vectors(pdev);
++	}
++	/* DMA rings are auto-freed by devm/dmam infrastructure. */
+ }
+ 
+ static const struct pci_device_id mts_pci_id_table[] = {
