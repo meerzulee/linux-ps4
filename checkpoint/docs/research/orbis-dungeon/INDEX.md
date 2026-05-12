@@ -145,9 +145,9 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 ### Floor 7: Wireless
 | Room | Status | File |
 |---|---|---|
-| wlan | 🗝️ | rooms/wlan.md |
-| bt | 🗝️ | rooms/bt.md |
-| wlanbt | 🗝️ | rooms/wlanbt.md |
+| wlan | 🔍 first-pass ⭐ | rooms/wireless.md (combined trio) |
+| bt | 🔍 first-pass ⭐ | rooms/wireless.md |
+| wlanbt | 🔍 first-pass ⭐ | rooms/wireless.md |
 
 ### Floor 8: Camera / VR
 | Room | Status | File |
@@ -218,6 +218,12 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 11: + wlan + bt + wlanbt trio first-pass ⭐.
+  CONFIRMED: PS4 wireless = MediaTek MT76xx (Sony codename "Trooper" /
+  "Torus"). Mainline Linux mt76 driver covers this; we have it but
+  it's deferred. torus_ioctl decoded — 4-byte header with type byte,
+  packet types 0/4=WiFi 1/5=BT, max payload 2 KB. Port work needed:
+  add PS4 PCI device IDs + btusb quirks + extract firmware blob.
 - 2026-05-12 iter 10: + hid+ctrlp+bluetooth_hid trio first-pass.
   🔐 SceHidAuth kthread decoded — 6-state RSA+ECDSA challenge-response
   for DS4 anti-counterfeit. Auto-trust IDs + 14-entry whitelist table.
