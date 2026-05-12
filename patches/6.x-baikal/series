@@ -543,6 +543,14 @@
 # Orbis FUN_c85f0480 event 0x1 handler: OR-set reg 9 |= 0x200 +
 # reg 4 |= 0x180, then BMCR |= 0x1200 (AN enable+restart).
 0750-network-ps4-mts/0003-ps4-mts-v83-an-restart-on-link-down.patch
+# v84: register stub ISR (W1C-acks BAR+0x50 + logs link-change events) to
+# prevent the IRQ-vector flood that wedged v83 after ~7min.  Allocate
+# minimal DMA-coherent TX/RX descriptor rings (4KB each, zeroed).  Write
+# ring addrs to BAR+0x3c/0x44 (TX) and BAR+0x40/0x48 (RX).  Start the MAC
+# RX/TX engines by setting bit 0 of BAR+0x34 and BAR+0x38.
+# Per deepseek-v41's Ghidra dig: starting the RX engine is what lets the
+# MAC monitor the PHY link signal so BAR+0x04 bit 0 can latch.
+0750-network-ps4-mts/0004-ps4-mts-v84-stub-isr-engine-start.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
