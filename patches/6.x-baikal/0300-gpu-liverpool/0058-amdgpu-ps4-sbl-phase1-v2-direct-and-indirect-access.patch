@@ -1,51 +1,34 @@
-amdgpu: ps4_sbl — Phase 1 v2: split direct vs indirect SAMU register access
 
-v1 (commit cf452ef) assumed both the mailbox data regs (0x22070..0x2207c)
-AND the trigger/ack regs (0x32, 0x4a) were direct byte offsets in BAR5.
-Hardware test proved that wrong: 0x22070..0x22078 stuck as plain memory
-(no device behind them, our writes read back verbatim) and 0x32/0x4a hit
-random unrelated GPU regs. SAMU never saw a single command.
+--- a/drivers/gpu/drm/amd/amdgpu/Makefile
++++ b/drivers/gpu/drm/amd/amdgpu/Makefile
+@@ -297,7 +297,7 @@
+ amdgpu-$(CONFIG_VGA_SWITCHEROO) += amdgpu_atpx_handler.o
+ amdgpu-$(CONFIG_ACPI) += amdgpu_acpi.o
+ amdgpu-$(CONFIG_HMM_MIRROR) += amdgpu_hmm.o
+-amdgpu-$(CONFIG_X86_PS4) += ps4_bridge.o
++amdgpu-$(CONFIG_X86_PS4) += ps4_bridge.o ps4_sbl.o
+ 
+ include $(FULL_AMD_PATH)/pm/Makefile
+ 
 
-Second Ghidra round on orbis-12.02.elf decoded gc/samu.c properly:
-Sony actually uses two distinct access mechanisms on the same BAR5:
-
-  1. DIRECT — samu_write/read_direct(off, val) at FUN_c885b8a0 /
-     FUN_c885b880. Plain *(rmmio + off) = val. Used for the mailbox
-     data regs at 0x22070..0x2207c.
-
-  2. INDIRECT — samu_ind_write/read(idx, val) at FUN_c885b960 /
-     FUN_c885b8d0. Writes idx to rmmio + 0x22000 (IND_INDEX), then
-     reads/writes data at rmmio + 0x22004 (IND_DATA). Used for the
-     trigger (idx 0x32) and ack-poll (idx 0x4a) — these are
-     SAMU-INTERNAL register addresses, NOT direct byte offsets.
-
-The full sceSblDriverReadSmuIx (FUN_c89b80b0) call sequence shows it
-explicitly: samu_write_direct(0x22070, 0xa404) is one function,
-samu_ind_write(0x32, 1) is a totally different one, and
-samu_ind_read(0x4a) is the poll. The dungeon doc conflated them as
-a single 'samu_write' helper, which was the trap.
-
-Phase 1 v2 fixes this by adding sbl_ind_write/sbl_ind_read helpers
-and routing trigger/ack through them. Direct accesses keep their
-byte-offset model (which v1 already had right; we just weren't
-kicking the SAMU).
-
-Debugfs surface is extended with raw probes for further sweeping:
-  R <idx>          - full SMU read transaction
-  W <idx> <val>    - full SMU write transaction
-  P <off>          - raw direct read at rmmio + off
-  I <off> <val>    - raw direct write at rmmio + off
-  X <idx>          - raw indirect read at SAMU[idx]
-  Y <idx> <val>    - raw indirect write at SAMU[idx]
-
-Test plan: 'R 0' and 'R 1' should now ack with a real status code
-(probably nonzero, since 0/1 aren't valid SMU indices). 'X 0x4a'
-should return the SAMU's actual ack state. 'X 0x32' should reveal
-whatever bit is set there at idle.
-
-Cost: ~30 lines added, no header changes, no config changes.
-
-Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_debugfs.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_debugfs.c
+@@ -2127,6 +2127,15 @@
+ 	debugfs_create_blob("amdgpu_discovery", 0444, root,
+ 			    &adev->debugfs_discovery_blob);
+ 
++#ifdef CONFIG_X86_PS4
++	/* v76e-SBL-P1-v2: SAMU mailbox probe surface for Liverpool/Gladius. */
++	{
++		extern void ps4_sbl_debugfs_init(struct amdgpu_device *adev,
++						 struct dentry *root);
++		ps4_sbl_debugfs_init(adev, root);
++	}
++#endif
++
+ 	return 0;
+ }
+ 
 
 --- a/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
 +++ b/drivers/gpu/drm/amd/amdgpu/ps4_sbl.c
