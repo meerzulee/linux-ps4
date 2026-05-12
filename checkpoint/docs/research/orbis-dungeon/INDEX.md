@@ -161,7 +161,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | Room | Status | File |
 |---|---|---|
 | sbl/driver | 🔍 first-pass ⭐ | rooms/sbl-driver.md (THE UVD blocker explained) |
-| sbl/service | 🗝️ | rooms/sbl-service.md |
+| sbl/service | 🔍 first-pass | rooms/sbl-service.md (20 files: keymgr, cryptmgr, pfs, npdrm, ccp, etc.) |
 | sbl/sm_service | 🗝️ | rooms/sbl-sm_service.md |
 | sbl/srtc | 🗝️ | rooms/sbl-srtc.md |
 | sbl/pup_update | 🗝️ | rooms/sbl-pup_update.md |
@@ -218,6 +218,12 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 14: + sbl/service first-pass — 20 files mapped at
+  high level. Service registry pattern: each service is an IPMI server
+  bridging userspace → SAMU mailbox commands. keymgr.c is the largest
+  (~30 functions). CCP subdir wraps AMD's hardware crypto (mainline
+  Linux drivers/crypto/ccp/ already supports it). Most services
+  irrelevant for Linux (DRM/save-data/PSN); only crypto/CCP useful.
 - 2026-05-12 iter 13: + sbl/driver first-pass ⭐ — entered the LOCKED VAULT.
   SAMU mailbox protocol fully documented (already had it from UVD dig).
   Full sceSblDriver* API extracted from string xrefs:
