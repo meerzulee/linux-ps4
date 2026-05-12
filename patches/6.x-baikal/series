@@ -564,6 +564,14 @@
 # state.  Add C45 SMI accessor + re-enable PLL via MMD 0x1f reg 0x403
 # (bits 4+6 set, bit 5 PLL_OFF cleared).
 0750-network-ps4-mts/0006-ps4-mts-v86-c45-accessor-phy-pll-enable.patch
+# v87: 4-agent v87 Ghidra dig (hermes/glm/kimi/deepseek) convergent
+# findings: replay Orbis "unconditional tail" of mts_mac_init that we've
+# been skipping since v82.  Five C45 writes + ANAR mask + BAR+0x04 R/M/W
+# twice + final BMCR AN restart inside mac_init.  Kthread now logs reg 5
+# (LP ABILITY) and reg 10 (1000BT status) to surface partner Remote Fault
+# (deepseek finding: partner reg 5 bit 13 = 1 = RF actively rejecting us).
+# Stop periodic AN restart to let PHY converge naturally.
+0750-network-ps4-mts/0007-ps4-mts-v87-orbis-tail-rf-diagnostic.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
