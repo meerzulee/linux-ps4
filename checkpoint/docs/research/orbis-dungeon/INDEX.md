@@ -162,13 +162,13 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 |---|---|---|
 | sbl/driver | 🔍 first-pass ⭐ | rooms/sbl-driver.md (THE UVD blocker explained) |
 | sbl/service | 🔍 first-pass | rooms/sbl-service.md (20 files: keymgr, cryptmgr, pfs, npdrm, ccp, etc.) |
-| sbl/sm_service | 🗝️ | rooms/sbl-sm_service.md |
+| sbl/sm_service | 🔍 first-pass | rooms/sbl-authmgr.md (combined w/ authmgr) |
 | sbl/srtc | 🗝️ | rooms/sbl-srtc.md |
 | sbl/pup_update | 🗝️ | rooms/sbl-pup_update.md |
 | sbl/eipk_addsign | 🗝️ | rooms/sbl-eipk_addsign.md |
 | sbl/devact | 🗝️ | rooms/sbl-devact.md |
 | sbl/pltauth | 🗝️ | rooms/sbl-pltauth.md |
-| sbl/authmgr | 🗝️ | rooms/sbl-authmgr.md |
+| sbl/authmgr | 🔍 first-pass | rooms/sbl-authmgr.md (54 sceSblAuthMgr* APIs) |
 | sbl/vtrm | 🗝️ | rooms/sbl-vtrm.md |
 | sbl/rng | 🗝️ | rooms/sbl-rng.md |
 | sbl/idata | 🗝️ | rooms/sbl-idata.md |
@@ -218,6 +218,12 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 15: + sbl/authmgr + sbl/sm_service combined room.
+  AuthMgr = Sony's SELF (signed ELF) verifier + drive crypto + PSN
+  device activation. 54 sceSblAuthMgr* APIs extracted from strings.
+  3-pass platform-auth handshake decoded (GenC1 → VeriR1C2GenR2 →
+  Result + GetKdsMac). Confirmed: PS4 HDD encrypted with console-
+  specific SAMU-held keys → why our Linux uses external USB rootfs.
 - 2026-05-12 iter 14: + sbl/service first-pass — 20 files mapped at
   high level. Service registry pattern: each service is an IPMI server
   bridging userspace → SAMU mailbox commands. keymgr.c is the largest
