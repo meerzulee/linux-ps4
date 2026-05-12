@@ -152,9 +152,10 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 ### Floor 8: Camera / VR
 | Room | Status | File |
 |---|---|---|
-| camera | 🗝️ | rooms/camera.md |
-| hmd | 🗝️ | rooms/hmd.md |
-| hmddfu | 🗝️ | rooms/hmddfu.md |
+| camera | 🔍 first-pass | rooms/camera-vr.md (combined trio + mas) |
+| hmd | 🔍 first-pass | rooms/camera-vr.md |
+| hmddfu | 🔍 first-pass | rooms/camera-vr.md |
+| mas | 🔍 first-pass (limited) | rooms/camera-vr.md (purpose unclear; co-located with hmd) |
 
 ### Floor 9: Security (LOCKED VAULT)
 | Room | Status | File |
@@ -183,7 +184,6 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | regmgr | 🔍 first-pass | rooms/regmgr.md |
 | ipmimgr | 🔍 first-pass | rooms/ipmimgr.md |
 | sdbgp | 🗝️ | rooms/sdbgp.md |
-| mas | 🗝️ | rooms/mas.md |
 
 ---
 
@@ -218,6 +218,10 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 12: + camera + hmd + hmddfu + mas trio (Floor 8 VR).
+  Sony codenames: "luke" = PS Camera, "ujedi" = DS4. Address-adjacent
+  modules suggesting linked-together VR/Camera superblock. Mostly
+  niche for Linux: UVC works for PS Camera, OpenHMD for PSVR.
 - 2026-05-12 iter 11: + wlan + bt + wlanbt trio first-pass ⭐.
   CONFIRMED: PS4 wireless = MediaTek MT76xx (Sony codename "Trooper" /
   "Torus"). Mainline Linux mt76 driver covers this; we have it but
