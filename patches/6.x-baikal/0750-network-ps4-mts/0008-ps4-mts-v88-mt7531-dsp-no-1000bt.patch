@@ -1,0 +1,131 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v88 - stop 1000BT advertise + RGMII delay + MT7531 DSP defaults
+
+v87 added Orbis's "unconditional tail" of mts_mac_init.  If v87 hardware
+test still leaves link DOWN with partner's Remote Fault (reg 5 bit 13)
+stuck high, this v88 patch tries the next-most-likely fix per the
+4-agent v87+v88 dig.
+
+Key insight from deepseek's v88 fallback research: Orbis was written
+for Realtek RTL8211 PHYs, so its MMD 0x1e/0x1f writes are all
+Realtek-specific.  Mainline mt7531_phy_config_init (drivers/net/phy/
+mediatek/mtk-ge.c) does MT7531-specific DSP register writes that Orbis
+NEVER does.  On real MT7531 silicon coming out of reset, these DSP
+parameters are at POR (power-on reset) defaults that may be insufficient
+for reliable 1000BT signal training.  Result: partner sees malformed
+signal -> asserts Remote Fault -> AN never resolves to a working link.
+
+This patch adds three changes at end of mts_mac_init (after the v87
+tail writes):
+
+1. Stop advertising 1000BT (reg 9 & ~0x0300):
+   Partner reg 5 = 0xc5e1 doesn't include 1000BT.  Our advertising it
+   triggers 1000BT master/slave training that our PHY can't complete
+   (since we lack the DSP setup), partner sees bad signal, RF asserts.
+   Forcing 10/100-only removes 1000BT from the training path.
+
+2. RGMII delay (MMD 0x1e regs 0x13/0x14 = 0x04):
+   Mainline mtk-ge.c sets these for proper RGMII TX/RX skew.  Orbis
+   doesn't.  MT7531 default may be 0 (no delay), causing signal timing
+   errors at the MAC<->PHY interface.
+
+3. MT7531 DSP defaults (deepseek's primary finding):
+   - Near-echo offset: MMD 0x1e reg 0xa6, bits 15-8 = 0x3
+     OR-set 0x0300 into the high byte; keep low byte
+   - 100M MSE threshold: MMD 0x1e reg 0x123 = 0xffff
+     (both lo and hi thresholds to 0xff)
+
+Deferred to v89 if v88 isn't enough: SlvDPSready time write via
+token-ring protocol (TR ch=1 node=0xf data=0x17 bits 22-15 = 0x5e).
+Token-ring needs MediaTek's vendor C22 page 0x52b5 access pattern
+(regs 0x10/0x11/0x12) which is more complex.
+
+Pass criteria:
+
+  - dmesg shows "v88: 1000BT_CTRL (reg9) 0x???? -> 0x????"
+  - "v88: RGMII delay set: TX=0x???? RX=0x????"
+  - "v88: near-echo offset MMD0x1e r0xa6: 0x???? -> 0x????"
+  - "v88: 100M MSE threshold MMD0x1e r0x123 = 0xffff" (readback)
+  - phy_ctrl: LP ABILITY shows RF=0 (partner clears Remote Fault)
+  - linkreg transitions from 0x00000b18 to 0x00000???? with bit 0 set
+  - 100M full duplex link (since partner advertises 100/10 only)
+
+If link still down with this patch:
+  - v89: add SlvDPSready TR write
+  - v90: force 100M full duplex without AN (BMCR = 0x2100)
+  - v91: try a different PHY init - skip Orbis writes entirely,
+         apply only mainline mt7531_phy_config_init
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -505,6 +505,70 @@
+ 		       bar + MTS_LINK_STATUS);
+ 		(void)readl(bar + MTS_LINK_STATUS);
+ 
++		/*
++		 * v88: stop advertising 1000BT.  Per deepseek-v41's v87 dig,
++		 * partner reg 5 = 0xc5e1 has bit 13 (Remote Fault) set.  Partner
++		 * advertises only 10/100, not 1000BT.  Our advertising 1000BT
++		 * (reg 9 bit 9) may trigger 1000BT master/slave training that
++		 * our PHY can't complete (since Orbis Realtek MMD trim writes
++		 * are no-ops on MT7531), causing partner to see bad signal and
++		 * assert RF.  Force 10/100-only by clearing reg 9 entirely.
++		 *
++		 * If v88 makes partner clear RF + link comes up at 100M full:
++		 * the 1000BT training path was the blocker.
++		 */
++		if (mts_smi_c22_read(mts, 0x09, &v16) == 0) {
++			mts_smi_c22_write(mts, 0x09, v16 & ~0x0300);
++			dev_info(&mts->pdev->dev,
++				 "v88: 1000BT_CTRL (reg9) 0x%04x -> 0x%04x (stopped advertising 1000BT)\n",
++				 v16, v16 & ~0x0300);
++		}
++
++		/*
++		 * v88 RGMII delay per mainline mtk-ge.c.  MMD 0x1e regs 0x13/0x14
++		 * control PHY-side RGMII delay.  Orbis doesn't set them (relies
++		 * on Realtek silicon defaults).  On MT7531 with reset state,
++		 * defaults may be wrong.  Mainline value: 0x04.
++		 */
++		mts_smi_c45_write(mts, 0x1e, 0x13, 0x04);
++		mts_smi_c45_write(mts, 0x1e, 0x14, 0x04);
++		{
++			u16 td = 0, rd = 0;
++			mts_smi_c45_read(mts, 0x1e, 0x13, &td);
++			mts_smi_c45_read(mts, 0x1e, 0x14, &rd);
++			dev_info(&mts->pdev->dev,
++				 "v88: RGMII delay set: TX(MMD0x1e r0x13)=0x%04x RX(r0x14)=0x%04x\n",
++				 td, rd);
++		}
++
++		/*
++		 * v88 MT7531 DSP defaults (from deepseek's v88 dig of
++		 * mainline mt7531_phy_config_init).  Orbis NEVER does these
++		 * because Orbis was written for Realtek - MT7531 silicon
++		 * defaults at POR are insufficient for 1000BT signal training,
++		 * causing partner to see malformed signal and assert RF.
++		 *
++		 *   - Near-echo offset: MMD 0x1e reg 0xa6, bits 15-8 = 0x3
++		 *   - 100M MSE threshold: MMD 0x1e reg 0x123 = 0xffff
++		 *     (both lo/hi thresholds to 0xff)
++		 *
++		 * Skipped for v88: SlvDPSready time (TR ch=1 node=0xf data=0x17
++		 * bits 22-15 = 0x5e) - token-ring protocol access, defer to v89
++		 * if v88 isn't enough.
++		 */
++		if (mts_smi_c45_read(mts, 0x1e, 0xa6, &v16) == 0) {
++			u16 nw = (v16 & 0x00ff) | 0x0300;
++			mts_smi_c45_write(mts, 0x1e, 0xa6, nw);
++			dev_info(&mts->pdev->dev,
++				 "v88: near-echo offset MMD0x1e r0xa6: 0x%04x -> 0x%04x\n",
++				 v16, nw);
++		}
++		mts_smi_c45_write(mts, 0x1e, 0x123, 0xffff);
++		if (mts_smi_c45_read(mts, 0x1e, 0x123, &v16) == 0)
++			dev_info(&mts->pdev->dev,
++				 "v88: 100M MSE threshold MMD0x1e r0x123 = 0x%04x\n",
++				 v16);
++
+ 		/* Final AN restart per Orbis (BMCR |= 0x1200). */
+ 		if (mts_smi_c22_read(mts, 0x00, &v16) == 0) {
+ 			mts_smi_c22_write(mts, 0x00, v16 | 0x1200);
