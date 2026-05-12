@@ -551,6 +551,13 @@
 # Per deepseek-v41's Ghidra dig: starting the RX engine is what lets the
 # MAC monitor the PHY link signal so BAR+0x04 bit 0 can latch.
 0750-network-ps4-mts/0004-ps4-mts-v84-stub-isr-engine-start.patch
+# v85: maximize diagnostic data per boot.  Replace stub ISR with a
+# 16-slot atomic histogram of irq_status patterns.  Add a 5-second
+# debug telemetry timer that dumps the histogram + BAR state.  Gate
+# bit 18 in BAR+0x54 mask (Orbis writes 0x7bfffe; v85 writes 0x7bbffe)
+# to let non-bit-18 IRQs surface.  Kthread reads BMSR twice per
+# iteration (latch-low defeat) and logs linkreg on every change.
+0750-network-ps4-mts/0005-ps4-mts-v85-histogram-isr-bit18-gate-debug.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

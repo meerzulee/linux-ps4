@@ -1,0 +1,322 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v85 - histogram ISR + bit-18 gate + debug telemetry
+
+v84a hardware test revealed that IRQ 1 was firing at ~5,670 Hz with
+irq_status = 0x00040000 (bit 18 only) - a sticky source our stub ISR
+couldn't quiet by W1C-acking alone.  Link never reached UP.
+
+v85 maximizes diagnostic data extraction from each boot:
+
+1. Histogram ISR (mts_intr_stub replaced):
+   - Up to 16 atomic counter slots, one per unique irq_status pattern
+   - Linear scan in ISR hot path (acceptable at ~5kHz; would optimize later)
+   - On first occurrence of a new pattern, logs it once (dev_info)
+   - On overflow (>16 unique patterns), rate-limited generic log
+   - Still W1C-acks BAR+0x50 then read-back
+
+2. Debug telemetry timer (mts_dbg_timer_fn, 5s cadence):
+   - Dumps full histogram (all populated slots with pattern + count)
+   - Snapshots BAR+0x04 linkreg, BAR+0x34 rxkick, BAR+0x38 txkick,
+     BAR+0x54 mask, BAR+0x50 status, total IRQ count
+   - Logs linkreg-on-change explicitly
+
+3. Bit 18 gated in BAR+0x54 mask at init:
+   - Orbis writes 0x7bfffe; v85 writes 0x7bbffe (bit 18 cleared)
+   - If polarity is "1=enable", this disables the bit-18 IRQ source
+     and lets other IRQs surface in the histogram
+   - If polarity is "0=enable, 1=mask", bit 18 was already gated by
+     Orbis and the 5,670 Hz flood means something else - in which
+     case v85's histogram will show what
+
+4. phy_ctrl kthread BMSR double-read:
+   - Reads BMSR (PHY reg 1) TWICE per iteration
+   - First read returns latched-low value, second returns current
+   - If bmsr1 != bmsr2 with bit 2 differing, link IS up at PHY but
+     MAC isn't latching it - that pinpoints the disconnect
+   - Logs all unique bmsr2 values
+
+5. phy_ctrl kthread linkreg-on-change:
+   - Tracks prev_linkreg across iterations
+   - Logs every change including changes that don't affect bit 0
+
+Pass criteria for v85 (maximum data extraction):
+  - DBG histogram dump every 5s shows what the MAC is actually firing
+  - If bit 18 gate works: histogram shows bit-2 (link-change) firing
+    OR shows new patterns we hadn't seen
+  - BMSR double-read shows whether PHY-side link is up
+  - linkreg-on-change catches transient transitions
+
+If link comes up: bit 18 was the only blocker.
+If link still down but histogram shows new IRQs: those are next.
+If histogram stays empty after bit 18 gate: mask polarity is inverted
+  (Orbis 0x7bfffe means "mask out everything except these bits";
+  our 0x7bbffe masks out MORE than Orbis intended).
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -107,9 +107,19 @@
+ #define MTS_MAC_PAUSE_INIT	0x00002277
+ #define MTS_MAC_CLK_INIT	25000000
+ #define MTS_IRQ_ENABLE_FULL_VAL	0x10001388
+-#define MTS_IRQ_MASK_FULL_VAL	0x007bfffe
++/*
++ * v85: Orbis writes 0x7bfffe but v84a measured a 5,670 Hz flood of
++ * irq_status = 0x00040000 (bit 18 only) that our stub ISR can't quiet.
++ * Gate bit 18 in the mask to let other IRQ bits surface in the histogram.
++ * If link comes up, bit 18 was the blocker.  If not, the histogram tells
++ * us what else needs handling.
++ */
++#define MTS_IRQ_BIT18		0x00040000
++#define MTS_IRQ_MASK_FULL_VAL	(0x007bfffe & ~MTS_IRQ_BIT18)	/* = 0x007bbffe */
+ 
+ #define MTS_PHY_CTRL_PERIOD_MS	3000	/* gbe:phy_ctrl cadence */
++#define MTS_DBG_TIMER_PERIOD_MS	5000	/* debug telemetry dump cadence */
++#define MTS_ISR_HIST_SLOTS	16
+ 
+ /*
+  * DMA descriptor ring sizes.  Orbis uses 256 entries per ring; for v84's
+@@ -140,6 +150,18 @@
+ 	int irq;
+ 	bool irq_registered;
+ 	atomic_t isr_link_change_count;
++
++	/*
++	 * v85 telemetry: ISR records a histogram of irq_status patterns.
++	 * 16 slots, lockless via atomic_t.  Lookup is linear-O(N=16) which is
++	 * acceptable in the ISR hot path at the IRQ rates we see.  Periodic
++	 * debug timer dumps this every MTS_DBG_TIMER_PERIOD_MS.
++	 */
++	atomic_t isr_total_count;
++	u32 isr_hist_pattern[MTS_ISR_HIST_SLOTS];
++	atomic_t isr_hist_count[MTS_ISR_HIST_SLOTS];
++	u32 isr_last_linkreg;
++	struct timer_list dbg_timer;
+ };
+ 
+ /*
+@@ -349,24 +371,62 @@
+ }
+ 
+ /*
+- * Stub ISR.  Just W1C-acks BAR+0x50 to keep the MAC's IRQ block quiet so the
+- * Linux core doesn't flood "call_irq_handler: No irq handler for vector"
+- * once BAR+0x204 = 0x10001388 is set.  Logs link-change events (bit 2) since
+- * those are the signal we're hunting in v84.
++ * v85 histogram ISR.  Replaces v84's stub with diagnostic recording:
++ *   - Atomic histogram of unique irq_status patterns (up to 16 slots)
++ *   - Linear scan finds slot, atomic_inc the counter
++ *   - On first occurrence of a NEW pattern, logs it once (rare path)
++ *   - Always W1C-acks BAR+0x50 then reads back
++ *   - Logs every link-change IRQ (bit 2) with linkreg snapshot
++ *
++ * Histogram is dumped every 5s by mts_dbg_timer.  This gives us a
++ * full picture of what the MAC is asserting without flooding dmesg.
+  */
+ static irqreturn_t mts_intr_stub(int irq, void *dev_id)
+ {
+ 	struct mts *mts = dev_id;
+ 	u32 status;
++	int i;
++	bool found = false;
+ 
+ 	status = readl(mts->bar + MTS_IRQ_STATUS);
+ 	if (!status)
+ 		return IRQ_NONE;
+ 
+-	/* W1C-ack everything we saw. */
++	/* W1C-ack everything we saw, then read back to flush PCIe posted writes. */
+ 	writel(status, mts->bar + MTS_IRQ_STATUS);
+ 	(void)readl(mts->bar + MTS_IRQ_STATUS);
+ 
++	atomic_inc(&mts->isr_total_count);
++
++	/* Histogram update — linear search for matching pattern. */
++	for (i = 0; i < MTS_ISR_HIST_SLOTS; i++) {
++		if (READ_ONCE(mts->isr_hist_pattern[i]) == status) {
++			atomic_inc(&mts->isr_hist_count[i]);
++			found = true;
++			break;
++		}
++		if (READ_ONCE(mts->isr_hist_pattern[i]) == 0) {
++			/* Empty slot — claim it.  Race tolerant: if two CPUs
++			 * try simultaneously, one wins, the other will find
++			 * the now-occupied slot on next IRQ. */
++			WRITE_ONCE(mts->isr_hist_pattern[i], status);
++			atomic_inc(&mts->isr_hist_count[i]);
++			dev_info(&mts->pdev->dev,
++				 "ISR: NEW pattern slot[%d] = 0x%08x (total=%d)\n",
++				 i, status,
++				 atomic_read(&mts->isr_total_count));
++			found = true;
++			break;
++		}
++	}
++	if (!found && atomic_read(&mts->isr_total_count) < 100000) {
++		/* Histogram full but we still want to know it happened.
++		 * Rate-limited via the total-count guard. */
++		dev_info_ratelimited(&mts->pdev->dev,
++				     "ISR: irq_status=0x%08x (histogram full)\n",
++				     status);
++	}
++
+ 	if (status & MTS_IRQ_LINK_CHANGE) {
+ 		u32 linkreg = readl(mts->bar + MTS_LINK_STATUS);
+ 
+@@ -379,6 +439,48 @@
+ }
+ 
+ /*
++ * v85 debug telemetry timer.  Dumps the ISR histogram and current BAR
++ * state every MTS_DBG_TIMER_PERIOD_MS.  Logs linkreg only on change to
++ * avoid spam, but always logs the histogram so we see IRQ rates over time.
++ */
++static void mts_dbg_timer_fn(struct timer_list *t)
++{
++	struct mts *mts = from_timer(mts, t, dbg_timer);
++	u32 linkreg = readl(mts->bar + MTS_LINK_STATUS);
++	u32 rxkick = readl(mts->bar + MTS_RX_KICK);
++	u32 txkick = readl(mts->bar + MTS_TX_KICK);
++	u32 irq_mask = readl(mts->bar + MTS_IRQ_MASK);
++	u32 irq_status = readl(mts->bar + MTS_IRQ_STATUS);
++	int total = atomic_read(&mts->isr_total_count);
++	int i;
++
++	dev_info(&mts->pdev->dev,
++		 "DBG: linkreg=0x%08x rxkick=0x%08x txkick=0x%08x mask=0x%08x status=0x%08x total_irq=%d\n",
++		 linkreg, rxkick, txkick, irq_mask, irq_status, total);
++
++	for (i = 0; i < MTS_ISR_HIST_SLOTS; i++) {
++		u32 p = READ_ONCE(mts->isr_hist_pattern[i]);
++		int c = atomic_read(&mts->isr_hist_count[i]);
++
++		if (p == 0 && c == 0)
++			continue;
++		dev_info(&mts->pdev->dev,
++			 "DBG:   hist[%d] pattern=0x%08x count=%d\n",
++			 i, p, c);
++	}
++
++	if (linkreg != mts->isr_last_linkreg) {
++		dev_info(&mts->pdev->dev,
++			 "DBG: ** linkreg changed 0x%08x -> 0x%08x **\n",
++			 mts->isr_last_linkreg, linkreg);
++		mts->isr_last_linkreg = linkreg;
++	}
++
++	mod_timer(&mts->dbg_timer,
++		  jiffies + msecs_to_jiffies(MTS_DBG_TIMER_PERIOD_MS));
++}
++
++/*
+  * AN restart sequence.  Mirrors Orbis FUN_c85f0480 event 0x1 handler exactly:
+  * read 1000-BT control (reg 9) and ANAR (reg 4), OR-set the advertise bits if
+  * not present, then write BMCR (reg 0) with bit 12 (AN enable) + bit 9 (AN
+@@ -425,8 +527,9 @@
+ static int mts_phy_ctrl_fn(void *data)
+ {
+ 	struct mts *mts = data;
+-	u32 linkreg;
+-	u16 bmsr;
++	u32 linkreg, prev_linkreg = ~0U;
++	u16 bmsr1, bmsr2;
++	u16 prev_bmsr2 = 0xffff;
+ 	bool link_up, was_up;
+ 	int ret;
+ 
+@@ -435,6 +538,14 @@
+ 		link_up = (linkreg & MTS_LINK_UP) != 0;
+ 		was_up = mts->last_phy_link_up;
+ 
++		/* v85: log linkreg whenever it changes - even if bit 0 unchanged. */
++		if (linkreg != prev_linkreg) {
++			dev_info(&mts->pdev->dev,
++				 "phy_ctrl: linkreg changed 0x%08x -> 0x%08x\n",
++				 prev_linkreg, linkreg);
++			prev_linkreg = linkreg;
++		}
++
+ 		if (link_up && !was_up) {
+ 			dev_info(&mts->pdev->dev,
+ 				 "phy_ctrl: link UP (linkreg=0x%08x)\n",
+@@ -448,6 +559,26 @@
+ 		}
+ 		mts->last_phy_link_up = link_up;
+ 
++		/*
++		 * v85: read BMSR TWICE.  Bit 2 (link status) is latch-low: first
++		 * read returns latched-low value, second read returns current.
++		 * If bmsr1 != bmsr2 with bit 2 differing, link IS up at PHY but
++		 * MAC isn't latching it - that pinpoints the disconnect.
++		 */
++		ret = mts_smi_c22_read(mts, 0x01, &bmsr1);
++		if (ret == 0) {
++			ret = mts_smi_c22_read(mts, 0x01, &bmsr2);
++			if (ret == 0 && (bmsr1 != bmsr2 ||
++					 bmsr2 != prev_bmsr2)) {
++				dev_info(&mts->pdev->dev,
++					 "phy_ctrl: BMSR latch=0x%04x current=0x%04x (link@phy=%d AN@phy=%d)\n",
++					 bmsr1, bmsr2,
++					 !!(bmsr2 & 0x0004),
++					 !!(bmsr2 & 0x0020));
++				prev_bmsr2 = bmsr2;
++			}
++		}
++
+ 		if (!link_up) {
+ 			bool first = !mts->initial_an_done;
+ 			bool transition = was_up;
+@@ -460,20 +591,8 @@
+ 					 "phy_ctrl: AN restart (iter=%u, BMCR<-0x%04x)\n",
+ 					 mts->link_down_iterations, bmcr_post);
+ 				mts->initial_an_done = true;
+-			} else {
+-				/* Heartbeat-only read while waiting for AN. */
+-				ret = mts_smi_c22_read(mts, 0x01, &bmsr);
+-				if (ret)
+-					dev_dbg(&mts->pdev->dev,
+-						"phy_ctrl: SMI heartbeat read failed\n");
+ 			}
+ 			mts->link_down_iterations++;
+-		} else {
+-			/* Link up: just heartbeat. */
+-			ret = mts_smi_c22_read(mts, 0x01, &bmsr);
+-			if (ret)
+-				dev_dbg(&mts->pdev->dev,
+-					"phy_ctrl: SMI heartbeat read failed\n");
+ 		}
+ 
+ 		msleep_interruptible(MTS_PHY_CTRL_PERIOD_MS);
+@@ -544,6 +663,13 @@
+ 	 * the device.  pci_irq_vector(pdev, 0) then returns the allocated vector.
+ 	 */
+ 	atomic_set(&mts->isr_link_change_count, 0);
++	atomic_set(&mts->isr_total_count, 0);
++	for (i = 0; i < MTS_ISR_HIST_SLOTS; i++) {
++		mts->isr_hist_pattern[i] = 0;
++		atomic_set(&mts->isr_hist_count[i], 0);
++	}
++	mts->isr_last_linkreg = 0;
++
+ 	ret = pci_alloc_irq_vectors(pdev, 1, 1, PCI_IRQ_MSI | PCI_IRQ_INTX);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "pci_alloc_irq_vectors failed: %d\n", ret);
+@@ -623,6 +749,11 @@
+ 	mts->last_link = ~0U;
+ 	mod_timer(&mts->link_poll, jiffies + HZ);
+ 
++	/* v85 debug telemetry timer - dumps histogram + state every 5s. */
++	timer_setup(&mts->dbg_timer, mts_dbg_timer_fn, 0);
++	mod_timer(&mts->dbg_timer,
++		  jiffies + msecs_to_jiffies(MTS_DBG_TIMER_PERIOD_MS));
++
+ 	/*
+ 	 * Spawn the SMI heartbeat thread.  Must outlive the link-poll timer so
+ 	 * SMI stays exercised even when no link transitions occur.  See
+@@ -646,6 +777,7 @@
+ 
+ 	if (mts->phy_ctrl_thread)
+ 		kthread_stop(mts->phy_ctrl_thread);
++	timer_delete_sync(&mts->dbg_timer);
+ 	timer_delete_sync(&mts->link_poll);
+ 
+ 	/* Stop RX/TX engines before disabling the IRQ block. */
