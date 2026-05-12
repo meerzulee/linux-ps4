@@ -426,6 +426,12 @@
 # same SBL/SMU structural blocker. A18 fixed UVD but VCE then kills amdgpu
 # probe at -110. Same fix in vce_v2_0_hw_init's ring_test loop.
 0300-gpu-liverpool/0055-amdgpu-vce-v2-0-a19-soft-fail-hw-init.patch
+# 0059: 2026-05-12 — disable UVD + VCE entirely on Liverpool/Gladius. A18/A19
+# soft-failed hw_init but VCPU still ran partial bring-up, leading to runaway
+# UVD-VA-0x300000000 fault storm under sustained SBL probing (2.6M faults/5s).
+# Skip both engines via early_init -ENODEV. SBL writes can't drive the SAMU
+# from our context anyway (see sbl-port/2026-05-12-stealth-auth-confirmed.md).
+0300-gpu-liverpool/0059-amdgpu-disable-uvd-vce-entirely-no-samu-auth.patch
 # 0056: v76e-B1.1-α — drop the VC1_CNTL.PAGE_TABLE_DEPTH=0 override from 0040.
 # A18/A19 soft-fail removed the need for the flat-walk hack; DEPTH=0 was
 # silently swallowing amdgpu_vm's per-vmid PT_BASE writes, which is why
