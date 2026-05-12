@@ -513,6 +513,16 @@
 # generated using MSI" via that path, despite 0005 being applied.
 0700-network-sky2/0006-sky2-baikal-skip-msi-test-in-apcie-branch.patch
 
+# === 0750: ps4_mts — Baikal GBE driver based on Orbis if_mts RE
+# Sky2 was the wrong driver (v69 MDIO scan dead-end: it polled Yukon
+# GPHY_REG, but the actual MTS MDIO controller is at BAR+0x00). Phase 1
+# of the new driver does PCI bind + SMI MDIO sweep + Realtek PHY init +
+# 1Hz link polling. See checkpoint/docs/research/2026-05-12-orbis-mts-
+# driver-RE.md for the full reverse-engineered register map.  The patch
+# also #ifdef-removes the Baikal entry from sky2's PCI id_table so the
+# two drivers do not race for 0000:00:14.1.
+0750-network-ps4-mts/0001-net-add-ps4-mts-phase1-driver.patch
+
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
 0800-usb-aeolia/0002-xhci-aeolia-baikal-shutdown.patch

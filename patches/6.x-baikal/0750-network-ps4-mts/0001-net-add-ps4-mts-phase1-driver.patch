@@ -1,0 +1,430 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: add Sony PS4 Baikal MTS gigabit ethernet driver (phase 1)
+
+Sony PS4 "Baikal" southbridge gigabit ethernet is driven by a Sony
+custom MAC IP block, internally named "mts" per the Orbis FreeBSD source
+path W:\Build\J02688428\sys\freebsd\sys\dev\mts\if_mts.c.  The chip is
+NOT Synopsys DWMAC1000 (as previously hypothesized by rmuxnet) and NOT
+Marvell Yukon-2 (proven by v69 sky2 dead-end).  Reverse-engineered from
+Orbis 12.02 kernel via Ghidra MCP; full register map and ISR bit table
+in checkpoint/docs/research/2026-05-12-orbis-mts-driver-RE.md.
+
+v77 boot result: SMI MDIO works end-to-end, all 32 PHY regs readable,
+AN-complete bit set in BMSR.  PHY identified as MediaTek MT7531
+(PHY ID 0x03a29441 — exact match in drivers/net/phy/mediatek/mtk-ge.c),
+NOT Realtek as the Orbis poke pattern suggested.  v77b drops the
+Realtek-targeted vendor pokes and uses a generic BMCR reset + AN
+restart, since MT7531's defaults already advertise full GbE.
+
+Phase 1 scope:
+  - PCI bind to {VID_SONY, DEV_BAIKAL_GBE}
+  - Minimum MAC out-of-reset (no efuse-trim dependency)
+  - SMI MDIO controller at BAR0+0x00 — C22 read/write
+  - SMI register sweep + PHY ID print (proof-of-RE marker)
+  - Generic PHY soft-reset + AN restart
+  - 1Hz link-status polling, logs UP/DOWN transitions
+  - No net_device, no TX/RX, no DMA rings
+
+Sky2's Baikal entry is removed via #ifdef so the two drivers do not
+race for the same PCI device.  Sky2 keeps Aeolia + Belize coverage.
+
+Pass criterion for the v77b boot test:
+  ps4_mts 0000:00:14.1: PHY ID1=0x03a2 ID2=0x9441  (MediaTek MT7531)
+  ps4_mts 0000:00:14.1: link UP — 1000 Mbps full-duplex
+
+If link is still DOWN after this hot-fix, the PHY needs MT7531-specific
+DSA-style setup (mainline drivers/net/dsa/mt7530-mdio.c) which is
+phase 2 work.
+
+TX/RX paths follow in phase 2/3.
+---
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -188,6 +188,7 @@
+ source "drivers/net/ethernet/sfc/Kconfig"
+ source "drivers/net/ethernet/smsc/Kconfig"
+ source "drivers/net/ethernet/socionext/Kconfig"
++source "drivers/net/ethernet/sony/Kconfig"
+ source "drivers/net/ethernet/stmicro/Kconfig"
+ source "drivers/net/ethernet/sun/Kconfig"
+ source "drivers/net/ethernet/sunplus/Kconfig"
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -91,6 +91,7 @@
+ obj-$(CONFIG_NET_VENDOR_SGI) += sgi/
+ obj-$(CONFIG_NET_VENDOR_SMSC) += smsc/
+ obj-$(CONFIG_NET_VENDOR_SOCIONEXT) += socionext/
++obj-$(CONFIG_NET_VENDOR_SONY) += sony/
+ obj-$(CONFIG_NET_VENDOR_STMICRO) += stmicro/
+ obj-$(CONFIG_NET_VENDOR_SUN) += sun/
+ obj-$(CONFIG_NET_VENDOR_SUNPLUS) += sunplus/
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -141,7 +141,9 @@
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL, 0x4382) }, /* 88E8079 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_AEOLIA_GBE) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BELIZE_GBE) },
++#ifndef CONFIG_PS4_MTS
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) }, /* v14: try the Baikal GbE 0x90d8 */
++#endif
+ 	{ 0 }
+ };
+ 
+--- a/drivers/net/ethernet/sony/Kconfig
++++ b/drivers/net/ethernet/sony/Kconfig
+@@ -0,0 +1,33 @@
++# SPDX-License-Identifier: GPL-2.0-only
++#
++# Sony PlayStation network device configuration
++#
++
++config NET_VENDOR_SONY
++	bool "Sony devices"
++	default y
++	depends on PCI
++	help
++	  If you have a network (Ethernet) card belonging to this class,
++	  say Y here.
++
++	  Note that the answer to this question doesn't directly affect the
++	  kernel: saying N will just cause the configurator to skip all
++	  the questions about Sony cards. If you say Y, you will be asked for
++	  your specific card in the following questions.
++
++if NET_VENDOR_SONY
++
++config PS4_MTS
++	tristate "Sony PlayStation 4 Baikal GBE (MTS) support"
++	depends on PCI && X86_PS4
++	help
++	  Sony PlayStation 4 "Baikal" southbridge gigabit ethernet support.
++	  Reverse-engineered from Orbis firmware 12.02; MediaTek MT7531 PHY
++	  accessed through Sony's custom SMI MDIO controller at BAR0+0x00.
++	  Phase 1: PCI bind + PHY ID readback + link polling only (no TX/RX).
++
++	  To compile this driver as a module, choose M here.  The module will
++	  be called ps4_mts.
++
++endif # NET_VENDOR_SONY
+--- a/drivers/net/ethernet/sony/Makefile
++++ b/drivers/net/ethernet/sony/Makefile
+@@ -0,0 +1,6 @@
++# SPDX-License-Identifier: GPL-2.0-only
++#
++# Makefile for the Sony PlayStation network device drivers.
++#
++
++obj-$(CONFIG_PS4_MTS) += ps4_mts.o
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -0,0 +1,310 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Sony PS4 Baikal "MTS" gigabit ethernet — phase 1: PHY detection + link poll.
++ *
++ * Reverse-engineered from Orbis kernel FW 12.02 `if_mts.c`.  Full register map
++ * and ISR bit table at checkpoint/docs/research/2026-05-12-orbis-mts-driver-RE.md.
++ *
++ * Scope: PCI bind, partial MAC out-of-reset, SMI MDIO C22 sweep, generic PHY
++ * soft-reset + AN restart, and a 1Hz link-status print.  No net_device, no DMA
++ * rings, no TX/RX yet.  v77 boot validated SMI end-to-end and identified the
++ * PHY as MediaTek MT7531 (id 0x03a29441 — matches MTK_GPHY_ID_MT7531 in
++ * mainline drivers/net/phy/mediatek/mtk-ge.c).  TX/RX paths land in phase 2/3.
++ */
++
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/pci_ids.h>
++#include <linux/timer.h>
++#include <linux/types.h>
++
++#define DRV_NAME "ps4_mts"
++
++/* BAR0 register offsets (see RE doc for full table). */
++#define MTS_SMI_CMD		0x000
++#define MTS_LINK_STATUS		0x004
++#define MTS_MAC_CTRL1		0x008
++#define MTS_MAC_CTRL2		0x00c
++#define MTS_MAC_CTRL3		0x010
++#define MTS_MAC_ADDR0_HI	0x014
++#define MTS_MAC_ADDR0_LO	0x018
++#define MTS_MAC_MODE		0x030
++#define MTS_RX_KICK		0x034
++#define MTS_TX_KICK		0x038
++#define MTS_TX_DESC_LO		0x03c
++#define MTS_TX_DESC_HI		0x044
++#define MTS_IRQ_STATUS		0x050
++#define MTS_IRQ_MASK		0x054
++#define MTS_MAC_PAUSE		0x074
++#define MTS_RX_GATE		0x078
++#define MTS_MAC_CLK		0x07c
++#define MTS_PKT_ENGINE_CTRL	0x09c
++#define MTS_INIT_AC		0x0ac
++#define MTS_MAC_ADDR1_HI	0x140
++#define MTS_MAC_ADDR1_LO	0x144
++#define MTS_MCAST_DATA		0x1bc
++#define MTS_MCAST_IDX		0x1c0
++#define MTS_MCAST_CTRL		0x1c4
++#define MTS_MCAST_MASK		0x1c8
++#define MTS_MCAST_DONE		0x1d0
++#define MTS_INIT_1D4		0x1d4
++#define MTS_MASTER_RESET	0x200
++#define MTS_IRQ_ENABLE_FULL	0x204
++
++/* SMI bits (BAR+0x00 is a single command/result word). */
++#define MTS_SMI_ARM		0x00008000
++#define MTS_SMI_OP_C22_RD	0x00004000
++#define MTS_SMI_OP_C22_WR	0x00002000
++#define MTS_SMI_OP_C45_ADDR	0x00000020
++#define MTS_SMI_OP_C45_RD	0x000000e0
++#define MTS_SMI_OP_C45_WR	0x00000060
++#define MTS_SMI_REG_SHIFT	8
++#define MTS_SMI_DATA_SHIFT	16
++#define MTS_SMI_DONE		0x00008000 /* same bit as ARM in the lower 16 */
++
++#define MTS_SMI_TIMEOUT_US	10000
++
++/* Link status fields (BAR+0x04). */
++#define MTS_LINK_UP		BIT(0)
++#define MTS_LINK_SPEED_MASK	(3 << 2)
++#define MTS_LINK_SPEED_10	(0 << 2)
++#define MTS_LINK_SPEED_100	(1 << 2)
++#define MTS_LINK_SPEED_1000	(2 << 2)
++#define MTS_LINK_FULL_DUPLEX	BIT(4)
++
++/* Init constants captured from mts_mac_init in Orbis kernel. */
++#define MTS_MAC_CTRL1_INIT_OR	0x07597c00
++#define MTS_MAC_CTRL3_INIT_AND	0xffffff6e
++#define MTS_MAC_CTRL3_INIT_OR	0x00000081
++#define MTS_MAC_MODE_INIT	0x00010100
++#define MTS_MAC_PAUSE_INIT	0x00002277
++#define MTS_MAC_CLK_INIT	25000000
++#define MTS_IRQ_ENABLE_FULL_VAL	0x10001388
++
++struct mts {
++	struct pci_dev *pdev;
++	void __iomem *bar;
++	struct timer_list link_poll;
++	u32 last_link;
++	bool link_logged_once;
++};
++
++/*
++ * SMI MDIO Clause-22 read.  Single 32-bit command register with poll-bit-15
++ * completion.  No PHY-address selector in the protocol — Sony's SMI is wired
++ * to a single PHY on a private bus, so register-number is the only field.
++ */
++static int mts_smi_c22_read(struct mts *mts, u8 reg, u16 *val)
++{
++	u32 v;
++	int timeout = MTS_SMI_TIMEOUT_US;
++
++	writel(MTS_SMI_ARM, mts->bar + MTS_SMI_CMD);
++	writel(MTS_SMI_OP_C22_RD | ((reg & 0x1f) << MTS_SMI_REG_SHIFT),
++	       mts->bar + MTS_SMI_CMD);
++
++	do {
++		v = readl(mts->bar + MTS_SMI_CMD);
++		if (v & MTS_SMI_DONE) {
++			*val = v >> MTS_SMI_DATA_SHIFT;
++			return 0;
++		}
++		udelay(1);
++	} while (--timeout);
++
++	*val = 0xffff;
++	return -ETIMEDOUT;
++}
++
++static int mts_smi_c22_write(struct mts *mts, u8 reg, u16 val)
++{
++	u32 cmd;
++	int timeout = MTS_SMI_TIMEOUT_US;
++
++	writel(MTS_SMI_ARM, mts->bar + MTS_SMI_CMD);
++	cmd = MTS_SMI_OP_C22_WR
++	    | ((reg & 0x1f) << MTS_SMI_REG_SHIFT)
++	    | ((u32)val << MTS_SMI_DATA_SHIFT);
++	writel(cmd, mts->bar + MTS_SMI_CMD);
++
++	do {
++		if (readl(mts->bar + MTS_SMI_CMD) & MTS_SMI_DONE)
++			return 0;
++		udelay(1);
++	} while (--timeout);
++
++	return -ETIMEDOUT;
++}
++
++/*
++ * MAC out-of-reset enough for SMI to respond.  This is the minimum prefix of
++ * Orbis's mts_mac_init that does NOT depend on efuse trim values.  The
++ * efuse-dependent PHY trim writes are deliberately omitted in phase 1 — they
++ * tune AFE/SerDes parameters and are not required for the PHY to enumerate via
++ * MDIO.  Adding them in phase 2 will need an efuse-read path through ICC.
++ */
++static void mts_mac_init(struct mts *mts)
++{
++	writel(0, mts->bar + MTS_MASTER_RESET);
++	(void)readl(mts->bar + MTS_IRQ_STATUS);
++	writel(readl(mts->bar + MTS_IRQ_STATUS), mts->bar + MTS_IRQ_STATUS);
++	udelay(680);
++	writel(9, mts->bar + MTS_INIT_AC);
++}
++
++/*
++ * Generic PHY init for MT7531.  Phase-1 v77 boot proved Orbis's vendor-poke
++ * pattern targets a Realtek-style page protocol — but the actual PHY here is
++ * MediaTek MT7531 (ID 0x03a29441).  MT7531 has its own DSA-style switch
++ * setup that mainline drives via drivers/net/dsa/mt7530-mdio.c; replicating
++ * that is phase-2 work.  For phase-1b we just soft-reset the PHY's BMCR and
++ * restart auto-negotiation — the PHY's defaults already advertise full GbE
++ * capability (reg 9 = 0x0200 = adv 1000-BASE-T full).
++ */
++static int mts_phy_init(struct mts *mts)
++{
++	u16 bmcr;
++	int i;
++
++	mts_smi_c22_write(mts, 0x00, 0x8000); /* soft reset */
++	for (i = 0; i < 100; i++) {
++		if (mts_smi_c22_read(mts, 0x00, &bmcr))
++			return -EIO;
++		if (!(bmcr & 0x8000))
++			break;
++		usleep_range(1000, 2000);
++	}
++	if (bmcr & 0x8000) {
++		dev_warn(&mts->pdev->dev, "PHY soft-reset did not clear\n");
++		return -ETIMEDOUT;
++	}
++	mts_smi_c22_write(mts, 0x00, 0x1200); /* AN enable + restart */
++	return 0;
++}
++
++static void mts_link_poll(struct timer_list *t)
++{
++	struct mts *mts = from_timer(mts, t, link_poll);
++	u32 ls = readl(mts->bar + MTS_LINK_STATUS);
++	u16 bmsr = 0xffff;
++
++	mts_smi_c22_read(mts, 0x01, &bmsr);
++
++	if (ls != mts->last_link || !mts->link_logged_once) {
++		const char *speed = "?";
++
++		if (ls & MTS_LINK_UP) {
++			switch (ls & MTS_LINK_SPEED_MASK) {
++			case MTS_LINK_SPEED_10:   speed = "10";   break;
++			case MTS_LINK_SPEED_100:  speed = "100";  break;
++			case MTS_LINK_SPEED_1000: speed = "1000"; break;
++			}
++			dev_info(&mts->pdev->dev,
++				 "link UP — %s Mbps %s-duplex (linkreg=0x%08x, BMSR=0x%04x)\n",
++				 speed,
++				 (ls & MTS_LINK_FULL_DUPLEX) ? "full" : "half",
++				 ls, bmsr);
++		} else {
++			dev_info(&mts->pdev->dev,
++				 "link DOWN (linkreg=0x%08x, BMSR=0x%04x)\n",
++				 ls, bmsr);
++		}
++		mts->last_link = ls;
++		mts->link_logged_once = true;
++	}
++
++	mod_timer(&mts->link_poll, jiffies + HZ);
++}
++
++static int mts_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	struct mts *mts;
++	u16 id1 = 0xffff, id2 = 0xffff;
++	int ret, i;
++
++	mts = devm_kzalloc(&pdev->dev, sizeof(*mts), GFP_KERNEL);
++	if (!mts)
++		return -ENOMEM;
++	mts->pdev = pdev;
++
++	ret = pcim_enable_device(pdev);
++	if (ret)
++		return dev_err_probe(&pdev->dev, ret, "pcim_enable_device\n");
++
++	ret = pcim_iomap_regions(pdev, BIT(0), DRV_NAME);
++	if (ret)
++		return dev_err_probe(&pdev->dev, ret, "pcim_iomap_regions BAR0\n");
++	mts->bar = pcim_iomap_table(pdev)[0];
++
++	pci_set_master(pdev);
++	pci_set_drvdata(pdev, mts);
++
++	dev_info(&pdev->dev, "Baikal MTS: BAR0=%pR, mapped at %p\n",
++		 &pdev->resource[0], mts->bar);
++
++	mts_mac_init(mts);
++
++	/* Scan PHY registers 0..31 via SMI; log non-trivial responses.  The
++	 * SMI controller has no PHY-address field — register-number is the
++	 * only selector — so this is really an "is this register reachable"
++	 * sweep rather than a bus discovery.  PHY ID at reg 2/3 is the proof
++	 * the reverse-engineered SMI protocol is correct.
++	 */
++	dev_info(&pdev->dev, "SMI sweep:\n");
++	for (i = 0; i < 32; i++) {
++		u16 v = 0xffff;
++		int r = mts_smi_c22_read(mts, i, &v);
++
++		if (r == 0 && v != 0xffff)
++			dev_info(&pdev->dev, "  reg %2d = 0x%04x\n", i, v);
++		else if (r)
++			dev_info(&pdev->dev, "  reg %2d = TIMEOUT\n", i);
++	}
++
++	mts_smi_c22_read(mts, 0x02, &id1);
++	mts_smi_c22_read(mts, 0x03, &id2);
++	dev_info(&pdev->dev, "PHY ID1=0x%04x ID2=0x%04x%s\n", id1, id2,
++		 id1 == 0x001c ? " (Realtek RTL8211x)" : "");
++
++	ret = mts_phy_init(mts);
++	if (ret)
++		dev_warn(&pdev->dev, "PHY init failed (%d) — link may not come up\n", ret);
++
++	timer_setup(&mts->link_poll, mts_link_poll, 0);
++	mts->last_link = ~0U;
++	mod_timer(&mts->link_poll, jiffies + HZ);
++
++	return 0;
++}
++
++static void mts_remove(struct pci_dev *pdev)
++{
++	struct mts *mts = pci_get_drvdata(pdev);
++
++	timer_delete_sync(&mts->link_poll);
++	writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
++	writel(0, mts->bar + MTS_IRQ_MASK);
++}
++
++static const struct pci_device_id mts_pci_id_table[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) },
++	{ 0 }
++};
++MODULE_DEVICE_TABLE(pci, mts_pci_id_table);
++
++static struct pci_driver mts_pci_driver = {
++	.name     = DRV_NAME,
++	.id_table = mts_pci_id_table,
++	.probe    = mts_probe,
++	.remove   = mts_remove,
++};
++
++module_pci_driver(mts_pci_driver);
++
++MODULE_AUTHOR("PS4 Linux Baikal Port");
++MODULE_DESCRIPTION("Sony PS4 Baikal Gigabit Ethernet (MTS) — phase 1 PHY probe");
++MODULE_LICENSE("GPL v2");
