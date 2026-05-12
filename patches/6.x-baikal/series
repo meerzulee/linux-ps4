@@ -512,16 +512,22 @@
 # the APCIE branch. After v67b boot proved we hit "No interrupt
 # generated using MSI" via that path, despite 0005 being applied.
 0700-network-sky2/0006-sky2-baikal-skip-msi-test-in-apcie-branch.patch
-
-# === 0750: ps4_mts — Baikal GBE driver based on Orbis if_mts RE
-# Sky2 was the wrong driver (v69 MDIO scan dead-end: it polled Yukon
-# GPHY_REG, but the actual MTS MDIO controller is at BAR+0x00). Phase 1
-# of the new driver does PCI bind + SMI MDIO sweep + Realtek PHY init +
-# 1Hz link polling. See checkpoint/docs/research/2026-05-12-orbis-mts-
-# driver-RE.md for the full reverse-engineered register map.  The patch
-# also #ifdef-removes the Baikal entry from sky2's PCI id_table so the
-# two drivers do not race for 0000:00:14.1.
-0750-network-ps4-mts/0001-net-add-ps4-mts-phase1-driver.patch
+# v78 (2026-05-12): the standalone ps4_mts driver from v77/v77b was a
+# detour. Deeper Orbis RE proved the Baikal GBE driver is just FreeBSD's
+# msk/if_msk.c (Marvell Yukon-2) with a custom PHY-MDIO controller at
+# BAR+0x00 — sky2 was the right driver all along. v78 patches it to
+# route gm_phy_read/write through the SMI controller for Baikal devices
+# and skip Yukon's sky2_phy_init (MT7531 doesn't need it). See research
+# doc 2026-05-12-orbis-mts-phase2-plan.md for the full rationale.
+0700-network-sky2/0008-sky2-baikal-mts-smi-mdio.patch
+# v79 (2026-05-12): v78 bound sky2 to Baikal cleanly but link stayed
+# DOWN and the SMI controller went stuck after ~1min.  Root cause: the
+# Baikal MAC's full IRQ block (BAR+0x204=0x10001388, BAR+0x54=0x7bfffe)
+# has to be enabled or the MAC clocks idle out.  Orbis's mts_intr does
+# this on the first interrupt; v79 does it once at probe completion.
+# v79 also drops the BMCR reset + AN restart we did in v78 — Orbis's
+# pre-handoff PHY state already had AN complete.
+0700-network-sky2/0009-sky2-baikal-irq-enable-skip-phy-init.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

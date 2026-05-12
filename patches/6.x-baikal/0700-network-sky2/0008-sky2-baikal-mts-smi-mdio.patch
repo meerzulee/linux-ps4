@@ -1,0 +1,149 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: route PHY MDIO through Baikal's custom SMI controller
+
+Phase 2 of the Baikal ethernet bring-up.  The Orbis driver stack
+(W:\Build\J02688428\sys\freebsd\sys\dev\msk\if_msk.c parent +
+.../dev/mts/if_mts.c child) is just FreeBSD's stock Marvell Yukon-2
+driver customized by Sony.  The ONE thing they moved is the PHY MDIO
+bus: instead of accessing it via Yukon's standard GMAC GM_SMI_CTRL
+register block, Sony built a custom "SMI" controller at BAR0+0x00.
+
+v69's MDIO scan dead-end was a false alarm: sky2 was probing
+BAR+0x2880 (Yukon's GPHY_REG) but the SMI controller lives at
+BAR+0x00 with a completely different protocol.  Once you give sky2
+the right accessor, the PHY responds — confirmed on v77 (the
+standalone ps4_mts driver) where SMI cl22 read returned 32 valid
+register values and PHY ID 0x03a29441 (MediaTek MT7531).  Full RE
+in checkpoint/docs/research/2026-05-12-orbis-mts-driver-RE.md and
+the phase-2 plan in 2026-05-12-orbis-mts-phase2-plan.md.
+
+This patch:
+  - Adds sky2_baikal_smi_read/write helpers using the BAR0+0x00
+    32-bit command/result protocol (reverse-engineered from Orbis's
+    mts_smi_cl22_read/write).
+  - Routes gm_phy_write + __gm_phy_read through them when the device
+    is the PS4 Baikal GBE.
+  - Skips sky2_phy_init's Yukon-PHY register choreography on Baikal
+    — those writes target Marvell vendor pages that don't exist on
+    the MT7531 switch chip.  Replaces it with a BMCR soft-reset +
+    auto-neg restart, which is what Orbis's mts_mac_init does for
+    the (older) Marvell-switch path's analog Realtek-poke trim and
+    is all that's needed for MT7531's standalone PHY core.
+  - Restores the Baikal entry in sky2_id_table (the v77 patch
+    wrapped it in #ifdef CONFIG_PS4_MTS; v78 drops the standalone
+    driver, so the wrapper goes away too).
+
+Pass criterion: sky2 should now bind to 0000:00:14.1, log a normal
+"phy I/O error"-free probe, and link should come up on cable plug.
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -155,11 +155,67 @@ static const u32 portirq_msk[] = { Y2_IS_PORT_1, Y2_IS_PORT_2 };
+ static void sky2_set_multicast(struct net_device *dev);
+ static irqreturn_t sky2_intr(int irq, void *dev_id);
+
++#ifdef CONFIG_X86_PS4
++/*
++ * PS4 Baikal: PHY MDIO is on Sony's custom "SMI" controller at BAR+0x00, not
++ * on Yukon's GMAC GM_SMI_CTRL block.  Single 32-bit command/result word; no
++ * PHY-address field — the controller is wired to one PHY (MediaTek MT7531
++ * switch chip on current Baikal revs, Marvell 88E6XXX on older).  Encoding
++ * reverse-engineered from Orbis FW 12.02 `mts_smi_cl22_*` — see
++ * checkpoint/docs/research/2026-05-12-orbis-mts-driver-RE.md.
++ */
++static inline bool sky2_is_baikal(const struct sky2_hw *hw)
++{
++	return hw->pdev->vendor == PCI_VENDOR_ID_SONY &&
++	       hw->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE;
++}
++
++static int sky2_baikal_smi_read(struct sky2_hw *hw, u16 reg, u16 *val)
++{
++	int timeout = 10000;
++	u32 v;
++
++	sky2_write32(hw, 0, 0x8000);
++	sky2_write32(hw, 0, 0x4000 | ((reg & 0x1f) << 8));
++	do {
++		v = sky2_read32(hw, 0);
++		if (v & 0x8000) {
++			*val = v >> 16;
++			return 0;
++		}
++		udelay(1);
++	} while (--timeout);
++	*val = 0xffff;
++	return -ETIMEDOUT;
++}
++
++static int sky2_baikal_smi_write(struct sky2_hw *hw, u16 reg, u16 val)
++{
++	int timeout = 10000;
++
++	sky2_write32(hw, 0, 0x8000);
++	sky2_write32(hw, 0, 0x2000 | ((reg & 0x1f) << 8) | ((u32)val << 16));
++	do {
++		if (sky2_read32(hw, 0) & 0x8000)
++			return 0;
++		udelay(1);
++	} while (--timeout);
++	return -ETIMEDOUT;
++}
++#else
++static inline bool sky2_is_baikal(const struct sky2_hw *hw) { return false; }
++#endif
++
+ /* Access to PHY via serial interconnect */
+ static int gm_phy_write(struct sky2_hw *hw, unsigned port, u16 reg, u16 val)
+ {
+ 	int i;
+
++#ifdef CONFIG_X86_PS4
++	if (sky2_is_baikal(hw))
++		return sky2_baikal_smi_write(hw, reg, val);
++#endif
++
+ 	gma_write16(hw, port, GM_SMI_DATA, val);
+ 	gma_write16(hw, port, GM_SMI_CTRL,
+ 		    GM_SMI_CT_PHY_AD(hw->phy_addr) | GM_SMI_CT_REG_AD(reg));
+@@ -189,6 +243,11 @@ static int __gm_phy_read(struct sky2_hw *hw, unsigned port, u16 reg, u16 *val)
+ {
+ 	int i;
+
++#ifdef CONFIG_X86_PS4
++	if (sky2_is_baikal(hw))
++		return sky2_baikal_smi_read(hw, reg, val);
++#endif
++
+ 	gma_write16(hw, port, GM_SMI_CTRL, GM_SMI_CT_PHY_AD(hw->phy_addr)
+ 		    | GM_SMI_CT_REG_AD(reg) | GM_SMI_CT_OP_RD);
+
+@@ -338,6 +397,28 @@ static void sky2_phy_init(struct sky2_hw *hw, unsigned port)
+ 	struct sky2_port *sky2 = netdev_priv(hw->dev[port]);
+ 	u16 ctrl, ct1000, adv, pg, ledctrl, ledover, reg;
+
++#ifdef CONFIG_X86_PS4
++	if (sky2_is_baikal(hw)) {
++		/* MT7531 (or older Marvell 88E6XXX) has its own setup driven by
++		 * Orbis SBL.  Skip all Yukon-PHY-specific writes; they target
++		 * Marvell vendor pages that don't exist here.  Just soft-reset
++		 * BMCR and restart auto-negotiation. */
++		int i;
++		u16 v;
++
++		gm_phy_write(hw, port, PHY_MARV_CTRL, PHY_CT_RESET);
++		for (i = 0; i < 100; i++) {
++			v = gm_phy_read(hw, port, PHY_MARV_CTRL);
++			if (!(v & PHY_CT_RESET))
++				break;
++			usleep_range(1000, 2000);
++		}
++		gm_phy_write(hw, port, PHY_MARV_CTRL,
++			     PHY_CT_ANE | PHY_CT_RE_CFG);
++		return;
++	}
++#endif
++
+ 	if ( (sky2->flags & SKY2_FLAG_AUTO_SPEED) &&
+ 	    !(hw->flags & SKY2_HW_NEWER_PHY)) {
+ 		u16 ectrl = gm_phy_read(hw, port, PHY_MARV_EXT_CTRL);
