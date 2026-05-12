@@ -1,0 +1,94 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: enable Baikal IRQ block + trust Orbis PHY state
+
+v78 wired up the SMI MDIO accessor and got sky2 to bind cleanly on
+Baikal (no more phy I/O errors, enp0s20f1 netdev created).  But link
+stayed DOWN and SMI eventually went stuck — same symptom as the v77/v77b
+standalone driver.
+
+Root cause confirmed via Orbis RE: Baikal's MAC has its own IRQ block
+that has to be enabled for the MAC clocks (and the SMI controller they
+feed) to stay alive.  Orbis's mts_intr enables it on the first interrupt:
+   BAR+0x204 = 0x10001388  (full IRQ enable)
+   BAR+0x54  = 0x7bfffe    (per-IRQ mask)
+Without these writes the MAC idles out after ~1min, the SMI register
+starts echoing the last command back instead of actually clocking the
+PHY, and the link transition events never reach sky2's ISR.
+
+This patch:
+  1. Adds sky2_baikal_irq_enable() and calls it from sky2_probe right
+     after sky2_reset().
+  2. Drops the BMCR soft-reset + AN restart we did on Baikal in v78.
+     Every write to BMCR appears to de-stabilise the MT7531 PHY's
+     handshake with the MAC; v79 trusts Orbis's pre-handoff PHY state
+     entirely (the PHY had already auto-negotiated under Orbis and
+     reached link-up — its SBL setup is intact across the hand-off).
+
+Pass criterion: enp0s20f1 should reach `Link UP at 1000Mbps full
+duplex` and pinging 192.168.50.95 from the Linux side should reply.
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -202,8 +202,23 @@
+ 	} while (--timeout);
+ 	return -ETIMEDOUT;
+ }
++
++/*
++ * The Baikal MAC's SMI block stays alive only while the MAC's main IRQ
++ * block is active.  Orbis's mts_intr enables this on the first interrupt:
++ *   BAR+0x204 = 0x10001388  (full IRQ enable)
++ *   BAR+0x54  = 0x7bfffe    (per-IRQ mask)
++ * Without these writes, v77/v78 saw SMI controller idle out after ~1min
++ * and the PHY lose its register interface entirely.
++ */
++static void sky2_baikal_irq_enable(struct sky2_hw *hw)
++{
++	sky2_write32(hw, 0x204, 0x10001388);
++	sky2_write32(hw, 0x054, 0x007bfffe);
++}
+ #else
+ static inline bool sky2_is_baikal(const struct sky2_hw *hw) { return false; }
++static inline void sky2_baikal_irq_enable(struct sky2_hw *hw) {}
+ #endif
+
+ /* Access to PHY via serial interconnect */
+@@ -399,22 +414,12 @@
+
+ #ifdef CONFIG_X86_PS4
+ 	if (sky2_is_baikal(hw)) {
+-		/* MT7531 (or older Marvell 88E6XXX) has its own setup driven by
+-		 * Orbis SBL.  Skip all Yukon-PHY-specific writes; they target
+-		 * Marvell vendor pages that don't exist here.  Just soft-reset
+-		 * BMCR and restart auto-negotiation. */
+-		int i;
+-		u16 v;
+-
+-		gm_phy_write(hw, port, PHY_MARV_CTRL, PHY_CT_RESET);
+-		for (i = 0; i < 100; i++) {
+-			v = gm_phy_read(hw, port, PHY_MARV_CTRL);
+-			if (!(v & PHY_CT_RESET))
+-				break;
+-			usleep_range(1000, 2000);
+-		}
+-		gm_phy_write(hw, port, PHY_MARV_CTRL,
+-			     PHY_CT_ANE | PHY_CT_RE_CFG);
++		/* Trust Orbis SBL's PHY state — every write we do to BMCR
++		 * de-stabilises the MT7531 link.  v78 wrote BMCR reset + AN
++		 * restart and got the SMI controller into a stuck state with
++		 * link DOWN.  v79: leave PHY entirely alone.  The Baikal IRQ
++		 * block enable (in sky2_reset's Baikal branch) is what keeps
++		 * the MAC clocks alive going forward. */
+ 		return;
+ 	}
+ #endif
+@@ -5126,6 +5131,9 @@
+
+ 	sky2_reset(hw);
+
++	if (sky2_is_baikal(hw))
++		sky2_baikal_irq_enable(hw);
++
+ 	dev = sky2_init_netdev(hw, 0, using_dac, wol_default);
+ 	if (!dev) {
+ 		err = -ENOMEM;
