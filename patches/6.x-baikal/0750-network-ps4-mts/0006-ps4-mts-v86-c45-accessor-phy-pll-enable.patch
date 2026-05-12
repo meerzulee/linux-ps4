@@ -1,0 +1,220 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v86 - C45 SMI accessor + MT7531 PHY core PLL enable
+
+v85 hardware test produced the definitive diagnosis: the PHY itself
+reports link DOWN even after AN-complete and partner-advertising, as
+shown by the BMSR double-read (both halves return bit 2 = 0).  Per
+deepseek-v41's prior research, this matches the pattern of a MT7531
+PHY whose core PLL has been disabled by a switch-chip reset.
+
+Our mts_parent_prelude writes BAR+0xf04 = 1, msleep(12), = 2,
+msleep(500) - the switch chip GPIO reset sequence.  This destroys
+the bootloader's MT7531 PLL setup.  After the reset:
+  - MDIO (management interface) still works -> SMI is alive
+  - AN over MDIO completes -> BMSR bit 5 set
+  - But PMA/PCS clocking is dead -> no link signal -> BMSR bit 2 = 0
+
+The fix is to re-enable the PLL via C45 MMD 0x1f reg 0x403 after our
+parent prelude + mts_mac_init complete.
+
+This patch adds:
+
+1. mts_smi_c45_read / mts_smi_c45_write: two-phase C45 accessor using
+   the OP_C45_ADDR (0x20), OP_C45_RD (0xe0), and OP_C45_WR (0x60)
+   opcodes we already had defined.  Sony's encoding (INFERRED — see
+   accessor comment): MMD device in bits 8-12, register address /
+   data in bits 16-31 of the SMI command word.
+
+2. mts_phy_pll_enable() called at end of mts_mac_init:
+     val = c45_read(0x1f, 0x403)
+     val |= (1 << 4) | (1 << 6)  // RG_SYSPLL_DMY2 | BYPASS_MODE
+     val &= ~(1 << 5)             // clear PLL_OFF
+     c45_write(0x1f, 0x403, val)
+   Logs read value, written value, and readback for diagnostic.
+
+Pass criteria:
+  - dmesg shows "PHY PLL: MMD 0x1f reg 0x403 read 0x????" - if 0x0020
+    or has bit 5 set, confirms PLL was OFF (deepseek's hypothesis)
+  - After write, "readback = 0x????" should show bits 4+6 set, bit 5 clear
+  - phy_ctrl kthread BMSR double-read shows bit 2 transitioning to 1
+  - linkreg bit 0 sets -> link UP
+
+Diagnostic fallbacks:
+  - If C45 read times out: the inferred C45 encoding is wrong; need
+    Orbis decompile of mts_smi_cl45_* to find correct bit layout
+  - If C45 succeeds but link still doesn't come up: PLL was already on
+    OR there are additional MT7531 init writes required
+  - If linkreg changes after PLL enable BUT bit 0 still 0: PLL was right
+    but additional PHY setup needed
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -212,6 +212,151 @@
+ }
+ 
+ /*
++ * SMI MDIO Clause-45 accessor.  C45 has a two-phase transaction:
++ *   1) ADDR phase: write opcode OP_C45_ADDR | mmd_dev | (reg in upper 16)
++ *   2) RD or WR phase: write OP_C45_RD/WR | mmd_dev | (data in upper 16 for WR)
++ *
++ * Sony's SMI packs the MMD device address into bits 8-12 (where the C22
++ * register field lives) and uses the upper 16 bits for register address
++ * (ADDR phase) then data (RD/WR phase).  This is an INFERRED encoding;
++ * if wrong, the first C45 transaction will return unexpected data or time
++ * out, and we'll need to revise based on Orbis decompile of mts_smi_cl45_*.
++ */
++static int mts_smi_c45_write(struct mts *mts, u8 mmd, u16 reg, u16 val)
++{
++	u32 cmd;
++	int timeout;
++
++	/* ADDR phase: tell PHY which MMD register we want. */
++	writel(MTS_SMI_ARM, mts->bar + MTS_SMI_CMD);
++	cmd = MTS_SMI_OP_C45_ADDR
++	    | ((mmd & 0x1f) << MTS_SMI_REG_SHIFT)
++	    | ((u32)reg << MTS_SMI_DATA_SHIFT);
++	writel(cmd, mts->bar + MTS_SMI_CMD);
++
++	timeout = MTS_SMI_TIMEOUT_US;
++	do {
++		if (readl(mts->bar + MTS_SMI_CMD) & MTS_SMI_DONE)
++			break;
++		udelay(1);
++	} while (--timeout);
++	if (!timeout)
++		return -ETIMEDOUT;
++
++	/* WR phase: deliver the data. */
++	writel(MTS_SMI_ARM, mts->bar + MTS_SMI_CMD);
++	cmd = MTS_SMI_OP_C45_WR
++	    | ((mmd & 0x1f) << MTS_SMI_REG_SHIFT)
++	    | ((u32)val << MTS_SMI_DATA_SHIFT);
++	writel(cmd, mts->bar + MTS_SMI_CMD);
++
++	timeout = MTS_SMI_TIMEOUT_US;
++	do {
++		if (readl(mts->bar + MTS_SMI_CMD) & MTS_SMI_DONE)
++			return 0;
++		udelay(1);
++	} while (--timeout);
++	return -ETIMEDOUT;
++}
++
++static int mts_smi_c45_read(struct mts *mts, u8 mmd, u16 reg, u16 *val)
++{
++	u32 v, cmd;
++	int timeout;
++
++	/* ADDR phase. */
++	writel(MTS_SMI_ARM, mts->bar + MTS_SMI_CMD);
++	cmd = MTS_SMI_OP_C45_ADDR
++	    | ((mmd & 0x1f) << MTS_SMI_REG_SHIFT)
++	    | ((u32)reg << MTS_SMI_DATA_SHIFT);
++	writel(cmd, mts->bar + MTS_SMI_CMD);
++
++	timeout = MTS_SMI_TIMEOUT_US;
++	do {
++		if (readl(mts->bar + MTS_SMI_CMD) & MTS_SMI_DONE)
++			break;
++		udelay(1);
++	} while (--timeout);
++	if (!timeout)
++		return -ETIMEDOUT;
++
++	/* RD phase. */
++	writel(MTS_SMI_ARM, mts->bar + MTS_SMI_CMD);
++	writel(MTS_SMI_OP_C45_RD | ((mmd & 0x1f) << MTS_SMI_REG_SHIFT),
++	       mts->bar + MTS_SMI_CMD);
++
++	timeout = MTS_SMI_TIMEOUT_US;
++	do {
++		v = readl(mts->bar + MTS_SMI_CMD);
++		if (v & MTS_SMI_DONE) {
++			*val = v >> MTS_SMI_DATA_SHIFT;
++			return 0;
++		}
++		udelay(1);
++	} while (--timeout);
++
++	*val = 0xffff;
++	return -ETIMEDOUT;
++}
++
++/*
++ * MT7531 PHY core PLL enable.  Per deepseek-v41's v83 research and
++ * mainline mt7531_setup (DSA switch driver):
++ *
++ *   MMD 0x1f (MDIO_MMD_VEND2) reg 0x403 = PHY PLL control
++ *     bit 4: RG_SYSPLL_DMY2     (set)
++ *     bit 5: PHY_PLL_OFF        (clear)
++ *     bit 6: PHY_PLL_BYPASS_MODE (set)
++ *
++ * Our mts_parent_prelude() writes BAR+0xf04 = switch chip GPIO reset,
++ * which destroys the bootloader's PLL state.  After this reset the MT7531
++ * can still do MDIO + auto-negotiation (those work over the management
++ * port) but cannot generate a link signal to the MAC (PMA/PCS clocking
++ * is dead).
++ *
++ * v85 confirmed exactly this: SMI works, BMSR shows AN-complete, but
++ * BMSR bit 2 (link status) stays 0 in BOTH halves of a double-read.
++ *
++ * Call this from mts_mac_init AFTER all BAR-side writes complete.
++ */
++static void mts_phy_pll_enable(struct mts *mts)
++{
++	u16 pll = 0xffff;
++	int ret;
++
++	ret = mts_smi_c45_read(mts, 0x1f, 0x403, &pll);
++	if (ret) {
++		dev_warn(&mts->pdev->dev,
++			 "PHY PLL: C45 read MMD 0x1f reg 0x403 failed (%d) - C45 protocol may be wrong\n",
++			 ret);
++		return;
++	}
++	dev_info(&mts->pdev->dev,
++		 "PHY PLL: MMD 0x1f reg 0x403 read 0x%04x (bit 5 PLL_OFF=%d)\n",
++		 pll, !!(pll & (1 << 5)));
++
++	pll |= (1 << 4) | (1 << 6);   /* RG_SYSPLL_DMY2 | PHY_PLL_BYPASS_MODE */
++	pll &= ~(1 << 5);              /* clear PHY_PLL_OFF */
++
++	ret = mts_smi_c45_write(mts, 0x1f, 0x403, pll);
++	if (ret) {
++		dev_warn(&mts->pdev->dev,
++			 "PHY PLL: C45 write MMD 0x1f reg 0x403 = 0x%04x failed (%d)\n",
++			 pll, ret);
++		return;
++	}
++	dev_info(&mts->pdev->dev,
++		 "PHY PLL: wrote MMD 0x1f reg 0x403 <- 0x%04x (PLL on, bypass mode)\n",
++		 pll);
++
++	/* Read back to confirm the write took. */
++	if (mts_smi_c45_read(mts, 0x1f, 0x403, &pll) == 0)
++		dev_info(&mts->pdev->dev,
++			 "PHY PLL: readback MMD 0x1f reg 0x403 = 0x%04x\n",
++			 pll);
++}
++
++/*
+  * Parent prelude replayed from Orbis FUN_c85131d0(softc, 1).  This is the
+  * "switch GPIO + clock-domain glue" sequence that the Orbis parent driver
+  * (baikal_gbe_attach -> msk_init_hw) runs before any child MAC init.  Linux
+@@ -304,6 +449,16 @@
+ 	writel(MTS_IRQ_ENABLE_FULL_VAL, bar + MTS_IRQ_ENABLE_FULL);
+ 	writel(MTS_IRQ_MASK_FULL_VAL,   bar + MTS_IRQ_MASK);
+ 	(void)readl(bar + MTS_IRQ_MASK);
++
++	/*
++	 * v86: enable MT7531 PHY core PLL via C45 MMD 0x1f reg 0x403.  Our
++	 * parent prelude reset the switch chip (BAR+0xf04), which destroys
++	 * the bootloader's PLL state.  Without re-enabling here, the PHY
++	 * can do AN handshake via MDIO but cannot generate a link signal.
++	 * See mts_phy_pll_enable() comment + v85 result doc for the full
++	 * diagnosis.
++	 */
++	mts_phy_pll_enable(mts);
+ }
+ 
+ /*
