@@ -121,11 +121,121 @@ This is the **CCP (Crypto CoProcessor) async path** — needed for crypto offloa
 | `extractCpuAddrUser` | `c89b6550` | Page-pinning helper |
 | **SAMU IRQ vector** | **`0x98`** | gbase_register_interrupt_handler |
 
-### Outstanding (still need to find)
+### `sceSblDriverInitialize` = `FUN_c89b7380` ✅ DECODED (2026-05-12 round 3)
 
-- **`sceSblDriverInitialize`** — anonymous function, no string match. Find by:
-  - searching for callers of `gbase_register_interrupt_handler(0x98, ...)`
-  - or finding init-time SYSINIT that touches `DAT_ca9e34f8` mutex
+Full sequence:
+
+```c
+sceSblDriverInitialize():
+    FUN_c89b64f0()                                   // pre-init
+    bzero(&DAT_ca9e33c0, 0x138)                      // clear state struct
+    
+    // 5 sync primitives:
+    mtx_init(&DAT_ca9e34f8, "SblDrvInHdlrMtx", 0, 1)
+    sx_init (&DAT_ca9e3398, "SblDrvHdlrSx", 0)       // handler sx-lock
+    sx_init (&DAT_ca9e3518, "SblDrvSendSx", 0)       // send-cmd sx-lock
+    sx_init (&DAT_ca9e3538, "SblDrvNextSx", 0)       // next-cmd sx-lock
+    cv_init (&DAT_ca9e3558, "SblDrvNextCv")          // next-cmd condvar
+    
+    // 1 MB DMA-coherent buffer below 8 GB, 1 MB aligned:
+    workspace = kmem_alloc_contig(0x100000, ..., 0x200000000, 0x100000, 0)
+    DAT_ca9e3388 = workspace + 0xc0000               // some scratch pointer
+    
+    // Pin workspace to GPU virtual address space:
+    sceSblDriverMapPages(&DAT_ca9e3570, workspace,
+                         0x40, 0x61, 0, &DAT_ca9e3578)
+    // count=0x40 (= 64 pages * 16 KB = 1 MB)
+    // flags=0x61 = VALID(1) | READABLE(0x20) | WRITEABLE(0x40)
+    
+    // Start taskqueue for deferred work:
+    DAT_ca9e3380 = taskqueue_create("SblDrvTskQ", 1, ...)
+    taskqueue_start_threads(&DAT_ca9e3380, 1, 0x3f, "sbldrvtaskq")
+    
+    // Store async-handler stub:
+    DAT_ca9e3590 = FUN_c89b7680  // message dispatch callback
+    DAT_ca9e3598 = workspace
+    
+    // Register SAMU IRQ handler:
+    gbase_register_interrupt_handler(0x98, FUN_c89b78c0, 0)
+    //                                ^IRQ  ^top-half     ^ctx
+    
+    // Set up another handler:
+    sx_xlock(&DAT_ca9e3398)
+    DAT_ca9e3438 = 5
+    DAT_ca9e3440 = FUN_c89b7a60  // another callback
+    DAT_ca9e3448 = 0
+    sx_xunlock(&DAT_ca9e3398)
+    
+    DAT_ca9e35a0 = workspace_gpu_va | 0x100000000000000
+    FUN_c89b7af0()
+    
+    bzero(&DAT_ca9e35b0, 0x180)
+    return 0
+```
+
+**For our Linux port (Phase 1), the minimum init is:**
+
+1. Allocate 1 MB DMA-coherent buffer (use `dma_alloc_coherent` or `pci_alloc_consistent`)
+2. Map it into amdgpu's GART via `amdgpu_gart_bind`
+3. Init 5 sync primitives (mutex + 3 rwsems + condvar) — or simpler equivalents
+4. Skip taskqueue initially (sync SMU read/write doesn't use it)
+5. **Skip IRQ registration initially** — we can poll the ack register `0x4a` synchronously
+
+The **minimum** functional Linux SBL driver is therefore:
+
+```c
+struct ps4_sbl {
+    struct amdgpu_device *adev;       // GPU device
+    void __iomem *mmio;               // GPU BAR mapping
+    void *workspace_cpu;              // 1 MB buffer
+    dma_addr_t workspace_dma;
+    u64 workspace_gpu_va;             // after GART bind
+    struct mutex send_lock;
+};
+
+int ps4_sbl_read_smu(struct ps4_sbl *sbl, u32 idx, u32 *out)
+{
+    int err;
+    mutex_lock(&sbl->send_lock);
+    
+    writel(0xa404,  sbl->mmio + 0x22070);   // service id = SMU_READ
+    writel(idx,     sbl->mmio + 0x22074);
+    writel(1,       sbl->mmio + 0x32);      // trigger interrupt
+    
+    while (readl(sbl->mmio + 0x4a) & 1)
+        cpu_relax();                        // poll for ack
+    
+    err = readl(sbl->mmio + 0x2207c);       // error code
+    if (!err)
+        *out = readl(sbl->mmio + 0x22078);  // value
+    
+    mutex_unlock(&sbl->send_lock);
+    return err;
+}
+
+int ps4_sbl_write_smu(struct ps4_sbl *sbl, u32 idx, u32 val)
+{
+    int err;
+    mutex_lock(&sbl->send_lock);
+    
+    writel(0xa505,  sbl->mmio + 0x22070);   // service id = SMU_WRITE
+    writel(idx,     sbl->mmio + 0x22074);
+    writel(val,     sbl->mmio + 0x22078);
+    writel(1,       sbl->mmio + 0x32);
+    
+    while (readl(sbl->mmio + 0x4a) & 1)
+        cpu_relax();
+    
+    err = readl(sbl->mmio + 0x2207c);
+    
+    mutex_unlock(&sbl->send_lock);
+    return err;
+}
+```
+
+**That's the entire Phase 1 patch in ~70 lines.** Plus init/exit + debugfs entry. We can write this in one iteration once we have the workspace allocation pinned via amdgpu_gart_bind.
+
+### Outstanding (lower priority now)
 - **Service ID table** — likely a data table near handler.c functions. Look for byte patterns `0xa404`, `0xa505`, etc. as consecutive entries.
 - **SMU indices Sony writes for GFX clocks** — find by:
   - cross-referencing `sceSblDriverWriteSmuIx` callers in `gc/` (gbase code)
