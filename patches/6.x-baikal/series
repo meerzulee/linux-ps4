@@ -538,6 +538,11 @@
 # 2026-05-12 four-agent Ghidra dig findings (glm + gpt5.5 + kimi +
 # deepseek).
 0750-network-ps4-mts/0002-ps4-mts-v82-prelude-macinit-kthread.patch
+# v83: extend the phy_ctrl kthread to also do AN restart on link-down
+# transitions (and on initial boot when link starts down).  Mirrors
+# Orbis FUN_c85f0480 event 0x1 handler: OR-set reg 9 |= 0x200 +
+# reg 4 |= 0x180, then BMCR |= 0x1200 (AN enable+restart).
+0750-network-ps4-mts/0003-ps4-mts-v83-an-restart-on-link-down.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

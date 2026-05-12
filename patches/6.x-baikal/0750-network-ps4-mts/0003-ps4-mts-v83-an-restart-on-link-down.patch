@@ -1,0 +1,173 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v83 - AN-restart-on-link-down in phy_ctrl kthread
+
+v82 confirmed the kthread-heartbeat hypothesis - SMI MDC stays alive
+across >5 min uptime thanks to BMSR-every-3s.  But link remained DOWN
+despite the PHY reporting AN-complete (BMSR bit 5 set) and the link
+partner advertising (reg 5 = 0xc5e1).  linkreg bit 0 stayed 0.
+
+This patch mirrors Orbis FUN_c85f0480 event 0x1 handler verbatim:
+when linkreg bit 0 = 0 (link down), the phy_ctrl thread does:
+
+  reg 9 (1000-BT control)  |= 0x0200  (advertise 1000-BT full)
+  reg 4 (ANAR)             |= 0x0180  (advertise 100BX full+half)
+  reg 0 (BMCR)             |= 0x1200  (AN enable + AN restart)
+
+To avoid restarting AN on every 3s iteration (which would prevent AN
+from completing), the kthread tracks UP/DOWN transitions and restarts
+AN only on:
+  - The very first iteration (initial bring-up from boot)
+  - Every UP->DOWN transition
+  - Every 5 iterations (~15s) while link still down, as a retry
+
+Once link comes UP the retry counter resets and only heartbeat reads
+happen.
+
+If link stays DOWN even with periodic AN restarts: the MT7531 needs
+MMD vendor writes that we haven't implemented (mainline mt7530-mdio.c
+does extensive vendor init).  v84 would be the place to add those if
+needed.
+
+Pass criterion: dmesg shows
+  ps4_mts ...: phy_ctrl: AN restart (iter=0, BMCR<-0x1240 or similar)
+followed within a few seconds by
+  ps4_mts ...: phy_ctrl: link UP (linkreg=0x????)
+
+And `ip link show` would eventually show a netdev (... if we had one;
+netdev allocation is phase 3).  For now, link-up evidence is in
+linkreg bit 0 = 1 visible via the userspace BAR0 mmap.
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -109,6 +109,9 @@
+ 	struct task_struct *phy_ctrl_thread;
+ 	u8 phy_addr;
+ 	bool link_logged_once;
++	bool last_phy_link_up;	/* tracked by phy_ctrl kthread */
++	bool initial_an_done;	/* first AN restart fired? */
++	unsigned int link_down_iterations;
+ };
+ 
+ /*
+@@ -318,33 +321,103 @@
+ }
+ 
+ /*
+- * SMI heartbeat thread.  Orbis's gbe:phy_ctrl (FUN_c85f0480) reads BMSR every
+- * 3 seconds in its main loop, which exercises the full SMI handshake (ARM,
+- * OP_RD, poll DONE, fetch data) and keeps the MDC clock domain from gating
+- * off.  Per the 2026-05-12 4-agent dig (glm-5.1 + kimi-k2.6), the SMI clock
+- * is transaction-gated, not enable-bit-gated - restoring registers can't
+- * recover MDC, only ongoing bus traffic can.
++ * AN restart sequence.  Mirrors Orbis FUN_c85f0480 event 0x1 handler exactly:
++ * read 1000-BT control (reg 9) and ANAR (reg 4), OR-set the advertise bits if
++ * not present, then write BMCR (reg 0) with bit 12 (AN enable) + bit 9 (AN
++ * restart) set.  This is the "kick AN into action" sequence the Orbis driver
++ * uses on every link-down event.
+  *
+- * Phase-1 of this thread is intentionally minimal: just BMSR every 3s, no AN
+- * restart, no link-change handling.  We want to first confirm the heartbeat
+- * hypothesis (does MDC survive >5min?) before adding state.  The full Orbis
+- * state machine (BMSR poll + AN restart on timeout + reg 9 advertise +
+- * BMCR 0x1200 restart) will follow if v82 boots clean.
++ * Returns the post-restart BMCR for logging.
++ */
++static u16 mts_phy_an_restart(struct mts *mts)
++{
++	u16 ctrl_1000bt, anar, bmcr;
++
++	mts_smi_c22_read(mts, 0x09, &ctrl_1000bt);
++	mts_smi_c22_read(mts, 0x04, &anar);
++
++	if (!(ctrl_1000bt & 0x0200))
++		mts_smi_c22_write(mts, 0x09, ctrl_1000bt | 0x0200);
++	if ((anar & 0x0180) != 0x0180)
++		mts_smi_c22_write(mts, 0x04, anar | 0x0180);
++
++	mts_smi_c22_read(mts, 0x00, &bmcr);
++	mts_smi_c22_write(mts, 0x00, bmcr | 0x1200);
++	return bmcr | 0x1200;
++}
++
++/*
++ * SMI heartbeat + link bring-up thread.
++ *
++ * Two responsibilities:
++ *   1) MDC heartbeat: every 3s the loop touches the SMI bus, which keeps the
++ *      transaction-gated MDC clock domain alive.  v82 confirmed this is the
++ *      sole way to prevent MDC death.
++ *   2) Link bring-up: mirrors Orbis FUN_c85f0480 event 0x1 — on every UP->DOWN
++ *      transition AND on the first iteration (initial bring-up from boot),
++ *      run mts_phy_an_restart().  Retry every 5 iterations (~15s) while link
++ *      stays down to handle AN that didn't latch the first time.  Stops
++ *      retrying as soon as link comes up.
++ *
++ * Note: in Orbis the AN-restart is event-driven via mts_intr signaling
++ * softc->event_phy_ctrl with bit 0x1.  We don't have an ISR yet (phase 3
++ * work) so this thread polls linkreg directly.  Slightly more aggressive than
++ * Orbis but correct in steady state.
+  */
+ static int mts_phy_ctrl_fn(void *data)
+ {
+ 	struct mts *mts = data;
++	u32 linkreg;
+ 	u16 bmsr;
++	bool link_up, was_up;
+ 	int ret;
+ 
+ 	while (!kthread_should_stop()) {
+-		ret = mts_smi_c22_read(mts, 0x01, &bmsr);
+-		if (ret == 0)
+-			dev_dbg(&mts->pdev->dev,
+-				"phy_ctrl: BMSR=0x%04x\n", bmsr);
+-		else
+-			dev_dbg(&mts->pdev->dev,
+-				"phy_ctrl: SMI read timeout\n");
++		linkreg = readl(mts->bar + MTS_LINK_STATUS);
++		link_up = (linkreg & MTS_LINK_UP) != 0;
++		was_up = mts->last_phy_link_up;
++
++		if (link_up && !was_up) {
++			dev_info(&mts->pdev->dev,
++				 "phy_ctrl: link UP (linkreg=0x%08x)\n",
++				 linkreg);
++			mts->link_down_iterations = 0;
++		}
++		if (!link_up && was_up) {
++			dev_info(&mts->pdev->dev,
++				 "phy_ctrl: link DOWN (linkreg=0x%08x)\n",
++				 linkreg);
++		}
++		mts->last_phy_link_up = link_up;
++
++		if (!link_up) {
++			bool first = !mts->initial_an_done;
++			bool transition = was_up;
++			bool retry = (mts->link_down_iterations % 5) == 0
++				     && mts->link_down_iterations > 0;
++
++			if (first || transition || retry) {
++				u16 bmcr_post = mts_phy_an_restart(mts);
++				dev_info(&mts->pdev->dev,
++					 "phy_ctrl: AN restart (iter=%u, BMCR<-0x%04x)\n",
++					 mts->link_down_iterations, bmcr_post);
++				mts->initial_an_done = true;
++			} else {
++				/* Heartbeat-only read while waiting for AN. */
++				ret = mts_smi_c22_read(mts, 0x01, &bmsr);
++				if (ret)
++					dev_dbg(&mts->pdev->dev,
++						"phy_ctrl: SMI heartbeat read failed\n");
++			}
++			mts->link_down_iterations++;
++		} else {
++			/* Link up: just heartbeat. */
++			ret = mts_smi_c22_read(mts, 0x01, &bmsr);
++			if (ret)
++				dev_dbg(&mts->pdev->dev,
++					"phy_ctrl: SMI heartbeat read failed\n");
++		}
++
+ 		msleep_interruptible(MTS_PHY_CTRL_PERIOD_MS);
+ 	}
+ 	return 0;
