@@ -104,17 +104,17 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | Room | Status | File |
 |---|---|---|
 | ENTRANCE | ✅ | [ENTRANCE.md](ENTRANCE.md) |
-| CORE | 🗝️ | (boot finish: SYSINIT chain, EFER, GDT/IDT/TSS, GS_OFFSET) |
+| CORE | 🔍 first-pass | rooms/leaves.md (standard FreeBSD 9 — see ENTRANCE.md) |
 
 ### Floor 2: Graphics / Display
 | Room | Status | File |
 |---|---|---|
 | gc | 🔍 | partial via UVD dig — `2026-05-11-ghidra-uvd-dungeon-map.md`, `2026-05-12-uvd-pre-init-dig.md` |
-| dbggc | 🗝️ | rooms/dbggc.md |
+| dbggc | 🔍 first-pass | rooms/leaves.md |
 | dce | 🔍 first-pass | rooms/dce.md |
 | av_control | 🔍 first-pass | rooms/av_control.md |
 | hdmi | 🔍 first-pass ⭐ | rooms/hdmi.md (**high-value for Linux DRM port**) |
-| screenshot | 🗝️ | rooms/screenshot.md |
+| screenshot | 🔍 first-pass | rooms/leaves.md |
 
 ### Floor 3: Video codecs
 | Room | Status | File |
@@ -126,8 +126,8 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 | Room | Status | File |
 |---|---|---|
 | audioout | 🔍 first-pass | rooms/audioout.md |
-| ajm | 🗝️ | rooms/ajm.md |
-| s3da | 🗝️ | rooms/s3da.md |
+| ajm | 🔍 first-pass | rooms/leaves.md |
+| s3da | 🔍 first-pass | rooms/leaves.md |
 
 ### Floor 5: Storage / DMA
 | Room | Status | File |
@@ -183,7 +183,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 |---|---|---|
 | regmgr | 🔍 first-pass | rooms/regmgr.md |
 | ipmimgr | 🔍 first-pass | rooms/ipmimgr.md |
-| sdbgp | 🗝️ | rooms/sdbgp.md |
+| sdbgp | 🔍 first-pass | rooms/leaves.md |
 
 ---
 
@@ -218,6 +218,10 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 17: 🐉 **DUNGEON CLEARED.** + final 6 leaves combined
+  (CORE + dbggc + screenshot + ajm + s3da + sdbgp). Plus final
+  [SUMMARY.md](SUMMARY.md) — 7-hour 17-iteration retrospective with
+  top-10 findings, codename glossary, and next-steps catalog.
 - 2026-05-12 iter 16: + sbl/leaves combined room (13 small modules:
   srtc, pup_update, eipk_addsign, devact, pltauth, vtrm, rng, idata,
   usb_dongle, qafutkn, npdrm, zlib, lvp_config). Most are Sony-
