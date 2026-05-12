@@ -50,6 +50,87 @@ The rest of the service ID table needs to be reverse-engineered from `handler.c`
 
 ---
 
+## Additional findings (2026-05-12 Ghidra round 2)
+
+### `sceSblDriverFinalize` decoded (`FUN_c89b7bf0`)
+
+```c
+sceSblDriverFinalize():
+  unmap_pages(DAT_ca9e3578)                              // teardown gpuvm context
+  free(DAT_ca9e3568, 0x100000)                           // 1 MB workspace buffer
+  gbase_unregister_interrupt_handler(0x98)               // ★ IRQ vector 0x98 (152) ★
+  cleanup(DAT_ca9e3380)
+  destroy_condvar(&DAT_ca9e3558)
+  destroy_lock(&DAT_ca9e3538)
+  destroy_lock(&DAT_ca9e3518)
+  destroy_mutex(&DAT_ca9e34f8)
+  destroy_lock(&DAT_ca9e3398)
+  final_cleanup()
+```
+
+**→ This tells us exactly what `sceSblDriverInitialize` must do (inverse):**
+
+```c
+sceSblDriverInitialize():
+  init_lock(&DAT_ca9e3398)
+  init_mutex(&DAT_ca9e34f8)
+  init_lock(&DAT_ca9e3518)
+  init_lock(&DAT_ca9e3538)
+  init_condvar(&DAT_ca9e3558)
+  setup(&DAT_ca9e3380)
+  DAT_ca9e3568 = kmem_alloc_contig(0x100000, ...)        // 1 MB buffer
+  gbase_register_interrupt_handler(0x98, sbl_irq_fn)     // ★ IRQ 0x98 ★
+  map_pages(DAT_ca9e3568, ..., &DAT_ca9e3578)            // pin workspace to GPU
+```
+
+### `SceSblMsgTask` kthread main (`FUN_c89bb300`)
+
+Decoded the async CCP message dispatch loop. Notable:
+
+- **Thread priority 0x44, stack 0x200 KB (512 KB)**
+- Suspend/resume hooks: `system_suspend_phase2_post_sync` and `system_resume_phase2`
+- **Ring buffer at `0xca9efc80`, 64 entries × 0xa8 bytes** = 10.5 KB ring
+- Index modulo 0x3F (= 64 slots)
+- Dispatches by op-type:
+  - case `0x09`: notify type 9
+  - case `0x02`: notify type 2
+  - case `0x00`: notify type 0
+- Calls completion callback after copying response
+
+This is the **CCP (Crypto CoProcessor) async path** — needed for crypto offload, **not needed** for Phase 3 (GFX clocks). The simpler synchronous SMU read/write path is enough.
+
+### Confirmed two paths into SAMU
+
+| Path | Sync? | Use case | Where |
+|---|---|---|---|
+| SMU read/write | synchronous | clock/voltage/PG | `sceSblDriverReadSmuIx/WriteSmuIx` @ `c89b80b0`/`c89b81d0` |
+| CCP message queue | async, kthread | hardware crypto | `SceSblMsgTask` @ `c89bb300` |
+
+**For Phase 3 (GFX clocks → fix Hyprland) we only need the synchronous path.** The CCP queue is Phase 4+ territory.
+
+### Critical addresses now confirmed
+
+| Symbol | Address | What |
+|---|---|---|
+| `sceSblDriverFinalize` | `c89b7bf0` | Teardown — tells us what Init must do |
+| `sceSblDriverInitializeResume` | `c89b8770` | Re-init after suspend |
+| `SceSblMsgTask` setup | `c89bb260` | Spawns the kthread |
+| `SceSblMsgTask` main loop | `c89bb300` | The kthread itself |
+| `sceSblDriverReadSmuIx` | `c89b80b0` | ✅ decoded synchronous |
+| `sceSblDriverWriteSmuIx` | `c89b81d0` | ✅ decoded synchronous |
+| `extractCpuAddrUser` | `c89b6550` | Page-pinning helper |
+| **SAMU IRQ vector** | **`0x98`** | gbase_register_interrupt_handler |
+
+### Outstanding (still need to find)
+
+- **`sceSblDriverInitialize`** — anonymous function, no string match. Find by:
+  - searching for callers of `gbase_register_interrupt_handler(0x98, ...)`
+  - or finding init-time SYSINIT that touches `DAT_ca9e34f8` mutex
+- **Service ID table** — likely a data table near handler.c functions. Look for byte patterns `0xa404`, `0xa505`, etc. as consecutive entries.
+- **SMU indices Sony writes for GFX clocks** — find by:
+  - cross-referencing `sceSblDriverWriteSmuIx` callers in `gc/` (gbase code)
+  - looking for `WriteSmuIx(0x???????, val)` with constant indices
+
 ## What we're missing
 
 1. **Initialization sequence.** The SAMU may need to be in a specific state when we first send a command. Sony does this at boot via `sceSblDriverInitialize`. We need to either replicate or detect that init has already happened.
