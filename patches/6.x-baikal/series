@@ -534,6 +534,14 @@
 # bus dies.  v80 adds a pre-handler in sky2_intr that reads+W1Cs
 # BAR+0x50 before the Yukon-2 path runs.
 0700-network-sky2/0010-sky2-baikal-intr-ack.patch
+# v81 (2026-05-12): root cause for SMI death found.  Sky2's B0_IMSK
+# (BAR+0x0c) aliases to Baikal's MAC_CTRL2/3 — a Sony custom register
+# holding the MAC clock and SMI MDC clock-enable bits.  Sky2 writing
+# Y2_IS_BASE to B0_IMSK at sky2_setup_irq + sky2_up clobbers those
+# bits and gates the SMI MDC clock irrecoverably.  v81 skips those
+# writes on Baikal.  Diagnosis: four-agent analysis converged on this
+# (Hermes, agent2, my-spawned-third, kimi, glm).
+0700-network-sky2/0011-sky2-baikal-skip-b0-imsk-writes.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

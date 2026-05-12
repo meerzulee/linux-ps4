@@ -1,0 +1,469 @@
+0ef) mask=0x0 irq=3 hwirq=0x0 (____ptrval____)?
+[    7.200341] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee00000 data=000000ef?
+[    7.200800] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee02000, 00000024) mask=0x0 irq=3 hwirq=0x0 (____ptrval____)?
+[    7.200819] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee02000 data=00000024?
+[    7.200845] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee02000, 00000024) mask=0x0 irq=3 hwirq=0x0 (____ptrval____)?
+[    7.200863] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee02000 data=00000024?
+[    7.201497] ata1.00: FORCE: modified (disable)?
+[    7.201502] ata1.00: unsupported device, disabling?
+[    7.201505] ata1.00: disable device?
+[    7.204165] snd_hda_intel 0000:00:01.1: PCI INT B: not connected?
+[    7.216454] usb 1-1: New USB device found, idVendor=1a40, idProduct=0101, bcdDevice= 1.00?
+[    7.226370] mmc0: SDHCI controller on PCI [0000:00:14.3] using ADMA?
+[    7.226586] NET: Registered PF_INET6 protocol family?
+[    7.227263] Segment Routing with IPv6?
+[    7.227289] In-situ OAM (IOAM) with IPv6?
+[    7.227331] NET: Registered PF_PACKET protocol family?
+[    7.227441] Bluetooth: RFCOMM TTY layer initialized?
+[    7.227447] Bluetooth: RFCOMM socket layer initialized?
+[    7.227464] Bluetooth: RFCOMM ver 1.11?
+[    7.227471] Bluetooth: BNEP (Ethernet Emulation) ver 1.3?
+[    7.227474] Bluetooth: BNEP filters: protocol multicast?
+[    7.227479] Bluetooth: BNEP socket layer initialized?
+[    7.227482] Bluetooth: HIDP (Human Interface Emulation) ver 1.2?
+[    7.227489] Bluetooth: HIDP socket layer initialized?
+[    7.231734] input: HD-Audio Generic HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:01.1/sound/card0/input1?
+[    7.231785] usb 1-1: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[    7.231877] input: HD-Audio Generic HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:01.1/sound/card0/input2?
+[    7.242615] usb 1-1: Product: USB2.0 HUB?
+[    7.327559] usb 2-2: new SuperSpeed USB device number 2 using xhci_aeolia?
+[    7.331963] microcode: Current revision: 0x0701a001?
+[    7.337385] mmc0: new UHS-I speed SDR104 SDIO card at address 0001?
+[    7.348485] usb 2-2: New USB device found, idVendor=0951, idProduct=1666, bcdDevice= 1.10?
+[    7.349205] IPI shorthand broadcast: enabled?
+[    7.351390] [wlan][79]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00000000?
+[    7.354251] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=4?
+[    7.371139] sched_clock: Marking stable (6648004337, 722412699)->(9732953092, -2362536056)?
+[    7.373916] usb 2-2: Product: DataTraveler 3.0?
+[    7.385291] registered taskstats version 1?
+[    7.389463] usb usb4-port1: over-current condition?
+[    7.394712] usb 2-2: Manufacturer: Kingston?
+[    7.394717] usb 2-2: SerialNumber: E0D55EA573F0194049CD0236?
+[    7.402184] hub 1-1:1.0: USB hub found?
+[    7.411747] Loading compiled-in X.509 certificates?
+[    7.422748] hub 1-1:1.0: 4 ports detected?
+[    7.427934] usb-storage 2-2:1.0: USB Mass Storage device detected?
+[    7.511504] Demotion targets for Node 0: null?
+[    7.511847] scsi host1: usb-storage 2-2:1.0?
+[    7.516997] Btrfs loaded, zoned=no, fsverity=no?
+[    7.525329] amdgpu 0000:00:01.0: can't derive routing for PCI INT A?
+[    7.531739] amdgpu 0000:00:01.0: PCI INT A: not connected?
+[    7.537254] [drm] initializing kernel modesetting (LIVERPOOL 0x1002:0x9923 0x1002:0x9923 0x00).?
+[    7.546171] [drm] register mmio base: 0xE4800000?
+[    7.550885] [drm] register mmio size: 262144?
+[    7.555404] amdgpu 0000:00:01.0: amdgpu: detected ip block number 0 <cik_common>?
+[    7.562968] amdgpu 0000:00:01.0: amdgpu: detected ip block number 1 <gmc_v7_0>?
+[    7.570339] amdgpu 0000:00:01.0: amdgpu: detected ip block number 2 <cik_ih>?
+[    7.577529] amdgpu 0000:00:01.0: amdgpu: detected ip block number 3 <dce_v8_0>?
+[    7.584906] amdgpu 0000:00:01.0: amdgpu: detected ip block number 4 <gfx_v7_0>?
+[    7.592280] amdgpu 0000:00:01.0: amdgpu: detected ip block number 5 <cik_sdma>?
+[    7.599651] amdgpu 0000:00:01.0: amdgpu: detected ip block number 6 <uvd_v4_2>?
+[    7.607025] amdgpu 0000:00:01.0: amdgpu: detected ip block number 7 <vce_v2_0>?
+[    7.650894] amdgpu 0000:00:01.0: amdgpu: Fetched VBIOS from ROM BAR?
+[    7.657312] amdgpu: ATOM BIOS: 113-Starsha2-018?
+[    7.662383] [drm] ps4 uvd: skipping UVD entirely on Liverpool/Gladius (no SAMU auth -> no functional UVD; avoids fault storm)?
+[    7.673945] [drm:amdgpu_device_init.cold] *ERROR* early_init of IP block <uvd_v4_2> failed -19?
+[    7.682770] [drm] ps4 vce: skipping VCE entirely on Liverpool/Gladius?
+[    7.689351] [drm:amdgpu_device_init.cold] *ERROR* early_init of IP block <vce_v2_0> failed -19?
+[    7.698152] amdgpu 0000:00:01.0: amdgpu: Fatal error during GPU init?
+[    7.704674] amdgpu 0000:00:01.0: amdgpu: amdgpu: finishing device.?
+[    7.711294] ahci 0000:00:14.2: version 3.0?
+[    7.715516] ahci 0000:00:14.2: probe with driver ahci failed with error -12?
+[    7.722722] ps4-power: reboot_notifier installed ??? ICC cmd 04/0004 on SYS_POWER_OFF?
+[    7.730788] printk: legacy console [netcon0] enabled?
+[    7.735890] netconsole: network logging started?
+[    7.740727] cfg80211: Loading compiled-in X.509 certificates for regulatory database?
+[    7.749919] Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'?
+[    7.756305] Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'?
+[    7.763687] clk: Disabling unused clocks?
+[    7.767761] platform regulatory.0: Direct firmware load for regulatory.db failed with error -2?
+[    7.768640] ALSA device list:?
+[    7.776556] cfg80211: failed to load regulatory.db?
+[    7.776588]   #0: HD-Audio Generic at 0xe4840000 irq 4?
+[    7.791388] Freeing unused kernel image (initmem) memory: 1624K?
+[    7.797520] Write protecting the kernel read-only data: 34816k?
+[    7.804337] Freeing unused kernel image (text/rodata gap) memory: 1108K?
+[    7.811958] Freeing unused kernel image (rodata/data gap) memory: 1456K?
+[    7.818771] rodata_test: all tests were successful?
+[    7.823708] Run /init as init process?
+[    7.827468]   with arguments:?
+[    7.830520]     /init?
+[    7.832855]   with environment:?
+[    7.836079]     HOME=/?
+[    7.838503]     TERM=linux?
+[    7.865661] usb 1-1.1: new high-speed USB device number 3 using xhci_aeolia?
+[    8.053977] usb 1-1.1: New USB device found, idVendor=2357, idProduct=0138, bcdDevice= 2.10?
+[    8.062567] usb 1-1.1: New USB device strings: Mfr=1, Product=2, SerialNumber=3?
+[    8.070078] usb 1-1.1: Product: 802.11ac NIC?
+[    8.074466] usb 1-1.1: Manufacturer: Realtek?
+[    8.078858] usb 1-1.1: SerialNumber: 123456?
+[    8.257706] [wlan][79]wlanAdapterStart:(INIT WARN) Send a Dummy CMD as workaround?
+[    8.265584] [wlan][79]wlanQueryNicCapability:(INIT WARN) wlanQueryNicCapability: skip unexpected event ID[0x27]?
+[    8.278615] [wlan][79]wlanAdapterStart:(INIT WARN) wlanAdapterStart: load manufacture data fail?
+[    8.289467] usb 1-1.3: new low-speed USB device number 4 using xhci_aeolia?
+[    8.466446] [wlan][79]mtk_reg_notify:(RLM WARN) County Code is not assigned. Use default WW.?
+[    8.475082] [wlan][79]rlmDomainSearchRegdomainFromLocalDataBase:(RLM ERROR) rlmDomainSearchRegdomainFromLocalDataBase(): Error, Cannot find the correct RegDomain. country = 00.?
+[    8.483361] usb 1-1.3: New USB device found, idVendor=04f3, idProduct=152e, bcdDevice=1c.02?
+[    8.492868] [wlan][144]wlanBindBssIdxToNetInterface:(INIT ERROR) Array index out of bound, ucBssIndex=4?
+[    8.499683] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0?
+[    8.499703] [wlan][144]p2pRoleFsmStateTransition:(P2P STATE) [P2P_ROLE][0]TRANSITION(Bss1): [P2P_ROLE_STATE_IDLE] -> [P2P_ROLE_STATE_IDLE]?
+[    8.509270] usb 1-1.3: Product: Gaming KB?
+[    8.509304] [wlan][144]wlanBindBssIdxToNetInterface:(INIT ERROR) Array index out of bound, ucBssIndex=4?
+[    8.516734] usb 1-1.3: Manufacturer: Gaming KB?
+[    8.516753] [wlan][144]p2pRoleFsmStateTransition:(P2P STATE) [P2P_ROLE][1]TRANSITION(Bss2): [P2P_ROLE_STATE_IDLE] -> [P2P_ROLE_STATE_IDLE]?
+[    8.560278] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x11] SEQ[29]?
+[    8.569079] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x11] SEQ[29]?
+[    8.569570] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[    8.578574] scsi 1:0:0:0: Direct-Access     Kingston DataTraveler 3.0 0000 PQ: 0 ANSI: 6?
+[    8.586457] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DF6?
+[    8.594957] sd 1:0:0:0: Attached scsi generic sg0 type 0?
+[    8.596026] sd 1:0:0:0: [sda] 242155520 512-byte logical blocks: (124 GB/115 GiB)?
+[    8.596500] sd 1:0:0:0: [sda] Write Protect is off?
+[    8.596507] sd 1:0:0:0: [sda] Mode Sense: 23 00 00 00?
+[    8.596713] sd 1:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA?
+[    8.601104] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0000F02?
+[    8.610621] input: Gaming KB Gaming KB as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.0/0003:04F3:152E.0001/input/input3?
+[    8.614155] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.658517] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE8?
+[    8.664987] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.671454] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x70] SEQ[36]?
+[    8.671951] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[    8.675812]  sda: sda1 sda2?
+[    8.676068] sd 1:0:0:0: [sda] Attached SCSI removable disk?
+[    8.697307] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.703807] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.710250] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.710724] hid-generic 0003:04F3:152E.0001: input,hidraw0: USB HID v1.11 Keyboard [Gaming KB Gaming KB] on usb-0000:00:14.7-1.3/input0?
+[    8.716680] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.735569] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.741048] input: Gaming KB Gaming KB Consumer Control as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input4?
+[    8.742431] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[    8.755830] input: Gaming KB Gaming KB System Control as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input5?
+[    8.764200] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.777755] input: Gaming KB Gaming KB Keyboard as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input6?
+[    8.784070] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.797092] input: Gaming KB Gaming KB as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input7?
+[    8.803410] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.815762] hid-generic 0003:04F3:152E.0002: input,hiddev96,hidraw1: USB HID v1.11 Keyboard [Gaming KB Gaming KB] on usb-0000:00:14.7-1.3/input1?
+[    8.821950] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    8.841586] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DF6?
+[    8.848201] [wlan][144]wlanoidSetGtkRekeyData:(REQ INFO) wlanoidSetGtkRekeyData?
+[    8.855665] [wlan][144]wlanoidSetGtkRekeyData:(REQ INFO) ucCmdSeqNum = 41?
+[    9.353543] usb 1-1.4: new low-speed USB device number 5 using xhci_aeolia?
+[    9.543798] usb 1-1.4: New USB device found, idVendor=0000, idProduct=3825, bcdDevice= 1.00?
+[    9.552336] usb 1-1.4: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[    9.559790] usb 1-1.4: Product:  USB OPTICAL MOUSE?
+[    9.601734] input:  USB OPTICAL MOUSE as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.4/1-1.4:1.0/0003:0000:3825.0003/input/input8?
+[    9.614018] hid-generic 0003:0000:3825.0003: input,hidraw2: USB HID v1.11 Mouse [ USB OPTICAL MOUSE] on usb-0000:00:14.7-1.4/input0?
+[   17.900142] EXT4-fs (sda2): mounted filesystem 116ef654-f297-4253-98fc-1ca455c1d9fe r/w with ordered data mode. Quota mode: disabled.?
+[   18.147656] systemd[1]: System time advanced to timestamp on /var/lib/systemd/timesync/clock: Tue 2026-05-12 15:51:46 UTC?
+[   18.198160] systemd[1]: systemd 259.3-1-arch running in system mode (+PAM +AUDIT -SELINUX +APPARMOR -IMA +IPE +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP -SYSVINIT +LIBARCHIVE)?
+[   18.232325] systemd[1]: Detected architecture x86-64.?
+[   18.251729] systemd[1]: Hostname set to <archlinux>.?
+[   18.323349] systemd[1]: bpf-restrict-fs: BPF LSM hook not enabled in the kernel, BPF LSM not supported.?
+[   18.897443] random: crng init done?
+[   18.998372] zram: Added device: zram0?
+[   19.008228] zram_generator::generator[190]: modprobe "crypto-zstd" failed, ignoring: code exit status: 1?
+[   19.434910] systemd[1]: Queued start job for default target Multi-User System.?
+[   20.325964] systemd[1]: Created slice Slice /system/dirmngr.?
+[   20.337784] systemd[1]: Created slice Slice /system/getty.?
+[   20.349370] systemd[1]: Created slice Slice /system/gpg-agent.?
+[   20.361465] systemd[1]: Created slice Slice /system/gpg-agent-browser.?
+[   20.374151] systemd[1]: Created slice Slice /system/gpg-agent-extra.?
+[   20.386875] systemd[1]: Created slice Slice /system/gpg-agent-ssh.?
+[   20.399175] systemd[1]: Created slice Slice /system/keyboxd.?
+[   20.410970] systemd[1]: Created slice Slice /system/modprobe.?
+[   20.422862] systemd[1]: Created slice Slice /system/systemd-zram-setup.?
+[   20.435230] systemd[1]: Created slice User and Session Slice.?
+[   20.441541] systemd[1]: Started Dispatch Password Requests to Console Directory Watch.?
+[   20.449855] systemd[1]: Started Forward Password Requests to Wall Directory Watch.?
+[   20.458197] systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.?
+[   20.467955] systemd[1]: Expecting device /dev/zram0...?
+[   20.473321] systemd[1]: Reached target Local Encrypted Volumes.?
+[   20.479522] systemd[1]: Reached target Image Downloads.?
+[   20.484974] systemd[1]: Reached target Local Integrity Protected Volumes.?
+[   20.492078] systemd[1]: Reached target Path Units.?
+[   20.497103] systemd[1]: Reached target Remote Encrypted Volumes.?
+[   20.503358] systemd[1]: Reached target Remote File Systems.?
+[   20.509174] systemd[1]: Reached target Remote Integrity Protected Volumes.?
+[   20.516301] systemd[1]: Reached target Remote Verity Protected Volumes.?
+[   20.523165] systemd[1]: Reached target Slice Units.?
+[   20.528325] systemd[1]: Reached target Local Verity Protected Volumes.?
+[   20.535369] systemd[1]: Listening on Device-mapper event daemon FIFOs.?
+[   20.546374] systemd[1]: Listening on Query the User Interactively for a Password.?
+[   20.565087] systemd[1]: Listening on Process Core Dump Socket.?
+[   20.574276] systemd[1]: Listening on Credential Encryption/Decryption.?
+[   20.585631] systemd[1]: Listening on Factory Reset Management.?
+[   20.596282] systemd[1]: Listening on Journal Audit Socket.?
+[   20.602290] systemd[1]: Listening on Journal Socket (/dev/log).?
+[   20.608722] systemd[1]: Listening on Journal Sockets.?
+[   20.614196] systemd[1]: Listening on DDI File System Mounter Socket.?
+[   20.625711] systemd[1]: Listening on Console Output Muting Service Socket.?
+[   20.633237] systemd[1]: Listening on Network Management Resolve Hook Socket.?
+[   20.640930] systemd[1]: Listening on Network Management Varlink Socket.?
+[   20.648109] systemd[1]: Listening on Network Management Netlink Socket.?
+[   20.655152] systemd[1]: Listening on Namespace Resource Manager Socket.?
+[   20.662066] systemd[1]: TPM PCR Measurements skipped, unmet condition check ConditionSecurity=measured-uki?
+[   20.671967] systemd[1]: Make TPM PCR Policy skipped, unmet condition check ConditionSecurity=measured-uki?
+[   20.684882] systemd[1]: Listening on Disk Repartitioning Service Socket.?
+[   20.692015] systemd[1]: Listening on Resolve Monitor Varlink Socket.?
+[   20.698759] systemd[1]: Listening on Resolve Service Varlink Socket.?
+[   20.705579] systemd[1]: Listening on udev Control Socket.?
+[   20.711336] systemd[1]: Listening on udev Kernel Socket.?
+[   20.717023] systemd[1]: Listening on udev Varlink Socket.?
+[   20.722827] systemd[1]: Listening on User Database Manager Socket.?
+[   20.736842] systemd[1]: Mounting Huge Pages File System...?
+[   20.749255] systemd[1]: Mounting POSIX Message Queue File System...?
+[   20.779570] systemd[1]: Mounting Kernel Debug File System...?
+[   20.785995] systemd[1]: Kernel Trace File System skipped, unmet condition check ConditionPathExists=/sys/kernel/tracing?
+[   20.797440] systemd[1]: Create List of Static Device Nodes skipped, unmet condition check ConditionFileNotEmpty=/lib/modules/6.15.4-Baikal_TESTING_crashniels-dirty/modules.devname?
+[   20.814005] systemd[1]: Load Kernel Module configfs skipped, unmet condition check ConditionKernelModuleLoaded=!configfs?
+[   20.831700] systemd[1]: Mounting Kernel Configuration File System...?
+[   20.838463] systemd[1]: Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm?
+[   20.855900] systemd[1]: Starting Load Kernel Module efi_pstore...?
+[   20.862393] systemd[1]: Load Kernel Module fuse skipped, unmet condition check ConditionKernelModuleLoaded=!fuse?
+[   20.879406] systemd[1]: Mounting FUSE Control File System...?
+[   20.885554] systemd[1]: Clear SysFail Entry If The Boot Is Successful skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/LoaderEntrySysFail-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f?
+[   20.904085] systemd[1]: File System Check on Root Device skipped, unmet condition check ConditionPathIsReadWrite=!/?
+[   20.914812] systemd[1]: Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67?
+[   20.932820] systemd[1]: systemd-journald.service: unit configures an IP firewall, but the local system does not support BPF/cgroup firewalling.?
+[   20.945966] systemd[1]: systemd-journald.service: (This warning is only shown for the first unit using IP firewalling.)?
+[   20.963544] systemd[1]: Starting Journal Service...?
+[   20.977539] systemd[1]: Starting Load Kernel Modules...?
+[   20.989679] systemd[1]: Starting Generate Network Units from Kernel Command Line...?
+[   20.997902] systemd[1]: TPM PCR Machine ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.008826] systemd[1]: TPM NvPCR Product ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.026700] systemd[1]: Starting Remount Root and Kernel File Systems...?
+[   21.053354] systemd-journald[414]: Collecting audit messages is enabled.?
+[   21.061966] systemd[1]: Starting Create Static Device Nodes in /dev gracefully...?
+[   21.069878] systemd[1]: Early TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.086924] systemd[1]: Starting Load udev Rules from Credentials...?
+[   21.101172] systemd[1]: Starting Coldplug All udev Devices...?
+[   21.175894] EXT4-fs (sda2): re-mounted 116ef654-f297-4253-98fc-1ca455c1d9fe.?
+[   21.309441] systemd[1]: Mounted Huge Pages File System.?
+[   21.315261] systemd[1]: Mounted POSIX Message Queue File System.?
+[   21.321802] systemd[1]: Mounted Kernel Debug File System.?
+[   21.327703] systemd[1]: Mounted Kernel Configuration File System.?
+[   21.334642] systemd[1]: modprobe@efi_pstore.service: Deactivated successfully.?
+[   21.347200] systemd[1]: Finished Load Kernel Module efi_pstore.?
+[   21.353586] audit: type=1130 audit(1778601110.078:2): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@efi_pstore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.363121] systemd[1]: Mounted FUSE Control File System.?
+[   21.373032] audit: type=1131 audit(1778601110.078:3): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@efi_pstore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.403487] systemd[1]: Finished Load Kernel Modules.?
+[   21.408868] audit: type=1130 audit(1778601110.133:4): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-modules-load comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.428592] systemd[1]: Finished Generate Network Units from Kernel Command Line.?
+[   21.436501] audit: type=1130 audit(1778601110.161:5): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-network-generator comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.443192] systemd[1]: Finished Remount Root and Kernel File Systems.?
+[   21.463431] audit: type=1130 audit(1778601110.187:6): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-remount-fs comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.482966] systemd[1]: Finished Load udev Rules from Credentials.?
+[   21.489651] audit: type=1130 audit(1778601110.214:7): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-udev-load-credentials comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.491186] systemd[1]: Started Journal Service.?
+[   21.515099] audit: type=1130 audit(1778601110.239:8): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-journald comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.590651] systemd-journald[414]: Received client request to flush runtime journal.?
+[   21.599030] audit: type=1130 audit(1778601110.323:9): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.617941] audit: type=1131 audit(1778601110.323:10): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.666792] audit: type=1130 audit(1778601110.391:11): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-random-seed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   23.430240] sky2 0000:00:14.1 enp0s20f1: renamed from eth0?
+[   23.455253] zram0: detected capacity change from 0 to 3145728?
+[   23.580660] Adding 1572860k swap on /dev/zram0.  Priority:100 extents:1 across:1572860k SSDsc?
+[   23.986437] cfg80211: exports duplicate symbol __cfg80211_alloc_event_skb (owned by kernel)?
+[   25.785445] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   25.793441] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =50?
+[   25.800703] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   25.806744] sky2 0000:00:14.1: bpcie_msi_write_msg(fee04000, 00000024) mask=0x0 irq=1 hwirq=0x0 00000000450659c7?
+[   25.808645] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =51?
+[   25.819038] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=1 subfunc=0 addr=fee04000 data=00000024?
+[   25.835612] sky2 0000:00:14.1: bpcie_msi_write_msg(fee04000, 00000024) mask=0x0 irq=1 hwirq=0x0 00000000450659c7?
+[   25.846044] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=1 subfunc=0 addr=fee04000 data=00000024?
+[   25.855641] sky2 0000:00:14.1 enp0s20f1: enabling interface?
+[   25.870851] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   25.870866] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   25.889174] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   25.889184] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.244118] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.252080] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =55?
+[   26.252445] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.267223] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =56?
+[   26.267569] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.274483] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.292027] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.299968] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =58?
+[   26.307199] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.307204] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.324454] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.332371] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =60?
+[   26.343458] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.343471] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.360980] [wlan][144]wlanoidSetPmkid:(REQ INFO) wlanoidSetPmkid?
+[   26.367273] [wlan][144]wlanoidSetPmkid:(REQ INFO) Count 0?
+[   26.367658] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.380783] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =64?
+[   26.381122] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.395961] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =65?
+[   26.403544] [wlan][777]mtk_cfg80211_scan:(REQ INFO) scan channel num = 2?
+[   26.403582] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [IDLE] -> [SCAN]?
+[   26.403759] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.427715] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[77]?
+[   26.427749] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.428341] kauditd_printk_skb: 33 callbacks suppressed?
+[   26.428347] audit: type=1130 audit(1778601115.152:45): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-user-sessions comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   26.436553] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[77]?
+[   26.437003] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.437056] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE4?
+[   26.437106] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[   26.437156] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[   26.437205] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[   26.437254] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE4?
+[   26.520543] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.520566] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.528464] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =78?
+[   26.537021] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.544195] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.550611] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x0003F70A?
+[   26.559371] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.565793] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.581011] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.587527] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.594111] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [SCAN] -> [IDLE]?
+[   26.594535] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.601689] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.610291] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.618995] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.625431] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.634373] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.640633] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.650331] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.656699] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.664591] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =90?
+[   26.671024] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.678185] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.684861] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.693391] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.701943] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.709807] [wlan][144]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =92?
+[   26.716240] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.723406] [wlan][144]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x05] SEQ[91]?
+[   26.729834] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.745118] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.745156] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.745773] audit: type=1130 audit(1778601115.470:46): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=sshd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   26.752081] [wlan][145]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.784885] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.791366] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.797829] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.804322] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.804362] [wlan][145]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.817822] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.828184] audit: type=1130 audit(1778601115.552:47): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=getty@tty1 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   26.830806] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.856827] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.866583] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.876358] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.886130] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.895799] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.905460] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.915120] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.924810] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.934515] [wlan][777]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.945693] [wlan][144]wlanoidSetWapiAssocInfo:(REQ LOUD) ??
+[   26.951447] [wlan][777]mtk_cfg80211_connect:(SEC WARN) [wapi] set wapi assoc info error:c0010014?
+[   26.960534] [wlan][144]wlanoidSetEncryptionStatus:(REQ INFO) ENCRYPTION_STATUS 6?
+[   26.968148] [wlan][144]aisFsmRunEventAbort:(AIS STATE) EVENT-ABORT: Current State IDLE, ucReasonOfDisconnect:4?
+[   26.978406] [wlan][144]aisFsmRunEventAbort:(AIS STATE) ucReasonOfDisconnect:4?
+[   26.978411] [wlan][144]aisFsmStateAbort:(AIS STATE) aisFsmStateAbort DiscReason[4], CurState[0]?
+[   26.978444] [wlan][144]roamingFsmRunEventAbort:(ROAMING EVENT) EVENT-ROAMING ABORT: Current Time = 4294693553?
+[   27.004751] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [IDLE] -> [IDLE]?
+[   27.004761] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [IDLE] -> [SEARCH]?
+[   27.004773] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [SEARCH] -> [REQ_CHANNEL_JOIN]?
+[   27.004799] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.004803] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.112744] audit: type=1101 audit(1778601115.837:48): pid=847 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/bin/login" hostname=archlinux addr=? terminal=/dev/tty1 res=success'?
+[   27.136521] audit: type=1103 audit(1778601115.841:49): pid=847 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/bin/login" hostname=archlinux addr=? terminal=/dev/tty1 res=success'?
+[   27.161453] audit: type=1006 audit(1778601115.841:50): pid=847 uid=0 old-auid=4294967295 auid=1000 tty=tty1 old-ses=4294967295 ses=1 res=1?
+[   27.174219] audit: type=1300 audit(1778601115.841:50): arch=c000003e syscall=1 success=yes exit=4 a0=5 a1=7fff57229960 a2=4 a3=0 items=0 ppid=1 pid=847 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=1000 fsgid=0 tty=tty1 ses=1 comm="login" exe="/usr/bin/login" key=(null)?
+[   27.199640] audit: type=1327 audit(1778601115.841:50): proctitle=2F62696E2F6C6F67696E002D66002D2D?
+[   27.336579] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [REQ_CHANNEL_JOIN] -> [JOIN]?
+[   27.345252] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[0] Type[65] BssIdx[0] AID[0]?
+[   27.355852] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[0] UAPSD[0]?
+[   27.362554] audit: type=1130 audit(1778601116.086:51): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=user-runtime-dir@1000 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   27.363988] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[0] Type[65] BssIdx[0] AID[0]?
+[   27.394184] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[1] UAPSD[1]?
+[   27.394204] [wlan][144]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [AA_IDLE] -> [SAA_SEND_AUTH1]?
+[   27.394209] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[0] Type[65] BssIdx[0] AID[0]?
+[   27.394214] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[1] UAPSD[1]?
+[   27.402385] [wlan][144]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_SEND_AUTH1] -> [SAA_WAIT_AUTH2]?
+[   27.439004] [wlan][144]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_WAIT_AUTH2] -> [SAA_SEND_ASSOC1]?
+[   27.451059] [wlan][144]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_SEND_ASSOC1] -> [SAA_WAIT_ASSOC2]?
+[   27.460579] [wlan][144]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_WAIT_ASSOC2] -> [AA_IDLE]?
+[   27.469408] [wlan][144]nicQmUpdateWmmParms:(QM EVENT) sizeof(AC_QUE_PARMS_T): 10?
+[   27.476992] [wlan][144]nicQmUpdateWmmParms:(QM EVENT) sizeof(CMD_UPDATE_WMM_PARMS): 44?
+[   27.478270] audit: type=1101 audit(1778601116.202:52): pid=878 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=success'?
+[   27.485115] [wlan][144]nicQmUpdateWmmParms:(QM EVENT) sizeof(WIFI_CMD_T): 64?
+[   27.516275] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[2] Type[65] BssIdx[0] AID[26]?
+[   27.526866] [wlan][144]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[1] UAPSD[1]?
+[   27.535013] [wlan][144]roamingFsmRunEventStart:(ROAMING EVENT) EVENT-ROAMING START: Current Time = 4294694109?
+[   27.545160] [wlan][144]roamingFsmSteps:(ROAMING STATE) [ROAMING]TRANSITION: [IDLE] -> [DECISION]?
+[   27.554146] [wlan][144]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [JOIN] -> [NORMAL_TR]?
+[   27.570242] [wlan][144]wlanoidSetAddKey:(REQ LOUD) ?
+[   27.575251] [wlan][144]wlanoidSetAddKey:(REQ INFO) ucCmdSeqNum = 115?
+[   27.582038] [wlan][144]wlanoidSetAddKey:(REQ LOUD) ?
+[   27.587050] [wlan][144]wlanoidSetAddKey:(REQ INFO) ucCmdSeqNum = 116?
+[   27.593557] [wlan][144]nicEventAddPkeyDone:(RSN EVENT) EVENT_ID_ADD_PKEY_DONE BSSIDX=0 ff:ff:ff:ff:ff:ff?
+[   27.603267] [wlan][144]nicEventAddPkeyDone:(RSN EVENT) EVENT_ID_ADD_PKEY_DONE BSSIDX=0 a0:36:bc:14:92:ec?
+[   27.612964] [wlan][144]nicEventAddPkeyDone:(RSN EVENT) STA a0:36:bc:14:92:ec Add Key Done!!?
+[   27.621531] [wlan][144]nicQmUpdateWmmParms:(QM EVENT) sizeof(AC_QUE_PARMS_T): 10?
+[   27.629112] [wlan][144]nicQmUpdateWmmParms:(QM EVENT) sizeof(CMD_UPDATE_WMM_PARMS): 44?
+[   27.637246] [wlan][144]nicQmUpdateWmmParms:(QM EVENT) sizeof(WIFI_CMD_T): 64?
+[   27.648203] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.648216] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.665723] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.665734] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.683066] [wlan][144]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   27.840824] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.840838] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.864664] [wlan][144]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   28.039136] [wlan][144]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   28.364139] [wlan][144]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   29.041880] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   29.041894] [wlan][144]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   32.222460] kauditd_printk_skb: 11 callbacks suppressed?
+[   32.222472] audit: type=1101 audit(1778601947.512:62): pid=971 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   32.253624] audit: type=1103 audit(1778601947.518:63): pid=971 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   32.280455] audit: type=1006 audit(1778601947.518:64): pid=971 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=3 res=1?
+[   32.293391] audit: type=1300 audit(1778601947.518:64): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffe7c7fb170 a2=4 a3=0 items=0 ppid=841 pid=971 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=3 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[   32.320408] audit: type=1327 audit(1778601947.518:64): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[   32.343118] audit: type=1105 audit(1778601947.633:65): pid=971 uid=0 auid=1000 ses=3 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   32.375229] audit: type=1103 audit(1778601947.636:66): pid=977 uid=0 auid=1000 ses=3 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   35.929918] audit: type=1131 audit(1778601951.220:67): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=NetworkManager-dispatcher comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   49.026850] audit: type=1101 audit(1778601964.317:68): pid=1015 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   49.052758] audit: type=1103 audit(1778601964.321:69): pid=1015 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   49.079862] audit: type=1006 audit(1778601964.321:70): pid=1015 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=4 res=1?
+[   49.092920] audit: type=1300 audit(1778601964.321:70): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffe3b653f80 a2=4 a3=0 items=0 ppid=841 pid=1015 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[   49.120150] audit: type=1327 audit(1778601964.321:70): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[   49.143301] audit: type=1105 audit(1778601964.433:71): pid=1015 uid=0 auid=1000 ses=4 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   49.175606] audit: type=1103 audit(1778601964.437:72): pid=1021 uid=0 auid=1000 ses=4 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   49.471227] audit: type=1101 audit(1778601964.761:73): pid=1030 uid=1000 auid=1000 ses=4 msg='op=PAM:accounting grantors=pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/bin/sudo" hostname=? addr=? terminal=? res=success'?
+[   49.491577] audit: type=1110 audit(1778601964.765:74): pid=1030 uid=1000 auid=1000 ses=4 msg='op=PAM:setcred grantors=pam_faillock,pam_permit,pam_env,pam_faillock acct="root" exe="/usr/bin/sudo" hostname=? addr=? terminal=? res=success'?
+[   49.513140] audit: type=1105 audit(1778601964.765:75): pid=1030 uid=1000 auid=1000 ses=4 msg='op=PAM:session_open grantors=pam_systemd_home,pam_limits,pam_unix,pam_permit acct="root" exe="/usr/bin/sudo" hostname=? addr=? terminal=? res=success'?
+[   55.632127] kauditd_printk_skb: 4 callbacks suppressed?
+[   55.632136] audit: type=1131 audit(1778601970.922:80): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-hostnamed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   58.840656] audit: type=1101 audit(1778601974.131:81): pid=1055 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   58.866536] audit: type=1103 audit(1778601974.133:82): pid=1055 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   58.893529] audit: type=1006 audit(1778601974.133:83): pid=1055 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=5 res=1?
+[   58.906535] audit: type=1300 audit(1778601974.133:83): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffd4e3709c0 a2=4 a3=0 items=0 ppid=841 pid=1055 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=5 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[   58.933733] audit: type=1327 audit(1778601974.133:83): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[   58.972237] audit: type=1105 audit(1778601974.262:84): pid=1055 uid=0 auid=1000 ses=5 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   59.004564] audit: type=1103 audit(1778601974.266:85): pid=1062 uid=0 auid=1000 ses=5 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   59.282496] audit: type=1106 audit(1778601974.573:86): pid=1055 uid=0 auid=1000 ses=5 msg='op=PAM:session_close grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   59.314930] audit: type=1104 audit(1778601974.573:87): pid=1055 uid=0 auid=1000 ses=5 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.077687] kauditd_printk_skb: 14 callbacks suppressed?
+[   69.077697] audit: type=1101 audit(1778601984.383:100): pid=1103 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.109114] audit: type=1103 audit(1778601984.387:101): pid=1103 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.136189] audit: type=1006 audit(1778601984.387:102): pid=1103 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=7 res=1?
+[   69.149336] audit: type=1300 audit(1778601984.387:102): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffdfc6ae890 a2=4 a3=0 items=0 ppid=841 pid=1103 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=7 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[   69.176670] audit: type=1327 audit(1778601984.387:102): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[   69.205633] audit: type=1105 audit(1778601984.510:103): pid=1103 uid=0 auid=1000 ses=7 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.237977] audit: type=1103 audit(1778601984.514:104): pid=1109 uid=0 auid=1000 ses=7 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.670813] audit: type=1106 audit(1778601984.977:105): pid=1103 uid=0 auid=1000 ses=7 msg='op=PAM:session_close grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.703382] audit: type=1104 audit(1778601984.977:106): pid=1103 uid=0 auid=1000 ses=7 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   69.873335] audit: type=1101 audit(1778601985.180:107): pid=1125 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?

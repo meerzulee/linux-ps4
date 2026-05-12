@@ -1,0 +1,88 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: skip B0_IMSK writes on Baikal — they alias MAC_CTRL2/3
+
+v80 live readback revealed the smoking gun for SMI death.  Sky2's
+B0_IMSK register (BAR+0x0c) is on Baikal silicon NOT an interrupt
+mask — it's MAC_CTRL2/3, a Sony custom register that holds the MAC
+clock-domain and SMI MDC clock-enable bits.
+
+Test 1 confirmed (live, 2026-05-12):
+
+  - Right after `napi_enable`, before the first B0_IMSK write at the
+    end of sky2_setup_irq, the SMI register held data 0x7949 — the
+    last successful BMSR read from sky2_probe's link timer at t=5.6s.
+    MDC was clocking through that point.
+
+  - Then sky2_setup_irq writes B0_IMSK = Y2_IS_BASE = 0xC0000000,
+    immediately followed by sky2_up writing imask = 0xC0000038.
+
+  - Right after that, the SMI register returns 0x20008000 for every
+    read — DONE bit set, data = 0x2000 (residue of WR_OP bit), MDC
+    has stopped clocking.  The damage is one-way: even rewriting the
+    MAC_CTRL register cluster (BAR+0x008/0x00c/0x010) back to Orbis
+    values doesn't recover SMI.  Some latched fault state in the MAC
+    can only be cleared by a full hardware reset.
+
+This was the "after enabling interface" symptom we saw on v77b through
+v80 — the netdev came up admin-UP and the SMI died exactly then.
+
+The fix is to skip ALL writes to B0_IMSK on Baikal.  Our
+sky2_baikal_irq_enable() (v79) already programs the real Baikal IRQ
+enable at BAR+0x204 = 0x10001388 and per-IRQ mask at BAR+0x54 = 0x7bfffe,
+and our sky2_intr pre-handler (v80) acks BAR+0x50.  Sky2's notion of
+B0_IMSK is meaningless on Baikal.
+
+Two specific call sites that fire at interface-up time and previously
+killed SMI:
+  - sky2_setup_irq (sky2.c:1823): writes Y2_IS_BASE
+  - sky2_up        (sky2.c:1861): writes imask | portirq_msk[port]
+
+Pass criterion: after this patch, the SMI MDC clock should stay alive
+through interface-UP and the link timer's PHY reads should return real
+MT7531 register values (BMSR, PHY ID, etc.) — and ultimately link
+should reach UP at 1000Mbps.
+
+Diagnosis credit: combined analysis from four independent AI agents
+converged on this; "kimi" pinpointed the specific B0_IMSK->MAC_CTRL2
+aliasing.
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -1820,8 +1820,22 @@ static int sky2_setup_irq(struct sky2_hw *hw, const char *name)
+ 		hw->flags |= SKY2_HW_IRQ_SETUP;
+
+ 		napi_enable(&hw->napi);
++#ifdef CONFIG_X86_PS4
++		/* On Baikal, B0_IMSK (BAR+0x0c) aliases to MAC_CTRL2/3 — a
++		 * Sony custom register that holds the MAC clock and SMI MDC
++		 * enable bits.  Sky2 writing Y2_IS_BASE here clobbers those
++		 * bits and silently gates the SMI MDC clock (read returns
++		 * stale 0x20008000 after this point).  Skip on Baikal — our
++		 * sky2_baikal_irq_enable() already programmed BAR+0x204 and
++		 * BAR+0x54 which are the real Baikal IRQ enables. */
++		if (!sky2_is_baikal(hw)) {
++			sky2_write32(hw, B0_IMSK, Y2_IS_BASE);
++			sky2_read32(hw, B0_IMSK);
++		}
++#else
+ 		sky2_write32(hw, B0_IMSK, Y2_IS_BASE);
+ 		sky2_read32(hw, B0_IMSK);
++#endif
+ 	}
+
+ 	return err;
+@@ -1858,8 +1872,15 @@ static int sky2_up(struct net_device *dev)
+ 		imask |= Y2_IS_PHY_QLNK;	/* enable PHY Quick Link */
+
+ 	imask |= portirq_msk[port];
++#ifdef CONFIG_X86_PS4
++	if (!sky2_is_baikal(hw)) {
++		sky2_write32(hw, B0_IMSK, imask);
++		sky2_read32(hw, B0_IMSK);
++	}
++#else
+ 	sky2_write32(hw, B0_IMSK, imask);
+ 	sky2_read32(hw, B0_IMSK);
++#endif
+
+ 	netif_info(sky2, ifup, dev, "enabling interface\n");
