@@ -160,7 +160,7 @@ Legend: 🗝️ unexplored · 🔍 partial · ✅ fully mapped · ⚠️ blocked
 ### Floor 9: Security (LOCKED VAULT)
 | Room | Status | File |
 |---|---|---|
-| sbl/driver | 🔍 | partial — SAMU mailbox protocol decoded in UVD dig |
+| sbl/driver | 🔍 first-pass ⭐ | rooms/sbl-driver.md (THE UVD blocker explained) |
 | sbl/service | 🗝️ | rooms/sbl-service.md |
 | sbl/sm_service | 🗝️ | rooms/sbl-sm_service.md |
 | sbl/srtc | 🗝️ | rooms/sbl-srtc.md |
@@ -218,6 +218,13 @@ would map to, anything Sony does that we should learn from.)
 
 ## Progress notes
 
+- 2026-05-12 iter 13: + sbl/driver first-pass ⭐ — entered the LOCKED VAULT.
+  SAMU mailbox protocol fully documented (already had it from UVD dig).
+  Full sceSblDriver* API extracted from string xrefs:
+  Initialize/Finalize/InitializeResume, MapPages/UnmapPages,
+  RegisterMsgHandler, ReadSmuIx/WriteSmuIx. SceSblMsgTask kthread
+  identified. **This is THE structural UVD blocker** — porting would
+  take weeks-months and is out of scope. 16 more SBL submodules await.
 - 2026-05-12 iter 12: + camera + hmd + hmddfu + mas trio (Floor 8 VR).
   Sony codenames: "luke" = PS Camera, "ujedi" = DS4. Address-adjacent
   modules suggesting linked-together VR/Camera superblock. Mostly
