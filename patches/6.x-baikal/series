@@ -528,6 +528,12 @@
 # v79 also drops the BMCR reset + AN restart we did in v78 — Orbis's
 # pre-handoff PHY state already had AN complete.
 0700-network-sky2/0009-sky2-baikal-irq-enable-skip-phy-init.patch
+# v80 (2026-05-12): v79 enabled BAR+0x204 but link still DOWN.  Root
+# cause: sky2's ISR doesn't touch BAR+0x50, so the Baikal MAC's
+# "AN failed" IRQ bit (0x40000) stays pending → MAC clocks down → SMI
+# bus dies.  v80 adds a pre-handler in sky2_intr that reads+W1Cs
+# BAR+0x50 before the Yukon-2 path runs.
+0700-network-sky2/0010-sky2-baikal-intr-ack.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
