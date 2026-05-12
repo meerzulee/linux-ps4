@@ -426,6 +426,12 @@
 # same SBL/SMU structural blocker. A18 fixed UVD but VCE then kills amdgpu
 # probe at -110. Same fix in vce_v2_0_hw_init's ring_test loop.
 0300-gpu-liverpool/0055-amdgpu-vce-v2-0-a19-soft-fail-hw-init.patch
+# 0056: v76e-B1.1-α — drop the VC1_CNTL.PAGE_TABLE_DEPTH=0 override from 0040.
+# A18/A19 soft-fail removed the need for the flat-walk hack; DEPTH=0 was
+# silently swallowing amdgpu_vm's per-vmid PT_BASE writes, which is why
+# Hyprland's CPF faulted at VA 0x268000 in VMID 1. Restoring mainline
+# DEPTH=1 lets amdgpu_vm program per-vmid PDs on every submission.
+0300-gpu-liverpool/0056-amdgpu-gmc-v7-0-b11-alpha-revert-depth-override.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch

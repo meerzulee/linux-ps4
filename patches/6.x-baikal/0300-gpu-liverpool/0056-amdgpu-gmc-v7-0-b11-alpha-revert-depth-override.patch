@@ -1,0 +1,92 @@
+amdgpu: gmc_v7_0 — B1.1-α drop the DEPTH=0 override now that UVD is soft-fail
+
+β-2-A (0040) forced VC1_CNTL.PAGE_TABLE_DEPTH = 0 on Liverpool/Gladius to
+collapse VC1..VC15 to a flat-GART walk. The whole purpose of that hack
+was to let the UVD VCPU firmware read GPU VA 0x300000000 via a single
+PTE we bound in the shared GART. It served its purpose during the
+A-arc — we proved the fw could reach that VA.
+
+After 17 UVD iterations + the Orbis dungeon mapping established that
+UVD bring-up is structurally blocked on SBL/SAMU access (see
+checkpoint/docs/research/orbis-dungeon/rooms/sbl-driver.md), A18 and
+A19 soft-failed UVD and VCE hw_init so amdgpu probe completes. Nothing
+on the live kernel actually does the 0x300000000 access anymore.
+
+What DEPTH=0 was *still* costing us: amdgpu_vm's per-vmid PT_BASE_ADDR
+writes (emitted by cik_emit_vm_flush before every ring submission)
+were silently ignored. The GMC kept walking the flat GART for VC1..VC15
+even though the per-vm subsystem had a real PD for each VMID. When
+Hyprland's CPF tried to read its userspace IB at GPU VA 0x268000 in
+VMID 1, the lookup hit a flat-GART hole (page 616 is in the void
+between amdgpu_gart_bind regions) and faulted:
+
+  VM_CONTEXT1_PROTECTION_FAULT_ADDR    0x00000268
+  VM_CONTEXT1_PROTECTION_FAULT_STATUS  0x0207600C
+  VM fault (0x0c, vmid 1, pasid 0) at page 616, read from 'CPF'
+
+Then "ring gfx timeout" → "Ring gfx reset failure" → GPU reset cascade
+→ gfx_v7_0_suspend → desktop dies. This is what's been blocking
+Hyprland / any GL-rendered Wayland session even though software-Pixman
+Weston works fine.
+
+The fix: stop forcing DEPTH=0. Leave the mainline DEPTH=1 write (line
+742, untouched) in place and let amdgpu_vm do its per-vmid PD job
+normally. The two flat-GART dummy binds (VA 0x300000000, VA 0) and
+the UVD fw mirror bind from 0042 all become dead under DEPTH=1 since
+VC1..VC15 stop consulting the flat GART — keeping them defensively
+costs one PTE each and shields VC0-routed kernel reads if any.
+
+Expected hardware signals:
+
+  ✅ amdgpu probe still completes; UVD/VCE still soft-fail per A18/A19.
+  ✅ "VM fault ... vmid 1 ... page 616 ... CPF" disappears.
+  ✅ "ring gfx timeout / reset failure" disappears.
+  ✅ Hyprland (or any GL Wayland compositor) survives past first frame.
+  🟡 A different VM fault on some other VMID/page — mainline per-vm
+     is working but something else needs a bind. We narrow.
+  ❌ Same page-616 CPF fault — DEPTH=1 isn't the gate; per-vm flush
+     isn't reaching VC1_PT_BASE on this hardware. Fall back to B1.1-β
+     (build a real per-vmid PD with low-VA flat-GART mirror).
+  💀 amdgpu probe regresses — we accidentally relied on DEPTH=0 for
+     some other path. Revert this patch and investigate.
+
+Cost: −6 lines of code (one RREG32/WREG32 + DRM_INFO), 20 lines of
+comment.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -779,12 +779,26 @@
+ 	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
+ 		dma_addr_t fw_dummy = adev->dummy_page_addr;
+
+-		tmp = RREG32(mmVM_CONTEXT1_CNTL);
+-		tmp = REG_SET_FIELD(tmp, VM_CONTEXT1_CNTL,
+-				    PAGE_TABLE_DEPTH, 0);
+-		WREG32(mmVM_CONTEXT1_CNTL, tmp);
+-		DRM_INFO("ps4: VC1..VC15 PAGE_TABLE_DEPTH overridden to 0 "
+-			 "(flat walk) for UVD compatibility\n");
++		/*
++		 * v76e-B1.1-α: restore mainline VC1..VC15 PAGE_TABLE_DEPTH=1.
++		 *
++		 * β-2-A's DEPTH=0 forced a flat-GART walk so the UVD fw could
++		 * read GPU VA 0x300000000 via a single PTE we bound in the
++		 * shared GART. That trick is no longer needed: A18 + A19 now
++		 * soft-fail UVD and VCE bring-up, so nothing ever does the
++		 * 0x300000000 access. With DEPTH=0 still asserted, amdgpu_vm's
++		 * per-vmid PT_BASE writes were silently ignored — GFX VMID 1's
++		 * CPF read of a userspace IB fell into a flat-GART hole and
++		 * faulted at page 616 (VA 0x268000), killing Hyprland.
++		 *
++		 * Leaving DEPTH=1 alone lets amdgpu_vm program per-vmid PDs the
++		 * way mainline expects on every submission. The dummy bind
++		 * below at flat-GART VA 0x300000000 (plus the VA-0 bind that
++		 * follows for null-deref safety) becomes inert under DEPTH=1
++		 * since VC1..VC15 stop consulting the flat GART — kept here
++		 * defensively in case any VC0-routed kernel path still reaches
++		 * those addresses.
++		 */
+
+ 		amdgpu_gart_bind(adev, 0x300000000ULL, 1, &fw_dummy,
+ 				 AMDGPU_PTE_VALID | AMDGPU_PTE_SYSTEM |
