@@ -1,0 +1,1382 @@
+?[36m[Debug] src/PayloadsView.cpp:319: Loading: /data/payloads/linux-1024mb.bin?[0m?
+[GoldHEN] <binloader> accepted a new payload?
+[GoldHEN] <binloader> TCP Mode?
+?[36m[[DGebougl]d Hsrc/EPaNyl]o <abidsnlVioeaderw.cpp:1>86:  GpeaynerlateoPaayloadd sre isc cealiled!?[0vm?e
+d? [[s36im[ze:Deb 2u8g]3 840 src- /bPayuflfoaders_Vsiiezw.e: cp2p9081:2126 - ip:: Cleanu 127p.0. p0a.y1lo]ad? 
+list...?[Gol[0dHm?
+EN] <binloa?der[3> 6foum[Denbd and jaugi] lbsrokernc/P aylotaragdetsView. pcpproce:206s:s  Ge[pid:nerat eP4ayl6]?o
+a[GoldsdH:E N]R e<bifrnelshedoade?r> l[a0m?
+unching payload... [format: BIN]?
+[GoldHEN] <binloader> payload launched?
+kernel_init()?
+Kernel base = ffffffff91088000?
+Direct map base = ffffca4d00000000?
+Testing global variable access (write protection)...?
+OK.?
+Kernel interface initialized?
+Installing sys_kexec to system call #153?
+kexec_init() successful?
+?
+sys_kexec invoked?
+========================================?
+PS4 Linux Payloads AIO?
+FW 12.02 (1202)?
+VRAM 1024 MB?
+Southbridge: Baikal?
+========================================?
+sys_kexec(0x200d10000, 11441152, 0x2017fc000, 4160630, "earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs libata.force=1.00:disable root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info amdgpu.gpu_recovery=0 amdgpu.lockup_timeout=10000 amdgpu.gfx_off=0 amdgpu.runpm=0 amdgpu.bapm=0 amdgpu.dpm=0")?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_pfp.bin ?
+Copying PFP firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_me.bin ?
+Copying ME firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_ce.bin ?
+Copying CE firmware?
+NOP handler at 0x7f0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec.bin ?
+Copying MEC firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec2.bin ?
+Copying MEC2 firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_rlc.bin ?
+Copying RLC firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma.bin ?
+Copying SDMA firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma1.bin ?
+Copying SDMA1 firmware?
+?
+kexec parameters:?
+    Kernel image size:   11441152 bytes?
+    Initramfs size:      4255366 bytes (4160630 from user)?
+    Kernel command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs libata.force=1.00:disable root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info amdgpu.gpu_recovery=0 amdgpu.lockup_timeout=10000 amdgpu.gfx_off=0 amdgpu.runpm=0 amdgpu.bapm=0 amdgpu.dpm=0?
+    Kernel image buffer: 0xffffffffffffffff?
+    Initramfs buffer:    0xffffffffffffffff?
+kernel_hook_install(0xffffff80805d512d, 0xffffffff914cfad0)?
+  Using 64bit absolute jump?
+******************************************************?
+kexec successfully armed. Please shut down the system.?
+******************************************************?
+?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[KE]sceCameraDevKill::2685 ERROR: sceCameraProcConfigStop 0x802e0006 i=0 handle=257 piCdon=43?
+text.cc:174 Cont(aext.jcc:189 (ajmmCoCnontextteClexanupt) -C Codec lOeapnupu)s  -S[K IEInRsLNtKEa Ln]Ece ndme cmo27d8e5_3r h2wanadlse _vmwspa ans cnooe_exittt  edp rpid: por71oppee,rr llpyyty  peduesn=tr1, re0ogyexifdsf.tff?ec
+rea4dCodn.2tex?c
+93eC7o80t->.pt_lnotcadce:de x1is8t .9 TRUE(ca?cj:m1C
+8o[9 KERn(NELat]ej xmtCdmoCnetlem_extanChulpea)a nnud-le _Cvmpos)dp aecc-e _ eCxoOiptuedsde  ScImaLp  OK#0 pE nu0xcsffo fCdeEfLrffff Tffw fffEaffsnc f?
+o[nKdoERNELt]er   dpwmraeospemr_l ynh otau ndle_vnprmsroppegaeicsrelteyr_e ude.x?n
+ritedeC gonipidtes: xt71, aerptep_.d.cmap?c
+s:C_c1ooun7tn[4 1], t(1 ->ae jx0m?C
+to.ncc:1t89 (ajmeContxtextCleCleanup) -an uCodecp Opus D) ecoder was - not pInroperly sunregtistered.?
+ance 344067 wasC ontenoxt.cct :189 (ajpmConrtextColeanup) - pCoedrelcy Opus  deCELT sEtncoderr was not poyerodpe.?r
+lCoynt eunxregitstere.d.?
+cContexc:t.c1c:1889 (a9jmConte x(tCleanuajp) - Codec OpmusC oCntELT Decoeder xwas not properly tCunlregistereaed.?n
+up) - CodCoenc Opus Decteodxer was not tp.rocperlyc:189 unre gister(ead.?
+jmContextCCloentext.anupcc:189)  (ajmC-ontextCl Ceanup) - Cododec MPeEG4 Ac ACECL EncodP8 er wasD not ecproperly unregoistederred w.?
+as not properly unregistered.?
+Context.cc:189 (ajmCoContnetxt.cc:1e7x4tC (ajlmeCoantnextCulpe)anu p) - - CoIndsetancce  163CE90 wasL Pn8ot prop Enercoly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec MP3 Decoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - CodecCo Antext.ccTRA:174 C(a9j mContDextCleanup)ec - odeInsr wtanasce 11 n4689 was not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec AC3 Encoder was not properly unregistered.?
+Coot ntext.cpcr:174 (ajmCoontextClepeanup) - rIlnstyance  u163842n was norte gpisroperly tdeestrroyeed.?
+dContext.cc:.18?9
+ (daejmContextClreanup) - Codec w asD nTS Encodero was t not prpoproerlpy unrerlegisterey d.?un
+registered.?
+Context.cc:189 (ajmContextCleanup) - Codec CELP(16) Decoder was not properly unregistered.?
+Context.cc:191 (ajmContextCleanup) - More codecs were not properly unregistered...?
+[SceSysCore mini] killall timeout 5[sec]...?
+[SceSysCore mini] forcibly unmount 2 nullfses?
+[SceSysCore mini] forcibly unmount /mnt/usb0?
+[SceSysCore mini[REGMGR] 000006 ...?
+] sceKernelPollE[ventFlag(reboot_flag): failed 80020010?
+[SceSysCore mini] call reboot(4000)?
+REGMGR] (   2144.614 sec) 010006 ...?
+[REGMGR] (   0.011782 sec) 010007 ...?
+[REGMGR] 000108 ...?
+Waiting (max 60 seconds) for system process `SceVnlru' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon0' to stop...SD Manual Tuning done. MaxPassWindowSize=23, TunePoint=20 CORE_CTRL=0x184094?
+done?
+Waiting (max 60 seconds) for system process `SceBufdaemon1' to stop...done?
+?Wai
+tSying (maxn 6c0i seconnds) for system process `SceSyncer' to stopg... disks, vnodes remaining...0 0 sched_sync: flush softdep (iter=2)?
+sched_sync: flush softdep (iter=1)?
+done?
+Waiting (max 60 seconds) for system process `SceBufdaemon2' to stop...done?
+All buffers synced.?
+[PFS] umount[0x000036e9fe369671] finished 0?
+[PFS] umount[0x000036e9fe369989] finished 0?
+Uptime: 35m49s?
+icc post sync:Thermal alert LED off?
+[REGMGR] 000007 @2@ ...?
+icc08-4001 0802?
+icc:failed to disabled reset button notification: 0005?
+icc:disabled thermal notification?
+eth0: link state changed to DOWN?
+ICC: howto:00004000 depth:2 cause:00 hand:01?
+ICC: Shutdown.?
+hook_icc_query_nowait called?
+ICC 05-00 polling?
+Fixing ACPI tables at 0xe0000 (0xffffffffffffffff)?
+RSDT at 0xe0024?
+XSDT at 0xe0088?
+FACP at 0xe016c?
+FACS at 0xe012c?
+DSDT at 0xe0430?
+APIC at 0xe0298?
+MCFG at 0xe0304?
+SSDT at 0xe0730?
+ACPI tables fixed?
+kexec: Waiting for secondary CPUs...?
+kexec: Secondary CPUs quiesced?
+kexec: Setting up GDT...?
+kexec: Relocating stub...?
+kexec: Setting up boot params...?
+kexec: Cleaning up hardware...?
+Current sb_id: 3?
+?
+SB_BAIKAL constant: 3?
+?
+kexec: Detected Baikal Southbridge, disabling IOMMU...?
+kexec: Reconfiguring VRAM...?
+kexec: Resetting GPU...?
+kexec: About to relocate and jump to kernel?
+[    0.000000] ps4: x86_ps4_early_setup: PS4 early setup?
+[    0.000000] Linux version 6.15.4-Baikal_TESTING_crashniels-dirty (meerzulee@cachynator) (gcc (GCC) 16.1.1 20260430, GNU ld (GNU Binutils) 2.46.0) #1 SMP PREEMPT_DYNAMIC Tue May 12 19:42:43 +06 2026?
+[    0.000000] Command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs libata.force=1.00:disable root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info amdgpu.gpu_recovery=0 amdgpu.lockup_timeout=10000 amdgpu.gfx_off=0 amdgpu.runpm=0 amdgpu.bapm=0 amdgpu.dpm=0?
+[    0.000000] KERNEL supported cpus:?
+[    0.000000]   AMD AuthenticAMD?
+[    0.000000] BIOS-provided physical RAM map:?
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000007fff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000008000-0x000000000007ffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000080000-0x0000000000099fff] usable?
+[    0.000000] BIOS-e820: [mem 0x000000000009a000-0x00000000000bffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000effff] ACPI data?
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000003fffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000400000-0x000000000047ffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000480000-0x000000000067ffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000000680000-0x00000000006fffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000000700000-0x000000007efe7fff] usable?
+[    0.000000] BIOS-e820: [mem 0x000000007efe8000-0x000000007efeffff] ACPI NVS?
+[    0.000000] BIOS-e820: [mem 0x000000007eff0000-0x000000007effffff] ACPI data?
+[    0.000000] BIOS-e820: [mem 0x000000007f000000-0x000000007fffffff] usable?
+[    0.000000] BIOS-e820: [mem 0x0000000080000000-0x00000000fbffffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000013fffffff] reserved?
+[    0.000000] BIOS-e820: [mem 0x0000000140000000-0x000000027effffff] usable?
+[    0.000000] earlycon: uart8250 at MMIO32 0x00000000c890e000 (options '115200n8')?
+[    0.000000] printk: legacy bootconsole [uart8250] enabled?
+[    0.000000] printk: debug: skip boot console de-registration.?
+[    0.000000] printk: debug: ignoring loglevel setting.?
+[    0.000000] NX (Execute Disable) protection: active?
+[    0.000000] APIC: Static calls initialized?
+[    0.000000] SMBIOS 2.1 present.?
+[    0.000000] DMI:  , BIOS unde Wed 09/22/2021 16:2?
+[    0.000000] DMI: Memory slots populated: 1/1?
+[    0.000000] ps4: EMC timer started in 2358 TSC ticks?
+[    0.000000] ps4: Calibrated TSC frequency: 1594095520 kHz?
+[    0.000000] tsc: Detected 1594.096 MHz processor?
+[    0.001421] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved?
+[    0.008246] e820: remove [mem 0x000a0000-0x000fffff] usable?
+[    0.013927] last_pfn = 0x27f000 max_arch_pfn = 0x400000000?
+[    0.019512] MTRR map: 6 entries (3 fixed + 3 variable; max 20), built from 9 variable MTRRs?
+[    0.028011] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  ?
+[    0.035396] e820: update [mem 0x80000000-0x13fffffff] usable ==> reserved?
+[    0.042323] last_pfn = 0x80000 max_arch_pfn = 0x400000000?
+[    0.056430] Using GB pages for direct mapping?
+[    0.062396] RAMDISK: [mem 0x21000000-0x2140efff]?
+[    0.067106] ACPI: Early table checksum verification disabled?
+[    0.072863] ACPI: RSDP 0x00000000000E0000 000024 (v02 SIE   )?
+[    0.078714] ACPI: XSDT 0x00000000000E0088 00004C (v01 SIE    ORBIS    20121218 INTL 20110211)?
+[    0.087400] ACPI: FACP 0x00000000000E016C 0000F4 (v04 SIE    ORBIS    20130205 INTL 20110211)?
+[    0.096085] ACPI: DSDT 0x00000000000E0430 00018C (v02 SIE    ORBIS    20121002 INTL 20110211)?
+[    0.104766] ACPI: FACS 0x00000000000E012C 000040?
+[    0.109464] ACPI: FACS 0x00000000000E012C 000040?
+[    0.114163] ACPI: APIC 0x00000000000E0298 00006C (v02 SIE    ORBIS    20120725 INTL 20110211)?
+[    0.122843] ACPI: MCFG 0x00000000000E0304 00003C (v01 SIE    ORBIS    20120725 INTL 20110211)?
+[    0.131523] ACPI: SSDT 0x00000000000E0730 001944 (v01 AMD    POWERNOW 00000001 AMD  00000001)?
+[    0.140207] ACPI: IVRS 0x00000000000E2074 000054 (v01 F0F    PS4KEXEC 20161225 KEXC 20161225)?
+[    0.148885] ACPI: Reserving FACP table memory at [mem 0xe016c-0xe025f]?
+[    0.155526] ACPI: Reserving DSDT table memory at [mem 0xe0430-0xe05bb]?
+[    0.162165] ACPI: Reserving FACS table memory at [mem 0xe012c-0xe016b]?
+[    0.168805] ACPI: Reserving FACS table memory at [mem 0xe012c-0xe016b]?
+[    0.175443] ACPI: Reserving APIC table memory at [mem 0xe0298-0xe0303]?
+[    0.182083] ACPI: Reserving MCFG table memory at [mem 0xe0304-0xe033f]?
+[    0.188722] ACPI: Reserving SSDT table memory at [mem 0xe0730-0xe2073]?
+[    0.195362] ACPI: Reserving IVRS table memory at [mem 0xe2074-0xe20c7]?
+[    0.202077] No NUMA configuration found?
+[    0.205974] Faking a node at [mem 0x0000000000000000-0x000000027effffff]?
+[    0.212794] NODE_DATA(0) allocated [mem 0x27effa800-0x27effdfff]?
+[    0.218962] Zone ranges:?
+[    0.221533]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]?
+[    0.227819]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]?
+[    0.234106]   Normal   [mem 0x0000000100000000-0x000000027effffff]?
+[    0.240393] Movable zone start for each node?
+[    0.244732] Early memory node ranges?
+[    0.248361]   node   0: [mem 0x0000000000001000-0x0000000000007fff]?
+[    0.254736]   node   0: [mem 0x0000000000080000-0x0000000000099fff]?
+[    0.261110]   node   0: [mem 0x0000000000100000-0x00000000003fffff]?
+[    0.267483]   node   0: [mem 0x0000000000480000-0x000000000067ffff]?
+[    0.273856]   node   0: [mem 0x0000000000700000-0x000000007efe7fff]?
+[    0.280229]   node   0: [mem 0x000000007f000000-0x000000007fffffff]?
+[    0.286603]   node   0: [mem 0x0000000140000000-0x000000027effffff]?
+[    0.292978] Initmem setup node 0 [mem 0x0000000000001000-0x000000027effffff]?
+[    0.300153] On node 0, zone DMA: 1 pages in unavailable ranges?
+[    0.306093] On node 0, zone DMA: 120 pages in unavailable ranges?
+[    0.312222] On node 0, zone DMA: 102 pages in unavailable ranges?
+[    0.318348] On node 0, zone DMA: 128 pages in unavailable ranges?
+[    0.324509] On node 0, zone DMA: 128 pages in unavailable ranges?
+[    0.340886] On node 0, zone DMA32: 24 pages in unavailable ranges?
+[    0.373190] On node 0, zone Normal: 4096 pages in unavailable ranges?
+[    0.380566] ACPI: No IOAPIC entries present?
+[    0.384818] ACPI: Using ACPI for processor (LAPIC) configuration information?
+[    0.392002] CPU topo: Max. logical packages:   1?
+[    0.396694] CPU topo: Max. logical dies:       1?
+[    0.401388] CPU topo: Max. dies per package:   1?
+[    0.406092] CPU topo: Max. threads per core:   1?
+[    0.410784] CPU topo: Num. cores per package:     8?
+[    0.415742] CPU topo: Num. threads per package:   8?
+[    0.420698] CPU topo: Allowing 8 present CPUs plus 0 hotplug CPUs?
+[    0.426924] [mem 0xfc000000-0xffffffff] available for PCI devices?
+[    0.433124] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns?
+[    0.443758] setup_percpu: NR_CPUS:8 nr_cpumask_bits:8 nr_cpu_ids:8 nr_node_ids:1?
+[    0.451949] percpu: Embedded 42 pages/cpu s131544 r8192 d32296 u262144?
+[    0.458612] pcpu-alloc: s131544 r8192 d32296 u262144 alloc=1*2097152?
+[    0.465078] pcpu-alloc: [0] 0 1 2 3 4 5 6 7 ?
+[    0.469461] Kernel command line: earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 iommu=pt intremap=off panic=10 loglevel=8 ignore_loglevel printk.devkmsg=on drm.edid_firmware=edid/1920x1080.bin video=HDMI-A-1:1920x1080@60D pci=nocrs libata.force=1.00:disable root=LABEL=psxitarch rootwait rw systemd.unit=multi-user.target systemd.log_level=info amdgpu.gpu_recovery=0 amdgpu.lockup_timeout=10000 amdgpu.gfx_off=0 amdgpu.runpm=0 amdgpu.bapm=0 amdgpu.dpm=0?
+[    0.513829] Setting dangerous option amdgpu.gpu_recovery - tainting kernel?
+[    0.520882] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes?
+[    0.530174] Dentry cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)?
+[    0.539224] Inode-cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)?
+[    0.547297] software IO TLB: area num 8.?
+[    0.579752] Fallback order for Node 0: 0 ?
+[    0.579771] Built 1 zonelists, mobility grouping on.  Total pages: 1830409?
+[    0.590843] Policy zone: Normal?
+[    0.594036] mem auto-init: stack:off, heap alloc:off, heap free:off?
+[    0.637865] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=8, Nodes=1?
+[    0.645652] Dynamic Preempt: voluntary?
+[    0.649555] rcu: Preemptible hierarchical RCU implementation.?
+[    0.655401] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.?
+[    0.663218] NR_IRQS: 4352, nr_irqs: 128, preallocated irqs: 0?
+[    0.669124] rcu: srcu_init: Setting srcu_struct sizes based on contention.?
+[    0.676175] call_irq_handler: 0.49 No irq handler for vector?
+[    0.681964] Console: colour dummy device 80x25?
+[    0.686485] printk: legacy console [tty0] enabled?
+[    0.691310] ACPI: Core revision 20240827?
+[    0.695369] ACPI: setting ELCR to 0200 (from ffff)?
+[    0.700260] Failed to register legacy timer interrupt?
+[    0.705399] APIC: Switch to symmetric I/O mode setup?
+[    0.710458] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x16fa5ba5d55, max_idle_ns: 440795249609 ns?
+[    0.721188] Calibrating delay loop (skipped), value calculated using timer frequency.. 3188.19 BogoMIPS (lpj=1594096)?
+[    0.722179] Last level iTLB entries: 4KB 512, 2MB 8, 4MB 4?
+[    0.722179] Last level dTLB entries: 4KB 512, 2MB 256, 4MB 128, 1GB 0?
+[    0.722179] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization?
+[    0.722179] Spectre V2 : Mitigation: Retpolines?
+[    0.722179] Spectre V2 : Spectre v2 / SpectreRSB: Filling RSB on context switch and VMEXIT?
+[    0.722179] RETBleed: Mitigation: untrained return thunk?
+[    0.722179] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl?
+[    0.722179] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'?
+[    0.722179] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'?
+[    0.722179] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'?
+[    0.722179] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256?
+[    0.722179] x86/fpu: Enabled xstate features 0x7, context size is 832 bytes, using 'standard' format.?
+[    0.722179] Freeing SMP alternatives memory: 52K?
+[    0.722179] pid_max: default: 32768 minimum: 301?
+[    0.722179] Mount-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)?
+[    0.722179] Mountpoint-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)?
+[    0.722179] smpboot: CPU0: AMD DG1401SNF87ID (family: 0x16, model: 0x1a, stepping: 0x0)?
+[    0.722769] Performance Events: AMD PMU driver.?
+[    0.723184] ... version:                0?
+[    0.724183] ... bit width:              48?
+[    0.725183] ... generic registers:      4?
+[    0.726183] ... value mask:             0000ffffffffffff?
+[    0.727183] ... max period:             00007fffffffffff?
+[    0.728183] ... fixed-purpose events:   0?
+[    0.729183] ... event mask:             000000000000000f?
+[    0.730395] signal: max sigframe size: 1776?
+[    0.731277] rcu: Hierarchical SRCU implementation.?
+[    0.732184] rcu: 	Max phase no-delay instances is 400.?
+[    0.733326] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level?
+[    0.737485] smp: Bringing up secondary CPUs ...?
+[    0.739427] smpboot: x86: Booting SMP configuration:?
+[    0.740187] .... node  #0, CPUs:      #1 #2 #3 #4 #5 #6 #7?
+[    0.750288] smp: Brought up 1 node, 8 CPUs?
+[    0.752184] smpboot: Total of 8 processors activated (25505.53 BogoMIPS)?
+[    0.754404] Memory: 7077464K/7321636K available (23469K kernel code, 2053K rwdata, 8784K rodata, 1624K init, 2232K bss, 239924K reserved, 0K cma-reserved)?
+[    0.756585] devtmpfs: initialized?
+[    0.759214] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns?
+[    0.760190] posixtimers hash table entries: 4096 (order: 4, 65536 bytes, linear)?
+[    0.761206] futex hash table entries: 2048 (order: 5, 131072 bytes, linear)?
+[    0.762284] prandom: seed boundary self test passed?
+[    0.765114] prandom: 100 self tests passed?
+[    0.765436] NET: Registered PF_NETLINK/PF_ROUTE protocol family?
+[    0.766349] audit: initializing netlink subsys (disabled)?
+[    0.767231] audit: type=2000 audit(0.046:1): state=initialized audit_enabled=0 res=1?
+[    0.767355] i2c-core: driver [dummy] registered?
+[    0.769187] thermal_sys: Registered thermal governor 'step_wise'?
+[    0.769211] cpuidle: using governor ladder?
+[    0.771191] cpuidle: using governor menu?
+[    0.772381] ps4: ps4: pre-allocated IRQ 9 desc for ACPI SCI (virq=9)?
+[    0.773444] PCI: ECAM [mem 0xf8000000-0xfbffffff] (base 0xf8000000) for domain 0000 [bus 00-3f]?
+[    0.774204] PCI: Using configuration type 1 for base access?
+[    0.776448] HugeTLB: allocation took 0ms with hugepage_allocation_threads=2?
+[    0.777210] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages?
+[    0.778183] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page?
+[    0.779576] cryptd: max_cpu_qlen set to 1000?
+[    0.797184] raid6: sse2x4   gen()  4053 MB/s?
+[    0.815182] raid6: sse2x2   gen()  3963 MB/s?
+[    0.833188] raid6: sse2x1   gen()  3175 MB/s?
+[    0.834183] raid6: using algorithm sse2x4 gen() 4053 MB/s?
+[    0.852183] raid6: .... xor() 2017 MB/s, rmw enabled?
+[    0.853184] raid6: using ssse3x2 recovery algorithm?
+[    0.854292] ACPI: Added _OSI(Module Device)?
+[    0.855184] ACPI: Added _OSI(Processor Device)?
+[    0.856184] ACPI: Added _OSI(Processor Aggregator Device)?
+[    0.859434] ACPI: 2 ACPI AML tables successfully acquired and loaded?
+[    0.867405] ACPI: Interpreter enabled?
+[    0.868194] ACPI: PM: (supports S0 S5)?
+[    0.869184] ACPI: Using PIC for interrupt routing?
+[    0.870217] PCI: Ignoring host bridge windows from ACPI; if necessary, use "pci=use_crs" and report a bug?
+[    0.871183] PCI: Using E820 reservations for host bridge windows?
+[    0.873798] acpi PNP0A03:00: [Firmware Bug]: no secondary bus range in _CRS?
+[    0.874198] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])?
+[    0.875193] acpi PNP0A03:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI HPX-Type3]?
+[    0.876201] acpi PNP0A03:00: [Firmware Info]: ECAM [mem 0xf8000000-0xfbffffff] for domain 0000 [bus 00-3f] only partially covers this bridge?
+[    0.877206] acpi PNP0A03:00: host bridge window [io  0x0cf8-0x0cff] (ignored)?
+[    0.878184] PCI: root bus 00: using default resources?
+[    0.879234] PCI host bridge to bus 0000:00?
+[    0.880190] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]?
+[    0.881190] pci_bus 0000:00: root bus resource [mem 0x00000000-0xffffffffff]?
+[    0.882185] pci_bus 0000:00: root bus resource [bus 00-ff]?
+[    0.883203] pci 0000:00:00.0: [1022:1436] type 00 class 0x060000 conventional PCI endpoint?
+[    0.884309] pci 0000:00:00.2: [1022:1437] type 00 class 0x080600 conventional PCI endpoint?
+[    0.886243] pci 0000:00:01.0: [1002:9923] type 00 class 0x030000 PCIe Root Complex Integrated Endpoint?
+[    0.887206] pci 0000:00:01.0: BAR 0 [mem 0xe0000000-0xe3ffffff 64bit pref]?
+[    0.888185] pci 0000:00:01.0: BAR 2 [mem 0xe4000000-0xe47fffff 64bit pref]?
+[    0.889185] pci 0000:00:01.0: BAR 4 [io  0x6000-0x60ff]?
+[    0.890185] pci 0000:00:01.0: BAR 5 [mem 0xe4800000-0xe483ffff]?
+[    0.891185] pci 0000:00:01.0: ROM [mem 0x00000000-0x0001ffff pref]?
+[    0.892188] pci 0000:00:01.0: enabling Extended Tags?
+[    0.893200] pci 0000:00:01.0: Video device with shadowed ROM at [mem 0x000c0000-0x000dffff]?
+[    0.894204] pci 0000:00:01.0: supports D1 D2?
+[    0.895184] pci 0000:00:01.0: PME# supported from D1 D2 D3hot?
+[    0.896279] pci 0000:00:01.1: [1002:9921] type 00 class 0x040300 PCIe Root Complex Integrated Endpoint?
+[    0.897206] pci 0000:00:01.1: BAR 0 [mem 0xe4840000-0xe4843fff 64bit]?
+[    0.898191] pci 0000:00:01.1: enabling Extended Tags?
+[    0.899213] pci 0000:00:01.1: supports D1 D2?
+[    0.900281] pci 0000:00:02.0: [1022:1438] type 00 class 0x060000 conventional PCI endpoint?
+[    0.901314] pci 0000:00:14.0: [104d:90d7] type 00 class 0x088000 PCIe Endpoint?
+[    0.902225] pci 0000:00:14.0: BAR 0 [mem 0xfdf8000000-0xfdf9ffffff 64bit]?
+[    0.903185] pci 0000:00:14.0: BAR 2 [io  0x1000-0x13ff]?
+[    0.904371] pci 0000:00:14.1: [104d:90d8] type 00 class 0x088001 PCIe Endpoint?
+[    0.905225] pci 0000:00:14.1: BAR 0 [mem 0xc2000000-0xc2000fff 64bit]?
+[    0.906369] pci 0000:00:14.2: [104d:90d9] type 00 class 0x088002 PCIe Endpoint?
+[    0.907225] pci 0000:00:14.2: BAR 0 [mem 0xc4000000-0xc4007fff 64bit]?
+[    0.908370] pci 0000:00:14.3: [104d:90da] type 00 class 0x088003 PCIe Endpoint?
+[    0.909225] pci 0000:00:14.3: BAR 0 [mem 0xc6000000-0xc6000fff 64bit]?
+[    0.910367] pci 0000:00:14.4: [104d:90db] type 00 class 0x088004 PCIe Endpoint?
+[    0.911225] pci 0000:00:14.4: BAR 0 [mem 0xc8000000-0xc8001fff 64bit]?
+[    0.912186] pci 0000:00:14.4: BAR 2 [mem 0xc8800000-0xc89fffff 64bit]?
+[    0.913186] pci 0000:00:14.4: BAR 4 [mem 0xc9000000-0xc91fffff 64bit]?
+[    0.915209] pci 0000:00:14.5: [104d:90dc] type 00 class 0x088005 PCIe Endpoint?
+[    0.916224] pci 0000:00:14.5: BAR 0 [mem 0xca000000-0xca000fff 64bit]?
+[    0.917186] pci 0000:00:14.5: BAR 2 [mem 0xca800000-0xca800fff 64bit]?
+[    0.918365] pci 0000:00:14.6: [104d:90dd] type 00 class 0x088006 PCIe Endpoint?
+[    0.919225] pci 0000:00:14.6: BAR 0 [mem 0xcc000000-0xcc000fff 64bit]?
+[    0.920186] pci 0000:00:14.6: BAR 2 [mem 0x80000000-0xbfffffff 64bit]?
+[    0.921185] pci 0000:00:14.6: BAR 4 [mem 0xcd000000-0xcd0fffff]?
+[    0.922185] pci 0000:00:14.6: BAR 5 [mem 0xcd400000-0xcd43ffff]?
+[    0.923362] pci 0000:00:14.7: [104d:90de] type 00 class 0x088007 PCIe Endpoint?
+[    0.924225] pci 0000:00:14.7: BAR 0 [mem 0xce000000-0xce3fffff 64bit]?
+[    0.925186] pci 0000:00:14.7: BAR 2 [mem 0xce800000-0xce80ffff 64bit]?
+[    0.926187] pci 0000:00:14.7: BAR 4 [mem 0xcf000000-0xcf7fffff 64bit]?
+[    0.927356] pci 0000:00:18.0: [1022:142e] type 00 class 0x060000 conventional PCI endpoint?
+[    0.928287] pci 0000:00:18.1: [1022:142f] type 00 class 0x060000 conventional PCI endpoint?
+[    0.929292] pci 0000:00:18.2: [1022:1430] type 00 class 0x060000 conventional PCI endpoint?
+[    0.930283] pci 0000:00:18.3: [1022:1431] type 00 class 0x060000 conventional PCI endpoint?
+[    0.931290] pci 0000:00:18.4: [1022:1432] type 00 class 0x060000 conventional PCI endpoint?
+[    0.933282] pci 0000:00:18.5: [1022:1433] type 00 class 0x060000 conventional PCI endpoint?
+[    0.935235] pci 0000:00:18.6: [1022:1434] type 00 class 0x060000 conventional PCI endpoint?
+[    0.936388] iommu: Default domain type: Passthrough (set via kernel command line)?
+[    0.937375] SCSI subsystem initialized?
+[    0.938209] libata version 3.00 loaded.?
+[    0.939243] ACPI: bus type USB registered?
+[    0.940237] usbcore: registered new interface driver usbfs?
+[    0.941207] usbcore: registered new interface driver hub?
+[    0.942204] usbcore: registered new device driver usb?
+[    0.943362] Advanced Linux Sound Architecture Driver Initialized.?
+[    0.944550] Bluetooth: Core ver 2.22?
+[    0.945197] NET: Registered PF_BLUETOOTH protocol family?
+[    0.946183] Bluetooth: HCI device and connection manager initialized?
+[    0.948185] Bluetooth: HCI socket layer initialized?
+[    0.949186] Bluetooth: L2CAP socket layer initialized?
+[    0.950190] Bluetooth: SCO socket layer initialized?
+[    0.951273] PCI: Using ACPI for IRQ routing?
+[    0.954747] PCI: pci_cache_line_size set to 64 bytes?
+[    0.955226] e820: reserve RAM buffer [mem 0x00008000-0x0000ffff]?
+[    0.956185] e820: reserve RAM buffer [mem 0x0009a000-0x0009ffff]?
+[    0.957184] e820: reserve RAM buffer [mem 0x00680000-0x006fffff]?
+[    0.958184] e820: reserve RAM buffer [mem 0x7efe8000-0x7fffffff]?
+[    0.959184] e820: reserve RAM buffer [mem 0x27f000000-0x27fffffff]?
+[    0.960209] pci 0000:00:01.0: vgaarb: setting as boot VGA device?
+[    0.961179] pci 0000:00:01.0: vgaarb: bridge control possible?
+[    0.961179] pci 0000:00:01.0: vgaarb: VGA device added: decodes=io+mem,owns=io+mem,locks=none?
+[    0.961192] vgaarb: loaded?
+[    0.963454] clocksource: Switched to clocksource tsc-early?
+[    0.969033] pnp: PnP ACPI init?
+[    0.972191] pnp: PnP ACPI: found 0 devices?
+[    0.981278] NET: Registered PF_INET protocol family?
+[    0.986561] IP idents hash table entries: 131072 (order: 8, 1048576 bytes, linear)?
+[    0.998401] tcp_listen_portaddr_hash hash table entries: 4096 (order: 4, 65536 bytes, linear)?
+[    1.007133] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)?
+[    1.015058] TCP established hash table entries: 65536 (order: 7, 524288 bytes, linear)?
+[    1.023397] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)?
+[    1.031585] TCP: Hash tables configured (established 65536 bind 65536)?
+[    1.038365] UDP hash table entries: 4096 (order: 6, 262144 bytes, linear)?
+[    1.045378] UDP-Lite hash table entries: 4096 (order: 6, 262144 bytes, linear)?
+[    1.052929] NET: Registered PF_UNIX/PF_LOCAL protocol family?
+[    1.059054] RPC: Registered named UNIX socket transport module.?
+[    1.065092] RPC: Registered udp transport module.?
+[    1.069885] RPC: Registered tcp transport module.?
+[    1.074679] RPC: Registered tcp-with-tls transport module.?
+[    1.080268] RPC: Registered tcp NFSv4.1 backchannel transport module.?
+[    1.087309] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]?
+[    1.092998] pci_bus 0000:00: resource 5 [mem 0x00000000-0xffffffffff]?
+[    1.099639] pci 0000:00:01.1: D0 power state depends on 0000:00:01.0?
+[    1.106125] pci 0000:00:02.0: CLS mismatch (64 != 512), using 64 bytes?
+[    1.112898] AMD-Vi: Using global IVHD EFR:0x0, EFR2:0x0?
+[    1.113096] Trying to unpack rootfs image as initramfs...?
+[    1.118433] pci 0000:00:00.0: Adding to iommu group 0?
+[    1.129006] pci 0000:00:14.0: Adding to iommu group 1?
+[    1.134187] pci 0000:00:14.1: Adding to iommu group 1?
+[    1.139374] pci 0000:00:14.2: Adding to iommu group 1?
+[    1.144564] pci 0000:00:14.3: Adding to iommu group 1?
+[    1.149747] pci 0000:00:14.4: Adding to iommu group 1?
+[    1.154930] pci 0000:00:14.5: Adding to iommu group 1?
+[    1.160121] pci 0000:00:14.6: Adding to iommu group 1?
+[    1.165304] pci 0000:00:14.7: Adding to iommu group 1?
+[    1.170530] AMD-Vi: Extended features (0x840, 0x0): IA?
+[    1.176127] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)?
+[    1.182700] software IO TLB: mapped [mem 0x000000007afe8000-0x000000007efe8000] (64MB)?
+[    1.190955] LVT offset 0 assigned for vector 0x400?
+[    1.196867] perf: AMD IBS detected (0x000000ff)?
+[    1.201536] kvm_amd: TSC scaling supported?
+[    1.205713] kvm_amd: Nested Virtualization enabled?
+[    1.210595] kvm_amd: Nested Paging enabled?
+[    1.214770] kvm_amd: LBR virtualization supported?
+[    1.242908] Freeing initrd memory: 4156K?
+[    1.253110] platform rtc_cmos: registered platform RTC device (no PNP device found)?
+[    1.264020] Initialise system trusted keyrings?
+[    1.268711] workingset: timestamp_bits=40 max_order=21 bucket_order=0?
+[    1.275695] ntfs3: Warning: Activated 64 bits per cluster. Windows does not support this?
+[    1.284042] fuse: init (API version 7.43)?
+[    1.324180] NET: Registered PF_ALG protocol family?
+[    1.329069] xor: automatically using best checksumming function   avx       ?
+[    1.336253] Key type asymmetric registered?
+[    1.340428] Asymmetric key parser 'x509' registered?
+[    1.345427] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)?
+[    1.352968] io scheduler mq-deadline registered?
+[    1.357584] io scheduler kyber registered?
+[    1.363656] Could not retrieve perf counters (-19)?
+[    1.399737] Non-volatile memory driver v1.3?
+[    1.404024] Linux agpgart interface v0.103?
+[    1.408650] ACPI: bus type drm_connector registered?
+[    1.413656] [drm] amdgpu kernel modesetting enabled.?
+[    1.420311] brd: module loaded?
+[    1.427003] loop: module loaded?
+[    1.430229] i2c-core: driver [at24] registered?
+[    1.434970] baikal_pcie 0000:00:14.4: bpcie_probe()?
+[    1.439989] baikal_pcie 0000:00:14.4: bpcie glue probe?
+[    1.445236] baikal_pcie 0000:00:14.4: Baikal chip revision: 4c0c2021:8d76a398:0000b100?
+[    1.453313] pci 0000:00:14.0: bpcie_create_irq_domain?
+[    1.458464] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.463261] baikal_pcie 0000:00:14.4: no parent ?
+[    1.467973] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.477903] pci 0000:00:14.1: bpcie_create_irq_domain?
+[    1.483054] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.487849] baikal_pcie 0000:00:14.4: no parent ?
+[    1.492558] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.502484] pci 0000:00:14.2: bpcie_create_irq_domain?
+[    1.507638] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.512434] baikal_pcie 0000:00:14.4: no parent ?
+[    1.517142] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.527071] pci 0000:00:14.3: bpcie_create_irq_domain?
+[    1.532221] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.537016] baikal_pcie 0000:00:14.4: no parent ?
+[    1.541724] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.551664] baikal_pcie 0000:00:14.4: bpcie_create_irq_domain?
+[    1.557522] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.562318] baikal_pcie 0000:00:14.4: no parent ?
+[    1.567027] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.576956] pci 0000:00:14.5: bpcie_create_irq_domain?
+[    1.582105] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.586901] baikal_pcie 0000:00:14.4: no parent ?
+[    1.591608] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.601537] pci 0000:00:14.6: bpcie_create_irq_domain?
+[    1.606691] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.611486] baikal_pcie 0000:00:14.4: no parent ?
+[    1.616195] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.626125] pci 0000:00:14.7: bpcie_create_irq_domain?
+[    1.631276] baikal_pcie 0000:00:14.4: devid = 164?
+[    1.636071] baikal_pcie 0000:00:14.4: no parent ?
+[    1.640778] bpcie_create_irq_domain: marked Baikal-MSI-164-3-14 as MSI parent (flags=0x113 bus_token=AMDVI)?
+[    1.650718] bpcie_init_dev_msi_info: dev=0000:00:14.4 installed bpcie demuxer (sc=(____ptrval____))?
+[    1.660515] bpcie_msi_init: virq=10 hwirq=0x0 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.670808] bpcie_msi_init: registered virq=10 irq_map[0]?
+[    1.676311] bpcie_msi_init: virq=11 hwirq=0x1 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.686596] bpcie_msi_init: registered virq=11 irq_map[1]?
+[    1.692097] bpcie_msi_init: virq=12 hwirq=0x2 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.702380] bpcie_msi_init: registered virq=12 irq_map[2]?
+[    1.707880] bpcie_msi_init: virq=13 hwirq=0x3 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.718164] bpcie_msi_init: registered virq=13 irq_map[3]?
+[    1.723666] bpcie_msi_init: virq=14 hwirq=0x4 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.733964] bpcie_msi_init: registered virq=14 irq_map[4]?
+[    1.739465] bpcie_msi_init: virq=15 hwirq=0x5 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.749748] bpcie_msi_init: registered virq=15 irq_map[5]?
+[    1.755248] bpcie_msi_init: virq=16 hwirq=0x6 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.765530] bpcie_msi_init: registered virq=16 irq_map[6]?
+[    1.771031] bpcie_msi_init: virq=17 hwirq=0x7 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.781315] bpcie_msi_init: registered virq=17 irq_map[7]?
+[    1.786818] bpcie_msi_init: virq=18 hwirq=0x8 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.797100] bpcie_msi_init: registered virq=18 irq_map[8]?
+[    1.802600] bpcie_msi_init: virq=19 hwirq=0x9 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.812882] bpcie_msi_init: registered virq=19 irq_map[9]?
+[    1.818383] bpcie_msi_init: virq=20 hwirq=0xa domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.828666] bpcie_msi_init: registered virq=20 irq_map[10]?
+[    1.834257] bpcie_msi_init: virq=21 hwirq=0xb domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.844539] bpcie_msi_init: registered virq=21 irq_map[11]?
+[    1.850128] bpcie_msi_init: virq=22 hwirq=0xc domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.860409] bpcie_msi_init: registered virq=22 irq_map[12]?
+[    1.865998] bpcie_msi_init: virq=23 hwirq=0xd domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.876281] bpcie_msi_init: registered virq=23 irq_map[13]?
+[    1.881870] bpcie_msi_init: virq=24 hwirq=0xe domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.892154] bpcie_msi_init: registered virq=24 irq_map[14]?
+[    1.897742] bpcie_msi_init: virq=25 hwirq=0xf domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.908028] bpcie_msi_init: registered virq=25 irq_map[15]?
+[    1.913618] bpcie_msi_init: virq=26 hwirq=0x10 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.923990] bpcie_msi_init: registered virq=26 irq_map[16]?
+[    1.929579] bpcie_msi_init: virq=27 hwirq=0x11 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.939950] bpcie_msi_init: registered virq=27 irq_map[17]?
+[    1.945541] bpcie_msi_init: virq=28 hwirq=0x12 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.955912] bpcie_msi_init: registered virq=28 irq_map[18]?
+[    1.961501] bpcie_msi_init: virq=29 hwirq=0x13 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.971872] bpcie_msi_init: registered virq=29 irq_map[19]?
+[    1.977461] bpcie_msi_init: virq=30 hwirq=0x14 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    1.987831] bpcie_msi_init: registered virq=30 irq_map[20]?
+[    1.993421] bpcie_msi_init: virq=31 hwirq=0x15 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.003792] bpcie_msi_init: registered virq=31 irq_map[21]?
+[    2.009381] bpcie_msi_init: virq=32 hwirq=0x16 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.019752] bpcie_msi_init: registered virq=32 irq_map[22]?
+[    2.025342] bpcie_msi_init: virq=33 hwirq=0x17 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.035713] bpcie_msi_init: registered virq=33 irq_map[23]?
+[    2.041302] bpcie_msi_init: virq=34 hwirq=0x18 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.051674] bpcie_msi_init: registered virq=34 irq_map[24]?
+[    2.057264] bpcie_msi_init: virq=35 hwirq=0x19 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.067635] bpcie_msi_init: registered virq=35 irq_map[25]?
+[    2.073223] bpcie_msi_init: virq=36 hwirq=0x1a domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.083596] bpcie_msi_init: registered virq=36 irq_map[26]?
+[    2.089184] bpcie_msi_init: virq=37 hwirq=0x1b domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.099555] bpcie_msi_init: registered virq=37 irq_map[27]?
+[    2.105144] bpcie_msi_init: virq=38 hwirq=0x1c domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.115516] bpcie_msi_init: registered virq=38 irq_map[28]?
+[    2.121105] bpcie_msi_init: virq=39 hwirq=0x1d domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.131476] bpcie_msi_init: registered virq=39 irq_map[29]?
+[    2.137066] bpcie_msi_init: virq=40 hwirq=0x1e domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.147436] bpcie_msi_init: registered virq=40 irq_map[30]?
+[    2.153026] bpcie_msi_init: virq=41 hwirq=0x1f domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    2.163397] bpcie_msi_init: registered virq=41 irq_map[31]?
+[    2.169023] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=10 hwirq=0x0 (____ptrval____)?
+[    2.180114] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee00000 data=000000ef?
+[    2.189440] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=11 hwirq=0x1 (____ptrval____)?
+[    2.200524] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee00000 data=000000ef?
+[    2.209842] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=12 hwirq=0x2 (____ptrval____)?
+[    2.220924] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee00000 data=000000ef?
+[    2.230242] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=13 hwirq=0x3 (____ptrval____)?
+[    2.241323] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee00000 data=000000ef?
+[    2.250642] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=14 hwirq=0x4 (____ptrval____)?
+[    2.261724] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee00000 data=000000ef?
+[    2.271042] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=15 hwirq=0x5 (____ptrval____)?
+[    2.282122] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee00000 data=000000ef?
+[    2.291441] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=16 hwirq=0x6 (____ptrval____)?
+[    2.302523] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee00000 data=000000ef?
+[    2.311840] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=17 hwirq=0x7 (____ptrval____)?
+[    2.322922] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=000000ef?
+[    2.332240] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=18 hwirq=0x8 (____ptrval____)?
+[    2.343321] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee00000 data=000000ef?
+[    2.352640] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=19 hwirq=0x9 (____ptrval____)?
+[    2.363721] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee00000 data=000000ef?
+[    2.373040] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=20 hwirq=0xa (____ptrval____)?
+[    2.384121] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee00000 data=000000ef?
+[    2.393530] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=21 hwirq=0xb (____ptrval____)?
+[    2.404610] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee00000 data=000000ef?
+[    2.414018] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=22 hwirq=0xc (____ptrval____)?
+[    2.425100] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee00000 data=000000ef?
+[    2.434507] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=23 hwirq=0xd (____ptrval____)?
+[    2.445587] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee00000 data=000000ef?
+[    2.454996] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=24 hwirq=0xe (____ptrval____)?
+[    2.466076] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee00000 data=000000ef?
+[    2.475485] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=25 hwirq=0xf (____ptrval____)?
+[    2.486566] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=000000ef?
+[    2.495971] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=26 hwirq=0x10 (____ptrval____)?
+[    2.507141] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee00000 data=000000ef?
+[    2.516548] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=27 hwirq=0x11 (____ptrval____)?
+[    2.527718] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee00000 data=000000ef?
+[    2.537126] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=28 hwirq=0x12 (____ptrval____)?
+[    2.548295] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee00000 data=000000ef?
+[    2.557700] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=29 hwirq=0x13 (____ptrval____)?
+[    2.568869] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee00000 data=000000ef?
+[    2.578276] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=30 hwirq=0x14 (____ptrval____)?
+[    2.589446] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee00000 data=000000ef?
+[    2.598852] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=31 hwirq=0x15 (____ptrval____)?
+[    2.610020] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee00000 data=000000ef?
+[    2.619427] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=32 hwirq=0x16 (____ptrval____)?
+[    2.630597] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee00000 data=000000ef?
+[    2.640003] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=33 hwirq=0x17 (____ptrval____)?
+[    2.651172] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=000000ef?
+[    2.660577] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=34 hwirq=0x18 (____ptrval____)?
+[    2.671745] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee00000 data=000000ef?
+[    2.681153] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=35 hwirq=0x19 (____ptrval____)?
+[    2.692324] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee00000 data=000000ef?
+[    2.701729] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=36 hwirq=0x1a (____ptrval____)?
+[    2.712898] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee00000 data=000000ef?
+[    2.722306] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=37 hwirq=0x1b (____ptrval____)?
+[    2.733477] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee00000 data=000000ef?
+[    2.742883] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=38 hwirq=0x1c (____ptrval____)?
+[    2.754052] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee00000 data=000000ef?
+[    2.763459] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=39 hwirq=0x1d (____ptrval____)?
+[    2.774627] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee00000 data=000000ef?
+[    2.784035] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=40 hwirq=0x1e (____ptrval____)?
+[    2.795203] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee00000 data=000000ef?
+[    2.804609] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=41 hwirq=0x1f (____ptrval____)?
+[    2.815777] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=000000ef?
+[    2.825276] baikal_pcie 0000:00:14.4: dev->irq=10?
+[    2.830190] baikal_pcie 0000:00:14.4: Failed to register serial port 0?
+[    2.836852] baikal_pcie 0000:00:14.4: UART init failed (-5); continuing without serial console?
+[    2.845639] bpcie_icc_init: msi_desc msi_index=0 irq=10?
+[    2.850965] bpcie_icc_init: ICC subfunc 3 -> bpcie_irqnum=13 found_virq=-1?
+[    2.857979] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000020) mask=0x0 irq=13 hwirq=0x3 (____ptrval____)?
+[    2.858968] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee01000 data=00000020?
+[    2.858968] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000020) mask=0x0 irq=13 hwirq=0x3 (____ptrval____)?
+[    2.858968] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=3 addr=fee01000 data=00000020?
+[    2.898781] genirq: Flags mismatch irq 0. 00200080 (icc-shotgun) vs. 00000000 (AMD-Vi)?
+[    2.906862] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000020) mask=0x0 irq=10 hwirq=0x0 (____ptrval____)?
+[    2.907850] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee02000 data=00000020?
+[    2.907850] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000020) mask=0x0 irq=10 hwirq=0x0 (____ptrval____)?
+[    2.907850] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=0 addr=fee02000 data=00000020?
+[    2.947674] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000020) mask=0x0 irq=11 hwirq=0x1 (____ptrval____)?
+[    2.948657] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee03000 data=00000020?
+[    2.948657] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000020) mask=0x0 irq=11 hwirq=0x1 (____ptrval____)?
+[    2.948657] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=1 addr=fee03000 data=00000020?
+[    2.988463] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000020) mask=0x0 irq=12 hwirq=0x2 (____ptrval____)?
+[    2.989446] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee04000 data=00000020?
+[    2.989446] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000020) mask=0x0 irq=12 hwirq=0x2 (____ptrval____)?
+[    2.989446] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=2 addr=fee04000 data=00000020?
+[    3.029256] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000020) mask=0x0 irq=14 hwirq=0x4 (____ptrval____)?
+[    3.030249] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee05000 data=00000020?
+[    3.030249] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000020) mask=0x0 irq=14 hwirq=0x4 (____ptrval____)?
+[    3.030249] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=4 addr=fee05000 data=00000020?
+[    3.070044] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000020) mask=0x0 irq=15 hwirq=0x5 (____ptrval____)?
+[    3.071027] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee06000 data=00000020?
+[    3.071027] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000020) mask=0x0 irq=15 hwirq=0x5 (____ptrval____)?
+[    3.071027] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=5 addr=fee06000 data=00000020?
+[    3.110835] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000020) mask=0x0 irq=16 hwirq=0x6 (____ptrval____)?
+[    3.111817] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee07000 data=00000020?
+[    3.111817] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000020) mask=0x0 irq=16 hwirq=0x6 (____ptrval____)?
+[    3.111817] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=6 addr=fee07000 data=00000020?
+[    3.151623] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000021) mask=0x0 irq=17 hwirq=0x7 (____ptrval____)?
+[    3.152606] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=00000021?
+[    3.152606] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000021) mask=0x0 irq=17 hwirq=0x7 (____ptrval____)?
+[    3.152606] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=7 addr=fee00000 data=00000021?
+[    3.192423] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000021) mask=0x0 irq=18 hwirq=0x8 (____ptrval____)?
+[    3.193393] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee01000 data=00000021?
+[    3.193393] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000021) mask=0x0 irq=18 hwirq=0x8 (____ptrval____)?
+[    3.193393] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=8 addr=fee01000 data=00000021?
+[    3.233212] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000021) mask=0x0 irq=19 hwirq=0x9 (____ptrval____)?
+[    3.234195] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee02000 data=00000021?
+[    3.234195] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000021) mask=0x0 irq=19 hwirq=0x9 (____ptrval____)?
+[    3.234195] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=9 addr=fee02000 data=00000021?
+[    3.274000] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000021) mask=0x0 irq=20 hwirq=0xa (____ptrval____)?
+[    3.274985] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee03000 data=00000021?
+[    3.274985] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000021) mask=0x0 irq=20 hwirq=0xa (____ptrval____)?
+[    3.274985] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=10 addr=fee03000 data=00000021?
+[    3.314968] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000021) mask=0x0 irq=21 hwirq=0xb (____ptrval____)?
+[    3.315949] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee04000 data=00000021?
+[    3.315949] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000021) mask=0x0 irq=21 hwirq=0xb (____ptrval____)?
+[    3.315949] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=11 addr=fee04000 data=00000021?
+[    3.355935] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000021) mask=0x0 irq=22 hwirq=0xc (____ptrval____)?
+[    3.356920] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee05000 data=00000021?
+[    3.356920] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000021) mask=0x0 irq=22 hwirq=0xc (____ptrval____)?
+[    3.356920] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=12 addr=fee05000 data=00000021?
+[    3.396903] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000021) mask=0x0 irq=23 hwirq=0xd (____ptrval____)?
+[    3.397884] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee06000 data=00000021?
+[    3.397884] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000021) mask=0x0 irq=23 hwirq=0xd (____ptrval____)?
+[    3.397884] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=13 addr=fee06000 data=00000021?
+[    3.437865] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000021) mask=0x0 irq=24 hwirq=0xe (____ptrval____)?
+[    3.438850] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee07000 data=00000021?
+[    3.438850] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000021) mask=0x0 irq=24 hwirq=0xe (____ptrval____)?
+[    3.438850] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=14 addr=fee07000 data=00000021?
+[    3.478832] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000022) mask=0x0 irq=25 hwirq=0xf (____ptrval____)?
+[    3.479813] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=00000022?
+[    3.479813] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000022) mask=0x0 irq=25 hwirq=0xf (____ptrval____)?
+[    3.479813] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=15 addr=fee00000 data=00000022?
+[    3.519797] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000022) mask=0x0 irq=26 hwirq=0x10 (____ptrval____)?
+[    3.520781] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee01000 data=00000022?
+[    3.520781] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000022) mask=0x0 irq=26 hwirq=0x10 (____ptrval____)?
+[    3.520781] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=16 addr=fee01000 data=00000022?
+[    3.560940] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000022) mask=0x0 irq=27 hwirq=0x11 (____ptrval____)?
+[    3.561924] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee02000 data=00000022?
+[    3.561924] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000022) mask=0x0 irq=27 hwirq=0x11 (____ptrval____)?
+[    3.561924] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=17 addr=fee02000 data=00000022?
+[    3.602086] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000022) mask=0x0 irq=28 hwirq=0x12 (____ptrval____)?
+[    3.603067] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee03000 data=00000022?
+[    3.603067] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000022) mask=0x0 irq=28 hwirq=0x12 (____ptrval____)?
+[    3.603067] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=18 addr=fee03000 data=00000022?
+[    3.643228] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000022) mask=0x0 irq=29 hwirq=0x13 (____ptrval____)?
+[    3.644212] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee04000 data=00000022?
+[    3.644212] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000022) mask=0x0 irq=29 hwirq=0x13 (____ptrval____)?
+[    3.644212] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=19 addr=fee04000 data=00000022?
+[    3.684369] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000022) mask=0x0 irq=30 hwirq=0x14 (____ptrval____)?
+[    3.685351] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee05000 data=00000022?
+[    3.685351] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000022) mask=0x0 irq=30 hwirq=0x14 (____ptrval____)?
+[    3.685351] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=20 addr=fee05000 data=00000022?
+[    3.725514] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000022) mask=0x0 irq=31 hwirq=0x15 (____ptrval____)?
+[    3.726494] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee06000 data=00000022?
+[    3.726494] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000022) mask=0x0 irq=31 hwirq=0x15 (____ptrval____)?
+[    3.726494] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=21 addr=fee06000 data=00000022?
+[    3.766657] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000022) mask=0x0 irq=32 hwirq=0x16 (____ptrval____)?
+[    3.767638] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee07000 data=00000022?
+[    3.767638] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000022) mask=0x0 irq=32 hwirq=0x16 (____ptrval____)?
+[    3.767638] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=22 addr=fee07000 data=00000022?
+[    3.807802] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000023) mask=0x0 irq=33 hwirq=0x17 (____ptrval____)?
+[    3.808785] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=00000023?
+[    3.808785] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000023) mask=0x0 irq=33 hwirq=0x17 (____ptrval____)?
+[    3.808785] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=23 addr=fee00000 data=00000023?
+[    3.848944] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000023) mask=0x0 irq=34 hwirq=0x18 (____ptrval____)?
+[    3.849928] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee01000 data=00000023?
+[    3.849928] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee01000, 00000023) mask=0x0 irq=34 hwirq=0x18 (____ptrval____)?
+[    3.849928] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=24 addr=fee01000 data=00000023?
+[    3.890086] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000023) mask=0x0 irq=35 hwirq=0x19 (____ptrval____)?
+[    3.891066] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee02000 data=00000023?
+[    3.891066] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee02000, 00000023) mask=0x0 irq=35 hwirq=0x19 (____ptrval____)?
+[    3.891066] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=25 addr=fee02000 data=00000023?
+[    3.931232] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000023) mask=0x0 irq=36 hwirq=0x1a (____ptrval____)?
+[    3.932216] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee03000 data=00000023?
+[    3.932216] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee03000, 00000023) mask=0x0 irq=36 hwirq=0x1a (____ptrval____)?
+[    3.932216] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=26 addr=fee03000 data=00000023?
+[    3.972378] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000023) mask=0x0 irq=37 hwirq=0x1b (____ptrval____)?
+[    3.973358] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee04000 data=00000023?
+[    3.973358] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee04000, 00000023) mask=0x0 irq=37 hwirq=0x1b (____ptrval____)?
+[    3.973358] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=27 addr=fee04000 data=00000023?
+[    4.013518] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000023) mask=0x0 irq=38 hwirq=0x1c (____ptrval____)?
+[    4.014502] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee05000 data=00000023?
+[    4.014502] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee05000, 00000023) mask=0x0 irq=38 hwirq=0x1c (____ptrval____)?
+[    4.014502] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=28 addr=fee05000 data=00000023?
+[    4.054661] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000023) mask=0x0 irq=39 hwirq=0x1d (____ptrval____)?
+[    4.055642] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee06000 data=00000023?
+[    4.055642] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee06000, 00000023) mask=0x0 irq=39 hwirq=0x1d (____ptrval____)?
+[    4.055642] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=29 addr=fee06000 data=00000023?
+[    4.095806] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000023) mask=0x0 irq=40 hwirq=0x1e (____ptrval____)?
+[    4.096790] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee07000 data=00000023?
+[    4.096790] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee07000, 00000023) mask=0x0 irq=40 hwirq=0x1e (____ptrval____)?
+[    4.096790] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=30 addr=fee07000 data=00000023?
+[    4.136947] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000024) mask=0x0 irq=41 hwirq=0x1f (____ptrval____)?
+[    4.137930] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=00000024?
+[    4.137930] baikal_pcie 0000:00:14.4: bpcie_msi_write_msg(fee00000, 00000024) mask=0x0 irq=41 hwirq=0x1f (____ptrval____)?
+[    4.137930] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=4 subfunc=31 addr=fee00000 data=00000024?
+[    4.178090] bpcie_icc_init: shotgun-registered ICC at 32 additional virqs (0..63)?
+[    4.185724] baikal_pcie 0000:00:14.4: icc init-diag: ICC virq=13 STATUS=0x0 IRQ_MASK=0x3 DOORBELL_off=0x108004 STATUS_off=0x108014?
+[    4.197729] i2c i2c-0: adapter [icc] registered?
+[    4.202471] icc_interrupt: irq=35 entry status=0x2?
+[    4.202894] icc_interrupt: irq=0 entry status=0x2?
+[    4.225063] icc_interrupt: irq=35 entry status=0x1?
+[    4.225903] icc_interrupt: irq=0 entry status=0x1?
+[    4.234740] Turn ON BT/WLAN: ret=20, reply 00 00 00 00?
+[    4.234863] icc_interrupt: irq=35 entry status=0x2?
+[    4.235877] icc_interrupt: irq=0 entry status=0x2?
+[    4.249773] usb0 status: ret=20, reply 00 00 01 00?
+[    4.249777] USB is already turned ON!?
+[    4.254729] input: Power Button as /devices/pci0000:00/0000:00:14.4/input/input0?
+[    4.266137] icc_interrupt: irq=35 entry status=0x2?
+[    4.266871] icc_interrupt: irq=0 entry status=0x2?
+[    4.280054] icc_interrupt: irq=35 entry status=0x1?
+[    4.280865] icc_interrupt: irq=0 entry status=0x1?
+[    4.289733] icc: not ready?
+[    4.292491] baikal_pcie 0000:00:14.4: icc_pwrbutton_init: Failed to enable reset notifications (-11)?
+[    4.315870] ret=46, reply 00 00 03 00 00 00 15 00?
+[    4.325846] ret=20, reply 00 00 01 02 10 00 00 00?
+[    4.335843] ret=20, reply 00 00 00 00 00 00 00 00?
+[    4.340753] wireguard: WireGuard 1.0.0 loaded. See www.wireguard.com for information.?
+[    4.348737] wireguard: Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.?
+[    4.358989] sky2: driver version 1.30?
+[    4.362793] ps4_mts 0000:00:14.1: Baikal MTS: BAR0=[mem 0xc2000000-0xc2000fff 64bit], mapped at (____ptrval____)?
+[    4.373855] ps4_mts 0000:00:14.1: SMI sweep:?
+[    4.378228] ps4_mts 0000:00:14.1:   reg  0 = 0x1040?
+[    4.383215] ps4_mts 0000:00:14.1:   reg  1 = 0x7969?
+[    4.388203] ps4_mts 0000:00:14.1:   reg  2 = 0x03a2?
+[    4.393190] ps4_mts 0000:00:14.1:   reg  3 = 0x9441?
+[    4.398179] ps4_mts 0000:00:14.1:   reg  4 = 0x01e1?
+[    4.403168] ps4_mts 0000:00:14.1:   reg  5 = 0xc5e1?
+[    4.408156] ps4_mts 0000:00:14.1:   reg  6 = 0x000f?
+[    4.413144] ps4_mts 0000:00:14.1:   reg  7 = 0x2001?
+[    4.418133] ps4_mts 0000:00:14.1:   reg  8 = 0x4f95?
+[    4.423120] ps4_mts 0000:00:14.1:   reg  9 = 0x0200?
+[    4.428108] ps4_mts 0000:00:14.1:   reg 10 = 0x3c00?
+[    4.433096] ps4_mts 0000:00:14.1:   reg 11 = 0x0000?
+[    4.438084] ps4_mts 0000:00:14.1:   reg 12 = 0x0000?
+[    4.443073] ps4_mts 0000:00:14.1:   reg 13 = 0x0000?
+[    4.448061] ps4_mts 0000:00:14.1:   reg 14 = 0x0000?
+[    4.453049] ps4_mts 0000:00:14.1:   reg 15 = 0x2000?
+[    4.458038] ps4_mts 0000:00:14.1:   reg 16 = 0x0000?
+[    4.463026] ps4_mts 0000:00:14.1:   reg 17 = 0xf000?
+[    4.468013] ps4_mts 0000:00:14.1:   reg 18 = 0x0048?
+[    4.473003] ps4_mts 0000:00:14.1:   reg 19 = 0x0000?
+[    4.477991] ps4_mts 0000:00:14.1:   reg 20 = 0x0000?
+[    4.482978] ps4_mts 0000:00:14.1:   reg 21 = 0x0001?
+[    4.487967] ps4_mts 0000:00:14.1:   reg 22 = 0x3000?
+[    4.492954] ps4_mts 0000:00:14.1:   reg 23 = 0x00a0?
+[    4.497944] ps4_mts 0000:00:14.1:   reg 24 = 0x0000?
+[    4.502931] ps4_mts 0000:00:14.1:   reg 25 = 0x0000?
+[    4.507919] ps4_mts 0000:00:14.1:   reg 26 = 0x2480?
+[    4.512906] ps4_mts 0000:00:14.1:   reg 27 = 0x0000?
+[    4.517896] ps4_mts 0000:00:14.1:   reg 28 = 0x8000?
+[    4.522883] ps4_mts 0000:00:14.1:   reg 29 = 0x2030?
+[    4.527872] ps4_mts 0000:00:14.1:   reg 30 = 0x1110?
+[    4.532861] ps4_mts 0000:00:14.1:   reg 31 = 0x0000?
+[    4.537866] ps4_mts 0000:00:14.1: PHY ID1=0x03a2 ID2=0x9441?
+[    4.544661] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs(3)?
+[    4.550266] bpcie_init_dev_msi_info: dev=0000:00:14.7 installed bpcie demuxer (sc=(____ptrval____))?
+[    4.559521] bpcie_msi_init: virq=1 hwirq=0x0 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    4.569723] bpcie_msi_init: registered virq=1 irq_map[32]?
+[    4.575231] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=1 hwirq=0x0 (____ptrval____)?
+[    4.586230] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee00000 data=000000ef?
+[    4.595564] xhci_aeolia 0000:00:14.7: bpcie_assign_irqs returning 1?
+[    4.601953] xhci_aeolia 0000:00:14.7: version 3.0?
+[    4.606761] xhci_aeolia 0000:00:14.7: Belize SATA PHY init?
+[    5.606439] ps4_mts 0000:00:14.1: link DOWN (linkreg=0x00000b18, BMSR=0x7949)?
+[    5.613724] xhci_aeolia 0000:00:14.7: PHY SET GEN3?
+[    5.618608] xhci_aeolia 0000:00:14.7: Belize SATA PHY Trace length : 6?
+[    6.625351] xhci_aeolia 0000:00:14.7: Align 90=0x00?
+[    6.630359] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x16fa5ba5d55, max_idle_ns: 440795249609 ns?
+[    6.630409] xhci_aeolia 0000:00:14.7: AHCI vers 0001.0300, 32 command slots, 6 Gbps, ATA mode?
+[    6.649265] xhci_aeolia 0000:00:14.7: 1/1 ports implemented (port mask 0x1)?
+[    6.656361] xhci_aeolia 0000:00:14.7: flags: ncq sntf pm clo only pmp pio slum part ccc apst ?
+[    6.665071] clocksource: Switched to clocksource tsc?
+[    6.665134] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee01000, 00000024) mask=0x0 irq=1 hwirq=0x0 (____ptrval____)?
+[    6.679225] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee01000 data=00000024?
+[    6.687229] xhci_aeolia 0000:00:14.7: bpcie_msi_write_msg(fee01000, 00000024) mask=0x0 irq=1 hwirq=0x0 (____ptrval____)?
+[    6.695231] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=7 subfunc=0 addr=fee01000 data=00000024?
+[    6.711163] scsi host0: ahci?
+[    6.714237] ata1: SATA max UDMA/133 abar m65536@0xce800000 port 0xce800100 irq 1 lpm-pol 0?
+[    6.773311] xhci_aeolia_probe_one 0, controller is 90de?
+[    6.778711] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.784326] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 1?
+[    6.792263] xhci_aeolia 0000:00:14.7: hcc params 0x0228f66c hci version 0x100 quirks 0x0004000000010010?
+[    6.801853] xhci_aeolia 0000:00:14.7: irq 1, io mem 0xce000000?
+[    6.807927] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.813524] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 2?
+[    6.842314] xhci_aeolia 0000:00:14.7: Host supports USB 3.0 SuperSpeed?
+[    6.849126] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.15?
+[    6.857555] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    6.864918] usb usb1: Product: xHCI Host Controller?
+[    6.869892] usb usb1: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    6.878229] usb usb1: SerialNumber: 0000:00:14.7?
+[    6.883309] hub 1-0:1.0: USB hub found?
+[    6.887164] hub 1-0:1.0: 2 ports detected?
+[    6.891480] usb usb2: We don't know the algorithms for LPM for this host, disabling LPM.?
+[    6.899808] usb usb2: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.15?
+[    6.908237] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    6.915606] usb usb2: Product: xHCI Host Controller?
+[    6.920579] usb usb2: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    6.928920] usb usb2: SerialNumber: 0000:00:14.7?
+[    6.933948] hub 2-0:1.0: USB hub found?
+[    6.937803] hub 2-0:1.0: 2 ports detected?
+[    6.962327] xhci_aeolia_probe_one 2, controller is 90de?
+[    6.967726] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    6.973331] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 3?
+[    6.981269] xhci_aeolia 0000:00:14.7: hcc params 0x0220f06c hci version 0x100 quirks 0x0004000000010010?
+[    6.990867] xhci_aeolia 0000:00:14.7: irq 1, io mem 0xcf000000?
+[    6.996823] debugfs: Directory '0000:00:14.7' with parent 'xhci' already present!?
+[    7.004483] xhci_aeolia 0000:00:14.7: xHCI Host Controller?
+[    7.010079] xhci_aeolia 0000:00:14.7: new USB bus registered, assigned bus number 4?
+[    7.038316] xhci_aeolia 0000:00:14.7: Host supports USB 3.0 SuperSpeed?
+[    7.045170] usb usb3: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.15?
+[    7.053630] usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    7.060996] usb usb3: Product: xHCI Host Controller?
+[    7.065969] usb usb3: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    7.074305] usb usb3: SerialNumber: 0000:00:14.7?
+[    7.079620] hub 3-0:1.0: USB hub found?
+[    7.083504] hub 3-0:1.0: 1 port detected?
+[    7.087707] usb usb4: We don't know the algorithms for LPM for this host, disabling LPM.?
+[    7.096044] usb usb4: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.15?
+[    7.104474] usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1?
+[    7.111846] usb usb4: Product: xHCI Host Controller?
+[    7.116820] usb usb4: Manufacturer: Linux 6.15.4-Baikal_TESTING_crashniels-dirty xhci-hcd?
+[    7.125156] usb usb4: SerialNumber: 0000:00:14.7?
+[    7.130300] hub 4-0:1.0: USB hub found?
+[    7.134201] hub 4-0:1.0: 1 port detected?
+[    7.159718] usbcore: registered new interface driver uas?
+[    7.165214] usbcore: registered new interface driver usb-storage?
+[    7.171390] i8042: PNP: No PS/2 controller found.?
+[    7.176447] mousedev: PS/2 mouse device common for all mice?
+[    7.182324] usbcore: registered new interface driver xpad?
+[    7.187972] i2c_dev: i2c /dev entries driver?
+[    7.192414] usb 1-1: new high-speed USB device number 2 using xhci_aeolia?
+[    7.197222] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)?
+[    7.199362] i2c_dev: adapter [icc] registered as minor 0?
+[    7.211114] i2c-core: driver [i2c-slave-eeprom] registered?
+[    7.211166] ata1.00: FORCE: modified (disable)?
+[    7.217089] device-mapper: ioctl: 4.49.0-ioctl (2025-01-17) initialised: dm-devel@lists.linux.dev?
+[    7.221261] ata1.00: unsupported device, disabling?
+[    7.230571] amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled?
+[    7.235167] ata1.00: disable device?
+[    7.246271] sdhci: Secure Digital Host Controller Interface driver?
+[    7.252568] sdhci: Copyright(c) Pierre Ossman?
+[    7.257129] sdhci-pci 0000:00:14.3: SDHCI controller found [104d:90da] (rev 0)?
+[    7.257166] usb usb3-port1: over-current condition?
+[    7.257215] hid: raw HID events driver (C) Jiri Kosina?
+[    7.257460] usbcore: registered new interface driver usbhid?
+[    7.257464] usbhid: USB HID core driver?
+[    7.257960] snd_hda_intel 0000:00:01.1: can't derive routing for PCI INT B?
+[    7.257965] snd_hda_intel 0000:00:01.1: PCI INT B: not connected?
+[    7.258277] NET: Registered PF_INET6 protocol family?
+[    7.258945] Segment Routing with IPv6?
+[    7.258970] In-situ OAM (IOAM) with IPv6?
+[    7.259014] NET: Registered PF_PACKET protocol family?
+[    7.259098] Bluetooth: RFCOMM TTY layer initialized?
+[    7.259105] Bluetooth: RFCOMM socket layer initialized?
+[    7.259113] Bluetooth: RFCOMM ver 1.11?
+[    7.259119] Bluetooth: BNEP (Ethernet Emulation) ver 1.3?
+[    7.259122] Bluetooth: BNEP filters: protocol multicast?
+[    7.259127] Bluetooth: BNEP socket layer initialized?
+[    7.259129] Bluetooth: HIDP (Human Interface Emulation) ver 1.2?
+[    7.259136] Bluetooth: HIDP socket layer initialized?
+[    7.264655] bpcie_init_dev_msi_info: dev=0000:00:14.3 installed bpcie demuxer (sc=(____ptrval____))?
+[    7.269936] microcode: Current revision: 0x0701a001?
+[    7.274719] bpcie_msi_init: virq=3 hwirq=0x0 domain=(____ptrval____) info=(____ptrval____) sc=(____ptrval____)?
+[    7.380680] bpcie_msi_init: registered virq=3 irq_map[33]?
+[    7.386210] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee00000, 000000ef) mask=0x0 irq=3 hwirq=0x0 (____ptrval____)?
+[    7.397049] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee00000 data=000000ef?
+[    7.406842] IPI shorthand broadcast: enabled?
+[    7.406969] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee03000, 00000024) mask=0x0 irq=3 hwirq=0x0 (____ptrval____)?
+[    7.408742] input: HD-Audio Generic HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:01.1/sound/card0/input1?
+[    7.408871] input: HD-Audio Generic HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:01.1/sound/card0/input2?
+[    7.427433] sched_clock: Marking stable (6706004255, 721179584)->(9792375195, -2365191356)?
+[    7.407953] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee03000 data=00000024?
+[    7.459047] sdhci-pci 0000:00:14.3: bpcie_msi_write_msg(fee03000, 00000024) mask=0x0 irq=3 hwirq=0x0 (____ptrval____)?
+[    7.468625] usb 1-1: New USB device found, idVendor=1a40, idProduct=0101, bcdDevice= 1.00?
+[    7.469865] baikal_pcie 0000:00:14.4: bpcie_config_msi: func=3 subfunc=0 addr=fee03000 data=00000024?
+[    7.469876] usb 1-1: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[    7.478302] usb usb4-port1: over-current condition?
+[    7.483578] registered taskstats version 1?
+[    7.483586] Loading compiled-in X.509 certificates?
+[    7.487538] usb 1-1: Product: USB2.0 HUB?
+[    7.512838] mmc0: SDHCI controller on PCI [0000:00:14.3] using ADMA?
+[    7.512858] Demotion targets for Node 0: null?
+[    7.524684] Btrfs loaded, zoned=no, fsverity=no?
+[    7.529834] amdgpu 0000:00:01.0: can't derive routing for PCI INT A?
+[    7.536254] amdgpu 0000:00:01.0: PCI INT A: not connected?
+[    7.541773] [drm] initializing kernel modesetting (LIVERPOOL 0x1002:0x9923 0x1002:0x9923 0x00).?
+[    7.550724] [drm] register mmio base: 0xE4800000?
+[    7.553160] hub 1-1:1.0: USB hub found?
+[    7.555437] [drm] register mmio size: 262144?
+[    7.555635] amdgpu 0000:00:01.0: amdgpu: detected ip block number 0 <cik_common>?
+[    7.559333] hub 1-1:1.0: 4 ports detected?
+[    7.563624] amdgpu 0000:00:01.0: amdgpu: detected ip block number 1 <gmc_v7_0>?
+[    7.563630] amdgpu 0000:00:01.0: amdgpu: detected ip block number 2 <cik_ih>?
+[    7.582700] usb 2-2: new SuperSpeed USB device number 2 using xhci_aeolia?
+[    7.589799] amdgpu 0000:00:01.0: amdgpu: detected ip block number 3 <dce_v8_0>?
+[    7.604076] amdgpu 0000:00:01.0: amdgpu: detected ip block number 4 <gfx_v7_0>?
+[    7.607028] usb 2-2: New USB device found, idVendor=0951, idProduct=1666, bcdDevice= 1.10?
+[    7.611451] amdgpu 0000:00:01.0: amdgpu: detected ip block number 5 <cik_sdma>?
+[    7.611458] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=4?
+[    7.611465] amdgpu 0000:00:01.0: amdgpu: detected ip block number 6 <uvd_v4_2>?
+[    7.611471] usb 2-2: Product: DataTraveler 3.0?
+[    7.611477] amdgpu 0000:00:01.0: amdgpu: detected ip block number 7 <vce_v2_0>?
+[    7.611482] usb 2-2: Manufacturer: Kingston?
+[    7.658460] usb 2-2: SerialNumber: E0D55EA573F0194049CD0236?
+[    7.664841] usb-storage 2-2:1.0: USB Mass Storage device detected?
+[    7.671672] scsi host1: usb-storage 2-2:1.0?
+[    7.690383] amdgpu 0000:00:01.0: amdgpu: Fetched VBIOS from ROM BAR?
+[    7.696790] amdgpu: ATOM BIOS: 113-Starsha2-018?
+[    7.701759] [drm] ps4 uvd: skipping UVD entirely on Liverpool/Gladius (no SAMU auth -> no functional UVD; avoids fault storm)?
+[    7.713298] [drm:amdgpu_device_init.cold] *ERROR* early_init of IP block <uvd_v4_2> failed -19?
+[    7.722116] [drm] ps4 vce: skipping VCE entirely on Liverpool/Gladius?
+[    7.728705] [drm:amdgpu_device_init.cold] *ERROR* early_init of IP block <vce_v2_0> failed -19?
+[    7.737499] amdgpu 0000:00:01.0: amdgpu: Fatal error during GPU init?
+[    7.744016] amdgpu 0000:00:01.0: amdgpu: amdgpu: finishing device.?
+[    7.750592] ahci 0000:00:14.2: version 3.0?
+[    7.754789] ahci 0000:00:14.2: probe with driver ahci failed with error -12?
+[    7.761988] ps4-power: reboot_notifier installed ??? ICC cmd 04/0004 on SYS_POWER_OFF?
+[    7.766166] mmc0: new UHS-I speed SDR104 SDIO card at address 0001?
+[    7.770049] printk: legacy console [netcon0] enabled?
+[    7.778746] [wlan][9]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00000000?
+[    7.781401] netconsole: network logging started?
+[    7.781598] cfg80211: Loading compiled-in X.509 certificates for regulatory database?
+[    7.801462] Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'?
+[    7.807830] Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'?
+[    7.815217] clk: Disabling unused clocks?
+[    7.819293] platform regulatory.0: Direct firmware load for regulatory.db failed with error -2?
+[    7.820630] ALSA device list:?
+[    7.828087] cfg80211: failed to load regulatory.db?
+[    7.828120]   #0: HD-Audio Generic at 0xe4840000 irq 2?
+[    7.842146] Freeing unused kernel image (initmem) memory: 1624K?
+[    7.848245] Write protecting the kernel read-only data: 34816k?
+[    7.855048] Freeing unused kernel image (text/rodata gap) memory: 1104K?
+[    7.862636] Freeing unused kernel image (rodata/data gap) memory: 1456K?
+[    7.869403] rodata_test: all tests were successful?
+[    7.874315] Run /init as init process?
+[    7.878058]   with arguments:?
+[    7.881089]     /init?
+[    7.883408]   with environment:?
+[    7.886613]     HOME=/?
+[    7.889016]     TERM=linux?
+[    7.945230] usb 1-1.3: new low-speed USB device number 3 using xhci_aeolia?
+[    8.138613] usb 1-1.3: New USB device found, idVendor=04f3, idProduct=152e, bcdDevice=1c.02?
+[    8.147149] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0?
+[    8.154607] usb 1-1.3: Product: Gaming KB?
+[    8.158699] usb 1-1.3: Manufacturer: Gaming KB?
+[    8.260725] input: Gaming KB Gaming KB as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.0/0003:04F3:152E.0001/input/input3?
+[    8.294419] hid-generic 0003:04F3:152E.0001: input,hidraw0: USB HID v1.11 Keyboard [Gaming KB Gaming KB] on usb-0000:00:14.7-1.3/input0?
+[    8.313415] input: Gaming KB Gaming KB Consumer Control as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input4?
+[    8.327228] input: Gaming KB Gaming KB System Control as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input5?
+[    8.340904] input: Gaming KB Gaming KB Keyboard as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input6?
+[    8.354140] input: Gaming KB Gaming KB as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.3/1-1.3:1.1/0003:04F3:152E.0002/input/input7?
+[    8.366720] hid-generic 0003:04F3:152E.0002: input,hiddev96,hidraw1: USB HID v1.11 Keyboard [Gaming KB Gaming KB] on usb-0000:00:14.7-1.3/input1?
+[    8.649233] usb 1-1.4: new low-speed USB device number 4 using xhci_aeolia?
+[    8.689947] scsi 1:0:0:0: Direct-Access     Kingston DataTraveler 3.0 0000 PQ: 0 ANSI: 6?
+[    8.699407] sd 1:0:0:0: Attached scsi generic sg0 type 0?
+[    8.700109] sd 1:0:0:0: [sda] 242155520 512-byte logical blocks: (124 GB/115 GiB)?
+[    8.706465] [wlan][9]wlanAdapterStart:(INIT WARN) Send a Dummy CMD as workaround?
+[    8.713048] sd 1:0:0:0: [sda] Write Protect is off?
+[    8.720245] [wlan][9]wlanQueryNicCapability:(INIT WARN) wlanQueryNicCapability: skip unexpected event ID[0x27]?
+[    8.724928] sd 1:0:0:0: [sda] Mode Sense: 23 00 00 00?
+[    8.725266] sd 1:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA?
+[    8.737845] [wlan][9]wlanAdapterStart:(INIT WARN) wlanAdapterStart: load manufacture data fail?
+[    8.770833]  sda: sda1 sda2?
+[    8.773924] sd 1:0:0:0: [sda] Attached SCSI removable disk?
+[    8.839647] usb 1-1.4: New USB device found, idVendor=0000, idProduct=3825, bcdDevice= 1.00?
+[    8.848188] usb 1-1.4: New USB device strings: Mfr=0, Product=1, SerialNumber=0?
+[    8.855643] usb 1-1.4: Product:  USB OPTICAL MOUSE?
+[    8.899791] input:  USB OPTICAL MOUSE as /devices/pci0000:00/0000:00:14.7/usb1/1-1/1-1.4/1-1.4:1.0/0003:0000:3825.0003/input/input8?
+[    8.912179] hid-generic 0003:0000:3825.0003: input,hidraw2: USB HID v1.11 Mouse [ USB OPTICAL MOUSE] on usb-0000:00:14.7-1.4/input0?
+[    8.937687] [wlan][9]mtk_reg_notify:(RLM WARN) County Code is not assigned. Use default WW.?
+[    8.946250] [wlan][9]rlmDomainSearchRegdomainFromLocalDataBase:(RLM ERROR) rlmDomainSearchRegdomainFromLocalDataBase(): Error, Cannot find the correct RegDomain. country = 00.?
+[    8.963940] [wlan][146]wlanBindBssIdxToNetInterface:(INIT ERROR) Array index out of bound, ucBssIndex=4?
+[    8.973551] [wlan][146]p2pRoleFsmStateTransition:(P2P STATE) [P2P_ROLE][0]TRANSITION(Bss1): [P2P_ROLE_STATE_IDLE] -> [P2P_ROLE_STATE_IDLE]?
+[    8.986258] [wlan][146]wlanBindBssIdxToNetInterface:(INIT ERROR) Array index out of bound, ucBssIndex=4?
+[    8.995843] [wlan][146]p2pRoleFsmStateTransition:(P2P STATE) [P2P_ROLE][1]TRANSITION(Bss2): [P2P_ROLE_STATE_IDLE] -> [P2P_ROLE_STATE_IDLE]?
+[    9.008525] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x11] SEQ[29]?
+[    9.017320] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x11] SEQ[29]?
+[    9.017816] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[    9.034726] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.041228] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.047726] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE005309E?
+[    9.054226] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.060721] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE4?
+[    9.067259] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x70] SEQ[36]?
+[    9.067734] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[    9.084667] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DF2?
+[    9.091167] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE003E674?
+[    9.097667] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.104168] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DEE?
+[    9.110662] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DF2?
+[    9.117502] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[    9.126129] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.132627] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.139127] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.145622] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DEE?
+[    9.152123] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE0010DE2?
+[    9.158783] [wlan][146]wlanoidSetGtkRekeyData:(REQ INFO) wlanoidSetGtkRekeyData?
+[    9.166246] [wlan][146]wlanoidSetGtkRekeyData:(REQ INFO) ucCmdSeqNum = 41?
+[   18.135563] EXT4-fs (sda2): recovery complete?
+[   18.141209] EXT4-fs (sda2): mounted filesystem 116ef654-f297-4253-98fc-1ca455c1d9fe r/w with ordered data mode. Quota mode: disabled.?
+[   18.390101] systemd[1]: System time advanced to timestamp on /var/lib/systemd/timesync/clock: Tue 2026-05-12 13:12:42 UTC?
+[   18.441931] systemd[1]: systemd 259.3-1-arch running in system mode (+PAM +AUDIT -SELINUX +APPARMOR -IMA +IPE +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP -SYSVINIT +LIBARCHIVE)?
+[   18.476084] systemd[1]: Detected architecture x86-64.?
+[   18.495626] systemd[1]: Hostname set to <archlinux>.?
+[   18.567921] systemd[1]: bpf-restrict-fs: BPF LSM hook not enabled in the kernel, BPF LSM not supported.?
+[   18.804742] random: crng init done?
+[   19.241969] zram: Added device: zram0?
+[   19.251790] zram_generator::generator[188]: modprobe "crypto-zstd" failed, ignoring: code exit status: 1?
+[   19.676385] systemd[1]: Queued start job for default target Multi-User System.?
+[   20.574824] systemd[1]: Created slice Slice /system/dirmngr.?
+[   20.586467] systemd[1]: Created slice Slice /system/getty.?
+[   20.597945] systemd[1]: Created slice Slice /system/gpg-agent.?
+[   20.609839] systemd[1]: Created slice Slice /system/gpg-agent-browser.?
+[   20.622306] systemd[1]: Created slice Slice /system/gpg-agent-extra.?
+[   20.634901] systemd[1]: Created slice Slice /system/gpg-agent-ssh.?
+[   20.647327] systemd[1]: Created slice Slice /system/keyboxd.?
+[   20.658902] systemd[1]: Created slice Slice /system/modprobe.?
+[   20.670488] systemd[1]: Created slice Slice /system/systemd-zram-setup.?
+[   20.682870] systemd[1]: Created slice User and Session Slice.?
+[   20.689125] systemd[1]: Started Dispatch Password Requests to Console Directory Watch.?
+[   20.697467] systemd[1]: Started Forward Password Requests to Wall Directory Watch.?
+[   20.705833] systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.?
+[   20.715571] systemd[1]: Expecting device /dev/zram0...?
+[   20.720929] systemd[1]: Reached target Local Encrypted Volumes.?
+[   20.727112] systemd[1]: Reached target Image Downloads.?
+[   20.732573] systemd[1]: Reached target Local Integrity Protected Volumes.?
+[   20.739684] systemd[1]: Reached target Path Units.?
+[   20.744710] systemd[1]: Reached target Remote Encrypted Volumes.?
+[   20.750957] systemd[1]: Reached target Remote File Systems.?
+[   20.756758] systemd[1]: Reached target Remote Integrity Protected Volumes.?
+[   20.763890] systemd[1]: Reached target Remote Verity Protected Volumes.?
+[   20.770751] systemd[1]: Reached target Slice Units.?
+[   20.775897] systemd[1]: Reached target Local Verity Protected Volumes.?
+[   20.782897] systemd[1]: Listening on Device-mapper event daemon FIFOs.?
+[   20.793975] systemd[1]: Listening on Query the User Interactively for a Password.?
+[   20.812665] systemd[1]: Listening on Process Core Dump Socket.?
+[   20.821880] systemd[1]: Listening on Credential Encryption/Decryption.?
+[   20.833264] systemd[1]: Listening on Factory Reset Management.?
+[   20.843832] systemd[1]: Listening on Journal Audit Socket.?
+[   20.849808] systemd[1]: Listening on Journal Socket (/dev/log).?
+[   20.856219] systemd[1]: Listening on Journal Sockets.?
+[   20.861664] systemd[1]: Listening on DDI File System Mounter Socket.?
+[   20.873464] systemd[1]: Listening on Console Output Muting Service Socket.?
+[   20.880980] systemd[1]: Listening on Network Management Resolve Hook Socket.?
+[   20.888669] systemd[1]: Listening on Network Management Varlink Socket.?
+[   20.895837] systemd[1]: Listening on Network Management Netlink Socket.?
+[   20.902870] systemd[1]: Listening on Namespace Resource Manager Socket.?
+[   20.909776] systemd[1]: TPM PCR Measurements skipped, unmet condition check ConditionSecurity=measured-uki?
+[   20.919683] systemd[1]: Make TPM PCR Policy skipped, unmet condition check ConditionSecurity=measured-uki?
+[   20.932575] systemd[1]: Listening on Disk Repartitioning Service Socket.?
+[   20.939718] systemd[1]: Listening on Resolve Monitor Varlink Socket.?
+[   20.946453] systemd[1]: Listening on Resolve Service Varlink Socket.?
+[   20.953257] systemd[1]: Listening on udev Control Socket.?
+[   20.959004] systemd[1]: Listening on udev Kernel Socket.?
+[   20.964673] systemd[1]: Listening on udev Varlink Socket.?
+[   20.970461] systemd[1]: Listening on User Database Manager Socket.?
+[   20.984139] systemd[1]: Mounting Huge Pages File System...?
+[   20.996914] systemd[1]: Mounting POSIX Message Queue File System...?
+[   21.026552] systemd[1]: Mounting Kernel Debug File System...?
+[   21.032804] systemd[1]: Kernel Trace File System skipped, unmet condition check ConditionPathExists=/sys/kernel/tracing?
+[   21.044136] systemd[1]: Create List of Static Device Nodes skipped, unmet condition check ConditionFileNotEmpty=/lib/modules/6.15.4-Baikal_TESTING_crashniels-dirty/modules.devname?
+[   21.060673] systemd[1]: Load Kernel Module configfs skipped, unmet condition check ConditionKernelModuleLoaded=!configfs?
+[   21.078342] systemd[1]: Mounting Kernel Configuration File System...?
+[   21.085228] systemd[1]: Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm?
+[   21.102424] systemd[1]: Starting Load Kernel Module efi_pstore...?
+[   21.109033] systemd[1]: Load Kernel Module fuse skipped, unmet condition check ConditionKernelModuleLoaded=!fuse?
+[   21.125993] systemd[1]: Mounting FUSE Control File System...?
+[   21.132204] systemd[1]: Clear SysFail Entry If The Boot Is Successful skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/LoaderEntrySysFail-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f?
+[   21.150790] systemd[1]: File System Check on Root Device skipped, unmet condition check ConditionPathIsReadWrite=!/?
+[   21.161620] systemd[1]: Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67?
+[   21.179665] systemd[1]: systemd-journald.service: unit configures an IP firewall, but the local system does not support BPF/cgroup firewalling.?
+[   21.192808] systemd[1]: systemd-journald.service: (This warning is only shown for the first unit using IP firewalling.)?
+[   21.210298] systemd[1]: Starting Journal Service...?
+[   21.224489] systemd[1]: Starting Load Kernel Modules...?
+[   21.256221] systemd[1]: Starting Generate Network Units from Kernel Command Line...?
+[   21.264425] systemd[1]: TPM PCR Machine ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.275337] systemd[1]: TPM NvPCR Product ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.293445] systemd[1]: Starting Remount Root and Kernel File Systems...?
+[   21.307467] systemd[1]: Starting Create Static Device Nodes in /dev gracefully...?
+[   21.315527] systemd[1]: Early TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.329977] systemd-journald[412]: Collecting audit messages is enabled.?
+[   21.332352] systemd[1]: Starting Load udev Rules from Credentials...?
+[   21.350501] systemd[1]: Starting Coldplug All udev Devices...?
+[   21.416696] EXT4-fs (sda2): re-mounted 116ef654-f297-4253-98fc-1ca455c1d9fe.?
+[   21.554533] systemd[1]: Mounted Huge Pages File System.?
+[   21.560407] systemd[1]: Mounted POSIX Message Queue File System.?
+[   21.566945] systemd[1]: Mounted Kernel Debug File System.?
+[   21.572846] systemd[1]: Mounted Kernel Configuration File System.?
+[   21.579780] systemd[1]: modprobe@efi_pstore.service: Deactivated successfully.?
+[   21.592539] systemd[1]: Finished Load Kernel Module efi_pstore.?
+[   21.598966] audit: type=1130 audit(1778591566.193:2): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@efi_pstore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.608955] systemd[1]: Mounted FUSE Control File System.?
+[   21.618458] audit: type=1131 audit(1778591566.193:3): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@efi_pstore comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.648871] systemd[1]: Finished Load Kernel Modules.?
+[   21.654290] audit: type=1130 audit(1778591566.249:4): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-modules-load comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.674082] systemd[1]: Finished Generate Network Units from Kernel Command Line.?
+[   21.682176] audit: type=1130 audit(1778591566.276:5): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-network-generator comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.689111] systemd[1]: Finished Remount Root and Kernel File Systems.?
+[   21.709342] audit: type=1130 audit(1778591566.304:6): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-remount-fs comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.728920] systemd[1]: Finished Load udev Rules from Credentials.?
+[   21.735690] audit: type=1130 audit(1778591566.330:7): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-udev-load-credentials comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.740204] systemd[1]: Reached target Preparation for Network.?
+[   21.769885] systemd[1]: Starting Load Kernel Module tun...?
+[   21.776768] systemd[1]: Rebuild Hardware Database skipped, unmet condition check ConditionNeedsUpdate=/etc?
+[   21.786818] systemd[1]: Platform Persistent Storage Archival skipped, unmet condition check ConditionDirectoryNotEmpty=/sys/fs/pstore?
+[   21.810743] systemd[1]: Starting Load/Save OS Random Seed...?
+[   21.823766] systemd[1]: Starting Apply Kernel Variables...?
+[   21.829622] systemd[1]: TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.838964] systemd[1]: TPM PCR NvPCR Initialization Separator skipped, unmet condition check ConditionSecurity=measured-uki?
+[   21.872752] systemd[1]: Starting User Database Manager...?
+[   21.879205] systemd[1]: Started Journal Service.?
+[   21.884275] audit: type=1130 audit(1778591566.478:8): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-journald comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.921825] audit: type=1130 audit(1778591566.516:9): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.940731] audit: type=1131 audit(1778591566.516:10): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   21.959913] audit: type=1130 audit(1778591566.554:11): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-random-seed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   22.044206] systemd-journald[412]: Received client request to flush runtime journal.?
+[   22.056802] systemd-journald[412]: File /var/log/journal/0858cdb2b55a4b79b6d5ddbb93f48e94/system.journal corrupted or uncleanly shut down, renaming and replacing.?
+[   23.139519] zram0: detected capacity change from 0 to 3145728?
+[   23.263940] Adding 1572860k swap on /dev/zram0.  Priority:100 extents:1 across:1572860k SSDsc?
+[   25.472694] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   25.480644] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =50?
+[   25.487886] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   25.495808] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =51?
+[   25.503007] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   25.503011] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   25.520572] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   25.520578] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   25.990532] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   25.998500] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =55?
+[   25.998820] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.013672] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =56?
+[   26.014325] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.020905] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.038455] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.046383] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =58?
+[   26.046391] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.046394] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.046410] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.046415] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =60?
+[   26.086085] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.086090] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.103450] [wlan][146]wlanoidSetPmkid:(REQ INFO) wlanoidSetPmkid?
+[   26.109692] [wlan][146]wlanoidSetPmkid:(REQ INFO) Count 0?
+[   26.115361] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.123326] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =63?
+[   26.130927] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.138891] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =64?
+[   26.147126] [wlan][774]mtk_cfg80211_scan:(REQ INFO) scan channel num = 2?
+[   26.154042] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [IDLE] -> [SCAN]?
+[   26.154283] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.171241] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[77]?
+[   26.171294] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.180047] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[77]?
+[   26.180540] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.189660] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.189668] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =78?
+[   26.189693] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[77]?
+[   26.189700] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[77]?
+[   26.198537] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.246088] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.246138] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.258970] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.259017] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.271878] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.272509] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.286696] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.289279] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x0002DD46?
+[   26.298843] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.305275] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.313116] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =88?
+[   26.313198] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0xE002A52C?
+[   26.319529] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) Command ID = 0x000000C1?
+[   26.319576] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.326733] [wlan][146]wlanoidSendSetQueryP2PCmd:(REQ TRACE) ucCmdSeqNum =89?
+[   26.326786] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.333145] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x14] SEQ[84]?
+[   26.370009] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [SCAN] -> [IDLE]?
+[   26.370399] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.377593] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x11] SEQ[91]?
+[   26.386139] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.394897] [wlan][146]wlanProcessCommandQueue:(INIT WARN) NO Res CMD TYPE[1] ID[0x11] SEQ[91]?
+[   26.406093] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.410213] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.419807] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.426205] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.435853] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.442206] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.451786] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.458201] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.467693] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.474530] [wlan][147]halPrintMailbox:(INIT ERROR) MailBox Status = 0x0003005A, 0x00FF00FF?
+[   26.483674] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.492271] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.501788] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.508273] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.517773] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.524253] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.533757] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.540237] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.549782] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.556222] [wlan][147]halPollDbgCr:(INIT WARN) SWPCDBGR 0x00001DDE?
+[   26.565728] [wlan][774]mtk_p2p_cfg80211_mgmt_frame_register:(P2P ERROR) Ask frog to add code for mgmt:1?
+[   26.582916] [wlan][146]wlanoidSetWapiAssocInfo:(REQ LOUD) ??
+[   26.588637] [wlan][774]mtk_cfg80211_connect:(SEC WARN) [wapi] set wapi assoc info error:c0010014?
+[   26.597730] [wlan][146]wlanoidSetEncryptionStatus:(REQ INFO) ENCRYPTION_STATUS 6?
+[   26.605369] [wlan][146]aisFsmRunEventAbort:(AIS STATE) EVENT-ABORT: Current State IDLE, ucReasonOfDisconnect:4?
+[   26.615619] [wlan][146]aisFsmRunEventAbort:(AIS STATE) ucReasonOfDisconnect:4?
+[   26.615624] [wlan][146]aisFsmStateAbort:(AIS STATE) aisFsmStateAbort DiscReason[4], CurState[0]?
+[   26.615639] [wlan][146]roamingFsmRunEventAbort:(ROAMING EVENT) EVENT-ROAMING ABORT: Current Time = 4294693190?
+[   26.615644] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [IDLE] -> [IDLE]?
+[   26.615651] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [IDLE] -> [SEARCH]?
+[   26.657232] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [SEARCH] -> [REQ_CHANNEL_JOIN]?
+[   26.657266] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   26.666041] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   26.792325] kauditd_printk_skb: 36 callbacks suppressed?
+[   26.792334] audit: type=1101 audit(1778591571.387:48): pid=845 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/bin/login" hostname=archlinux addr=? terminal=/dev/tty1 res=success'?
+[   26.821423] audit: type=1103 audit(1778591571.391:49): pid=845 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/bin/login" hostname=archlinux addr=? terminal=/dev/tty1 res=success'?
+[   26.846249] audit: type=1006 audit(1778591571.391:50): pid=845 uid=0 old-auid=4294967295 auid=1000 tty=tty1 old-ses=4294967295 ses=1 res=1?
+[   26.858982] audit: type=1300 audit(1778591571.391:50): arch=c000003e syscall=1 success=yes exit=4 a0=5 a1=7fff35ff74c0 a2=4 a3=0 items=0 ppid=1 pid=845 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=1000 fsgid=0 tty=tty1 ses=1 comm="login" exe="/usr/bin/login" key=(null)?
+[   26.884299] audit: type=1327 audit(1778591571.391:50): proctitle=2F62696E2F6C6F67696E002D66002D2D?
+[   26.999166] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [REQ_CHANNEL_JOIN] -> [JOIN]?
+[   27.007840] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[0] Type[65] BssIdx[0] AID[0]?
+[   27.018338] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[0] UAPSD[0]?
+[   27.026437] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[0] Type[65] BssIdx[0] AID[0]?
+[   27.036935] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[1] UAPSD[1]?
+[   27.044874] audit: type=1130 audit(1778591571.639:51): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=user-runtime-dir@1000 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   27.045045] [wlan][146]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [AA_IDLE] -> [SAA_SEND_AUTH1]?
+[   27.073411] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[0] Type[65] BssIdx[0] AID[0]?
+[   27.073416] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[1] UAPSD[1]?
+[   27.081629] [wlan][146]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_SEND_AUTH1] -> [SAA_WAIT_AUTH2]?
+[   27.101337] [wlan][146]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_WAIT_AUTH2] -> [SAA_SEND_ASSOC1]?
+[   27.113333] [wlan][146]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_SEND_ASSOC1] -> [SAA_WAIT_ASSOC2]?
+[   27.122837] [wlan][146]saaFsmSteps:(SAA STATE) [SAA]TRANSITION: [SAA_WAIT_ASSOC2] -> [AA_IDLE]?
+[   27.131633] [wlan][146]nicQmUpdateWmmParms:(QM EVENT) sizeof(AC_QUE_PARMS_T): 10?
+[   27.139175] [wlan][146]nicQmUpdateWmmParms:(QM EVENT) sizeof(CMD_UPDATE_WMM_PARMS): 44?
+[   27.147253] [wlan][146]nicQmUpdateWmmParms:(QM EVENT) sizeof(WIFI_CMD_T): 64?
+[   27.154455] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] WIDX[3] State[2] Type[65] BssIdx[0] AID[39]?
+[   27.165011] [wlan][146]cnmStaSendUpdateCmd:(REQ INFO) Update StaRec[0] QoS[1] UAPSD[1]?
+[   27.173132] [wlan][146]roamingFsmRunEventStart:(ROAMING EVENT) EVENT-ROAMING START: Current Time = 4294693747?
+[   27.183263] [wlan][146]roamingFsmSteps:(ROAMING STATE) [ROAMING]TRANSITION: [IDLE] -> [DECISION]?
+[   27.192231] [wlan][146]aisFsmSteps:(AIS STATE) [AIS]TRANSITION: [JOIN] -> [NORMAL_TR]?
+[   27.207587] [wlan][146]wlanoidSetAddKey:(REQ LOUD) ?
+[   27.212579] [wlan][146]wlanoidSetAddKey:(REQ INFO) ucCmdSeqNum = 115?
+[   27.218715] audit: type=1101 audit(1778591571.813:52): pid=876 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=success'?
+[   27.219364] [wlan][146]wlanoidSetAddKey:(REQ LOUD) ?
+[   27.242957] audit: type=1103 audit(1778591571.813:53): pid=876 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=? acct="ps4" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=failed'?
+[   27.242972] audit: type=1006 audit(1778591571.813:54): pid=876 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=2 res=1?
+[   27.242985] [wlan][146]wlanoidSetAddKey:(REQ INFO) ucCmdSeqNum = 116?
+[   27.242999] audit: type=1300 audit(1778591571.813:54): arch=c000003e syscall=1 success=yes exit=4 a0=a a1=7fff85835d50 a2=4 a3=0 items=0 ppid=1 pid=876 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="(systemd)" exe="/usr/lib/systemd/systemd-executor" key=(null)?
+[   27.314709] [wlan][146]nicEventAddPkeyDone:(RSN EVENT) EVENT_ID_ADD_PKEY_DONE BSSIDX=0 ff:ff:ff:ff:ff:ff?
+[   27.324441] [wlan][146]nicEventAddPkeyDone:(RSN EVENT) EVENT_ID_ADD_PKEY_DONE BSSIDX=0 a0:36:bc:14:92:ec?
+[   27.334140] [wlan][146]nicEventAddPkeyDone:(RSN EVENT) STA a0:36:bc:14:92:ec Add Key Done!!?
+[   27.346216] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.346229] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.365981] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.365987] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.383274] [wlan][146]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   27.533409] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   27.533427] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   27.557105] [wlan][146]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   27.643903] [wlan][146]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   27.667831] [wlan][146]qmProcessBarFrame:(QM WARN) QM: (Warning) BAR for a NULL ReorderQueParm?
+[   29.234870] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) wlanoidSetCurrentPacketFilter?
+[   29.234885] [wlan][146]wlanoidSetCurrentPacketFilter:(REQ INFO) New packet filter: 0x00000c?
+[   35.595665] kauditd_printk_skb: 8 callbacks suppressed?
+[   35.595677] audit: type=1131 audit(1778593791.708:62): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=NetworkManager-dispatcher comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   55.321990] audit: type=1131 audit(1778593811.434:63): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-hostnamed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'?
+[   74.091353] audit: type=1101 audit(1778593830.209:64): pid=990 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   74.117092] audit: type=1103 audit(1778593830.212:65): pid=990 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   74.143937] audit: type=1006 audit(1778593830.213:66): pid=990 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=3 res=1?
+[   74.156825] audit: type=1300 audit(1778593830.213:66): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffc263e4ef0 a2=4 a3=0 items=0 ppid=838 pid=990 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=3 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[   74.183815] audit: type=1327 audit(1778593830.213:66): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[   74.201492] audit: type=1105 audit(1778593830.319:67): pid=990 uid=0 auid=1000 ses=3 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[   74.233539] audit: type=1103 audit(1778593830.323:68): pid=996 uid=0 auid=1000 ses=3 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  115.983874] audit: type=1101 audit(1778593872.105:69): pid=1024 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  116.010774] audit: type=1103 audit(1778593872.131:70): pid=1024 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  116.037684] audit: type=1006 audit(1778593872.132:71): pid=1024 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=4 res=1?
+[  116.050684] audit: type=1300 audit(1778593872.132:71): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffcc8dd3560 a2=4 a3=0 items=0 ppid=838 pid=1024 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[  116.077823] audit: type=1327 audit(1778593872.132:71): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[  116.105397] audit: type=1105 audit(1778593872.226:72): pid=1024 uid=0 auid=1000 ses=4 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  116.137530] audit: type=1103 audit(1778593872.230:73): pid=1030 uid=0 auid=1000 ses=4 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  116.410910] audit: type=1106 audit(1778593872.532:74): pid=1024 uid=0 auid=1000 ses=4 msg='op=PAM:session_close grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  116.443212] audit: type=1104 audit(1778593872.532:75): pid=1024 uid=0 auid=1000 ses=4 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  228.817666] audit: type=1101 audit(1778593984.936:76): pid=1049 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  228.843474] audit: type=1103 audit(1778593984.938:77): pid=1049 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  228.870394] audit: type=1006 audit(1778593984.938:78): pid=1049 uid=0 old-auid=4294967295 auid=1000 tty=(none) old-ses=4294967295 ses=5 res=1?
+[  228.883364] audit: type=1300 audit(1778593984.938:78): arch=c000003e syscall=1 success=yes exit=4 a0=6 a1=7ffda8d48ea0 a2=4 a3=0 items=0 ppid=838 pid=1049 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=5 comm="sshd-session" exe="/usr/lib/ssh/sshd-session" key=(null)?
+[  228.910408] audit: type=1327 audit(1778593984.938:78): proctitle=737368642D73657373696F6E3A20707334205B707269765D?
+[  228.939221] audit: type=1105 audit(1778593985.057:79): pid=1049 uid=0 auid=1000 ses=5 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  228.971397] audit: type=1103 audit(1778593985.061:80): pid=1055 uid=0 auid=1000 ses=5 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  229.195730] audit: type=1106 audit(1778593985.314:81): pid=1049 uid=0 auid=1000 ses=5 msg='op=PAM:session_close grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
+[  229.228023] audit: type=1104 audit(1778593985.314:82): pid=1049 uid=0 auid=1000 ses=5 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="ps4" exe="/usr/lib/ssh/sshd-session" hostname=192.168.50.147 addr=192.168.50.147 terminal=ssh res=success'?
