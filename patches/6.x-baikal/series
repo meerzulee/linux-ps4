@@ -572,6 +572,17 @@
 # (deepseek finding: partner reg 5 bit 13 = 1 = RF actively rejecting us).
 # Stop periodic AN restart to let PHY converge naturally.
 0750-network-ps4-mts/0007-ps4-mts-v87-orbis-tail-rf-diagnostic.patch
+# v88: deepseek-v41's full v88 fallback research landed (9 hours after
+# dispatched).  Bombshell: Orbis's Realtek "magic pokes" accidentally land
+# on the MT7531 Token-Ring command for SlvDPSready, writing 0x0c (12 ticks).
+# Mainline wants 0x5e (94 ticks).  Orbis's short timeout = slave DSP times
+# out before finishing 1000BT training -> master sees failure -> partner
+# asserts Remote Fault -> AN cycling.  v88 applies 5 mainline
+# mt7531_phy_config_init corrections (near-echo, ADC bias, MSE threshold,
+# SlvDPSready=0x5e via TR R/M/W, EN_DOWNSHIFT) plus stops advertising
+# 1000BT.  All BEFORE the final BMCR AN restart so training begins with
+# the fix in place.
+0750-network-ps4-mts/0008-ps4-mts-v88-mt7531-dsp-no-1000bt.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
