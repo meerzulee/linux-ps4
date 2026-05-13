@@ -1,0 +1,154 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v97 — paired ring-base regs + descriptor/poll diagnostics
+
+Live BAR-poke session (no reboot) on v96 boot revealed:
+
+1. BAR+0x040 (RX ring base reg we wrote at probe) ADVANCES by 0x10
+   per RX_AVAIL IRQ.  HW IS receiving packets and using our ring.
+2. BAR+0x044 and BAR+0x048 were 0 (we'd been writing upper_32_bits
+   of dma — always 0 with 32-bit DMA mask).  Per hermes Ghidra dig
+   of Orbis mts_init_rings_kick lines 59-86, both 0x3c+0x44 should
+   get the SAME full tx_ring_dma value, and both 0x40+0x48 should
+   get the SAME full rx_ring_dma value.  Live test wrote correct
+   values via BAR poke; HW kept advancing 0x040 but RX still didn't
+   deliver to NAPI.
+3. BAR+0x09c bit 6 toggle (deepseek's proposed packet-engine reset)
+   is DESTRUCTIVE: zeroed BAR+0x040 and broke engine.  Hermes
+   confirmed: that recovery path is TX-error only (status 0x00500000),
+   not for RX.  Removed from v97.
+
+v97 changes:
+- probe + ndo_open now write full rx_ring_dma to BOTH paired regs.
+- ndo_open keeps engine bit 0 toggle (clear→reinit→start).
+- Added 3 diagnostic dev_info lines:
+  * post-rings_init: rx_ring[0..1] ctl/buf + BAR+0x40/0x48 readback
+  * rate-limited per-poll: tx_done/rx_done/rx_head + first desc state
+  * rate-limited per-xmit: skb len + tx_prod/tx_cons
+- Next boot's UART log answers definitively:
+  * Did rings_init populate descriptors correctly? (rx[0] ctl=0x600
+    + buf=real_dma proves yes)
+  * Does mts_poll actually run? (rate-limited per-poll line)
+  * Does mts_start_xmit run? (rate-limited xmit line)
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1324,12 +1324,13 @@
+ 	struct mts *mts = netdev_priv(ndev);
+ 	u32 tx_ctrl_before, rx_ctrl_before;
+ 
+-	/* v96: STOP engines BEFORE re-filling rings.  HW caches descriptor
+-	 * state after first read at engine-enable time; if it sampled the
+-	 * old zero-filled rings (probe-time engine start), it never refetches
+-	 * even after we update buf_lo with real SKB DMA addresses.  Stop
+-	 * engines → re-init rings → re-program base addresses → restart
+-	 * engines.  This forces HW to fetch the new descriptor contents.
++	/* v97: diagnostics-only revision.  Live test (host live BAR poke)
++	 * proved BAR+0x09c bit 6 toggle is DESTRUCTIVE — it zeroes
++	 * BAR+0x040 (RX ring base) and breaks the engine.  Hermes
++	 * confirmed: bit 6 recovery is for TX path (status 0x00500000),
++	 * not RX.  v97 keeps only the engine bit toggle from v96 PLUS
++	 * the descriptor + counter diagnostics so the next boot tells us
++	 * exactly what mts_poll observes.
+ 	 */
+ 	tx_ctrl_before = readl(mts->bar + MTS_TX_CTRL);
+ 	rx_ctrl_before = readl(mts->bar + MTS_RX_CTRL);
+@@ -1340,26 +1341,39 @@
+ 
+ 	mts_rings_init(mts);
+ 
+-	/* Reprogram ring base addresses (probe wrote them too; reconfirm
+-	 * since rings_init zeroed the desc memory). */
++	/* Reprogram ring base addresses to BOTH paired registers per
++	 * hermes Ghidra: each ring has a paired set (lo/hi or maybe
++	 * base/wrap) and Orbis writes the same full dma value to both. */
+ 	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_LO);
+-	writel(upper_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
++	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
+ 	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_LO);
+-	writel(upper_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
++	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
+ 
+ 	napi_enable(&mts->napi);
+ 	netif_start_queue(ndev);
+ 
+ 	dev_info(&mts->pdev->dev,
+-		 "v96: ndo_open engine-reset (TX 0x%08x->0x%08x RX 0x%08x->0x%08x)\n",
++		 "v97: ndo_open engine-reset (TX 0x%08x->0x%08x RX 0x%08x->0x%08x)\n",
+ 		 tx_ctrl_before, readl(mts->bar + MTS_TX_CTRL),
+ 		 rx_ctrl_before, readl(mts->bar + MTS_RX_CTRL));
+ 
+-	/* Start engines fresh.  bit 0 of the respective CTRL register
+-	 * enables the engine. */
++	/* Start engines fresh. */
+ 	writel(readl(mts->bar + MTS_TX_CTRL) | 0x1, mts->bar + MTS_TX_CTRL);
+ 	writel(readl(mts->bar + MTS_RX_CTRL) | 0x1, mts->bar + MTS_RX_CTRL);
+ 
++	/* Diagnostic: log first 2 RX descriptors + ring DMA addresses
++	 * + BAR ring-base readbacks so the boot log proves descriptor
++	 * setup is correct (or pinpoints the divergence). */
++	dev_info(&mts->pdev->dev,
++		 "v97: rx_ring_dma=%pad bar040=0x%08x bar048=0x%08x | rx[0] ctl=0x%08x buf=0x%08x | rx[1] ctl=0x%08x buf=0x%08x\n",
++		 &mts->rx_ring_dma,
++		 readl(mts->bar + MTS_RX_DESC_LO),
++		 readl(mts->bar + MTS_RX_DESC_HI),
++		 le32_to_cpu(mts->rx_ring[0].ctl_len),
++		 le32_to_cpu(mts->rx_ring[0].buf_lo),
++		 le32_to_cpu(mts->rx_ring[1].ctl_len),
++		 le32_to_cpu(mts->rx_ring[1].buf_lo));
++
+ 	dev_info(&mts->pdev->dev,
+ 		 "v93: ndo_open %s tx_ring=%pad rx_ring=%pad\n",
+ 		 ndev->name, &mts->tx_ring_dma, &mts->rx_ring_dma);
+@@ -1408,6 +1422,10 @@
+ 	u32 ctl_len;
+ 	unsigned long flags;
+ 
++	dev_info_ratelimited(&mts->pdev->dev,
++			     "v97 xmit: len=%u tx_prod=%u tx_cons=%u\n",
++			     skb->len, mts->tx_prod, mts->tx_cons);
++
+ 	if (unlikely(skb_put_padto(skb, ETH_ZLEN)))
+ 		return NETDEV_TX_OK;
+ 
+@@ -1564,11 +1582,17 @@
+ static int mts_poll(struct napi_struct *napi, int budget)
+ {
+ 	struct mts *mts = container_of(napi, struct mts, napi);
+-	int rx_done;
++	int rx_done, tx_done;
++	u32 first_ctl;
+ 
+-	mts_tx_reap(mts, budget);
++	tx_done = mts_tx_reap(mts, budget);
+ 	rx_done = mts_rx_drain(mts, budget);
+ 
++	first_ctl = le32_to_cpu(READ_ONCE(mts->rx_ring[mts->rx_head & (MTS_NUM_RX_DESC - 1)].ctl_len));
++	dev_info_ratelimited(&mts->pdev->dev,
++			     "v97 poll: tx_done=%d rx_done=%d rx_head=%u rx_ring[head].ctl=0x%08x\n",
++			     tx_done, rx_done, mts->rx_head, first_ctl);
++
+ 	if (rx_done < budget)
+ 		napi_complete_done(napi, rx_done);
+ 
+@@ -1719,10 +1743,15 @@
+ 	 * Ghidra dig of mts_init_rings_kick: TX ring (lo+hi) at BAR+0x3c/0x44,
+ 	 * RX ring (lo+hi) at BAR+0x40/0x48.
+ 	 */
++	/* v97 hermes correction: both paired registers get the full 32-bit
++	 * DMA address (not lo/hi split).  Orbis mts_init_rings_kick writes
++	 * the SAME tx_ring_dma to both BAR+0x3c and BAR+0x44, same for RX
++	 * at BAR+0x40 and BAR+0x48.  We use 32-bit DMA mask so upper_32_bits
++	 * was always 0 here — wrong. */
+ 	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_LO);
+-	writel(upper_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
++	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
+ 	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_LO);
+-	writel(upper_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
++	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
+ 
+ 	/*
+ 	 * v84 critical: start the RX and TX engines.  Without the RX engine

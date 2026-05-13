@@ -1,0 +1,73 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v98 — TX descriptor diagnostics
+
+v97 boot: RX fully working (NAPI delivers, 12+ packets), but TX DEAD.
+xmit fires (tx_prod 21+), descriptors written, kick BAR+0x34 |= 4
+issued, but BAR+0x03c never advances, no TX_DONE IRQ (bit 7), 0 bytes
+transmitted.
+
+Live BAR-poke session (no reboot) exhausted external state changes:
+- 0x044 paired-reg write: no effect on TX behavior
+- 0x09c bit 6 toggle: destructive (resets RX cursor, breaks RX too)
+- MAC_ADDR0 program: no effect
+- 0x034 bit probe: only bits 0+2 R/W (bit 0 enable + bit 2 kick latch)
+- 0x038 bit probe: write 0x1 reads back 0x8 (bit 0 write → bit 3 status)
+- 0x044 = 1 (TX_PROD trial): no effect
+
+v98 adds rate-limited diagnostics after xmit and in tx_reap:
+- After each xmit + kick: log descriptor[entry] bytes (ctl/buf/a0/a1)
+  and BAR+0x34/0x3c/0x44 readbacks — proves what HW sees in the ring.
+- In tx_reap: every 100 calls, log tx_ring[0] state — see if HW ever
+  sets OWN=1 (= TX completion) on the first submitted descriptor.
+
+Next boot's UART log will tell us:
+- Whether descriptors are correctly formatted in DMA memory.
+- Whether HW ever advances tx_ring[0].ctl_len bit 31 (= TX done).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1476,6 +1476,19 @@
+ 	writel(readl(mts->bar + MTS_TX_CTRL) | MTS_KICK_PKT,
+ 	       mts->bar + MTS_TX_CTRL);
+ 
++	/* v98: rate-limited TX descriptor dump after submit + kick.
++	 * Proves what bytes HW will see when it scans the ring. */
++	dev_info_ratelimited(&mts->pdev->dev,
++		"v98 xmit[%u] desc: ctl=0x%08x buf=0x%08x a0=0x%08x a1=0x%08x | tx_ctrl=0x%08x base=0x%08x pair=0x%08x\n",
++		entry,
++		le32_to_cpu(mts->tx_ring[entry].ctl_len),
++		le32_to_cpu(mts->tx_ring[entry].buf_lo),
++		le32_to_cpu(mts->tx_ring[entry].aux0),
++		le32_to_cpu(mts->tx_ring[entry].aux1),
++		readl(mts->bar + MTS_TX_CTRL),
++		readl(mts->bar + MTS_TX_DESC_LO),
++		readl(mts->bar + MTS_TX_DESC_HI));
++
+ 	spin_unlock_irqrestore(&mts->tx_lock, flags);
+ 	return NETDEV_TX_OK;
+ }
+@@ -1486,8 +1499,20 @@
+ {
+ 	int done = 0;
+ 	unsigned long flags;
++	static u32 reap_call_count;
+ 
+ 	spin_lock_irqsave(&mts->tx_lock, flags);
++
++	/* v98: log first descriptor state every 100 reap calls — see if HW
++	 * ever sets OWN=1 on entry 0 (= TX completion). */
++	if ((reap_call_count++ % 100) == 0 && mts->tx_prod != mts->tx_cons) {
++		u32 ctl0 = le32_to_cpu(READ_ONCE(mts->tx_ring[0].ctl_len));
++		u32 a0_0 = le32_to_cpu(READ_ONCE(mts->tx_ring[0].aux0));
++		dev_info(&mts->pdev->dev,
++			"v98 reap probe: tx_prod=%u tx_cons=%u rx[0] ctl=0x%08x a0=0x%08x\n",
++			mts->tx_prod, mts->tx_cons, ctl0, a0_0);
++	}
++
+ 	while (mts->tx_cons != mts->tx_prod && done < budget) {
+ 		unsigned int entry = mts->tx_cons & (MTS_NUM_TX_DESC - 1);
+ 		u32 ctl_len = le32_to_cpu(READ_ONCE(mts->tx_ring[entry].ctl_len));

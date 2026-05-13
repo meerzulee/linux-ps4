@@ -612,6 +612,61 @@
 # matching Phase 2 cable swap finding "PHY can RX, can't TX".  v92
 # reads reg 0x144, logs POR, conditionally clears bit 5 only if set.
 0750-network-ps4-mts/0011-ps4-mts-v92-txen-dig-clear.patch
+# v93 (2026-05-13): netdev wrapper — alloc_etherdev + register_netdev +
+# ndo_open/stop/start_xmit/get_stats64 + NAPI poll for RX.  Descriptor
+# layout, OWN-bit semantics, kick registers, and IRQ bits all verified
+# via hermes Ghidra dig of Orbis 12.02 mts_init_rings_kick + tx_complete
+# + rx_unwrap_one + rx_process + intr (see hermes+v93_descriptor_format
+# .md).  Key gotcha caught before staging: OWN bit is INVERTED vs
+# typical descriptor designs — driver clears bit31 to hand to HW, HW
+# sets bit31 on completion.
+0750-network-ps4-mts/0012-ps4-mts-v93-netdev.patch
+# v94 (2026-05-13): PHY-derived netif_carrier workaround.  v93 boot proved
+# the MAC's BAR+0x04 bit 0 doesn't always latch even with healthy PHY-
+# level link (host RTL8153 sees 1Gbps link, PS4 PHY AN done + receivers
+# OK + partner ACK).  Without carrier asserted, Linux drops every TX
+# packet at the qdisc layer.  Patch the existing phy_ctrl kthread to call
+# netif_carrier_on when BMSR bit 5 (AN done) AND reg 5 bit 14 (LP ACK)
+# are both set, bypassing the broken MAC link-detect.
+0750-network-ps4-mts/0013-ps4-mts-v94-phy-carrier.patch
+# v95 (2026-05-13): fix v94 carrier race with ndo_open.  v94 boot
+# proved netif_carrier_on fires correctly from kthread, but ndo_open
+# (later) blindly netif_carrier_off-s based on MAC bit 0 — overwriting
+# the kthread's setting.  Kthread's internal cache then prevents re-
+# firing.  v95: kthread compares against netif_carrier_ok(ndev) so it
+# detects/reverts any external clear; ndo_open drops the unconditional
+# carrier_off else branch.
+0750-network-ps4-mts/0014-ps4-mts-v95-carrier-race-fix.patch
+# v96 (2026-05-13): engine reset in ndo_open.  v95 boot proved carrier
+# comes up correctly via PHY-derived v94 fix, but xmit/RX paths are dead
+# — RX_AVAIL IRQ fires when host pings (hist[1]=0x00040040 increments)
+# but NAPI never sees OWN=1 on descriptors.  Theory: probe started
+# engines while ring memory was still zero-filled; HW cached
+# "buf_lo=0 everywhere" and never refetched after ndo_open populated
+# real DMA addresses.  v96 stops engines in ndo_open, re-inits rings,
+# re-writes ring base addresses, then restarts engines.
+0750-network-ps4-mts/0015-ps4-mts-v96-engine-reset-on-open.patch
+# v97 (2026-05-13): live BAR-poke session revealed two issues.  Fix:
+# (a) probe + ndo_open now write FULL rx_ring_dma to both paired BAR
+#     registers (0x3c+0x44 for TX, 0x40+0x48 for RX) — we'd been
+#     writing upper_32_bits=0 to the higher reg, leaving HW with no
+#     wrap/end pointer.  Per hermes Ghidra Orbis writes same dma to
+#     both.
+# (b) Added per-poll + per-xmit rate-limited diagnostics + descriptor
+#     dump after rings_init so the boot log tells us definitively
+#     whether NAPI runs and what it observes.
+# (c) Removed deepseek's BAR+0x09c bit 6 toggle: live test proved it
+#     destructive (zeroed BAR+0x040) and hermes confirmed that's a
+#     TX-error recovery path, not RX.
+0750-network-ps4-mts/0016-ps4-mts-v97-paired-regs-diag.patch
+# v98 (2026-05-13): TX descriptor diagnostics.  v97 boot proved RX fully
+# works (NAPI delivers packets) but TX dead — xmit fires, descriptors
+# get written, kick issued, but HW never reads.  Live BAR poke session
+# exhausted external state probes.  v98 adds dev_info dumps of descriptor
+# bytes after each xmit and periodic tx_ring[0] readback in tx_reap to
+# answer: are the descriptors correctly formatted in DMA memory? Does
+# HW ever flip OWN=1 (= TX complete)?
+0750-network-ps4-mts/0017-ps4-mts-v98-tx-diag.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

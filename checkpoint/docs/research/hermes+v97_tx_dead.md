@@ -1,0 +1,7 @@
+# Hermes (gpt-5.5) — v97 TX-dead urgent audit — 2026-05-13
+
+Orbis TX fetch path is very small.  After ring init, the only TX-specific BAR writes I see are: program TX ring base to BOTH `BAR+0x44` and `BAR+0x3c` from `softc+0x40`, then `BAR+0x34 |= 1` in `mts_init_rings_kick` (`mts_init_rings_kick.c:59-72,87-99`).  On each packet, `FUN_c85f1890` calls enqueue `FUN_c85f1aa0`, then doorbells with `BAR+0x34 |= 4` (`mts_tx_wrapper_FUN_c85f1890.c:29-44`).  TX complete IRQ is sign bit / bit31 in Orbis ISR, not bit7: `if ((char)status < 0) mts_tx_complete()` (`mts_intr.c:244-260`).  I see no separate TX doorbell register and no Orbis use of `BAR+0x09c bit1`; `0x09c bit6` is only the error recovery toggle for status `0x00500000` (`mts_intr.c:64-90`) and is followed by TX ring reinit + `BAR+0x34 |= 1`, not normal fetch.
+
+So if `0x34=0x5` sticks, the doorbell was issued.  Next suspect is descriptor validity.  Orbis single-frag TX first ctl becomes: start from `0x80000000`, set length, set `0x20000000` on first descriptor, set `0x10000000` on last descriptor, maybe WRAP, then clear OWN last (`FUN_c85f1aa0.c:89-166`).  `aux0` must be 0 for normal non-VLAN (`lines 105-110`), `aux1` 0 unless TSO (`lines 114-122`).
+
+Recommended immediate check: log first TX descriptor after xmit.  Expected ctl for 42-byte ARP is roughly `0x3000002a` (OWN clear, SOF+EOF set), buf_lo valid 32-bit DMA, aux0=0, aux1=0.  If ctl is `0x0/0x800.../missing 0x10000000`, HW will ignore it despite the 0x34 kick.
