@@ -1,0 +1,172 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-14
+Subject: [PATCH] ps4_mts: v117 — lazy BAR+0x204 enable (defer master IRQ until post-rings)
+
+v115 cleared BAR+0x54 bit 12 but bit-18 IRQ storm continued.  Live
+userspace experiments (mmap /sys/bus/pci/devices/.../resource0)
+traced the real root cause:
+
+  - BAR+0x204 master IRQ enable directly causes bit-18 firing.
+    Writing 0x10001388 immediately asserts bit 18 in BAR+0x50,
+    level-latched until 0x204 goes back to 0.
+
+  - Our v110/v111/v112 wrote BAR+0x204=0x10001388 early in
+    mts_mac_init.  This transitioned the chip to a "locked" state
+    where only bit 28 of BAR+0x204 (master enable) is subsequently
+    writable.  Lower bits (12, 9, 8, 7, 3) silently reject.
+
+  - Orbis's mts_intr decompile shows the master block is enabled
+    LAZILY (only when softc+0x309c==0 triggers first-call setup),
+    AFTER rings + engines are running.  Orbis's mts_mac_init never
+    writes BAR+0x204 directly.  Our eager enable was the lock
+    trigger.
+
+v117 mirrors Orbis's lazy enable:
+
+  mts_mac_init():
+    - writes BAR+0x54 (per-IRQ mask) only, with bit 12 pre-cleared
+    - does NOT write BAR+0x204 (master block stays off)
+    - does NOT arm the bit-18 handshake yet
+
+  mts_open() (after rings + BAR+0x1c8 marker + BAR+0x54 bit12 clear):
+    - arm bit-18 handshake (saved_irq_mask, irq_block_armed=true)
+    - write BAR+0x204 = 0x10001388 — full value sticks in fresh state
+
+  mts_intr() bit-18 handler:
+    - writel(0, BAR+0x204) clears master
+    - writel(saved_mask, BAR+0x54) restores
+    - does NOT re-arm BAR+0x204 inline (re-arming after the chip's
+      lockout transition only sets bit 28 → bit-18 keeps storming)
+
+Empirical hotswap result (on degraded session, 2026-05-14):
+  v117: post-ring IRQ enable BAR+0x204=0x10001388 BAR+0x54=0x007beffe
+                                ^^ FULL value stuck (all bits!)
+  v117: bit18 handshake cleared IRQ master — BAR+0x204=0x00000000
+                                ^^ fired once, no storm
+  total_irq = 1 after 5min (vs ~5kHz in v110-v115)
+
+Bit-18 storm dead.  TX still dead because BAR+0x04 bit 0 won't latch
+— but that's a separate PHY-MAC silicon issue, not what v117 fixes.
+
+Trade-off: after the one-shot bit-18 handshake, BAR+0x204 stays at 0,
+so no further MSIs flow.  RX_AVAIL events accumulate in BAR+0x50 but
+don't trigger ISR.  TX/RX completion path becomes blocked.  Next
+iteration (v118+) needs a periodic kthread (Orbis-style) or polled
+NAPI to drive completions.
+
+Co-authored-by: Hermes (Anthropic Codex gpt-5.5) via Ghidra MCP +
+empirical userspace MMIO experiments 2026-05-14.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 53 ++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 23 deletions(-)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -543,26 +543,26 @@
+ 	}
+ 
+ 	/*
+-	 * Bring up the Baikal IRQ block.  Orbis's mts_intr does this lazily on
+-	 * first interrupt; we do it eagerly at probe.  Both writes are needed
+-	 * - BAR+0x204 enables the master IRQ block, BAR+0x54 is the per-IRQ
+-	 * mask (= 0x7bfffe == all bits except 0 and 0x800000).
+-	 */
+-	writel(MTS_IRQ_ENABLE_FULL_VAL, bar + MTS_IRQ_ENABLE_FULL);
+-	writel(MTS_IRQ_MASK_FULL_VAL,   bar + MTS_IRQ_MASK);
+-	(void)readl(bar + MTS_IRQ_MASK);
+-
+-	/*
+-	 * v111: Arm the bit-18 "exit init mode" handshake.  The ISR uses
+-	 * saved_irq_mask to restore BAR+0x54 after the handshake — matches
+-	 * Orbis's `BAR+0x54 = softc+0x3098` (where softc+0x3098 stores the
+-	 * mask).  irq_block_armed gates the handshake to fire once per init.
++	 * v117: Orbis does NOT enable BAR+0x204 from mts_mac_init.  It only
++	 * writes BAR+0x200=0, ACKs BAR+0x50, performs MAC/PHY setup, then
++	 * mts_init_rings_kick writes BAR+0x54 and clears softc+0x309c; the
++	 * ISR first-call path enables BAR+0x204 only after rings/engines.
++	 * Keep the master block OFF here to avoid prematurely entering the
++	 * state where BAR+0x204 lower bits stop accepting writes (lockout
++	 * empirically confirmed via userspace MMIO 2026-05-14).
++	 *
++	 * Write only the per-IRQ mask (BAR+0x54) here — bit 12 already
++	 * carries through to v115's clear in mts_open after rings.  Arm the
++	 * bit-18 handshake later, in mts_open, after BAR+0x204 has been
++	 * enabled with rings ready.
+ 	 */
+-	mts->saved_irq_mask = MTS_IRQ_MASK_FULL_VAL;
+-	mts->irq_block_armed = true;
++	mts->saved_irq_mask = MTS_IRQ_MASK_FULL_VAL & ~MTS_IRQ_CTRL_DONE_BIT;
++	mts->irq_block_armed = false;
++	writel(0, bar + MTS_IRQ_ENABLE_FULL);
++	writel(mts->saved_irq_mask, bar + MTS_IRQ_MASK);
+ 	dev_info(&mts->pdev->dev,
+-		 "v111: armed bit-18 handshake (saved_mask=0x%08x BAR+0x204=0x%08x)\n",
+-		 mts->saved_irq_mask, readl(bar + MTS_IRQ_ENABLE_FULL));
++		 "v117: mts_mac_init leaves IRQ master off (BAR+0x204=0x%08x BAR+0x54=0x%08x)\n",
++		 readl(bar + MTS_IRQ_ENABLE_FULL), readl(bar + MTS_IRQ_MASK));
+ 
+ 	/*
+ 	 * v86: enable MT7531 PHY core PLL via C45 MMD 0x1f reg 0x403.  Our
+@@ -966,23 +966,21 @@
+ 	    (status & ~mts->saved_irq_mask) == MTS_IRQ_BIT18) {
+ 		mts->irq_block_armed = false;
+ 		writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
++		writel(mts->saved_irq_mask, mts->bar + MTS_IRQ_MASK);
++		(void)readl(mts->bar + MTS_IRQ_MASK);
+ 		/*
+-		 * v115: emulate the gbe:ctrl completion edge found in Orbis
+-		 * FUN_ffffffffc85f0190/FUN_ffffffffc85f1e80.  After ctrl does
+-		 * mts_init_rings_kick/link/RMU work it clears BAR+0x54 bit 12
+-		 * (mask &= ~0x1000).  v112 re-armed BAR+0x204 with bit12 still
+-		 * present and immediately re-entered the bit-18 storm.  Clear
+-		 * bit12 before re-arm; if this is the missing init-done ack,
+-		 * bit18 should stop reasserting and useful RX/TX IRQs can surface.
++		 * v117: do NOT re-arm BAR+0x204 inline.  v112 did, which
++		 * immediately retriggered bit-18 storm because re-arming
++		 * after the chip has transitioned to "lockout" state only
++		 * sets bit 28 and bit-18 keeps level-asserting.  Orbis's
++		 * pattern re-enables BAR+0x204 in the next ISR's first-call
++		 * setup; in our case, leaving 0x204=0 after the handshake
++		 * stops the storm at the cost of no further MSIs from this
++		 * ISR call.  TX/RX will need an alternate completion path
++		 * (kthread heartbeat or polled NAPI) — separate v118+ work.
+ 		 */
+-		writel(mts->saved_irq_mask & ~MTS_IRQ_CTRL_DONE_BIT,
+-		       mts->bar + MTS_IRQ_MASK);
+-		(void)readl(mts->bar + MTS_IRQ_MASK);
+-		udelay(10);
+-		writel(MTS_IRQ_ENABLE_FULL_VAL, mts->bar + MTS_IRQ_ENABLE_FULL);
+-		(void)readl(mts->bar + MTS_IRQ_ENABLE_FULL);
+ 		dev_info(&mts->pdev->dev,
+-			 "v115: bit18 + gbe:ctrl-done handshake — BAR+0x204=0x%08x BAR+0x54=0x%08x\n",
++			 "v117: bit18 handshake cleared IRQ master — BAR+0x204=0x%08x BAR+0x54=0x%08x\n",
+ 			 readl(mts->bar + MTS_IRQ_ENABLE_FULL),
+ 			 readl(mts->bar + MTS_IRQ_MASK));
+ 		return IRQ_HANDLED;
+@@ -1536,6 +1534,24 @@
+ 		dev_info(&mts->pdev->dev,
+ 			 "v115: gbe:ctrl-done BAR+0x54 0x%08x -> 0x%08x (clear bit12)\n",
+ 			 mask_before, readl(mts->bar + MTS_IRQ_MASK));
++
++		/*
++		 * v117: Orbis enables the BAR+0x204 master IRQ block lazily
++		 * from mts_intr after mts_init_rings_kick has set BAR+0x54 and
++		 * reset softc+0x309c.  In Linux we have no pre-existing IRQ
++		 * entry point with the master disabled, so emulate that
++		 * first-call enable here — AFTER engines/rings/bit-12 clear
++		 * are in place.  This is the "fresh-init" state where the
++		 * chip accepts the full 0x10001388 (all bits stick).  The
++		 * bit-18 handler then clears master cleanly without storm.
++		 */
++		mts->saved_irq_mask = mask_after;
++		mts->irq_block_armed = true;
++		writel(MTS_IRQ_ENABLE_FULL_VAL, mts->bar + MTS_IRQ_ENABLE_FULL);
++		dev_info(&mts->pdev->dev,
++			 "v117: post-ring IRQ enable BAR+0x204=0x%08x BAR+0x54=0x%08x\n",
++			 readl(mts->bar + MTS_IRQ_ENABLE_FULL),
++			 readl(mts->bar + MTS_IRQ_MASK));
+ 	}
+ 
+ 	/* 4. Wait for MAC bit 0 latch.  v91 took ~5s from engine start

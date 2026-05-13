@@ -739,6 +739,18 @@
 # Without this, sky2 (built-in) was winning the PCI bind race when
 # ps4_mts was a module, leaving ps4_mts loaded but unbound.
 0750-network-ps4-mts/0026-ps4-mts-v114-sky2-ifndef-vs-is-enabled.patch
+# v115: hotswap experiment — emulate Orbis gbe:ctrl completion by
+# clearing BAR+0x54 bit12 (0x1000) after the rings-ready marker and
+# before re-arming BAR+0x204 in the bit18 handshake.  Expected signal:
+# BAR+0x54 becomes 0x007beffe and bit18 stops reasserting.
+0750-network-ps4-mts/0027-ps4-mts-v115-gbe-ctrl-done-bit12.patch
+# v117: lazy BAR+0x204 enable — defer master IRQ until after rings/engines.
+# Hermes-discovered theory, hotswap-confirmed: eagerly enabling BAR+0x204
+# in mts_mac_init locks lower bits (12,9,8,7,3).  Moving the enable into
+# mts_open after BAR+0x1c8 + bit-12 clear lets the full 0x10001388 stick.
+# Bit-18 handler clears master cleanly, no storm.  Trade-off: no MSIs
+# after handshake fires — v118+ needs polled completion.
+0750-network-ps4-mts/0029-ps4-mts-v117-lazy-bar204-enable.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
