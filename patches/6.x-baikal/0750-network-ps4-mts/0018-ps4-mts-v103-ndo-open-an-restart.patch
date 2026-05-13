@@ -1,0 +1,105 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v103 — AN restart from ndo_open to provoke MAC link latch
+
+After 100+ live BAR-poke tests + 8 agent rounds, three independent
+agents (hermes/kimi/deepseek) converged on the same diagnosis:
+
+The MAC's BAR+0x04 bit 0 (link-up status) is a ONE-SHOT, edge-triggered
+latch fired on internal PCS/RGMII synchronization to a "link up" state.
+The bit 9 of BAR+0x06c ("TX DMA ready") is read-only HW status, set
+when MAC bit 0 latches.  Without bit 9, TX engine refuses to fetch
+descriptors despite correct format, valid doorbell.
+
+In v91 boot (no netdev, no RX prefill), kthread's first AN restart
+fired at t~=5s and the PHY/MAC link transition that followed was the
+latch event → bit 0 set → bit 9 gated open → TX would have worked.
+
+In v97+ boots, the same kthread AN restart fires, but ndo_open's engine
+reset + RX-ring pre-fill happen *after* the latch window already
+expired.  MAC decided "no link" permanently.  RX continues to work
+because RX path doesn't require MAC bit 0 (just buf_lo + OWN handling).
+TX requires bit 9 of 0x06c which requires MAC bit 0 which requires a
+fresh link-up edge that MAC can no longer see.
+
+v103 fix: from ndo_open (post engine reset + ring re-init + carrier
+checks), replay Orbis's gbe:phy_ctrl event-1 recovery sequence to
+trigger a fresh PHY auto-negotiation cycle:
+  - reg9 |= 0x0200 (1000BT advertise re-asserted)
+  - reg4 |= 0x0180 (ANAR pause + 100full re-asserted)
+  - BMCR |= 0x1200 (AN enable + restart)
+The new base page goes out, partner ACKs, MAC sees a fresh link
+transition, fires bit 2 LINK_CHANGE IRQ, latches bit 0 of 0x04, gates
+open bit 9 of 0x06c.  TX engine then starts fetching descriptors that
+have been stranded for 47+ xmits.
+
+Verified live (no reboot): bit 9 of 0x06c is HW-status only,
+untouchable by direct writes; only path to set it is via MAC's
+natural link-up edge.
+
+Sources:
+  - checkpoint/docs/research/hermes-v102-trigger-link-change-irq.md
+  - checkpoint/docs/research/kimi-v102-link-latch-timing.md
+  - checkpoint/docs/research/deepseek-v102-bit3-irq-meaning.md
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1384,6 +1384,55 @@
+ 	 * unconditionally clearing it here races with the kthread cache. */
+ 	if (readl(mts->bar + MTS_LINK_STATUS) & 0x1)
+ 		netif_carrier_on(ndev);
++
++	/* v103: trigger fresh PHY auto-negotiation from ndo_open AFTER
++	 * engines are running and RX descriptors are fully primed.
++	 *
++	 * Rationale (hermes/kimi/deepseek convergent finding, 2026-05-13):
++	 * MAC's BAR+0x04 bit 0 link-up latch is a ONE-SHOT, edge-triggered
++	 * on internal PCS/RGMII link tuple transition (0 → up).  In v91
++	 * boot (no netdev), kthread's first AN restart fired AT t~=5s, MAC
++	 * saw the resulting PHY link transition, and bit 0 latched
++	 * (linkreg=0xb19).  In v97+ boots, kthread fires same AN restart
++	 * BUT the latch window is then disturbed by ndo_open's engine
++	 * reset and RX ring pre-fill — by the time ndo_open completes
++	 * with real descriptors, the one-shot window has expired and MAC
++	 * has decided "no link" permanently.  No subsequent PHY/MAC event
++	 * gets bit 0 to latch.
++	 *
++	 * Without bit 0 latched, BAR+0x06c bit 9 (HW-driven "TX DMA
++	 * ready" status) stays 0 — the TX engine refuses to fetch
++	 * descriptors despite correct format, valid kick.  Result: TX
++	 * dropped 100% with descriptors stranded in DMA memory.
++	 *
++	 * Replicate the Orbis gbe:phy_ctrl event-1 recovery sequence:
++	 *  - reg9 (1000BT_CTRL) |= 0x0200 (re-advertise 1000T half)
++	 *  - reg4 (ANAR) |= 0x0180 (assert pause + 100full)
++	 *  - BMCR (reg0) |= 0x1200 (AN enable + restart)
++	 * which generates a fresh PHY base page → partner ACKs → MAC's
++	 * internal link state machine sees a new transition → bit 2
++	 * LINK_CHANGE IRQ fires → bit 0 of 0x04 latches → bit 9 of 0x06c
++	 * gates open → TX engine fetches descriptors.
++	 *
++	 * Verified live (2026-05-13): bit 9 of 0x06c is HW-status only,
++	 * untouchable by direct writes.  Only path to set it is via the
++	 * MAC's natural link-up event.
++	 */
++	{
++		u16 v16;
++
++		if (mts_smi_c22_read(mts, 0x09, &v16) == 0)
++			mts_smi_c22_write(mts, 0x09, v16 | 0x0200);
++		if (mts_smi_c22_read(mts, 0x04, &v16) == 0)
++			mts_smi_c22_write(mts, 0x04, v16 | 0x0180);
++		if (mts_smi_c22_read(mts, 0x00, &v16) == 0) {
++			mts_smi_c22_write(mts, 0x00, v16 | 0x1200);
++			dev_info(&mts->pdev->dev,
++				 "v103: ndo_open AN restart BMCR 0x%04x -> 0x%04x (provoke fresh link-change for MAC bit 0 latch)\n",
++				 v16, v16 | 0x1200);
++		}
++	}
++
+ 	return 0;
+ }
+ 

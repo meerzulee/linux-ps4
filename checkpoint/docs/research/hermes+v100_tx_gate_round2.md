@@ -1,0 +1,9 @@
+# Hermes (gpt-5.5) — v100 TX gate round 2 — 2026-05-13
+
+Q1: yes, `mts_init_rings_kick` really early-returns when bit 6 is SET.  The decompile says `if ((*(byte *)(lVar1 + 0x1c8) & 0x40) != 0) return;` (`/tmp/v93-ghidra/mts_init_rings_kick.c:15-18`) and the asm is unambiguous: `TEST byte ptr [R14+0x1c8],0x40; JNZ return` (`mts_init_rings_kick.asm:7-9`).  But your live test only changed 0x1c8 after rings were already programmed; if 0x1c8 is a sequencing latch, post-hoc setting it cannot force a TX fetch.  Still: your negative result kills it as a simple runtime TX gate.
+
+Q2: I do not find an Orbis open-time TX-enable write in 0x05c/0x064.  In the available decomp, `mts_init_rings_kick` writes TX ring base to `BAR+0x44` and `BAR+0x3c`, RX base to `0x48/0x40`, starts `0x34|=1` and `0x38|=1`, then restores IRQ mask (`0x54`) (`mts_init_rings_kick.c:59-120`).  `0x05c/0x064/0x070/0x080/0x0b0/0x0b4` are not touched there.  MAC_CTRL3 (`BAR+0x10`) is only from `mts_mac_init`; if RX works, MAC core init is at least mostly sane, but TX-only gating could still be in a bit we mislabeled.
+
+Q3: the per-packet Orbis TX path I can actually prove is `FUN_ffffffffc85f1890` -> `FUN_ffffffffc85f1aa0`.  `FUN_c85f1aa0` builds descriptors and performs ZERO BAR writes (`mts_tx_enqueue_FUN_c85f1aa0.c:89-166`).  After enqueue succeeds, `FUN_c85f1890` performs exactly one BAR write: read `BAR+0x34`, OR `0x4`, write it back (`mts_tx_wrapper_FUN_c85f1890.c:29-44`).  No 0x05c, 0x064, 0x09c, or hidden doorbell in that function.
+
+Conclusion: descriptor and doorbell now match Orbis.  Next likely gap is not a per-packet BAR write but parent/MSK-side TX DMA permission/routing, or a misidentified TX base pair.  Re-check whether TX base should be paired `0x44/0x3c` with high/low ordering and whether 0x03c is base-only rather than a hardware current pointer.
