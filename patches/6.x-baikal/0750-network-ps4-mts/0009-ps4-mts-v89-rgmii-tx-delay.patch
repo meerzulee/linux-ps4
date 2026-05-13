@@ -1,0 +1,87 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v89 - add MT7531 RGMII TX delay (mainline values)
+
+v88 hardware test confirmed deepseek's SlvDPSready bombshell — the PHY-
+to-partner handshake is now completely healthy (RF=0, MS_FAULT=0,
+both receivers OK).  But linkreg bit 0 still doesn't latch.
+
+Remaining hypothesis: RGMII timing between Baikal MAC and MT7531 PHY
+is marginal at POR defaults.  Without proper TX delay (MMD 0x1e regs
+0x13/0x14), the MAC's RX from PHY sees corrupted RGMII data, the
+PHY's MAC-side electrical interface looks broken, and the PHY never
+asserts a stable LINK signal pin -> MAC's link detector stays at 0.
+
+Mainline mt7531_phy_config_init (drivers/net/phy/mediatek/mtk-ge.c:87-94)
+writes both TX delay registers with PAIR_B=0x4 and PAIR_D=0x4:
+
+  MMD 0x1e reg 0x13 (MTK_PHY_GBE_MODE_TX_DELAY_SEL):
+    bits 10:8 = MTK_TX_DELAY_PAIR_B_MASK = 0x4
+    bits 2:0  = MTK_TX_DELAY_PAIR_D_MASK = 0x4
+    => write 0x0404
+
+  MMD 0x1e reg 0x14 (MTK_PHY_TEST_MODE_TX_DELAY_SEL): same value 0x0404
+
+v89 adds these as v89(g) after v88(f) and before the final BMCR AN
+restart, so AN starts training with proper RGMII timing in place.
+
+Pass criteria for v89 (the hopeful one):
+
+  - dmesg shows "v89(g): TX_DELAY r0x13: 0x???? -> 0x0404"
+  - dmesg shows "v89(g): TX_DELAY r0x14: 0x???? -> 0x0404"
+  - WITHIN A FEW SECONDS: linkreg transitions to 0x00000b19 or similar
+    with bit 0 = 1
+  - BMSR latch bit 2 = 1 (link up at PHY)
+  - Network connectivity (ping, ssh — though might be on different IP)
+
+If v89 STILL doesn't bring link up: RGMII timing wasn't the issue
+either.  Remaining suspect would be MAC's PCS sync requiring actual
+data traffic (chicken-and-egg) or a hidden MAC-side PCS register we
+haven't found.
+
+Verified against mainline source per CLAUDE.md sanity-check rule:
+  - mtk-ge.c:22 #define MTK_PHY_GBE_MODE_TX_DELAY_SEL = 0x13 ✓
+  - mtk-ge.c:23 #define MTK_PHY_TEST_MODE_TX_DELAY_SEL = 0x14 ✓
+  - mtk-ge.c:24 MTK_TX_DELAY_PAIR_B_MASK = GENMASK(10, 8) ✓
+  - mtk-ge.c:25 MTK_TX_DELAY_PAIR_D_MASK = GENMASK(2, 0) ✓
+  - mtk-ge.c:87-94 mt7531_phy_config_init writes 0x4 to both pairs ✓
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -661,6 +661,37 @@
+ 		}
+ 
+ 		/*
++		 * v89 (g): RGMII TX delay - mainline mt7531_phy_config_init sets
++		 * these.  Originally deferred in v88 (deepseek said not link-critical
++		 * for user port), but v88 hardware test showed PHY-level handshake
++		 * succeeds yet MAC's BAR+0x04 bit 0 won't latch.  Suspicion: RGMII
++		 * timing between Baikal MAC and MT7531 PHY is marginal at POR
++		 * defaults, causing PHY's MAC-side RX to see corrupted data and
++		 * never assert a stable LINK signal.
++		 *
++		 * MMD 0x1e reg 0x13 (MTK_PHY_GBE_MODE_TX_DELAY_SEL):
++		 *   bits 10:8 = MTK_TX_DELAY_PAIR_B_MASK = 0x4
++		 *   bits 2:0  = MTK_TX_DELAY_PAIR_D_MASK = 0x4
++		 *   => 0x0404
++		 *
++		 * MMD 0x1e reg 0x14 (MTK_PHY_TEST_MODE_TX_DELAY_SEL): same value.
++		 */
++		if (mts_smi_c45_read(mts, 0x1e, 0x13, &v16) == 0) {
++			u16 nw = (v16 & ~((0x7u << 8) | 0x7u)) | (0x4 << 8) | 0x4;
++			mts_smi_c45_write(mts, 0x1e, 0x13, nw);
++			dev_info(&mts->pdev->dev,
++				 "v89(g): TX_DELAY r0x13: 0x%04x -> 0x%04x (PAIR_B=4 PAIR_D=4)\n",
++				 v16, nw);
++		}
++		if (mts_smi_c45_read(mts, 0x1e, 0x14, &v16) == 0) {
++			u16 nw = (v16 & ~((0x7u << 8) | 0x7u)) | (0x4 << 8) | 0x4;
++			mts_smi_c45_write(mts, 0x1e, 0x14, nw);
++			dev_info(&mts->pdev->dev,
++				 "v89(g): TX_DELAY r0x14: 0x%04x -> 0x%04x (PAIR_B=4 PAIR_D=4)\n",
++				 v16, nw);
++		}
++
++		/*
+ 		 * FINAL AN restart per Orbis (BMCR |= 0x1200).  This is the LAST
+ 		 * thing we do so AN starts training with all corrections applied.
+ 		 */
