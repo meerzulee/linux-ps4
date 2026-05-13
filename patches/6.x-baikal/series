@@ -678,6 +678,23 @@
 # generating a fresh PHY base page so MAC sees new link transition →
 # bit 0 latches → bit 9 gates open → TX descriptors get fetched.
 0750-network-ps4-mts/0018-ps4-mts-v103-ndo-open-an-restart.patch
+# v104 (2026-05-13): empty-ring engine start (kimi Option C).  Four
+# agents converged: MAC bit 0 latch is one-shot, fires during RX-engine
+# STOPPED→RUNNING transition only if rings appear empty/idle.  v97+
+# pre-filled RX before engine restart, missing the window.  v104:
+# stop engines, ZERO rings, restart engines (latch window opens with
+# empty ring per v91 timing), wait up to 5s for bit 0 latch, THEN
+# populate RX with real SKBs.
+0750-network-ps4-mts/0019-ps4-mts-v104-empty-rings-engine-start.patch
+# v105 (2026-05-13): move MAC/PHY init from probe to ndo_open per Orbis
+# structure.  hermes Ghidra found Orbis calls mts_mac_init TWICE — once
+# from mts_attach (probe) and once from mts_ifup (open).  Each call
+# re-arms the MAC's one-shot link-status latch.  v97+ ran mac_init only
+# at probe — too early, PHY wasn't linked yet during the latch sample.
+# v105: probe just allocates resources + registers ISR/netdev; ndo_open
+# runs parent_prelude + mac_init + phy_init at top, then v104 empty-ring
+# sequence, then RX populate.  Risk LOW per glm: PHY survives MAC reset.
+0750-network-ps4-mts/0020-ps4-mts-v105-init-in-ndo-open.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
