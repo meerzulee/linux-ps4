@@ -73,7 +73,7 @@ case "$cmd" in
         chunk=500
         while [ "$idx" -lt "$msg_len" ]; do
             piece="${msg:$idx:$chunk}"
-            zellij action write-chars "$piece" >/dev/null
+            zellij action write-chars -- "$piece" >/dev/null
             sleep 0.15
             idx=$((idx + chunk))
         done

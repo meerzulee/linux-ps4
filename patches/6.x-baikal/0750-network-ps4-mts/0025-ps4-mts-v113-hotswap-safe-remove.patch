@@ -1,0 +1,109 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-14
+Subject: [PATCH] ps4_mts: v113 — hotswap-safe mts_remove() for module dev workflow
+
+Pairs with the CONFIG_PS4_MTS=y → =m flip in config/6.x-baikal.config.
+Together they enable the module-hotswap dev workflow: per-iteration
+becomes ~30 seconds (rebuild .ko + scp + rmmod/insmod) instead of
+~15 minutes (full reboot + PSFree-Enhanced jailbreak gauntlet).
+
+Four-agent consensus (hermes + kimi + deepseek + glm, 2026-05-14):
+if rmmod doesn't fully quiesce the hardware BEFORE freeing IRQ and
+DMA resources, the Baikal southbridge can wedge into power-cycle
+territory — defeating the whole speedup.  This patch adds the missing
+quiesce steps to mts_remove():
+
+  - wake_up_process(phy_ctrl_thread) before kthread_stop, so the
+    thread can observe kthread_should_stop() and exit interruptible
+    sleep (kimi caught this gap).
+
+  - W1C clear of BAR+0x50 (IRQ_STATUS) AFTER masking IRQs, so no
+    stale pending bit fires on the very first IRQ of the next insmod
+    before our handlers are wired up (hermes).
+
+Order of operations is now:
+
+  1. unregister_netdev    (does netif_stop_queue + napi_disable
+                           internally; kernel calls those on the
+                           netdev's transition path)
+  2. netif_napi_del       (frees NAPI poll state)
+  3. wake + kthread_stop  (one kthread: phy_ctrl_thread)
+  4. timer_delete_sync    (dbg_timer + link_poll — synchronous
+                           wait, no callback can fire after)
+  5. clear engine bit 0   (RX_KICK and TX_KICK — no new DMA work)
+  6. disable IRQ block    (BAR+0x204 = 0)
+  7. clear IRQ mask       (BAR+0x54 = 0)
+  8. W1C status           (BAR+0x50 — clear any pending bit)
+  9. free_irq             (must precede pci_free_irq_vectors)
+ 10. pci_free_irq_vectors
+
+Glm's bonus suggestion (pci_reset_function for MSI vector release
+on Baikal) is NOT added in this patch — kept as a fallback if the
+first rmmod test reveals MSI vectors don't de-assert.  We'll test
+the simpler version first.
+
+Required for testing: CONFIG_PS4_MTS=m + this patch + kernel rebuild
+that produces /lib/modules/$(uname -r)/kernel/drivers/net/ethernet/
+sony/ps4_mts.ko.  Validation test (run ONCE on known-good source
+before relying on hotswap):
+
+  ssh ps4 'sudo ip link set enp0s20f1 down;
+           sudo rmmod ps4_mts;
+           lsmod | grep ps4_mts || echo CLEAN;
+           grep ps4_mts /proc/interrupts || echo NO_STRAY_IRQ;
+           sudo insmod /lib/modules/.../ps4_mts.ko;
+           dmesg | tail -20'
+
+If that round-trip survives without panic / wedge, the workflow is
+unlocked.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 28 +++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -2087,12 +2087,29 @@
+ 	struct net_device *ndev = pci_get_drvdata(pdev);
+ 	struct mts *mts = netdev_priv(ndev);
+
++	/*
++	 * v113: hotswap-safe remove.  Agents (hermes+kimi+deepseek+glm,
++	 * 2026-05-14) flagged that if any DMA engine or kthread fires
++	 * after rmmod has freed module text/rings, the southbridge can
++	 * wedge into power-cycle territory.  Order matters:
++	 *   1) unregister_netdev (which does netif_stop_queue + napi_disable)
++	 *   2) wake + stop kthreads (wake first so they can observe
++	 *      kthread_should_stop() and exit interruptible sleep)
++	 *   3) delete timers (synchronous — won't fire after this)
++	 *   4) stop RX/TX engines (so no new DMA completions)
++	 *   5) disable IRQ block (so no new MSIs)
++	 *   6) W1C any pending IRQ status (so no stale IRQ on next insmod)
++	 *   7) free_irq (must precede pci_free_irq_vectors)
++	 *   8) pci_free_irq_vectors
++	 */
+ 	if (mts->netdev_registered)
+ 		unregister_netdev(ndev);
+ 	netif_napi_del(&mts->napi);
+
+-	if (mts->phy_ctrl_thread)
++	if (mts->phy_ctrl_thread) {
++		wake_up_process(mts->phy_ctrl_thread);
+ 		kthread_stop(mts->phy_ctrl_thread);
++	}
+ 	timer_delete_sync(&mts->dbg_timer);
+ 	timer_delete_sync(&mts->link_poll);
+
+@@ -2104,6 +2121,11 @@
+
+ 	writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
+ 	writel(0, mts->bar + MTS_IRQ_MASK);
++	/* v113: W1C any pending IRQ status — otherwise a stale bit
++	 * could trigger the very first IRQ on the next insmod before
++	 * our handlers are wired up. */
++	writel(readl(mts->bar + MTS_IRQ_STATUS), mts->bar + MTS_IRQ_STATUS);
++	(void)readl(mts->bar + MTS_IRQ_STATUS);
+
+ 	if (mts->irq_registered) {
+ 		free_irq(mts->irq, mts);
