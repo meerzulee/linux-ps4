@@ -596,6 +596,22 @@
 # load-bearing; clearing them trashes the MAC.  v89 remains the best
 # baseline (PHY healthy, RF cleared, MAC bit 0 still not latching).
 # 0750-network-ps4-mts/0010-ps4-mts-v90-msk-init-hw-rgmii-mode.patch
+# v91 (2026-05-13): deepseek-v41 v91 option 1 + MMD1 diagnostic.  After
+# Phase 2 cable swap to host RTL8153 confirmed PS4 PHY TX appears not to
+# transmit (host sees NO-CARRIER), add (a) minimal status unit enable
+# at BAR+0xe80 (RST_SET/CLR/OP_ON) WITHOUT STAT_LIST DMA addresses —
+# this is the safe subset of msk_init_hw that v90b proved was the
+# destructive part, and (b) MMD 1 (PMA/PMD) + MMD 7 (C45 AN) readback
+# to verify PHY isn't in PWRDOWN/LOOPBACK at the analog level.
+0750-network-ps4-mts/0010-ps4-mts-v91-mmd1-readout-status-unit.patch
+# v92 (2026-05-13): smoking-gun candidate found by self-Explore agent
+# against mainline mtk-ge-soc.c:976-978 — mt798x_phy_eee clears bit 5 of
+# MMD 0x1e reg 0x144 (MTK_PHY_RG_TXEN_DIG_MASK) but the MT7531 driver
+# (mtk-ge.c) never does.  If PS4 Baikal's POR or Orbis Realtek-pokes
+# leave bit 5 set, the PHY's digital TX pre-driver is gated, exactly
+# matching Phase 2 cable swap finding "PHY can RX, can't TX".  v92
+# reads reg 0x144, logs POR, conditionally clears bit 5 only if set.
+0750-network-ps4-mts/0011-ps4-mts-v92-txen-dig-clear.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
