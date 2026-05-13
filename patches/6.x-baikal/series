@@ -583,6 +583,12 @@
 # 1000BT.  All BEFORE the final BMCR AN restart so training begins with
 # the fix in place.
 0750-network-ps4-mts/0008-ps4-mts-v88-mt7531-dsp-no-1000bt.patch
+# v89: add MT7531 RGMII TX delay (mainline mt7531_phy_config_init):
+# MMD 0x1e regs 0x13/0x14 with PAIR_B=4 and PAIR_D=4 (= 0x0404 each).
+# v88 fixed PHY-level handshake (RF gone, receivers OK) but MAC bit 0
+# still doesn't latch.  Suspicion: marginal RGMII timing between Baikal
+# MAC and MT7531 PHY at POR defaults.
+0750-network-ps4-mts/0009-ps4-mts-v89-rgmii-tx-delay.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
