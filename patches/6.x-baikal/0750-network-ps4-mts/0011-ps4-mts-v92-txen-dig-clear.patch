@@ -1,0 +1,95 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v92 — clear MMD 0x1e reg 0x144 bit 5 TXEN_DIG
+
+Smoking-gun hypothesis from 2026-05-13 mainline-source dig:
+
+Mainline mtk-ge-soc.c:976-978 inside mt798x_phy_eee() unconditionally
+clears bit 5 of MMD 0x1e reg 0x144 (MTK_PHY_RG_TESTMUX_ADC_CTRL,
+mask MTK_PHY_RG_TXEN_DIG_MASK) for mt798x PHYs.  The MT7531 PHY
+driver in mtk-ge.c does NOT touch this register — assumes POR/efuse
+calibration leaves bit 5 = 0.
+
+PS4 Baikal's MT7531 sits behind Sony's MTS MAC and goes through
+Orbis bootloader init that does Realtek-style page pokes targeting
+non-existent registers.  Those pokes may stomp bit 5 of reg 0x144
+back to 1, gating the digital TX pre-driver.
+
+Phase 2 cable-swap test (2026-05-13): plugged PS4 ethernet into host
+Realtek RTL8153 USB-Ethernet adapter.  PS4 PHY sees partner FLPs (reg
+10 transitions during 1000T training, idle errors accumulate) — so
+RX path works.  But host RTL8153 reports `Link detected: no`,
+`Speed: Unknown`, `NO-CARRIER`, regardless of advertised modes or
+AN-on/off — so partner sees NOTHING from us.  TX path is electrically
+silent.  TXEN_DIG=1 fits this signature exactly.
+
+v92 plan: at the end of MT7531 PHY tuning (after v89 RGMII delays,
+before final BMCR AN restart), read MMD 0x1e reg 0x144, log POR
+value, and clear bit 5 ONLY IF it is set.  Conditional write so the
+log tells us whether the bit was actually the cause.
+
+Stacks on top of:
+- 0010-ps4-mts-v91-mmd1-readout-status-unit.patch (status unit OP_ON
+  at BAR+0xe80, MMD1/MMD7 PMA/AN readout for orthogonal diagnostic).
+
+If v92 fixes link: TXEN_DIG was the cause, document for the project.
+If v92 + v91 boot logs reg 0x144 with bit 5 already = 0, the
+hypothesis is falsified and we look elsewhere.
+
+Verified against tmp/vanilla-6.15.4/drivers/net/phy/mediatek/mtk-ge-soc.c:
+  line 205: #define MTK_PHY_RG_TESTMUX_ADC_CTRL  0x144
+  line 206: #define   MTK_PHY_RG_TXEN_DIG_MASK   GENMASK(5, 5)
+  line 976-978: phy_clear_bits_mmd(..., MTK_PHY_RG_TESTMUX_ADC_CTRL,
+                                   MTK_PHY_RG_TXEN_DIG_MASK);
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 36 +++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -692,6 +692,42 @@
+ 		}
+
+ 		/*
++		 * v92 (h): clear MMD 0x1e reg 0x144 bit 5 (MTK_PHY_RG_TXEN_DIG_MASK).
++		 * Mainline mtk-ge-soc.c:976-978 inside mt798x_phy_eee() does this
++		 * for mt798x PHYs; MT7531 driver in mtk-ge.c never touches reg 0x144
++		 * and assumes POR/efuse calibration clears the bit.  PS4 Baikal's
++		 * Orbis driver does Realtek-page "magic pokes" that may stomp the
++		 * bit back to 1, leaving the digital TX pre-driver gated.
++		 * Phase 2 cable swap (2026-05-13) proved PHY can RX partner FLPs
++		 * but is electrically not transmitting on the wire — host RTL8153
++		 * sees NO-CARRIER.  TXEN_DIG=1 fits that exactly.
++		 *
++		 * Read first, log POR value, conditional clear: write only if bit
++		 * 5 is already 1.  This avoids a useless clear of an already-clear
++		 * bit AND lets the boot log tell us whether the bit was the cause.
++		 *
++		 * Verified against tmp/vanilla-6.15.4/drivers/net/phy/mediatek/
++		 * mtk-ge-soc.c lines 205 (define 0x144), 206 (bit 5 mask),
++		 * 976-978 (the clear call).
++		 */
++		if (mts_smi_c45_read(mts, 0x1e, 0x0144, &v16) == 0) {
++			if (v16 & 0x0020) {
++				u16 nw = v16 & ~0x0020;
++				mts_smi_c45_write(mts, 0x1e, 0x0144, nw);
++				dev_info(&mts->pdev->dev,
++					 "v92(h): TXEN_DIG MMD0x1e r0x144 0x%04x -> 0x%04x (was bit5=1, now 0)\n",
++					 v16, nw);
++			} else {
++				dev_info(&mts->pdev->dev,
++					 "v92(h): TXEN_DIG MMD0x1e r0x144 = 0x%04x (bit5 already 0, no write)\n",
++					 v16);
++			}
++		} else {
++			dev_info(&mts->pdev->dev,
++				 "v92(h): TXEN_DIG MMD0x1e r0x144 read FAILED\n");
++		}
++
++		/*
+ 		 * FINAL AN restart per Orbis (BMCR |= 0x1200).  This is the LAST
+ 		 * thing we do so AN starts training with all corrections applied.
+ 		 */

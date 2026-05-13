@@ -1,0 +1,107 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v91 — minimal status unit enable + MMD1/MMD7 readout
+
+After v82..v89 brought PHY-side handshake to perfect health (AN complete,
+Remote Fault cleared, both receivers OK, SlvDPSready corrected via TR
+write) the MAC's BAR+0x04 bit 0 still refuses to latch.
+
+Phase 2 cable swap to host Realtek RTL8153 USB-Ethernet (2026-05-13)
+confirmed:
+  - PS4 PHY sees partner FLPs (reg10 transitions during 1000T training
+    attempt) — RX path on our PHY works.
+  - Host RTL8153 reports `Link detected: no`, `Speed: Unknown`, no
+    carrier — partner sees NOTHING from us.
+  - Conclusion: PS4 PHY TX is electrically not transmitting, or MAC has
+    a hardware-state requirement that gates link detection independent
+    of partner.
+
+v91 = two probes in one boot:
+
+(a) Minimal status unit enable.  Deepseek-v41's v91 option 1 (est.
+    25%): Yukon-2's STAT_CTRL at BAR+0xe80.  Write RST_SET (1) →
+    RST_CLR (2) → OP_ON (8) without programming STAT_LIST_ADDR_LO/HI.
+    Unit goes operational but produces no DMA traffic, so it cannot
+    conflict with our existing TX/RX descriptor allocation (which was
+    the destructive collision in v90/v90b full msk_init_hw replay).
+    Hypothesis: the link-up detector internally polls status unit
+    state machine; until OP_ON, BAR+0x04 bit 0 cannot latch.
+
+(b) MMD 1 (PMA/PMD) + MMD 7 (Clause-45 AN) readback.  The init-time
+    SMI sweep covers only C22 reg 0..31; we have never read the
+    C45 MMDs that govern PMA-level state.  MMD1 reg 0 bit 11 =
+    PWRDOWN, bit 14 = LOOPBACK; if either is set, PHY TX is disabled
+    at the analog level and that explains the host-side NO-CARRIER.
+    MMD7 readback rules in/out parallel AN through C45 (mutually
+    exclusive with C22 AN, can interfere if both active).
+
+Adds ~50 LOC of init-time code in the function that calls
+mts_mac_init.  No new behavior outside the diagnostic + the single
+3-step BAR+0xe80 write.  Reverts cleanly if it destroys the MAC the
+way v90b did.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 50 +++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1163,6 +1163,56 @@
+ 		 readl(mts->bar + MTS_RX_KICK),
+ 		 readl(mts->bar + MTS_TX_KICK));
+
++	/*
++	 * v91 (a): minimal status unit enable per deepseek-v41 v91 option 1.
++	 * BAR+0xe80 is Yukon-2 family STAT_CTRL.  Orbis's msk_init_hw resets
++	 * + brings the status unit online during parent prelude; we never did
++	 * that because v90/v90b proved a full msk_init_hw replay destroys
++	 * the MAC.  This is the MINIMAL safe subset: reset cycle + OP_ON,
++	 * with no STAT_LIST_ADDR_LO/HI programmed so the unit does not
++	 * actually issue DMA.  Hypothesis: MAC's link-up detector polls
++	 * status unit operational state internally; until OP_ON, BAR+0x04
++	 * bit 0 cannot latch.  Est. 25% per deepseek; this is the last
++	 * non-Phase-3 software experiment.
++	 */
++	writel(1, mts->bar + 0xe80);   /* STAT_RST_SET */
++	udelay(10);
++	writel(2, mts->bar + 0xe80);   /* STAT_RST_CLR */
++	udelay(10);
++	writel(8, mts->bar + 0xe80);   /* STAT_OP_ON   */
++	mdelay(1);
++	dev_info(&pdev->dev,
++		 "v91(a): status unit OP_ON: BAR+0xe80=0x%08x BAR+0x04=0x%08x\n",
++		 readl(mts->bar + 0xe80), readl(mts->bar + 0x04));
++
++	/*
++	 * v91 (b): MMD 1 (PMA/PMD) + MMD 7 (AN) diagnostic.  After Phase 2
++	 * cable swap to host RTL8153 confirmed PS4 PHY TX appears dead (host
++	 * sees NO-CARRIER, our reg 5 cached from old partner), check PMA-
++	 * level state.  MMD1 reg 0 bit 11 = PWRDOWN (1 = TX/RX disabled);
++	 * MMD1 reg 0 bit 14 = LOOPBACK (1 = internal loopback, no real TX).
++	 * If either is set, that's the TX-failure smoking gun.
++	 */
++	{
++		u16 mmd1_r0 = 0xffff, mmd1_r1 = 0xffff;
++		u16 mmd1_r4 = 0xffff, mmd1_r5 = 0xffff;
++		u16 mmd7_r0 = 0xffff, mmd7_r1 = 0xffff;
++
++		mts_smi_c45_read(mts, 0x01, 0x0000, &mmd1_r0);
++		mts_smi_c45_read(mts, 0x01, 0x0001, &mmd1_r1);
++		mts_smi_c45_read(mts, 0x01, 0x0004, &mmd1_r4);
++		mts_smi_c45_read(mts, 0x01, 0x0005, &mmd1_r5);
++		mts_smi_c45_read(mts, 0x07, 0x0000, &mmd7_r0);
++		mts_smi_c45_read(mts, 0x07, 0x0001, &mmd7_r1);
++		dev_info(&pdev->dev,
++			 "v91(b) MMD1 PMA: r0=0x%04x[LB=%d PD=%d] r1=0x%04x r4=0x%04x r5=0x%04x\n",
++			 mmd1_r0, !!(mmd1_r0 & 0x4000), !!(mmd1_r0 & 0x0800),
++			 mmd1_r1, mmd1_r4, mmd1_r5);
++		dev_info(&pdev->dev,
++			 "v91(b) MMD7 AN:  r0=0x%04x r1=0x%04x\n",
++			 mmd7_r0, mmd7_r1);
++	}
++
+ 	/* Scan PHY registers 0..31 via SMI; log non-trivial responses.  The
+ 	 * SMI controller has no PHY-address field — register-number is the
+ 	 * only selector — so this is really an "is this register reachable"
