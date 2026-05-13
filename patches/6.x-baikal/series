@@ -667,6 +667,17 @@
 # answer: are the descriptors correctly formatted in DMA memory? Does
 # HW ever flip OWN=1 (= TX complete)?
 0750-network-ps4-mts/0017-ps4-mts-v98-tx-diag.patch
+# v103 (2026-05-13): AN restart from ndo_open.  After 8 rounds of agent
+# research + 100+ live BAR-poke tests, three agents (hermes/kimi/
+# deepseek) convergently diagnosed: MAC bit 0 latch is one-shot edge-
+# triggered on PHY link transition.  v97+ RX prefill happens after the
+# latch window — MAC permanently decides "no link", which gates bit 9
+# of 0x06c shut, which blocks TX engine descriptor fetch.  v103 replays
+# Orbis gbe:phy_ctrl event-1 AN restart sequence (reg9 | 0x200, reg4 |
+# 0x180, BMCR | 0x1200) from ndo_open AFTER engine reset + RX prefill,
+# generating a fresh PHY base page so MAC sees new link transition →
+# bit 0 latches → bit 9 gates open → TX descriptors get fetched.
+0750-network-ps4-mts/0018-ps4-mts-v103-ndo-open-an-restart.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

@@ -60,9 +60,25 @@ case "$cmd" in
         esac
 
         zellij action focus-pane-id "$pane" >/dev/null
-        sleep 0.3
-        zellij action write-chars "$msg" >/dev/null
         sleep 0.5
+
+        # write-chars in chunks so a single large message doesn't get
+        # cut by zellij/terminal buffer.  500-char chunks with small
+        # delay between to give the agent TUI input box time to
+        # accept the chars.  Without this, long prompts have been
+        # observed to land partly on the underlying fish prompt
+        # (causing "fish: Unknown command: =" etc).
+        msg_len=${#msg}
+        idx=0
+        chunk=500
+        while [ "$idx" -lt "$msg_len" ]; do
+            piece="${msg:$idx:$chunk}"
+            zellij action write-chars "$piece" >/dev/null
+            sleep 0.15
+            idx=$((idx + chunk))
+        done
+
+        sleep 0.4
         zellij action send-keys 'Enter' >/dev/null
         sleep 0.3
         zellij action focus-pane-id "$self_pane" >/dev/null
