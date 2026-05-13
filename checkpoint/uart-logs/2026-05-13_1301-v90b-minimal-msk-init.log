@@ -1,0 +1,70 @@
+[SceShellCore] Libc Heap Status: free 36%, in-use 3879.8 KB, trend +29.1 KB/min, peak 4359.6 KB, when 350 [sec]?
+[SceShellCore] VM Stats: RSS 738.8, kernel 265.5, wire count 316.8, swap out 0.0, page table CPU 2348/6144 GPU 368/2048?
+[SceShellCore] FMEM   1.3/   4.5 NPXS20977 SceSysAvControl.elf?
+[SceShellCore] FMEM  10.7/  74.3 NPXS20991 SceSysCore.elf?
+[SceShellCore] FMEM   9.3/  54.3 NPXS20973 orbis_audiod.elf?
+[SceShellCore] FMEM   3.2/  11.2 NPXS20976 GnmCompositor.elf?
+[SceShellCore] FMEM  29.0/ 346.8 NPXS20000 SceShellCore?
+[SceShellCore] FMEM 323.9/ 838.7 NPXS20001 SceShellUI?
+[SceShellCore] FMEM   3.4/   8.3 NPXS21003 SceAvCapture?
+[SceShellCore] FMEM   8.8/  24.6 NPXS21000 SceGameLiveStreaming?
+[SceShellCore] FMEM  14.2/  43.5 NPXS21002 ScePartyDaemon?
+[SceShellCore] FMEM   4.3/  25.4 NPXS21004 SceVideoCoreServer?
+[SceShellCore] FMEM  11.0/  51.3 NPXS21006 SceRemotePlay?
+[SceShellCore] FMEM   8.1/  41.0 NPXS21010 SceCloudClientDaemon?
+[SceShellCore] FMEM   8.5/ 156.0 NPXS21002 webrtc_daemon.self?
+[SceShellCore] FMEM   3.2/  10.8 NPXS21016 SceSpZeroConf?
+[SceShellCore] FMEM   6.9/  18.1 NPXS21019 SceSocialScreenMgr?
+[SceShellCore] FMEM   5.0/   9.8 NPXS21007 SceMusicCoreServer?
+[SceShellCore] FMEM   7.1/  14.4 NPXS21020 SceVoiceAndAgent?
+[SceShellCore] FMEM   2.1/   5.1 NPXS20967 fs_cleaner.elf?
+[SceShellCore] FMEM   2.0/  10.2 NPXS20974 SceVdecProxy.elf?
+[SceShellCore] FMEM   2.0/  10.3 NPXS20975 SceVencProxy.elf?
+[SceShellCore] FMEM  45.0/ 282.9 NPXS20001 SecureUIProcess.self?
+[SceShellCore] FMEM 157.9/ 597.0 NPXS20001 SecureWebProcess.self?
+[SceShellCore] FMEM  71.9/ 358.8 NPXS20001 orbis-jsc-compiler.self?
+[SceShellUI] I/PSM.UI : UI system timer elapsed 00:06:00?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3882.8 KB, trend +17.4 KB/min, peak 4359.6 KB, when 381 [sec]?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3894.4 KB, trend +17.4 KB/min, peak 4359.6 KB, when 412 [sec]?
+[SceHidConfigService] PERIODIC_DOWNLOAD_INTERVAL_SEC={86400} elapsed={425} isFirstTime={1}?
+[SceHidConfigService] start DownloadFile?
+[SceHidConfigService] PERIODIC_DOWNLOAD_INTERVAL_SEC={86400} elapsed={425} isFirstTime={1}?
+[SceHidConfigService] start DownloadFile?
+[SceHidConfigService] VerifySignature : size: total(610), signature(256), message(354) [byte]?
+[SceHidConfigService] DownloadFile : [RevokeList]?
+[SceHidConfigService] ifModifiedSince={Fri, 09 Mar 2018 03:55:47 +0000}?
+[SceHidConfigService] SERVER_URL={http://ps4-system.sec.np.dl.playstation.net/ps4-system/hid_config/np/v00/hid_config.env}?
+[SceHidConfigService] VerifySignature : pass?
+[SceHidConfigService] DownloadFile : [UsbPower]?
+[SceHidConfigService] ifModifiedSince={Mon, 01 Mar 2021 07:07:09 +0000}?
+[SceHidConfigService] SERVER_URL={http://ps4-system.sec.np.dl.playstation.net/ps4-system/hidusbpower/np/v00/hidusbpower.env}?
+[SceHidConfigService] statusCode={404}?
+[SceHidConfigService] W:\Build\J02688430\vsh\shell\shell_core\hid_config_service\http_client.cpp(140) Get: HCS_CHECK::0x81560005 (statusCode == SCE_HTTP_STATUS_CODE_OK value is false)?
+[SceHidConfigService] W:\Build\J02688430\vsh\shell\shell_core\hid_config_service\hid_config_service_manager.cpp(241) DownloadFile: HCS_ISOK::0x81560005?
+[SceHidConfigService] update lastDownloadTime?
+[SceHidConfigService] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceHidConfigService] statusCode={404}?
+[SceHidConfigService] W:\Build\J02688430\vsh\shell\shell_core\hid_config_service\http_client.cpp(140) Get: HCS_CHECK::0x81560005 (statusCode == SCE_HTTP_STATUS_CODE_OK value is false)?
+[SceHidConfigService] W:\Build\J02688430\vsh\shell\shell_core\hid_config_service\hid_config_service_manager.cpp(241) DownloadFile: HCS_ISOK::0x81560005?
+[SceHidConfigService] update lastDownloadTime?
+[SceHidConfigService] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3890.4 KB, trend +1.8 KB/min, peak 4359.6 KB, when 443 [sec]?
+[SceWorkaroundCtl] PERIODIC_DOWNLOAD_INTERVAL_SEC={86400} elapsed={420} isFirstTime={0}?
+[SceWorkaroundCtl] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3892.1 KB, trend +2.6 KB/min, peak 4359.6 KB, when 474 [sec]?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3892.2 KB, trend +1.2 KB/min, peak 4359.6 KB, when 505 [sec]?
+[SceSystemStateMgr] No user input for 60 seconds?
+#LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_STATUS_UPDATED [DeviceId:0x70300]?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3893.8 KB, trend +1.7 KB/min, peak 4359.6 KB, when 536 [sec]?
+[SceNetEv] PERIODIC_DOWNLOAD_INTERVAL_SEC={86400} contentId={8}, serviceName={netev}?
+[SceNetEv] start DownloadFile, contentId={8}, serviceName={netev}?
+[SceNetEv] ifModifiedSince={Tue, 02 Mar 2021 16:11:59 +0000}?
+[SceNetEv] statusCode={404}?
+[SceNetEv] W:\Build\J02688430\vsh\shell\shell_core\netev\netev_http_client.cpp(140) Get: NETEV_CHECK::0x8041440a (statusCode == SCE_HTTP_STATUS_CODE_OK value is false)?
+[SceNetEv] W:\Build\J02688430\vsh\shell\shell_core\netev\netev_manager.cpp(345) DownloadFile: NETEV_ISOK::0x8041440a?
+[SceNetEv] W:\Build\J02688430\vsh\shell\shell_core\netev\netev_manager.cpp(493) Run: NETEV_CONTINUE::0x8041440a?
+[SceNetEv] PERIODIC_CHECK_INTERVAL_SEC={480}?
+[SceShellCore] Libc Heap Status: free 36%, in-use 3898.9 KB, trend +6.8 KB/min, peak 4359.6 KB, when 567 [sec]?
+
+# ========================================================
+# Capture ended: 2026-05-13T12:58:17.595835

@@ -589,13 +589,13 @@
 # still doesn't latch.  Suspicion: marginal RGMII timing between Baikal
 # MAC and MT7531 PHY at POR defaults.
 0750-network-ps4-mts/0009-ps4-mts-v89-rgmii-tx-delay.patch
-# v90: 4-agent v90 dig found we entirely skip Orbis msk_init_hw (parent
-# Yukon-2 init) that runs BEFORE mts_mac_init.  glm-5.1 documented the
-# ~25 BAR writes Orbis does (most suspect: BAR+0x00c=0 full clear,
-# BAR+0xe80=1->2->8 TX DMA engine enable, BAR+0x004=8 initial value).
-# Also try deepseek's BAR+0x030=0x10000 mode toggle (RGMII vs GMII).
-# Adds new 4KB status_ring DMA allocation for BAR+0xe88/0xe8c.
-0750-network-ps4-mts/0010-ps4-mts-v90-msk-init-hw-rgmii-mode.patch
+# v90/v90b REVERTED — patch 0010 caused either kernel hang (full version)
+# or MAC destruction (minimal version BAR+0x00c=0).  See checkpoint/
+# docs/research/2026-05-13-v90-result.md.  glm's "msk_init_hw replay"
+# hypothesis is FALSIFIED on hardware - the POR bits in BAR+0x00c are
+# load-bearing; clearing them trashes the MAC.  v89 remains the best
+# baseline (PHY healthy, RF cleared, MAC bit 0 still not latching).
+# 0750-network-ps4-mts/0010-ps4-mts-v90-msk-init-hw-rgmii-mode.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
