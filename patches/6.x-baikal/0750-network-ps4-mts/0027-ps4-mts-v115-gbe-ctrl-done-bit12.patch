@@ -1,0 +1,100 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-14
+Subject: [PATCH] ps4_mts: v115 — emulate gbe:ctrl done by clearing IRQ bit12
+
+v112 proved that simply re-arming BAR+0x204 after the bit-18 init-mode
+handshake is too literal: the master IRQ block comes back, but bit18
+immediately reasserts and the useful RX/TX IRQs still do not take over.
+
+The next Orbis-derived hotswap experiment is to emulate the missing
+`gbe:ctrl` completion edge.  Ghidra analysis of the Orbis ctrl path
+(FUN_ffffffffc85f0190 / FUN_ffffffffc85f1e80) showed that after it
+runs mts_init_rings_kick/link/RMU work, it clears BAR+0x54 bit 12
+(mask &= ~0x1000).  Our Linux path never did that; v112 re-armed the
+master IRQ block with bit12 still present in the saved 0x007bfffe mask.
+
+Add MTS_IRQ_CTRL_DONE_BIT and clear it in two places:
+  - immediately after the v110 BAR+0x1c8 rings-ready marker in ndo_open;
+  - inside the bit18 handshake before re-arming BAR+0x204.
+
+Expected signal: BAR+0x54 logs as 0x007beffe after the completion edge,
+bit18 stops storming after the one-shot handshake, and RX/TX/link IRQ
+patterns become visible instead of re-entering the init-mode loop.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 42 ++++++++++++++++++++++------
+ 1 file changed, 34 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -138,6 +138,7 @@
+  */
+ #define MTS_IRQ_BIT18		0x00040000
+ #define MTS_IRQ_MASK_FULL_VAL	0x007bfffe	/* v111: bit 18 included */
++#define MTS_IRQ_CTRL_DONE_BIT	0x00001000	/* v115: gbe:ctrl clears BAR+0x54 bit 12 */
+ 
+ #define MTS_PHY_CTRL_PERIOD_MS	3000	/* gbe:phy_ctrl cadence */
+ #define MTS_DBG_TIMER_PERIOD_MS	5000	/* debug telemetry dump cadence */
+@@ -966,23 +967,23 @@ static irqreturn_t mts_intr(int irq, void *dev_id)
+ 	    (status & ~mts->saved_irq_mask) == MTS_IRQ_BIT18) {
+ 		mts->irq_block_armed = false;
+ 		writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
+-		writel(mts->saved_irq_mask, mts->bar + MTS_IRQ_MASK);
++		/*
++		 * v115: emulate the gbe:ctrl completion edge found in Orbis
++		 * FUN_ffffffffc85f0190/FUN_ffffffffc85f1e80.  After ctrl does
++		 * mts_init_rings_kick/link/RMU work it clears BAR+0x54 bit 12
++		 * (mask &= ~0x1000).  v112 re-armed BAR+0x204 with bit12 still
++		 * present and immediately re-entered the bit-18 storm.  Clear
++		 * bit12 before re-arm; if this is the missing init-done ack,
++		 * bit18 should stop reasserting and useful RX/TX IRQs can surface.
++		 */
++		writel(mts->saved_irq_mask & ~MTS_IRQ_CTRL_DONE_BIT,
++		       mts->bar + MTS_IRQ_MASK);
+ 		(void)readl(mts->bar + MTS_IRQ_MASK);
+-		/*
+-		 * v112: Orbis's mts_intr re-arms BAR+0x204 = 0x10001388 at the
+-		 * TOP of every ISR call (gated on softc+0x309c==0).  We don't
+-		 * have a per-call first-call setup, so we re-arm inline here
+-		 * after clearing.  Without this, no further MSIs are delivered:
+-		 * v111 cleared BAR+0x204 = 0 and stayed there → total_irq stuck
+-		 * at 1, MAC asserted RX_AVAIL in BAR+0x50 but ISR never re-entered.
+-		 * The udelay(10) gives the MAC's state machine a chance to fully
+-		 * transition out of init mode before we re-arm.
+-		 */
+ 		udelay(10);
+ 		writel(MTS_IRQ_ENABLE_FULL_VAL, mts->bar + MTS_IRQ_ENABLE_FULL);
+ 		(void)readl(mts->bar + MTS_IRQ_ENABLE_FULL);
+ 		dev_info(&mts->pdev->dev,
+-			 "v112: bit-18 handshake completed — re-armed BAR+0x204=0x%08x BAR+0x54=0x%08x\n",
++			 "v115: bit18 + gbe:ctrl-done handshake — BAR+0x204=0x%08x BAR+0x54=0x%08x\n",
+ 			 readl(mts->bar + MTS_IRQ_ENABLE_FULL),
+ 			 readl(mts->bar + MTS_IRQ_MASK));
+ 		return IRQ_HANDLED;
+@@ -1517,10 +1518,25 @@ static int mts_open(struct net_device *ndev)
+ 	 */
+ 	{
+ 		u32 v1c8_before = readl(mts->bar + MTS_MCAST_MASK);
++		u32 mask_before, mask_after;
++
+ 		writel((v1c8_before & ~0x440u) | 0x40u, mts->bar + MTS_MCAST_MASK);
+ 		dev_info(&mts->pdev->dev,
+ 			 "v110: BAR+0x1c8 0x%08x -> 0x%08x (rings-ready marker per Orbis)\n",
+ 			 v1c8_before, readl(mts->bar + MTS_MCAST_MASK));
++
++		/*
++		 * v115: gbe:ctrl completion emulation.  Orbis ctrl path clears
++		 * BAR+0x54 bit12 after mts_init_rings_kick / link/RMU handling.
++		 * Do it immediately after our ring-kick marker too, so the MAC
++		 * sees the completion edge even before the first bit18 IRQ race.
++		 */
++		mask_before = readl(mts->bar + MTS_IRQ_MASK);
++		mask_after = mask_before & ~MTS_IRQ_CTRL_DONE_BIT;
++		writel(mask_after, mts->bar + MTS_IRQ_MASK);
++		dev_info(&mts->pdev->dev,
++			 "v115: gbe:ctrl-done BAR+0x54 0x%08x -> 0x%08x (clear bit12)\n",
++			 mask_before, readl(mts->bar + MTS_IRQ_MASK));
+ 	}
+ 
+ 	/* 4. Wait for MAC bit 0 latch.  v91 took ~5s from engine start
