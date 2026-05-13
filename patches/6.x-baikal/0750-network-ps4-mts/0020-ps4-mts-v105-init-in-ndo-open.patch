@@ -1,0 +1,237 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v105 — move MAC/PHY init from probe to ndo_open
+
+After v104 falsified the empty-rings-at-engine-start theory (linkreg
+stayed 0xb18 through 5s of polling), three agents (hermes, kimi, glm)
+converged on a deeper diagnosis:
+
+The MAC's BAR+0x04 bit 0 link-up latch samples PHY MII status EXACTLY
+ONCE during mts_mac_init itself.  v91 worked because PHY was already
+linked (bootloader state) when probe-time mts_mac_init ran.  v97+ ran
+mts_mac_init in probe too, but by then v82-v89 PHY tweaks had just
+fired BMCR AN restart — PHY was mid-AN, not yet linked, so latch
+sampled "no link" and committed permanently.
+
+Per hermes Ghidra: Orbis calls mts_mac_init TWICE — once from
+mts_attach (probe-time, our existing path) AND AGAIN from mts_ifup
+(open path).  Each call re-arms the latch.
+
+v105 implements this Orbis-style "init twice":
+
+  Probe (kept): pcim_enable, BAR iomap, dma_set_mask, DMA ring alloc,
+                pci_alloc_irq_vectors, request_irq, timer setup,
+                kthread spawn, register_netdev.
+
+  Probe (REMOVED): mts_parent_prelude, mts_mac_init, ring base writes,
+                   engine start, v91 status-unit-OP_ON sequence, MMD
+                   diagnostic reads, SMI sweep, PHY ID readback,
+                   mts_phy_init.
+
+  ndo_open (new prologue at start of mts_open):
+                   synchronize_irq → netif_carrier_off →
+                   mts_parent_prelude → mts_mac_init → mts_phy_init.
+
+  ndo_open (then v104 path unchanged): empty-ring engine restart,
+                   wait up to 5s polling BAR+0x04 bit 0, populate
+                   RX descriptors, NAPI enable, queue start, v103
+                   AN restart, carrier on if MAC latched.
+
+The PHY-side v82-v89 tweaks (SlvDPSready TR write, RGMII delays, EEE
+disable, etc.) live INSIDE mts_mac_init and so re-run on every open
+— same as Orbis.
+
+Risk per glm: LOW.  PHY registers survive MAC reset (external
+RTL8211/MT7531 chip).  Switch-chip reset (parent_prelude BAR+0xf04
+sequence) is idempotent (1→msleep(12)→2 with explicit timing).
+Existing v104 empty-ring sequence preserved so the cold-start window
+still opens.  If MAC latches under this timing, BAR+0x04 bit 0 → 1,
+BAR+0x06c bit 9 (HW-status TX-DMA-ready) → 1, TX engine starts
+fetching descriptors that have been stranded since v93.
+
+Sources:
+  - checkpoint/docs/research/hermes-v105-mac-init-relocation.md
+  - checkpoint/docs/research/kimi-v105-latch-sample-window.md
+  - checkpoint/docs/research/glm-v105-init-move-patch.md
+  - checkpoint/docs/research/hermes-v105-linkreg-bit-decode.md
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1325,6 +1325,40 @@
+ 	unsigned int i;
+ 	u32 tx_ctrl_before, rx_ctrl_before;
+ 	int link_wait;
++	int ret;
++	u16 id1 = 0xffff, id2 = 0xffff;
++
++	/*
++	 * v105: full MAC + PHY init moved from probe to ndo_open per
++	 * hermes/kimi/glm convergent recommendation.  Orbis calls
++	 * mts_mac_init from mts_ifup (open path), not just mts_attach
++	 * (probe).  The MAC's one-shot link-status latch evaluates
++	 * during the fresh MAC bring-up — by the time probe-time mac_init
++	 * runs in v97+, the latch window misses the PHY-up moment.
++	 * Running mac_init here, with PHY likely already linked from
++	 * v94 kthread carrier state, should latch BAR+0x04 bit 0.
++	 *
++	 * v82-v89 PHY tweaks (SlvDPSready TR write, RGMII delays, etc.)
++	 * happen INSIDE mts_mac_init, so they re-run on every open which
++	 * is exactly what Orbis does.
++	 */
++	synchronize_irq(mts->irq);
++	netif_carrier_off(ndev);
++
++	mts_parent_prelude(mts);
++	mts_mac_init(mts);
++
++	mts_smi_c22_read(mts, 0x02, &id1);
++	mts_smi_c22_read(mts, 0x03, &id2);
++	dev_info(&mts->pdev->dev,
++		 "v105: mts_mac_init done in ndo_open: BAR+0x04=0x%08x PHY ID=%04x:%04x\n",
++		 readl(mts->bar + MTS_LINK_STATUS), id1, id2);
++
++	ret = mts_phy_init(mts);
++	if (ret)
++		dev_warn(&mts->pdev->dev,
++			 "v105: PHY init failed (%d) — link may not come up\n",
++			 ret);
+ 
+ 	/*
+ 	 * v104: re-arm the MAC's one-shot link-bit-0 latch by recreating
+@@ -1769,7 +1803,6 @@
+ {
+ 	struct net_device *ndev;
+ 	struct mts *mts;
+-	u16 id1 = 0xffff, id2 = 0xffff;
+ 	int ret, i;
+ 
+ 	/* v93: alloc_etherdev_mqs(priv_size, txqs, rxqs) — allocates net_device
+@@ -1873,115 +1906,17 @@
+ 	dev_info(&pdev->dev, "registered ISR on IRQ %d (%s)\n", mts->irq,
+ 		 pdev->msi_enabled ? "MSI" : "INTx");
+ 
+-	mts_parent_prelude(mts);
+-	mts_mac_init(mts);
+-
+-	/*
+-	 * Hand the descriptor ring DMA addresses to the MAC.  Per deepseek-v41's
+-	 * Ghidra dig of mts_init_rings_kick: TX ring (lo+hi) at BAR+0x3c/0x44,
+-	 * RX ring (lo+hi) at BAR+0x40/0x48.
++	/* v105: full MAC + PHY bring-up moved to ndo_open (mts_open).
++	 * Probe now only: enable PCI, map BAR, alloc DMA rings, register
++	 * IRQ, set up timers + kthread, register netdev.  The MAC stays
++	 * uninitialized until userspace does `ip link set up` which calls
++	 * ndo_open and runs mts_parent_prelude + mts_mac_init + mts_phy_init.
++	 * Rationale: MAC's one-shot link-status latch in BAR+0x04 bit 0
++	 * evaluates during the fresh mac_init bring-up.  v97+ ran mac_init
++	 * during probe (latch sampled before PHY linked), but v97+ added
++	 * netdev pre-fill that broke v91's working timing.  Moving init
++	 * to ndo_open matches Orbis mts_ifup structure.
+ 	 */
+-	/* v97 hermes correction: both paired registers get the full 32-bit
+-	 * DMA address (not lo/hi split).  Orbis mts_init_rings_kick writes
+-	 * the SAME tx_ring_dma to both BAR+0x3c and BAR+0x44, same for RX
+-	 * at BAR+0x40 and BAR+0x48.  We use 32-bit DMA mask so upper_32_bits
+-	 * was always 0 here — wrong. */
+-	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_LO);
+-	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
+-	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_LO);
+-	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
+-
+-	/*
+-	 * v84 critical: start the RX and TX engines.  Without the RX engine
+-	 * running, the MAC does not monitor the PHY link signal and BAR+0x04
+-	 * bit 0 (link up) never gets set - even when the PHY completes AN and
+-	 * the partner is advertising.  This is deepseek-v41's primary finding.
+-	 */
+-	writel(readl(mts->bar + MTS_RX_KICK) | MTS_ENGINE_START,
+-	       mts->bar + MTS_RX_KICK);
+-	writel(readl(mts->bar + MTS_TX_KICK) | MTS_ENGINE_START,
+-	       mts->bar + MTS_TX_KICK);
+-	dev_info(&pdev->dev,
+-		 "engines started: BAR+0x34=0x%08x BAR+0x38=0x%08x\n",
+-		 readl(mts->bar + MTS_RX_KICK),
+-		 readl(mts->bar + MTS_TX_KICK));
+-
+-	/*
+-	 * v91 (a): minimal status unit enable per deepseek-v41 v91 option 1.
+-	 * BAR+0xe80 is Yukon-2 family STAT_CTRL.  Orbis's msk_init_hw resets
+-	 * + brings the status unit online during parent prelude; we never did
+-	 * that because v90/v90b proved a full msk_init_hw replay destroys
+-	 * the MAC.  This is the MINIMAL safe subset: reset cycle + OP_ON,
+-	 * with no STAT_LIST_ADDR_LO/HI programmed so the unit does not
+-	 * actually issue DMA.  Hypothesis: MAC's link-up detector polls
+-	 * status unit operational state internally; until OP_ON, BAR+0x04
+-	 * bit 0 cannot latch.  Est. 25% per deepseek; this is the last
+-	 * non-Phase-3 software experiment.
+-	 */
+-	writel(1, mts->bar + 0xe80);   /* STAT_RST_SET */
+-	udelay(10);
+-	writel(2, mts->bar + 0xe80);   /* STAT_RST_CLR */
+-	udelay(10);
+-	writel(8, mts->bar + 0xe80);   /* STAT_OP_ON   */
+-	mdelay(1);
+-	dev_info(&pdev->dev,
+-		 "v91(a): status unit OP_ON: BAR+0xe80=0x%08x BAR+0x04=0x%08x\n",
+-		 readl(mts->bar + 0xe80), readl(mts->bar + 0x04));
+-
+-	/*
+-	 * v91 (b): MMD 1 (PMA/PMD) + MMD 7 (AN) diagnostic.  After Phase 2
+-	 * cable swap to host RTL8153 confirmed PS4 PHY TX appears dead (host
+-	 * sees NO-CARRIER, our reg 5 cached from old partner), check PMA-
+-	 * level state.  MMD1 reg 0 bit 11 = PWRDOWN (1 = TX/RX disabled);
+-	 * MMD1 reg 0 bit 14 = LOOPBACK (1 = internal loopback, no real TX).
+-	 * If either is set, that's the TX-failure smoking gun.
+-	 */
+-	{
+-		u16 mmd1_r0 = 0xffff, mmd1_r1 = 0xffff;
+-		u16 mmd1_r4 = 0xffff, mmd1_r5 = 0xffff;
+-		u16 mmd7_r0 = 0xffff, mmd7_r1 = 0xffff;
+-
+-		mts_smi_c45_read(mts, 0x01, 0x0000, &mmd1_r0);
+-		mts_smi_c45_read(mts, 0x01, 0x0001, &mmd1_r1);
+-		mts_smi_c45_read(mts, 0x01, 0x0004, &mmd1_r4);
+-		mts_smi_c45_read(mts, 0x01, 0x0005, &mmd1_r5);
+-		mts_smi_c45_read(mts, 0x07, 0x0000, &mmd7_r0);
+-		mts_smi_c45_read(mts, 0x07, 0x0001, &mmd7_r1);
+-		dev_info(&pdev->dev,
+-			 "v91(b) MMD1 PMA: r0=0x%04x[LB=%d PD=%d] r1=0x%04x r4=0x%04x r5=0x%04x\n",
+-			 mmd1_r0, !!(mmd1_r0 & 0x4000), !!(mmd1_r0 & 0x0800),
+-			 mmd1_r1, mmd1_r4, mmd1_r5);
+-		dev_info(&pdev->dev,
+-			 "v91(b) MMD7 AN:  r0=0x%04x r1=0x%04x\n",
+-			 mmd7_r0, mmd7_r1);
+-	}
+-
+-	/* Scan PHY registers 0..31 via SMI; log non-trivial responses.  The
+-	 * SMI controller has no PHY-address field — register-number is the
+-	 * only selector — so this is really an "is this register reachable"
+-	 * sweep rather than a bus discovery.  PHY ID at reg 2/3 is the proof
+-	 * the reverse-engineered SMI protocol is correct.
+-	 */
+-	dev_info(&pdev->dev, "SMI sweep:\n");
+-	for (i = 0; i < 32; i++) {
+-		u16 v = 0xffff;
+-		int r = mts_smi_c22_read(mts, i, &v);
+-
+-		if (r == 0 && v != 0xffff)
+-			dev_info(&pdev->dev, "  reg %2d = 0x%04x\n", i, v);
+-		else if (r)
+-			dev_info(&pdev->dev, "  reg %2d = TIMEOUT\n", i);
+-	}
+-
+-	mts_smi_c22_read(mts, 0x02, &id1);
+-	mts_smi_c22_read(mts, 0x03, &id2);
+-	dev_info(&pdev->dev, "PHY ID1=0x%04x ID2=0x%04x%s\n", id1, id2,
+-		 id1 == 0x001c ? " (Realtek RTL8211x)" : "");
+-
+-	ret = mts_phy_init(mts);
+-	if (ret)
+-		dev_warn(&pdev->dev, "PHY init failed (%d) — link may not come up\n", ret);
+-
+ 	timer_setup(&mts->link_poll, mts_link_poll, 0);
+ 	mts->last_link = ~0U;
+ 	mod_timer(&mts->link_poll, jiffies + HZ);

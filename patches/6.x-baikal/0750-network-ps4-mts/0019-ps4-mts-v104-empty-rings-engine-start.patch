@@ -1,0 +1,187 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v104 — empty-ring engine start (kimi Option C)
+
+Four agents (hermes/glm/kimi/deepseek) converged on diagnosis: MAC's
+BAR+0x04 bit 0 latch is one-shot, evaluated during RX-engine STOPPED
+→ RUNNING transition.  If RX descriptors are populated at that
+moment, the scheduler immediately commits to "datapath active" mode
+and permanently skips link sampling.
+
+v91 worked because RX ring was empty when engines started (probe-time
+state with no netdev/ndo_open).  v97+ broke this by pre-filling RX
+in ndo_open BEFORE engine restart, causing MAC to permanently decide
+"no link" → bit 9 of 0x06c stays 0 → TX engine refuses descriptor
+fetch → host receives nothing despite descriptors correctly formatted
+in DMA memory.
+
+v104 fix (kimi Option C, simplest restructure):
+
+  1. synchronize_irq to ensure no in-flight handler
+  2. stop both engines (clear bit 0 of 0x034, 0x038)
+  3. ZERO the rings (memset, no SKB allocation yet)
+  4. re-program ring base addresses
+  5. START engines with EMPTY rings → MAC samples link state with
+     no datapath work, latch window opens
+  6. poll BAR+0x04 bit 0 for up to 5 seconds waiting for latch
+  7. log final linkreg + 0x06c state (success/failure visible
+     in dmesg)
+  8. NOW populate RX descriptors with real SKBs (v97 path)
+  9. NAPI + queue start
+  10. RX refill kick (HW picks up the now-populated ring)
+
+v103 AN-restart-after-everything-up sequence is kept at end as
+defensive measure.
+
+Risk per glm: LOW.  PHY survives MAC reset.  mts_rings_init is no
+longer called (marked __maybe_unused so build is clean); the inline
+sequence in mts_open replaces it.  If link doesn't latch within 5s,
+the boot still completes; RX would still work via PHY-derived carrier
+(v94/v95), TX would still be dead — same as v103 fallback.
+
+If v104 succeeds, dmesg will show:
+  v104: ndo_open engine-restart with EMPTY rings (TX 0x... RX 0x...)
+  v104: post engine-start wait NNms: linkreg=0x00000b19 bar06c=0x00000300
+                                                ^^^                ^^^
+                                                bit 0 set!         bit 9 set!
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1269,7 +1269,7 @@
+  *  - TX descriptors start as "free" with OWN=1 + aux0 sentinel 0xffff0000.
+  *  - RX descriptors built then OWN cleared to hand to HW.
+  */
+-static void mts_rings_init(struct mts *mts)
++static void __maybe_unused mts_rings_init(struct mts *mts)
+ {
+ 	unsigned int i;
+ 
+@@ -1322,45 +1322,109 @@
+ static int mts_open(struct net_device *ndev)
+ {
+ 	struct mts *mts = netdev_priv(ndev);
++	unsigned int i;
+ 	u32 tx_ctrl_before, rx_ctrl_before;
++	int link_wait;
+ 
+-	/* v97: diagnostics-only revision.  Live test (host live BAR poke)
+-	 * proved BAR+0x09c bit 6 toggle is DESTRUCTIVE — it zeroes
+-	 * BAR+0x040 (RX ring base) and breaks the engine.  Hermes
+-	 * confirmed: bit 6 recovery is for TX path (status 0x00500000),
+-	 * not RX.  v97 keeps only the engine bit toggle from v96 PLUS
+-	 * the descriptor + counter diagnostics so the next boot tells us
+-	 * exactly what mts_poll observes.
++	/*
++	 * v104: re-arm the MAC's one-shot link-bit-0 latch by recreating
++	 * the v91 cold-start timing inside ndo_open.
++	 *
++	 * Background (hermes/kimi/deepseek convergent diagnosis, v99-v102):
++	 * BAR+0x06c bit 9 is a HW-set "TX DMA ready" status.  It gates
++	 * open only when BAR+0x04 bit 0 latches to 1.  Bit 0 latch is
++	 * one-shot, evaluated during the RX-engine STOPPED→RUNNING
++	 * transition; if RX descriptors are present at that moment,
++	 * the scheduler immediately enters "datapath active" mode and
++	 * permanently skips link sampling.  v91 worked because RX ring
++	 * was empty during engine start; v97+ broke it by pre-filling
++	 * RX before engine restart.
++	 *
++	 * v104 fix: in ndo_open, STOP engines, ZERO rings, START engines
++	 * with empty rings (re-opens latch window per v91 timing), wait
++	 * for AN+latch, THEN populate RX descriptors with real SKBs.
+ 	 */
++	synchronize_irq(mts->irq);
++
+ 	tx_ctrl_before = readl(mts->bar + MTS_TX_CTRL);
+ 	rx_ctrl_before = readl(mts->bar + MTS_RX_CTRL);
++
++	/* 1. Stop engines. */
+ 	writel(tx_ctrl_before & ~0x1u, mts->bar + MTS_TX_CTRL);
+ 	writel(rx_ctrl_before & ~0x1u, mts->bar + MTS_RX_CTRL);
+ 	(void)readl(mts->bar + MTS_TX_CTRL);
+ 	mdelay(5);
+ 
+-	mts_rings_init(mts);
++	/* 2. Zero the rings (= v91 empty state).  Do NOT call
++	 * mts_rings_init yet — that pre-fills RX with SKBs which is
++	 * what broke v97+.  Just memset and re-program base addresses. */
++	memset(mts->tx_ring_virt, 0, MTS_RING_BYTES);
++	memset(mts->rx_ring_virt, 0, MTS_RING_BYTES);
++	memset(mts->tx_skb, 0, sizeof(mts->tx_skb));
++	memset(mts->rx_skb, 0, sizeof(mts->rx_skb));
++	memset(mts->tx_dma, 0, sizeof(mts->tx_dma));
++	memset(mts->rx_dma, 0, sizeof(mts->rx_dma));
++	mts->tx_prod = 0;
++	mts->tx_cons = 0;
++	mts->rx_head = 0;
+ 
+-	/* Reprogram ring base addresses to BOTH paired registers per
+-	 * hermes Ghidra: each ring has a paired set (lo/hi or maybe
+-	 * base/wrap) and Orbis writes the same full dma value to both. */
+ 	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_LO);
+ 	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
+ 	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_LO);
+ 	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
+ 
+-	napi_enable(&mts->napi);
+-	netif_start_queue(ndev);
+-
+ 	dev_info(&mts->pdev->dev,
+-		 "v97: ndo_open engine-reset (TX 0x%08x->0x%08x RX 0x%08x->0x%08x)\n",
++		 "v104: ndo_open engine-restart with EMPTY rings (TX 0x%08x->0x%08x RX 0x%08x->0x%08x)\n",
+ 		 tx_ctrl_before, readl(mts->bar + MTS_TX_CTRL),
+ 		 rx_ctrl_before, readl(mts->bar + MTS_RX_CTRL));
+ 
+-	/* Start engines fresh. */
++	/* 3. Start engines with empty rings → MAC's link-detect state
++	 *    machine samples PHY MII status now (no datapath work yet). */
+ 	writel(readl(mts->bar + MTS_TX_CTRL) | 0x1, mts->bar + MTS_TX_CTRL);
+ 	writel(readl(mts->bar + MTS_RX_CTRL) | 0x1, mts->bar + MTS_RX_CTRL);
+ 
++	/* 4. Wait for MAC bit 0 latch.  v91 took ~5s from engine start
++	 *    + kthread AN restart.  Poll BAR+0x04 bit 0 with timeout. */
++	for (link_wait = 0; link_wait < 100; link_wait++) {
++		if (readl(mts->bar + MTS_LINK_STATUS) & 0x1)
++			break;
++		msleep(50);
++	}
++	dev_info(&mts->pdev->dev,
++		 "v104: post engine-start wait %dms: linkreg=0x%08x bar06c=0x%08x\n",
++		 link_wait * 50,
++		 readl(mts->bar + MTS_LINK_STATUS),
++		 readl(mts->bar + 0x06c));
++
++	/* 5. NOW populate RX descriptors with real SKBs.  HW already
++	 *    sampled link state during the empty-ring engine start.
++	 *    From here on, RX descriptors get OWN=0 + buf_lo, HW writes
++	 *    incoming packets normally (v97 path). */
++	mts->tx_ring[MTS_NUM_TX_DESC - 1].ctl_len = cpu_to_le32(MTS_DESC_WRAP);
++	for (i = 0; i < MTS_NUM_TX_DESC; i++) {
++		u32 ctl_len = MTS_DESC_OWN;
++
++		if (i == MTS_NUM_TX_DESC - 1)
++			ctl_len |= MTS_DESC_WRAP;
++		mts->tx_ring[i].ctl_len = cpu_to_le32(ctl_len);
++		mts->tx_ring[i].aux0 = cpu_to_le32(MTS_DESC_TX_AUX0_FREE);
++	}
++	for (i = 0; i < MTS_NUM_RX_DESC; i++) {
++		if (mts_rx_alloc(mts, i)) {
++			dev_warn(&mts->pdev->dev,
++				 "v104: RX populate failed at %u\n", i);
++			break;
++		}
++	}
++
++	napi_enable(&mts->napi);
++	netif_start_queue(ndev);
++
++	/* Re-kick RX so HW picks up the now-populated ring (was empty
++	 * during the latch window). */
++	writel(readl(mts->bar + MTS_RX_CTRL) | MTS_KICK_PKT,
++	       mts->bar + MTS_RX_CTRL);
++
+ 	/* Diagnostic: log first 2 RX descriptors + ring DMA addresses
+ 	 * + BAR ring-base readbacks so the boot log proves descriptor
+ 	 * setup is correct (or pinpoints the divergence). */
