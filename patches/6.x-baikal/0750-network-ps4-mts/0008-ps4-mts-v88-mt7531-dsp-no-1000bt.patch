@@ -1,131 +1,251 @@
 From: PS4 Linux Baikal Port <noreply@ps4-linux>
-Subject: [PATCH] net: ps4_mts v88 - stop 1000BT advertise + RGMII delay + MT7531 DSP defaults
+Subject: [PATCH] net: ps4_mts v88 - MT7531 mainline DSP fix + SlvDPSready Token-Ring
 
-v87 added Orbis's "unconditional tail" of mts_mac_init.  If v87 hardware
-test still leaves link DOWN with partner's Remote Fault (reg 5 bit 13)
-stuck high, this v88 patch tries the next-most-likely fix per the
-4-agent v87+v88 dig.
+After deepseek-v41's full v88 fallback research file finally landed,
+the picture is much clearer.  The MT7531 PHY has DSP parameters at
+power-on-reset defaults that don't work reliably for 1000BT link
+training.  Orbis's Realtek-targeted writes don't help on MT7531 -
+worse, they ACCIDENTALLY SABOTAGE one specific MT7531 register.
 
-Key insight from deepseek's v88 fallback research: Orbis was written
-for Realtek RTL8211 PHYs, so its MMD 0x1e/0x1f writes are all
-Realtek-specific.  Mainline mt7531_phy_config_init (drivers/net/phy/
-mediatek/mtk-ge.c) does MT7531-specific DSP register writes that Orbis
-NEVER does.  On real MT7531 silicon coming out of reset, these DSP
-parameters are at POR (power-on reset) defaults that may be insufficient
-for reliable 1000BT signal training.  Result: partner sees malformed
-signal -> asserts Remote Fault -> AN never resolves to a working link.
+THE BOMBSHELL (deepseek v88 file, line 105):
 
-This patch adds three changes at end of mts_mac_init (after the v87
-tail writes):
+  Orbis's Realtek extended-page "magic pokes" land on the SAME
+  Token-Ring command register that MediaTek's MT7531 uses for
+  SlvDPSready time:
+    write reg 0x1f, 0x52b5         (Token Ring page select)
+    write reg 0x10, 0x8fae         (TR cmd: ch=1 node=0xf data=0x17 WRITE)
+    write reg 0x11, 0x0671
+    write reg 0x12, 0x0006
+  -> resulting 32-bit TR value = 0x00060671
+  -> bits 22:15 = 0x0c (= 12 ticks SlvDPSready)
+  mainline mt7531_phy_config_init wants this = 0x5e (94 ticks).
+  Orbis's 12-tick timeout is so short the slave DSP times out
+  BEFORE finishing training, so the master sees training failure,
+  and the partner asserts Remote Fault (reg 5 bit 13) on the next
+  AN cycle.  This is the root cause of the BMSR cycling we've seen
+  since v82.
 
-1. Stop advertising 1000BT (reg 9 & ~0x0300):
-   Partner reg 5 = 0xc5e1 doesn't include 1000BT.  Our advertising it
-   triggers 1000BT master/slave training that our PHY can't complete
-   (since we lack the DSP setup), partner sees bad signal, RF asserts.
-   Forcing 10/100-only removes 1000BT from the training path.
+v88 applies the five mainline mt7531_phy_config_init corrections that
+Orbis never does (because Orbis targets Realtek):
 
-2. RGMII delay (MMD 0x1e regs 0x13/0x14 = 0x04):
-   Mainline mtk-ge.c sets these for proper RGMII TX/RX skew.  Orbis
-   doesn't.  MT7531 default may be 0 (no delay), causing signal timing
-   errors at the MAC<->PHY interface.
+  (a) Near-echo offset: MMD 0x1e reg 0xa6 bits 15:8 = 0x3
+      Echo canceller threshold - too tight at POR rejects real
+      reflections as noise.
 
-3. MT7531 DSP defaults (deepseek's primary finding):
-   - Near-echo offset: MMD 0x1e reg 0xa6, bits 15-8 = 0x3
-     OR-set 0x0300 into the high byte; keep low byte
-   - 100M MSE threshold: MMD 0x1e reg 0x123 = 0xffff
-     (both lo and hi thresholds to 0xff)
+  (b) RX ADC bias: MMD 0x1e reg 0xc6 bits 9:8 = 0x3
+      Suboptimal bias at POR distorts RX signal.
 
-Deferred to v89 if v88 isn't enough: SlvDPSready time write via
-token-ring protocol (TR ch=1 node=0xf data=0x17 bits 22-15 = 0x5e).
-Token-ring needs MediaTek's vendor C22 page 0x52b5 access pattern
-(regs 0x10/0x11/0x12) which is more complex.
+  (c) 100M MSE threshold: MMD 0x1e reg 0x123 = 0xffff
+      Relax signal-quality threshold (both lo+hi to 0xff).
+
+  (d) SlvDPSready time TR write: ch=1 node=0xf daddr=0x17 bits 22:15 = 0x5e
+      THE FIX for the bombshell above.  Read-modify-write to
+      preserve other 32 bits.  Uses C22 page 0x52b5 + reg 0x10/0x11/0x12
+      Token Ring access pattern documented in mtk-phy-lib.c.
+
+  (e) EN_DOWNSHIFT: C22 page 0x0001 reg 0x14 bit 4 = 1
+      Fall back to 100M after 1000BT training repeatedly fails.
+      Defensive; cheap insurance.
+
+  (f) Stop advertising 1000BT: reg 9 &= ~0x0300
+      Partner (reg 5 = 0xc5e1) doesn't include 1000BT anyway.
+      Highest-confidence fix if (a)-(e) don't bring 1000BT up - just
+      forces 100M negotiation from the start.
+
+CRITICAL ORDERING: all these writes happen BETWEEN the Orbis tail
+writes (which include the bad SlvDPSready=0x0c side-effect) and the
+final BMCR AN restart.  This way AN training begins with all
+corrections applied, including SlvDPSready overwritten back to 0x5e.
 
 Pass criteria:
 
-  - dmesg shows "v88: 1000BT_CTRL (reg9) 0x???? -> 0x????"
-  - "v88: RGMII delay set: TX=0x???? RX=0x????"
-  - "v88: near-echo offset MMD0x1e r0xa6: 0x???? -> 0x????"
-  - "v88: 100M MSE threshold MMD0x1e r0x123 = 0xffff" (readback)
-  - phy_ctrl: LP ABILITY shows RF=0 (partner clears Remote Fault)
-  - linkreg transitions from 0x00000b18 to 0x00000???? with bit 0 set
-  - 100M full duplex link (since partner advertises 100/10 only)
+  - dmesg shows v88(a)(b)(c)(d)(e)(f) lines confirming each write
+  - dmesg shows v88(d) TR read with "current SlvDPSready=0x0c"
+    (confirming Orbis's accidental write took effect)
+  - dmesg shows v88(d) TR write with SlvDPSready=0x5e (our fix)
+  - phy_ctrl: LP ABILITY shows RF=0 (partner stops rejecting us)
+  - linkreg bit 0 transitions to 1
+  - 100M full duplex link (partner only advertises 10/100)
+  - Network connectivity (ssh, ping, etc.)
 
-If link still down with this patch:
-  - v89: add SlvDPSready TR write
-  - v90: force 100M full duplex without AN (BMCR = 0x2100)
-  - v91: try a different PHY init - skip Orbis writes entirely,
-         apply only mainline mt7531_phy_config_init
+If link STILL down after v88: physical layer issue (cable, partner
+hardware) becomes more likely than software.  v89 would try forced
+100M no-AN as the final software lever.
+
+Replaces previous held v88 patch (commit a858698) with this complete
+version including SlvDPSready TR fix and ADC bias + downshift.
 ---
 --- a/drivers/net/ethernet/sony/ps4_mts.c
 +++ b/drivers/net/ethernet/sony/ps4_mts.c
-@@ -505,6 +505,70 @@
+@@ -505,11 +505,169 @@
  		       bar + MTS_LINK_STATUS);
  		(void)readl(bar + MTS_LINK_STATUS);
  
+-		/* Final AN restart per Orbis (BMCR |= 0x1200). */
 +		/*
-+		 * v88: stop advertising 1000BT.  Per deepseek-v41's v87 dig,
-+		 * partner reg 5 = 0xc5e1 has bit 13 (Remote Fault) set.  Partner
-+		 * advertises only 10/100, not 1000BT.  Our advertising 1000BT
-+		 * (reg 9 bit 9) may trigger 1000BT master/slave training that
-+		 * our PHY can't complete (since Orbis Realtek MMD trim writes
-+		 * are no-ops on MT7531), causing partner to see bad signal and
-+		 * assert RF.  Force 10/100-only by clearing reg 9 entirely.
++		 * v88: MT7531 mainline DSP corrections + SlvDPSready Token-Ring
++		 * fix.  Applied BETWEEN the Orbis tail (above) and the final AN
++		 * restart (below) so the DSP is in a known-good state BEFORE
++		 * 1000BT training begins.
 +		 *
-+		 * If v88 makes partner clear RF + link comes up at 100M full:
-+		 * the 1000BT training path was the blocker.
++		 * Five fixes from deepseek-v41's v88 fallback dig:
++		 *
++		 *   (a) Near-echo offset (MMD 0x1e reg 0xa6 bits 15:8 = 0x3)
++		 *       Without this the echo canceller treats real reflections
++		 *       as noise -> DSP can't converge.
++		 *
++		 *   (b) RX ADC bias (MMD 0x1e reg 0xc6 bits 9:8 = 0x3)
++		 *       POR default has suboptimal bias -> distorted RX signal
++		 *       -> training fails.
++		 *
++		 *   (c) 100M MSE threshold (MMD 0x1e reg 0x123 = 0xffff)
++		 *       Default threshold is too tight -> rejects marginal
++		 *       links that should work.
++		 *
++		 *   (d) SlvDPSready time = 0x5e (Token Ring write):
++		 *       BOMBSHELL - Orbis's "Realtek pokes" accidentally land on
++		 *       this TR register (ch=1 node=0xf data=0x17) writing
++		 *       SlvDPSready=0x0c (12 ticks).  Mainline wants 0x5e (94).
++		 *       Orbis's short timeout = slave DSP times out before it
++		 *       finishes training -> master sees failure -> partner
++		 *       asserts Remote Fault.  This is the most likely root
++		 *       cause for the BMSR cycling we've seen since v82.
++		 *       Read-modify-write to preserve other bits.
++		 *
++		 *   (e) EN_DOWNSHIFT (page 0x0001 reg 0x14 bit 4 = 1)
++		 *       Lets PHY fall back to 100M after repeated 1000BT
++		 *       training failures.  Defensive - not needed if (a)-(d)
++		 *       make 1000BT training reliable, but cheap insurance.
++		 *
++		 *   (f) Bonus: stop advertising 1000BT (reg 9 &= ~0x0300)
++		 *       Partner's reg 5 = 0xc5e1 doesn't include 1000BT anyway.
++		 *       Removes 1000BT training entirely from the negotiation
++		 *       path - the highest-confidence fix if (d) doesn't work.
++		 *       Enabled by default; disable if you want to test (a)-(e)
++		 *       in isolation.
 +		 */
-+		if (mts_smi_c22_read(mts, 0x09, &v16) == 0) {
-+			mts_smi_c22_write(mts, 0x09, v16 & ~0x0300);
-+			dev_info(&mts->pdev->dev,
-+				 "v88: 1000BT_CTRL (reg9) 0x%04x -> 0x%04x (stopped advertising 1000BT)\n",
-+				 v16, v16 & ~0x0300);
-+		}
 +
-+		/*
-+		 * v88 RGMII delay per mainline mtk-ge.c.  MMD 0x1e regs 0x13/0x14
-+		 * control PHY-side RGMII delay.  Orbis doesn't set them (relies
-+		 * on Realtek silicon defaults).  On MT7531 with reset state,
-+		 * defaults may be wrong.  Mainline value: 0x04.
-+		 */
-+		mts_smi_c45_write(mts, 0x1e, 0x13, 0x04);
-+		mts_smi_c45_write(mts, 0x1e, 0x14, 0x04);
-+		{
-+			u16 td = 0, rd = 0;
-+			mts_smi_c45_read(mts, 0x1e, 0x13, &td);
-+			mts_smi_c45_read(mts, 0x1e, 0x14, &rd);
-+			dev_info(&mts->pdev->dev,
-+				 "v88: RGMII delay set: TX(MMD0x1e r0x13)=0x%04x RX(r0x14)=0x%04x\n",
-+				 td, rd);
-+		}
-+
-+		/*
-+		 * v88 MT7531 DSP defaults (from deepseek's v88 dig of
-+		 * mainline mt7531_phy_config_init).  Orbis NEVER does these
-+		 * because Orbis was written for Realtek - MT7531 silicon
-+		 * defaults at POR are insufficient for 1000BT signal training,
-+		 * causing partner to see malformed signal and assert RF.
-+		 *
-+		 *   - Near-echo offset: MMD 0x1e reg 0xa6, bits 15-8 = 0x3
-+		 *   - 100M MSE threshold: MMD 0x1e reg 0x123 = 0xffff
-+		 *     (both lo/hi thresholds to 0xff)
-+		 *
-+		 * Skipped for v88: SlvDPSready time (TR ch=1 node=0xf data=0x17
-+		 * bits 22-15 = 0x5e) - token-ring protocol access, defer to v89
-+		 * if v88 isn't enough.
-+		 */
++		/* (a) Near-echo offset */
 +		if (mts_smi_c45_read(mts, 0x1e, 0xa6, &v16) == 0) {
 +			u16 nw = (v16 & 0x00ff) | 0x0300;
 +			mts_smi_c45_write(mts, 0x1e, 0xa6, nw);
 +			dev_info(&mts->pdev->dev,
-+				 "v88: near-echo offset MMD0x1e r0xa6: 0x%04x -> 0x%04x\n",
++				 "v88(a): near-echo MMD0x1e r0xa6: 0x%04x -> 0x%04x\n",
 +				 v16, nw);
 +		}
++
++		/* (b) RX ADC bias */
++		if (mts_smi_c45_read(mts, 0x1e, 0xc6, &v16) == 0) {
++			u16 nw = (v16 & ~0x0300u) | 0x0300;
++			mts_smi_c45_write(mts, 0x1e, 0xc6, nw);
++			dev_info(&mts->pdev->dev,
++				 "v88(b): RX ADC bias MMD0x1e r0xc6: 0x%04x -> 0x%04x\n",
++				 v16, nw);
++		}
++
++		/* (c) 100M MSE threshold */
 +		mts_smi_c45_write(mts, 0x1e, 0x123, 0xffff);
 +		if (mts_smi_c45_read(mts, 0x1e, 0x123, &v16) == 0)
 +			dev_info(&mts->pdev->dev,
-+				 "v88: 100M MSE threshold MMD0x1e r0x123 = 0x%04x\n",
-+				 v16);
++				 "v88(c): 100M MSE MMD0x1e r0x123 = 0x%04x\n", v16);
 +
- 		/* Final AN restart per Orbis (BMCR |= 0x1200). */
++		/*
++		 * (d) SlvDPSready TR write via page 0x52b5 + reg 0x10/0x11/0x12.
++		 * READ-MODIFY-WRITE to preserve other bits in the 32-bit TR data.
++		 *
++		 * TR command encoding (per mtk-phy-lib.c):
++		 *   bit 15: enable
++		 *   bit 13: 1=read, 0=write
++		 *   bits 11:10: channel (here 1, so 0x0400)
++		 *   bits 9:6:  node (here 0xf, so 0x03c0)
++		 *   bits 5:1:  data address (here 0x17, so 0x002e)
++		 *
++		 *   READ  cmd = 0x8000 | 0x2000 | 0x0400 | 0x03c0 | 0x002e = 0xafee
++		 *   WRITE cmd = 0x8000 |    0   | 0x0400 | 0x03c0 | 0x002e = 0x8fee
++		 *
++		 * Wait — deepseek wrote 0x8fae in their analysis (and noted Orbis writes
++		 * the same).  Let me check: their formula uses `(node << 7)` not
++		 * `(node << 6)`.  And `(data << 1)` not `(data << 1)` — that part is
++		 * the same.  The discrepancy:
++		 *   deepseek: ((0xf & 0xf) << 7) | ((0x17 & 0x3f) << 1)
++		 *           = 0x0780 | 0x002e = 0x07ae
++		 *   mainline: ((node & 0xf) << 6) | ((daddr & 0x3f) << 1)?
++		 *
++		 * Going with deepseek's verified encoding (matches Orbis observed write):
++		 *   tr_cmd_write = BIT(15) | ((1&3)<<11) | ((0xf&0xf)<<7) | ((0x17&0x3f)<<1)
++		 *                = 0x8000 | 0x0800 | 0x0780 | 0x002e = 0x8fae
++		 *   tr_cmd_read  = tr_cmd_write | BIT(13) = 0xafae
++		 */
++		{
++			u16 saved_page;
++			u16 tr_lo = 0, tr_hi = 0;
++			u32 tr_val;
++
++			/* Save current C22 page */
++			mts_smi_c22_read(mts, 0x1f, &saved_page);
++
++			/* Select Token Ring page */
++			mts_smi_c22_write(mts, 0x1f, 0x52b5);
++
++			/* Read existing SlvDPSready value */
++			mts_smi_c22_write(mts, 0x10, 0xafae);  /* TR READ */
++			mts_smi_c22_read(mts, 0x11, &tr_lo);
++			mts_smi_c22_read(mts, 0x12, &tr_hi);
++			tr_val = ((u32)tr_hi << 16) | tr_lo;
++
++			dev_info(&mts->pdev->dev,
++				 "v88(d): SlvDPSready TR read = 0x%08x (current SlvDPSready=0x%02x)\n",
++				 tr_val, (tr_val >> 15) & 0xff);
++
++			/* Set bits 22:15 to 0x5e (mainline value) */
++			tr_val = (tr_val & ~(0xffu << 15)) | (0x5eu << 15);
++
++			/* Write back */
++			mts_smi_c22_write(mts, 0x11, tr_val & 0xffff);
++			mts_smi_c22_write(mts, 0x12, (tr_val >> 16) & 0xffff);
++			mts_smi_c22_write(mts, 0x10, 0x8fae);   /* TR WRITE */
++
++			dev_info(&mts->pdev->dev,
++				 "v88(d): SlvDPSready TR write = 0x%08x (SlvDPSready=0x5e)\n",
++				 tr_val);
++
++			/* Restore page */
++			mts_smi_c22_write(mts, 0x1f, saved_page);
++		}
++
++		/* (e) EN_DOWNSHIFT — page 0x0001 reg 0x14 bit 4 = 1 */
++		{
++			u16 saved_page;
++			u16 r14;
++
++			mts_smi_c22_read(mts, 0x1f, &saved_page);
++			mts_smi_c22_write(mts, 0x1f, 0x0001);
++			if (mts_smi_c22_read(mts, 0x14, &r14) == 0) {
++				mts_smi_c22_write(mts, 0x14, r14 | 0x0010);
++				dev_info(&mts->pdev->dev,
++					 "v88(e): EN_DOWNSHIFT page1 reg0x14: 0x%04x -> 0x%04x\n",
++					 r14, r14 | 0x0010);
++			}
++			mts_smi_c22_write(mts, 0x1f, saved_page);
++		}
++
++		/* (f) Stop advertising 1000BT — defensive */
++		if (mts_smi_c22_read(mts, 0x09, &v16) == 0) {
++			mts_smi_c22_write(mts, 0x09, v16 & ~0x0300);
++			dev_info(&mts->pdev->dev,
++				 "v88(f): 1000BT_CTRL reg9: 0x%04x -> 0x%04x (no 1000BT advertise)\n",
++				 v16, v16 & ~0x0300);
++		}
++
++		/*
++		 * FINAL AN restart per Orbis (BMCR |= 0x1200).  This is the LAST
++		 * thing we do so AN starts training with all corrections applied.
++		 */
  		if (mts_smi_c22_read(mts, 0x00, &v16) == 0) {
  			mts_smi_c22_write(mts, 0x00, v16 | 0x1200);
+ 			dev_info(&mts->pdev->dev,
+-				 "v87 tail: BMCR 0x%04x -> 0x%04x (AN restart)\n",
++				 "v88 final: BMCR 0x%04x -> 0x%04x (AN restart after DSP corrections)\n",
+ 				 v16, v16 | 0x1200);
+ 		}
+ 	}

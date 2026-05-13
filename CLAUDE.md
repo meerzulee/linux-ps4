@@ -1,5 +1,48 @@
 # PS4 Linux project — Claude rules
 
+## ALWAYS sanity-check AI agent output before acting on it
+
+When using the zellij coworker agents (hermes/glm/kimi/deepseek via
+`scripts/dev/talk.sh`) or any other AI agent's research/code/register
+values, **verify their claims against primary sources before turning
+them into a patch.**  Agents hallucinate plausibly — wrong register
+addresses, fabricated function names, made-up bit fields.  A wrong
+write to the wrong MMIO register can wedge the PS4 and cost a reboot.
+
+**Verification checklist** before applying agent-suggested fixes:
+
+1. **Ghidra MCP claims (function addresses, decompile lines):**
+   re-decompile the cited function via the MCP yourself and compare.
+2. **Mainline kernel source citations** (e.g. "mainline mtk-ge.c does
+   X"): grep the actual file in `src/<target>/` or `tmp/vanilla-<ver>/`.
+   Confirm the constant, mask, value, and order are exactly as cited.
+3. **Bit math:** decode hex values yourself.  Don't trust
+   "bits 22:15 of 0x00060671 = 0x0c" without verifying — even good
+   agents flip endianness or misplace shifts.
+4. **TR / token-ring / paged register protocols:** these have
+   chip-specific encodings that agents can mis-decode.  Find an
+   existing mainline driver that does the same write and copy its
+   exact pattern, don't reconstruct from theory.
+5. **Cross-check between agents:** when 2+ agents converge on the
+   same answer, confidence is higher BUT they may share the same
+   training-data error.  Verify against primary source anyway.
+6. **Risk-weight the verification:** purely additive writes (set bit
+   X to a value) are lower-risk than write-1-to-clear destructive
+   patterns.  Less verification for the former, more for the latter.
+
+If a claim cannot be verified, mark it as **inferred** in the patch
+header and add live readback logging so the next boot's UART log
+becomes the verification.  Don't ship a patch whose key register
+value came entirely from agent confidence — at minimum log the
+before+after values so the boot data tells you the truth.
+
+Example from v88 development: deepseek claimed
+`mtk_tr_modify(0x1, 0xf, 0x17, ..., 0x5e)` is the mainline SlvDPSready
+write.  Verified by `grep` in `src/6.x-baikal/drivers/net/phy/mediatek/
+mtk-ge.c:45` — exact match.  Cleared to ship.  Opposite case: an agent
+once "found" a non-existent `mt7531_force_link_up` helper — failed
+verification, not shipped.
+
 ## NEVER trigger a PS4 reboot
 
 **Do not run `systemctl reboot`, `reboot`, `shutdown -r`, etc. on the PS4 over SSH.**
