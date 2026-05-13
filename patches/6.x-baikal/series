@@ -589,6 +589,13 @@
 # still doesn't latch.  Suspicion: marginal RGMII timing between Baikal
 # MAC and MT7531 PHY at POR defaults.
 0750-network-ps4-mts/0009-ps4-mts-v89-rgmii-tx-delay.patch
+# v90: 4-agent v90 dig found we entirely skip Orbis msk_init_hw (parent
+# Yukon-2 init) that runs BEFORE mts_mac_init.  glm-5.1 documented the
+# ~25 BAR writes Orbis does (most suspect: BAR+0x00c=0 full clear,
+# BAR+0xe80=1->2->8 TX DMA engine enable, BAR+0x004=8 initial value).
+# Also try deepseek's BAR+0x030=0x10000 mode toggle (RGMII vs GMII).
+# Adds new 4KB status_ring DMA allocation for BAR+0xe88/0xe8c.
+0750-network-ps4-mts/0010-ps4-mts-v90-msk-init-hw-rgmii-mode.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch

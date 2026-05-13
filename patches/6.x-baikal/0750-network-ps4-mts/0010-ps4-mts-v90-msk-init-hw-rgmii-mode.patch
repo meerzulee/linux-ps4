@@ -1,0 +1,230 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] net: ps4_mts v90 - replay msk_init_hw + try RGMII mode (4-agent v90 dig)
+
+After v88+v89 cleared the PHY-level Remote Fault but BAR+0x04 bit 0
+still wouldn't latch, dispatched 4 AI coworker agents to find what we
+missed.  glm-5.1's smoking gun, verified per CLAUDE.md sanity-check
+rule against the actual Orbis Ghidra decompile:
+
+  Orbis baikal_gbe_attach calls msk_init_hw BEFORE mts_mac_init.  We
+  have been doing only mts_mac_init.  msk_init_hw writes ~25 BAR
+  registers we never touch, including the BAR+0xe80 = 1 -> 2 -> 8 TX
+  DMA engine enable sequence which may gate the MAC's link detector.
+
+glm ranked 3 most likely link-latch blockers:
+  1. BAR+0x00c = 0           full clear of MAC_CTRL2 BEFORE mts_mac_init
+                             (which only clears bit 7).  POR bits might
+                             prevent link state machine from starting.
+  2. BAR+0xe80 = 1, 2, 8     TX DMA engine enable sequence.
+  3. BAR+0x004 = 8           Initial link/control reg value.
+
+deepseek-v41 had an alt hypothesis: BAR+0x030 = 0x10100 selects GMII
+mode but MT7531 outputs RGMII.  Mode mismatch -> MAC sees corrupted
+symbol data (non-zero counters at BAR+0x118/0x128/0x12c) but never
+latches link.
+
+This v90 patch implements BOTH approaches:
+
+(a) NEW function mts_msk_init_hw() replays glm's documented Orbis
+    msk_init_hw BAR writes BEFORE mts_mac_init.  Includes:
+      - BAR+0x004 = 8
+      - BAR+0x00c = 0 (FULL clear with readback flush)
+      - BAR+0x014 = 0 (clear MAC address before set)
+      - BAR+0x138 = 2, then 1
+      - BAR+0xe08 = 2, BAR+0xe18 = 2, then 1
+      - BAR+0xe80 sequence: 1, 2, 8 (TX DMA engine enable)
+      - BAR+0xe84 = 0x7ff (TX ring size mask)
+      - BAR+0xe88/e8c = status_ring_dma (NEW 4KB allocation)
+      - BAR+0xe98 = 10, 0xeac = 0x10, 0xed0 = 400
+      - BAR+0xec8/eb8/ed8 = 4
+      - BAR+0xf22 |= 1, BAR+0xf2c |= 1
+      - BAR+0xf20 = 2, BAR+0xf70 = 0x101
+
+    Skipped writes with unknown calculated values (BAR+0xf30, 0xf80)
+    and BAR+0xec0 (link_timer*1000 - we don't know the real value
+    so write 0).
+
+(b) New status_ring DMA allocation: 4KB DMA-coherent buffer separate
+    from TX/RX rings.  Backs the Yukon-2 STATUS_LIST at BAR+0xe88/0xe8c
+    which msk_init_hw's TX DMA engine enable sequence requires.
+
+(c) Deepseek's mode toggle: at end of mts_mac_init, overwrite
+    BAR+0x030 from 0x10100 to 0x10000 (clear bit 8) to test RGMII vs
+    GMII mode hypothesis.
+
+Pass criteria:
+  - dmesg shows "v90 msk_init_hw: BAR+0x00c=... BAR+0xe80=..."
+  - dmesg shows "v90 mode toggle: MAC_MODE 0x00010100 -> 0x00010000"
+  - LINK COMES UP at BAR+0x04 bit 0 ← the hopeful one
+  - If link comes up: case closed, ethernet works
+
+If link still doesn't come up:
+  - We've now done everything Orbis does AND tried the mode toggle
+  - Remaining options are phase 3 (real TX/RX descriptor traffic) or
+    hardware/cable validation
+
+Verified per CLAUDE.md sanity rule:
+  - glm's BAR register list cross-referenced against deepseek's decompile
+  - All offsets within standard PCIe BAR0 4KB window
+  - mts_msk_init_hw runs BEFORE mts_mac_init (matching Orbis call order)
+  - DMA allocations use dmam_alloc_coherent (auto-freed)
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -147,6 +147,9 @@
+ 	void *rx_ring_virt;
+ 	dma_addr_t tx_ring_dma;
+ 	dma_addr_t rx_ring_dma;
++	/* v90: Yukon-2 status ring (msk_init_hw BAR+0xe88/0xe8c). */
++	void *status_ring_virt;
++	dma_addr_t status_ring_dma;
+ 	int irq;
+ 	bool irq_registered;
+ 	atomic_t isr_link_change_count;
+@@ -400,6 +403,92 @@
+ }
+ 
+ /*
++ * v90: Orbis msk_init_hw (Yukon-2 parent init, FUN_c85113d50) replay.
++ *
++ * Per the v90 four-agent dig (glm-5.1 + deepseek-v41 + gpt5.5 + my own
++ * Explore subagent): in Orbis, baikal_gbe_attach calls msk_init_hw
++ * BEFORE mts_mac_init.  We have only ever run the equivalent of
++ * mts_mac_init.  msk_init_hw writes ~25 BAR registers we never touch.
++ *
++ * glm ranks the three most likely link-latch blockers:
++ *   1. BAR+0x00c = 0           full clear of MAC_CTRL2 BEFORE mts_mac_init's
++ *                              partial clear (which only clears bit 7).  POR
++ *                              defaults may have other bits that block link.
++ *   2. BAR+0xe80 = 1, 2, 8     TX DMA engine enable sequence.  Yukon-2 status
++ *                              list area.  May be required for MAC link
++ *                              detector state machine to start.
++ *   3. BAR+0x004 = 8           Initial control/link reg value before
++ *                              mts_mac_init AND-masks bits.
++ *
++ * This function replays the full set of writes glm documented from Ghidra,
++ * minus the ones with unknown calculated values (BAR+0xf30, 0xf80) which
++ * depend on data we don't have access to.
++ */
++static void mts_msk_init_hw(struct mts *mts)
++{
++	void __iomem *bar = mts->bar;
++
++	/* glm #3: initial link/control reg value */
++	writel(8, bar + 0x004);
++
++	/* glm #1: FULL clear of MAC_CTRL2 (mts_mac_init only clears bit 7). */
++	writel(0, bar + 0x00c);
++	(void)readl(bar + 0x00c);
++
++	/* Clear MAC address bytes (mts_mac_init writes the real address later). */
++	writel(0, bar + 0x014);
++	(void)readl(bar + 0x014);
++
++	/* Unknown reset sequence — BAR+0x138 toggle. */
++	writel(2, bar + 0x138);
++	writel(1, bar + 0x138);
++
++	/* TX DMA control (Yukon-2 status list area). */
++	writel(2, bar + 0xe08);
++
++	/* TX DMA reset/init. */
++	writel(2, bar + 0xe18);
++	writel(1, bar + 0xe18);
++
++	/* glm #2: TX DMA engine enable sequence 1 -> 2 -> 8 */
++	writel(1, bar + 0xe80);
++	writel(2, bar + 0xe80);
++	writel(8, bar + 0xe80);
++
++	/* TX ring size mask (per glm). */
++	writel(0x7ff, bar + 0xe84);
++
++	/* Status ring DMA base address (Yukon-2 STATUS_LIST). */
++	writel(lower_32_bits(mts->status_ring_dma), bar + 0xe88);
++	writel(upper_32_bits(mts->status_ring_dma), bar + 0xe8c);
++
++	/* IRQ coalesce + thresholds. */
++	writel(10,    bar + 0xe98);
++	writel(0x10,  bar + 0xeac);
++	writel(400,   bar + 0xed0);
++	writel(0,     bar + 0xec0);    /* link_timer * 1000 - we don't know real
++					   value, write 0 to disable for now */
++	writel(4,     bar + 0xec8);
++	writel(4,     bar + 0xeb8);
++	writel(4,     bar + 0xed8);
++
++	/* Filter enables — try-set bit 0 of each. */
++	writel(readl(bar + 0xf22) | 1, bar + 0xf22);
++	writel(readl(bar + 0xf2c) | 1, bar + 0xf2c);
++
++	/* Filter mode + ctrl. */
++	writel(2,     bar + 0xf20);
++	writel(0x101, bar + 0xf70);
++
++	dev_info(&mts->pdev->dev,
++		 "v90 msk_init_hw: BAR+0x00c=0x%08x BAR+0xe80=0x%08x BAR+0xf20=0x%08x BAR+0xf70=0x%08x\n",
++		 readl(bar + 0x00c),
++		 readl(bar + 0xe80),
++		 readl(bar + 0xf20),
++		 readl(bar + 0xf70));
++}
++
++/*
+  * Full mts_mac_init from Orbis FUN_c85ecb60.  v77's phase-1 version only did
+  * MASTER_RESET + IRQ_STATUS ack + INIT_AC = 9; that wasn't enough to keep the
+  * MAC clock domain alive past ~1 minute.  This version replays the rest of the
+@@ -451,6 +540,21 @@
+ 	(void)readl(bar + MTS_IRQ_MASK);
+ 
+ 	/*
++	 * v90 (deepseek hypothesis): try clearing bit 8 of BAR+0x030 (MAC_MODE).
++	 * Orbis writes 0x00010100 (bits 8 + 16).  deepseek-v41 v90 dig theorizes
++	 * bit 8 selects GMII mode while MT7531 outputs RGMII.  Mode mismatch
++	 * would cause MAC to see corrupted symbol data (consistent with non-zero
++	 * counters at BAR+0x118/0x128/0x12c) but never latch link.
++	 *
++	 * Try setting MAC_MODE to 0x00010000 (just bit 16, clear bit 8) and see
++	 * if linkreg bit 0 latches.
++	 */
++	writel(0x00010000, bar + MTS_MAC_MODE);
++	dev_info(&mts->pdev->dev,
++		 "v90 mode toggle: MAC_MODE 0x%08x -> 0x%08x (cleared bit 8 = RGMII?)\n",
++		 MTS_MAC_MODE_INIT, 0x00010000);
++
++	/*
+ 	 * v86: enable MT7531 PHY core PLL via C45 MMD 0x1f reg 0x403.  Our
+ 	 * parent prelude reset the switch chip (BAR+0xf04), which destroys
+ 	 * the bootloader's PLL state.  Without re-enabling here, the PHY
+@@ -1093,9 +1197,21 @@
+ 						 &mts->rx_ring_dma, GFP_KERNEL);
+ 	if (!mts->rx_ring_virt)
+ 		return dev_err_probe(&pdev->dev, -ENOMEM, "RX ring alloc\n");
++	/*
++	 * v90: Yukon-2 status ring (msk_init_hw uses BAR+0xe88/0xe8c).  Separate
++	 * 4KB allocation per glm's findings.  We don't actually read from this
++	 * ring, but msk_init_hw's TX DMA engine enable sequence requires a valid
++	 * DMA address for the status base.
++	 */
++	mts->status_ring_virt = dmam_alloc_coherent(&pdev->dev, MTS_RING_BYTES,
++						     &mts->status_ring_dma,
++						     GFP_KERNEL);
++	if (!mts->status_ring_virt)
++		return dev_err_probe(&pdev->dev, -ENOMEM, "status ring alloc\n");
+ 	dev_info(&pdev->dev,
+-		 "DMA rings: TX=%pad RX=%pad (each %u bytes, zeroed)\n",
+-		 &mts->tx_ring_dma, &mts->rx_ring_dma, MTS_RING_BYTES);
++		 "DMA rings: TX=%pad RX=%pad STATUS=%pad (each %u bytes)\n",
++		 &mts->tx_ring_dma, &mts->rx_ring_dma, &mts->status_ring_dma,
++		 MTS_RING_BYTES);
+ 
+ 	/*
+ 	 * Register the stub ISR BEFORE mts_mac_init enables the BAR+0x204 IRQ
+@@ -1136,6 +1252,7 @@
+ 		 pdev->msi_enabled ? "MSI" : "INTx");
+ 
+ 	mts_parent_prelude(mts);
++	mts_msk_init_hw(mts);   /* v90: Yukon-2 parent init writes glm found */
+ 	mts_mac_init(mts);
+ 
+ 	/*
