@@ -1,0 +1,104 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v110 — add two missing BAR writes from Orbis live snapshot
+
+After 14 patches (v82..v105) chasing a phantom "BAR+0x04 bit 0 latch",
+v107 added skip_probe so we could capture an Orbis-side BAR0 4KB snapshot
+with the safe bar-dumper (tools/orbis-bar-dumper-safe).  Snapshot in
+checkpoint/orbis-dumps/12.02/mts-bar0-orbis-working.bin.
+
+That snapshot + Ghidra decompiles of mts_mac_init (0xffffffffc85ecb60)
+and mts_init_rings_kick (0xffffffffc85ef1b0) from the May-11 kernel.elf
+revealed:
+
+1. Bit 0 of BAR+0x04 is **0 in Orbis-working too** — agents' 19-round
+   chase for that bit was on the wrong register.  BAR+0x04 is link
+   *status* (read-only mirror of PHY state), not a control bit.
+
+2. Orbis writes `BAR+0x1d4 = 1` unconditionally in mts_mac_init, after
+   the BAR+0x08 |= 0x7597c00 step.  Our driver had `MTS_INIT_1D4`
+   defined but never wrote it.
+
+3. Orbis's mts_init_rings_kick ends with `BAR+0x1c8 = (current
+   & 0xfffffbbf) | 0x40` — clear bits 6+10, set bit 6.  The function
+   ALSO checks bit 6 at entry and returns immediately if set, so bit 6
+   is the driver's "rings have been kicked" semaphore.  Without
+   setting it, anything downstream that also checks bit 6 (link
+   change, error recovery in mts_intr) treats rings as un-kicked
+   and may refuse to advance TX.  Our driver had `MTS_MCAST_MASK`
+   defined but never wrote it.
+
+This patch adds both writes with pre/post readback logging so the boot
+log proves the writes took effect.  Both are pure additions — if they
+don't fix TX, they cost nothing.
+
+Verification chain (per CLAUDE.md "verify before applying"):
+ * Ghidra MCP decompile of mts_mac_init: BAR+0x1d4 = 1 confirmed at
+   the unconditional tail (after BAR+0x1d4 path: see decompile line
+   "puVar9 = ... 0x1d4 ... *puVar9 = 1").
+ * Ghidra MCP decompile of mts_init_rings_kick: final write
+   `*(uint *)(lVar1 + 0x1c8) = *(uint *)(lVar1 + 0x1c8) & 0xfffffbbf
+   | 0x40;` confirmed at end of function.
+ * Both writes additive, no destructive write-1-to-clear semantics
+   suspected.  If wrong, downside is one extra MMIO write per init.
+
+If TX still dead after v110:
+ * v111 candidate: BAR+0x208 = 1 + BAR+0x210 = 1 (also = 1 in Orbis
+   dump but no decompile source found yet).
+ * Or: capture Linux-side BAR0 snapshot via debugfs and do byte-for-
+   byte diff to identify any remaining missing registers.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 33 +++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -508,6 +508,22 @@
+ 	writel(9, bar + MTS_INIT_AC);
+
+ 	/*
++	 * v110: BAR+0x1d4 = 1.  Orbis mts_mac_init writes this unconditionally
++	 * after BAR+0x08 |= 0x7597c00 and before the BAR+0x10 bit-field write.
++	 * Purpose unknown but consistent across the Orbis decompile.  Our
++	 * driver was missing this since v82.  Verified by Ghidra MCP read of
++	 * mts_mac_init @ 0xffffffffc85ecb60 in May-11 dump (see
++	 * checkpoint/orbis-dumps/12.02/mts-bar0-orbis-working.bin diff).
++	 */
++	{
++		u32 v1d4_before = readl(bar + MTS_INIT_1D4);
++		writel(1, bar + MTS_INIT_1D4);
++		dev_info(&mts->pdev->dev,
++			 "v110: BAR+0x1d4 0x%08x -> 0x%08x (Orbis missing write)\n",
++			 v1d4_before, readl(bar + MTS_INIT_1D4));
++	}
++
++	/*
+ 	 * Bring up the Baikal IRQ block.  Orbis's mts_intr does this lazily on
+ 	 * first interrupt; we do it eagerly at probe.  Both writes are needed
+ 	 * - BAR+0x204 enables the master IRQ block, BAR+0x54 is the per-IRQ
+@@ -1417,6 +1433,23 @@
+ 	writel(readl(mts->bar + MTS_TX_CTRL) | 0x1, mts->bar + MTS_TX_CTRL);
+ 	writel(readl(mts->bar + MTS_RX_CTRL) | 0x1, mts->bar + MTS_RX_CTRL);
+
++	/*
++	 * v110: BAR+0x1c8 |= 0x40 (clear bits 6+10, then set bit 6).  Orbis
++	 * mts_init_rings_kick @ 0xffffffffc85ef1b0 does this as its final
++	 * action — the function checks bit 6 at entry and bails if set,
++	 * so bit 6 is the driver's "rings have been kicked" semaphore.
++	 * Our driver never wrote it, which may leave the device in a
++	 * state where TX engine never observes "rings ready" → TX dead.
++	 * Mirrors Orbis: BAR+0x1c8 = (current & 0xfffffbbf) | 0x40.
++	 */
++	{
++		u32 v1c8_before = readl(mts->bar + MTS_MCAST_MASK);
++		writel((v1c8_before & ~0x440u) | 0x40u, mts->bar + MTS_MCAST_MASK);
++		dev_info(&mts->pdev->dev,
++			 "v110: BAR+0x1c8 0x%08x -> 0x%08x (rings-ready marker per Orbis)\n",
++			 v1c8_before, readl(mts->bar + MTS_MCAST_MASK));
++	}
++
+ 	/* 4. Wait for MAC bit 0 latch.  v91 took ~5s from engine start
+ 	 *    + kthread AN restart.  Poll BAR+0x04 bit 0 with timeout. */
+ 	for (link_wait = 0; link_wait < 100; link_wait++) {

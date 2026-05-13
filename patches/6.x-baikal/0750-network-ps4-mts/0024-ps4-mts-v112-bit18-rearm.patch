@@ -1,0 +1,68 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v112 — re-arm BAR+0x204 after bit-18 handshake
+
+v111 fired the bit-18 handshake correctly (boot log confirmed:
+"v111: bit-18 handshake fired — exited init mode") and the bit-18
+storm went from ~5,000 IRQs/sec to zero (total_irq stayed at 1 for
+30+ seconds).  But TX/RX stayed dead with `BAR+0x50 = 0x40` (RX_AVAIL
+asserted by MAC) and `BAR+0x204 = 0`.
+
+Re-reading the Orbis mts_intr decompile @ 0xffffffffc85edcf0 more
+carefully: the function has a FIRST-CALL SETUP at the TOP of every
+ISR entry:
+
+  if (softc+0x309c == 0) {     // first-call flag — set by previous
+                                // bit-18 handshake to 0
+    softc+0x309c = 1;
+    BAR+0x204 = 0x10001388;    // RE-ARM master IRQ block
+    BAR+0x54 = 0x7bfffe;
+  }
+
+So Orbis's BAR+0x204 PING-PONGS: re-armed at every ISR entry,
+briefly cleared during the bit-18 handshake, re-armed again on the
+next entry.  v111 did the clear but never the re-arm → no further
+MSIs delivered → ISR never re-entered → TX/RX dead.
+
+This patch adds the re-arm INLINE after the clear (since our ISR
+doesn't have Orbis's per-call first-call setup).  Two new writes:
+  - udelay(10)  to let the MAC's state machine fully transition
+  - writel(MTS_IRQ_ENABLE_FULL_VAL, BAR+0x204)  re-arm
+
+EXPECTED on success: after v112 bit-18 handshake fires, total_irq
+keeps growing (was 1 in v111).  RX_AVAIL bit 6 fires as a proper
+IRQ.  NAPI poll runs.  RX packets count up.  If link bit 0 latches
+in BAR+0x04 → TX starts flowing too.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -967,9 +967,23 @@
+ 		writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
+ 		writel(mts->saved_irq_mask, mts->bar + MTS_IRQ_MASK);
+ 		(void)readl(mts->bar + MTS_IRQ_MASK);
++		/*
++		 * v112: Orbis's mts_intr re-arms BAR+0x204 = 0x10001388 at the
++		 * TOP of every ISR call (gated on softc+0x309c==0).  We don't
++		 * have a per-call first-call setup, so we re-arm inline here
++		 * after clearing.  Without this, no further MSIs are delivered:
++		 * v111 cleared BAR+0x204 = 0 and stayed there → total_irq stuck
++		 * at 1, MAC asserted RX_AVAIL in BAR+0x50 but ISR never re-entered.
++		 * The udelay(10) gives the MAC's state machine a chance to fully
++		 * transition out of init mode before we re-arm.
++		 */
++		udelay(10);
++		writel(MTS_IRQ_ENABLE_FULL_VAL, mts->bar + MTS_IRQ_ENABLE_FULL);
++		(void)readl(mts->bar + MTS_IRQ_ENABLE_FULL);
+ 		dev_info(&mts->pdev->dev,
+-			 "v111: bit-18 handshake fired — exited init mode (BAR+0x204=0, BAR+0x54=0x%08x)\n",
+-			 mts->saved_irq_mask);
++			 "v112: bit-18 handshake completed — re-armed BAR+0x204=0x%08x BAR+0x54=0x%08x\n",
++			 readl(mts->bar + MTS_IRQ_ENABLE_FULL),
++			 readl(mts->bar + MTS_IRQ_MASK));
+ 		return IRQ_HANDLED;
+ 	}

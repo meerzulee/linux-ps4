@@ -1,0 +1,63 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-14
+Subject: [PATCH] ps4_mts: v114 — fix sky2 binding when ps4_mts is a module
+
+After v113 flipped CONFIG_PS4_MTS=y → =m, sky2 (built-in) silently won
+the bind race for our Baikal device at PCI scan time:
+
+  lspci -k 0000:00:14.1:
+    Sony Corporation Baikal Ethernet Controller [104d:90d8]
+        Kernel driver in use: sky2  ← WRONG
+        Kernel modules: ps4_mts
+
+  journalctl -k:
+    sky2 0000:00:14.1 enp0s20f1: renamed from eth0
+    sky2 0000:00:14.1: enp0s20f1: phy I/O error (repeated)
+
+Root cause: patch 0001-net-add-ps4-mts-phase1-driver.patch wrapped
+sky2's BAIKAL_GBE table entry with:
+
+    #ifndef CONFIG_PS4_MTS
+        { PCI_DEVICE(... BAIKAL_GBE) },
+    #endif
+
+The preprocessor symbol CONFIG_PS4_MTS is defined ONLY when the driver
+is built-in (=y).  When built as a module (=m), the kernel build system
+defines CONFIG_PS4_MTS_MODULE instead, and CONFIG_PS4_MTS itself is
+left undefined.  Result: the ifndef passes, the entry stays in sky2's
+table, sky2 binds the device.
+
+Fix: use IS_ENABLED(CONFIG_PS4_MTS), the kernel's standard macro that
+evaluates true for BOTH =y AND =m:
+
+    #if !IS_ENABLED(CONFIG_PS4_MTS)
+        { PCI_DEVICE(... BAIKAL_GBE) },
+    #endif
+
+This is the idiomatic Linux kernel way to gate code on whether a
+config is "enabled in any form" (built-in OR module).
+
+After v114, sky2's table will not include BAIKAL_GBE in either build
+mode, so ps4_mts always wins the bind (it's the only driver matching).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/marvell/sky2.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -141,7 +141,12 @@
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL, 0x4382) }, /* 88E8079 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_AEOLIA_GBE) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BELIZE_GBE) },
+-#ifndef CONFIG_PS4_MTS
++#if !IS_ENABLED(CONFIG_PS4_MTS)
++	/* v114: use IS_ENABLED so this works for BOTH =y (built-in) AND =m
++	 * (module).  The plain #ifndef CONFIG_PS4_MTS only fired when the
++	 * driver was built-in, so when ps4_mts=m the BAIKAL entry stayed
++	 * in sky2's table and sky2 won the bind race at PCI scan time —
++	 * leaving ps4_mts loaded but unbound. */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) }, /* v14: try the Baikal GbE 0x90d8 */
+ #endif
+ 	{ 0 }

@@ -1,0 +1,88 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v107 — skip_probe module param for BAR0 snapshot mode
+
+After 14 patches (v82..v105) all 5 latch-trigger hypotheses for BAR+0x04
+bit 0 have been falsified live.  Kimi v107 final verdict: latch is
+write-once per power cycle, armed by a boot-time-only condition that
+software cannot reproduce.
+
+The only remaining experiment that can distinguish "missed register"
+from "silicon-level interlock" is to capture the BAR0 state when the
+hardware is in a known-working state (Orbis-initialized) and diff
+against our v97 broken-TX state.
+
+This patch adds a kernel cmdline parameter `ps4_mts.skip_probe=1` that
+makes mts_probe return -ENODEV BEFORE any hardware register is touched.
+With this flag set:
+
+  - PCI subsystem still enumerates 00:14.1
+  - BAR0 sysfs node /sys/bus/pci/devices/0000:00:14.1/resource0 remains
+    mmap-able from userspace
+  - Our driver does NOT call mts_parent_prelude() (which would reset
+    the switch chip and destroy the bootloader/Orbis state)
+  - Our driver does NOT call mts_mac_init() (which would re-arm latch
+    in our broken way)
+
+Usage (for snapshot mode):
+
+  bootargs: ... ps4_mts.skip_probe=1 ...
+
+Then in Linux userspace:
+
+  python3 -c '
+  import mmap, os
+  fd = os.open("/sys/bus/pci/devices/0000:00:14.1/resource0", os.O_RDWR)
+  m = mmap.mmap(fd, 4096)
+  with open("/tmp/orbis-mts-bar0.bin", "wb") as f:
+      f.write(m[:4096])
+  '
+
+Then compare:
+
+  xxd orbis-mts-bar0.bin > orbis.txt
+  xxd v97-mts-bar0.bin   > linux.txt
+  diff orbis.txt linux.txt
+
+Any line that differs (other than the known status-bit outputs at
+0x004/0x06c) is a candidate missing register.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1799,12 +1799,31 @@
+
+ /* end of v93 netdev block */
+
++/*
++ * v107: when set to 1 via bootargs (ps4_mts.skip_probe=1), mts_probe returns
++ * -ENODEV before touching ANY hardware register.  PCI enumeration still
++ * happens, BAR0 is still assigned, and /sys/bus/pci/devices/0000:00:14.1/
++ * resource0 remains mmap-able from userspace.  Used to capture a BAR0
++ * snapshot of the hardware in Orbis-initialized state for diff analysis
++ * against our v97 broken-TX state.
++ */
++static int skip_probe;
++module_param(skip_probe, int, 0444);
++MODULE_PARM_DESC(skip_probe,
++		 "If 1, skip probe-time hardware init (BAR0 snapshot mode).");
++
+ static int mts_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct net_device *ndev;
+ 	struct mts *mts;
+ 	int ret, i;
+
++	if (skip_probe) {
++		dev_info(&pdev->dev,
++			 "ps4_mts: skip_probe=1, NOT touching hardware (BAR0 snapshot mode)\n");
++		return -ENODEV;
++	}
++
+ 	/* v93: alloc_etherdev_mqs(priv_size, txqs, rxqs) — allocates net_device
+ 	 * + private (struct mts) in one go.  Single TX queue, single RX queue.
+ 	 * Auto-freed by devm. */

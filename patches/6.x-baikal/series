@@ -696,6 +696,50 @@
 # sequence, then RX populate.  Risk LOW per glm: PHY survives MAC reset.
 0750-network-ps4-mts/0020-ps4-mts-v105-init-in-ndo-open.patch
 
+# v107 (2026-05-13): all 5 latch-trigger hypotheses falsified live.
+# Adds ps4_mts.skip_probe=1 cmdline knob for capturing Orbis-initialized
+# BAR0 state to diff against our v97 broken-TX state.  See
+# checkpoint/docs/research/kimi-v107-reset-cycle-falsified.md and
+# checkpoint/docs/research/deepseek-v107-final-final-final.md for
+# context.
+0750-network-ps4-mts/0021-ps4-mts-v107-snapshot-skip-probe.patch
+# v110: two missing BAR writes from Orbis live snapshot.
+# - BAR+0x1d4 = 1 (Orbis mts_mac_init unconditional)
+# - BAR+0x1c8 |= 0x40 (Orbis mts_init_rings_kick final "rings ready"
+#   semaphore — our driver never wrote it, leaving TX-related state
+#   machine stuck).
+# Both writes additive; if they don't fix TX, downside is just two
+# extra MMIO writes per init.  See
+# checkpoint/orbis-dumps/12.02/mts-bar0-orbis-working.bin for the
+# snapshot they were derived from.
+0750-network-ps4-mts/0022-ps4-mts-v110-orbis-missing-writes.patch
+# v111: Orbis-style bit-18 IRQ handshake — the root-cause fix the agents
+# (deepseek + kimi + hermes, with live userspace verification 2026-05-13)
+# converge on.  v82..v110 stayed stuck in MAC init mode because the ISR
+# never wrote BAR+0x204=0 on the bit-18-only IRQ that signals "exit init
+# mode".  This patch adds that handshake.  Restores MTS_IRQ_MASK_FULL_VAL
+# to 0x007bfffe (was 0x007bbffe = bit 18 masked).  See research doc
+# checkpoint/docs/research/kimi-v110-v111-bit18-handshake.md.
+0750-network-ps4-mts/0023-ps4-mts-v111-bit18-handshake.patch
+# v112: re-arm BAR+0x204 after the bit-18 handshake.  v111 boot log
+# confirmed handshake fired correctly but total_irq stuck at 1
+# afterwards — no further MSIs delivered.  Orbis's mts_intr re-arms
+# BAR+0x204=0x10001388 at the top of every ISR call; we replicate
+# inline after the clear.
+0750-network-ps4-mts/0024-ps4-mts-v112-bit18-rearm.patch
+# v113: hotswap-safe mts_remove() — pairs with CONFIG_PS4_MTS=m flip in
+# config/6.x-baikal.config.  Adds the missing quiesce steps per 4-agent
+# consensus (wake_up before kthread_stop, W1C clear of BAR+0x50 pending
+# status after masking IRQs).  Required for the module dev workflow:
+# ~30 sec iteration via rmmod+insmod instead of ~15 min reboot gauntlet.
+0750-network-ps4-mts/0025-ps4-mts-v113-hotswap-safe-remove.patch
+# v114: fix the sky2 ifndef guard that didn't account for ps4_mts=m.
+# Replaced `#ifndef CONFIG_PS4_MTS` with `#if !IS_ENABLED(CONFIG_PS4_MTS)`
+# so sky2's table excludes BAIKAL_GBE whether ps4_mts is =y OR =m.
+# Without this, sky2 (built-in) was winning the PCI bind race when
+# ps4_mts was a module, leaving ps4_mts loaded but unbound.
+0750-network-ps4-mts/0026-ps4-mts-v114-sky2-ifndef-vs-is-enabled.patch
+
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
 0800-usb-aeolia/0002-xhci-aeolia-baikal-shutdown.patch

@@ -1,0 +1,201 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v111 — bit-18 ISR handshake exits MAC init mode
+
+After v110 (Orbis missing writes) failed to fix TX, we ran the safe BAR0
+dumper to capture Orbis live state and a live userspace MMIO experiment
+on the v110 broken-TX boot.  Result: the **bit-18 (0x40000) IRQ
+handshake** is the root cause we've been missing for 15 patches.
+
+EVIDENCE
+========
+
+1. v82..v110 boot log: irq histogram dominated by pattern 0x00040000
+   firing ~5000 IRQs/sec.  Other bits (link-change 0x4, RX 0x40, TX
+   0x80) rarely or never fire.
+
+2. Ghidra mts_intr decompile (Orbis 12.02 @ 0xffffffffc85edcf0):
+
+     if (((~softc+0x3098 & status) == 0x40000) && (softc+0x309c == 1)) {
+       softc+0x309c = 0;       // reset "init done" flag
+       BAR+0x204 = 0;          // disable master IRQ block
+       BAR+0x54 = softc+0x3098; // restore saved mask
+     }
+
+   Bit 18 is the MAC's "I'm still in init mode" handshake signal.
+   Orbis's first-call setup (which we already do) writes:
+     BAR+0x204 = 0x10001388 + BAR+0x54 = 0x7bfffe
+   then waits for the bit-18-only IRQ as confirmation that the MAC's
+   init state machine reached "ready for exit".  Handler writes 0 to
+   BAR+0x204, which releases the MAC to operational mode.
+
+3. Userspace live test (2026-05-13, kbase 0xffffffffdefa8000):
+     /sys/bus/pci/devices/0000:00:14.1/resource0 mmap, write 0 to
+     offset 0x204.  Result:
+       - bit-18 fires froze immediately (0x00040000 count stopped at
+         2,861,980 — same value 30+ seconds later)
+       - new IRQ pattern appeared: 0x00000040 (just bit 6, no bit 18
+         mate) — never seen before in any boot
+   This empirically confirms the diagnosis: the MAC was stuck in init
+   mode waiting for this exact handshake.
+
+WHY v91 BUT NOT v93+ (kimi insight)
+====================================
+
+v91 had NO MSI ISR registered.  The MAC's init handshake never reached
+software, so the MAC silicon presumably bootstrapped to operational
+mode on a timeout.  v93 introduced the netdev wrapper + NAPI + ISR; the
+ISR registered correctly but never implemented the handshake.  Result:
+MAC enters init mode (write BAR+0x204=0x10001388), MAC asserts bit-18
+to handshake, our ISR ACKs and ignores, MAC keeps asserting bit-18, ad
+infinitum.  All downstream effects (link bit 0 won't latch, RX engine
+bit 0 won't latch, TX never completes) trace to "MAC stuck in init".
+
+WHAT THIS PATCH DOES
+====================
+
+1. Restore `MTS_IRQ_MASK_FULL_VAL` to `0x007bfffe` (was `0x007bbffe`
+   since v85, which masked bit 18 out — defeating the handshake).
+   Note: 0x007bfffe has bit 18 already cleared (= "ignored"), so the
+   handshake check `(status & ~mask) == BIT18` evaluates true when the
+   MAC asserts bit 18.
+
+2. Add `irq_block_armed` flag and `saved_irq_mask` to struct mts.
+
+3. In mts_mac_init: after the BAR+0x204 + BAR+0x54 writes, set
+   `mts->saved_irq_mask = MTS_IRQ_MASK_FULL_VAL` and
+   `mts->irq_block_armed = true`.
+
+4. In mts_intr: BEFORE NAPI scheduling, check for the bit-18-only
+   handshake condition.  If matched and armed:
+     - Clear armed flag (one-shot per init).
+     - Write 0 to BAR+0x204.
+     - Write saved mask to BAR+0x54.
+     - Return IRQ_HANDLED (don't NAPI-schedule, don't fall through).
+
+This is a faithful translation of the Orbis ISR handshake sequence
+into our driver.  Cross-verified by deepseek + kimi + hermes agents
+2026-05-13, with userspace empirical confirmation.
+
+EXPECTED BOOT-LOG EVIDENCE
+==========================
+
+If v111 works, look for in dmesg:
+  v111: armed bit-18 handshake (saved_mask=0x007bfffe BAR+0x204=0x10001388)
+  v111: bit-18 handshake fired — exited init mode (BAR+0x204=0, BAR+0x54=0x007bfffe)
+  link UP — ... Mbps full-duplex (linkreg=0x00000b19, ...)  ← bit 0 NOW SET
+
+If TX comes alive, /proc/net/dev for enp0s20f1 will show tx packets > 0
+and ping/ssh outbound should work.
+
+If TX still dead, the handshake may need additional state preserved
+(e.g. softc+0x3098 — we use MTS_IRQ_MASK_FULL_VAL as a constant but
+Orbis tracks it per-softc; may matter on re-init paths).
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 70 ++++++++++++++++++++++++++++-
+ 1 file changed, 69 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -121,14 +121,23 @@
+ #define MTS_MAC_CLK_INIT	25000000
+ #define MTS_IRQ_ENABLE_FULL_VAL	0x10001388
+ /*
+- * v85: Orbis writes 0x7bfffe but v84a measured a 5,670 Hz flood of
+- * irq_status = 0x00040000 (bit 18 only) that our stub ISR can't quiet.
+- * Gate bit 18 in the mask to let other IRQ bits surface in the histogram.
+- * If link comes up, bit 18 was the blocker.  If not, the histogram tells
+- * us what else needs handling.
++ * v111: Restore bit 18 to the mask.  v85 had masked it to suppress the
++ * 5,670 Hz flood, but per the Orbis mts_intr decompile (and live
++ * userspace experiment 2026-05-13), the bit-18 (0x40000) IRQ is the
++ * MAC's "I'm still in init mode" handshake signal.  The Orbis ISR
++ * handles it by writing 0 to BAR+0x204 (master IRQ disable) + restoring
++ * the saved mask to BAR+0x54 — that exits the MAC's init state machine.
++ * With bit 18 MASKED (v85..v110), the handshake bit never reaches our
++ * ISR and the MAC stays stuck forever: TX never completes, RX engine
++ * bit 0 won't latch, link bit 0 of BAR+0x04 never sets.
++ *
++ * v111 mask polarity is "ENABLED bits" (Orbis: ~softc+0x3098 & status
++ * gates the handshake check, i.e. softc+0x3098 = "ignored" bits, and
++ * BAR+0x54 = ~ignored = enabled).  0x007bfffe enables all bits except 0
++ * and 0x800000 — matching Orbis first-call.
+  */
+ #define MTS_IRQ_BIT18		0x00040000
+-#define MTS_IRQ_MASK_FULL_VAL	(0x007bfffe & ~MTS_IRQ_BIT18)	/* = 0x007bbffe */
++#define MTS_IRQ_MASK_FULL_VAL	0x007bfffe	/* v111: bit 18 included */
+
+ #define MTS_PHY_CTRL_PERIOD_MS	3000	/* gbe:phy_ctrl cadence */
+ #define MTS_DBG_TIMER_PERIOD_MS	5000	/* debug telemetry dump cadence */
+@@ -229,6 +238,15 @@
+ 	atomic_t isr_hist_count[MTS_ISR_HIST_SLOTS];
+ 	u32 isr_last_linkreg;
+ 	struct timer_list dbg_timer;
++
++	/* v111: Orbis-style bit-18 handshake state.
++	 * Set true after mts_mac_init writes BAR+0x204 + BAR+0x54 init values.
++	 * Cleared on the first bit-18-only IRQ, where the ISR writes 0 to
++	 * BAR+0x204 + restores BAR+0x54 from saved_irq_mask — mirroring
++	 * Orbis's mts_intr "exit init mode" sequence.
++	 */
++	bool irq_block_armed;
++	u32 saved_irq_mask;
+ };
+
+ /*
+@@ -534,6 +552,18 @@
+ 	(void)readl(bar + MTS_IRQ_MASK);
+
+ 	/*
++	 * v111: Arm the bit-18 "exit init mode" handshake.  The ISR uses
++	 * saved_irq_mask to restore BAR+0x54 after the handshake — matches
++	 * Orbis's `BAR+0x54 = softc+0x3098` (where softc+0x3098 stores the
++	 * mask).  irq_block_armed gates the handshake to fire once per init.
++	 */
++	mts->saved_irq_mask = MTS_IRQ_MASK_FULL_VAL;
++	mts->irq_block_armed = true;
++	dev_info(&mts->pdev->dev,
++		 "v111: armed bit-18 handshake (saved_mask=0x%08x BAR+0x204=0x%08x)\n",
++		 mts->saved_irq_mask, readl(bar + MTS_IRQ_ENABLE_FULL));
++
++	/*
+ 	 * v86: enable MT7531 PHY core PLL via C45 MMD 0x1f reg 0x403.  Our
+ 	 * parent prelude reset the switch chip (BAR+0xf04), which destroys
+ 	 * the bootloader's PLL state.  Without re-enabling here, the PHY
+@@ -915,6 +945,34 @@
+
+ 	atomic_inc(&mts->isr_total_count);
+
++	/*
++	 * v111: Orbis-style "exit init mode" handshake.  Per Ghidra
++	 * mts_intr decompile + 2026-05-13 live userspace verification:
++	 * when only the bit-18 (0x40000) IRQ fires (no other status bits),
++	 * the MAC is signalling "I'm still in init mode, please finish the
++	 * handshake".  Orbis responds by:
++	 *   - writing 0 to BAR+0x204 (disable master IRQ block — releases
++	 *     the MAC's internal init state machine to "operational" mode)
++	 *   - restoring the saved IRQ mask to BAR+0x54
++	 * Without this, RX engine bit 0 won't latch, BAR+0x04 bit 0
++	 * (link-up) never sets, TX never completes.  Confirmed:
++	 *   - v82..v110: bit-18 fires ~5kHz, MAC stuck → TX dead
++	 *   - Userspace `writel(0, BAR+0x204)` halts bit-18 storm and
++	 *     unmasks new IRQ patterns (just-bit-6 alone, never seen before)
++	 * The handshake is one-shot per init (gated by irq_block_armed).
++	 */
++	if (mts->irq_block_armed &&
++	    (status & ~mts->saved_irq_mask) == MTS_IRQ_BIT18) {
++		mts->irq_block_armed = false;
++		writel(0, mts->bar + MTS_IRQ_ENABLE_FULL);
++		writel(mts->saved_irq_mask, mts->bar + MTS_IRQ_MASK);
++		(void)readl(mts->bar + MTS_IRQ_MASK);
++		dev_info(&mts->pdev->dev,
++			 "v111: bit-18 handshake fired — exited init mode (BAR+0x204=0, BAR+0x54=0x%08x)\n",
++			 mts->saved_irq_mask);
++		return IRQ_HANDLED;
++	}
++
+ 	/* v93: schedule NAPI on RX/TX completion bits.  NAPI poll handles
+ 	 * both directions; we don't mask IRQs here, level-triggered MSI is
+ 	 * deasserted by the W1C above. */
