@@ -1,0 +1,772 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v93 — netdev wrapper (alloc_etherdev + NAPI + xmit/RX)
+
+v91 brought the PS4 Baikal MTS MAC's BAR+0x04 bit 0 to latch for the
+first time (LINK UP 1000Mb/s Full Duplex confirmed both sides with
+host Realtek RTL8153 USB-Ethernet partner).  But the driver was
+intentionally phase-1: no net_device, no DMA, just PHY/MAC bringup.
+`ip link` showed only lo/wlan0/ap0/ap1 — no mts0/eth0.
+
+v93 wraps the working phase-1 init with a real netdev:
+  - devm_alloc_etherdev_mqs(sizeof(struct mts), 1 TX, 1 RX queue)
+  - register_netdev (LAST in probe — no half-initialized iface visible)
+  - ndo_open  — init rings, kick engines, napi_enable
+  - ndo_stop  — release skbs, napi_disable (keeps MAC engines running
+                so subsequent open re-uses the existing link state)
+  - ndo_start_xmit — TX descriptor write + BAR+0x34 |= 4 kick
+  - ndo_get_stats64 — counters from BAR+0x118/0x128/0x12c
+  - NAPI poll — drain TX completion + RX ring + refill
+  - ISR rewired to schedule NAPI on bits 0x40|0x80|0x22
+
+Descriptor layout VERIFIED by hermes Ghidra dig (saved at
+checkpoint/docs/research/hermes+v93_descriptor_format.md) of Orbis
+12.02 mts_init_rings_kick + mts_tx_complete + mts_rx_unwrap_one +
+mts_rx_process + mts_intr.  CRITICAL hermes corrections vs my initial
+draft (caught before staging per CLAUDE.md sanity-check rule):
+
+  1. OWN bit semantics are INVERTED.  Driver CLEARS bit 31 to hand
+     descriptor to HW; HW SETS bit 31 on completion.  Opposite of
+     typical descriptor designs.
+  2. TX kick register is BAR+0x34 (not BAR+0x38 as earlier labelled);
+     RX refill kick at BAR+0x38.  Engine-enable bit 0 works at both,
+     packet-path kick is bit 2.
+  3. TX descriptor needs SOF (bit 29) + EOF (bit 28) on single-segment
+     frames; TX length is 16-bit in low bits, not 11-bit like RX.
+  4. RX buffer size is 0x600 (1536 bytes), not 2048.
+  5. TX "free" descriptors marked by aux0 = 0xffff0000 sentinel
+     (per Orbis init); driver tests this to distinguish "HW completed
+     real frame" from "descriptor was never submitted".
+  6. RX bit 17 is checksum status, NOT "packet valid" — completion
+     condition is just OWN=1 + length>0.
+
+References:
+  - checkpoint/docs/research/hermes+v93_descriptor_format.md  (161 lines)
+  - checkpoint/docs/research/deepseek+v93_phase1_to_phase3_diff.md (339)
+  - checkpoint/docs/research/glm+v93_netdev_template.md (488)
+  - checkpoint/docs/research/kimi+v93_minimum_netdev.md (346)
+
+After this patch, expected behavior:
+  - `ip link show mts0` shows the interface (state UNKNOWN until
+    ip link set up).
+  - `ip link set mts0 up` → carrier comes ON via netif_carrier_on
+    (since v91 link is already up at probe time).
+  - `ip addr add 10.0.0.2/24 dev mts0; ping 10.0.0.1` should work
+    if host RTL8153 is on the same subnet.
+
+UNTESTED — descriptor format hermes-verified but hand-off ordering,
+endian handling, kick timing not yet validated on hardware.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1,19 +1,29 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+- * Sony PS4 Baikal "MTS" gigabit ethernet — phase 1: PHY detection + link poll.
++ * Sony PS4 Baikal "MTS" gigabit ethernet driver.
+  *
+  * Reverse-engineered from Orbis kernel FW 12.02 `if_mts.c`.  Full register map
+  * and ISR bit table at checkpoint/docs/research/2026-05-12-orbis-mts-driver-RE.md.
+  *
+- * Scope: PCI bind, partial MAC out-of-reset, SMI MDIO C22 sweep, generic PHY
+- * soft-reset + AN restart, and a 1Hz link-status print.  No net_device, no DMA
+- * rings, no TX/RX yet.  v77 boot validated SMI end-to-end and identified the
+- * PHY as MediaTek MT7531 (id 0x03a29441 — matches MTK_GPHY_ID_MT7531 in
+- * mainline drivers/net/phy/mediatek/mtk-ge.c).  TX/RX paths land in phase 2/3.
++ * History:
++ *  - v77/v77b (2026-05-12): PCI bind + SMI MDIO C22 + PHY ID readback.
++ *  - v82-v89 (2026-05-12..13): parent prelude, mac_init, kthread SMI
++ *    heartbeat, ISR stub, engine start, MT7531 DSP corrections from
++ *    mainline (SlvDPSready TR write, RGMII delays).
++ *  - v91 (2026-05-13): status unit OP_ON + MMD diagnostic — LINK UP
++ *    1000Mb/s Full Duplex confirmed both sides with RTL8153 partner.
++ *  - v93 (2026-05-13): netdev wrapper — alloc_etherdev, register_netdev,
++ *    ndo_open/stop/start_xmit/get_stats64, NAPI poll, real descriptor
++ *    management.  Descriptor layout verified by hermes Ghidra dig:
++ *    16-byte stride, INVERTED OWN semantics (driver clears bit31 to give
++ *    to HW, HW sets bit31 on completion), TX SOF/EOF bits 29/28,
++ *    RX length in bits 0..10, TX kick at BAR+0x34, RX refill at BAR+0x38.
+  */
+ 
+ #include <linux/delay.h>
+ #include <linux/dma-mapping.h>
++#include <linux/etherdevice.h>
++#include <linux/if_ether.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+@@ -21,8 +31,11 @@
+ #include <linux/kthread.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/netdevice.h>
+ #include <linux/pci.h>
+ #include <linux/pci_ids.h>
++#include <linux/skbuff.h>
++#include <linux/spinlock.h>
+ #include <linux/timer.h>
+ #include <linux/types.h>
+ 
+@@ -122,15 +135,61 @@
+ #define MTS_ISR_HIST_SLOTS	16
+ 
+ /*
+- * DMA descriptor ring sizes.  Orbis uses 256 entries per ring; for v84's
+- * engine-start hypothesis test we only need the engines to think they have
+- * valid memory to fetch descriptors from.  4KB per ring is more than enough
+- * for any plausible descriptor layout (16-32 bytes per entry).  Phase 3
+- * will replace this with proper sized rings + per-entry buffer management.
++ * DMA descriptor ring sizing — v93 per hermes Ghidra confirm.
++ * Orbis hard-codes 256 descriptors per ring (8-bit prod/cons), each ring
++ * 0x1000 bytes.  RX buffer size is 0x600 (1536 bytes) — fits standard
++ * 1518-byte Ethernet frame with alignment slack.
+  */
+-#define MTS_RING_BYTES		4096
++#define MTS_NUM_TX_DESC		256
++#define MTS_NUM_RX_DESC		256
++#define MTS_DESC_BYTES		16
++#define MTS_RING_BYTES		(MTS_NUM_RX_DESC * MTS_DESC_BYTES)	/* 4096 */
++#define MTS_RX_BUF_SIZE		0x600
++#define MTS_TX_BUF_MAX		(MTS_RX_BUF_SIZE - 64)
++#define MTS_NAPI_BUDGET		64
++
++/*
++ * Hardware descriptor — 16 bytes, per hermes v93 Ghidra dig of
++ * mts_init_rings_kick (FUN_c85ef1b0), mts_tx_complete (FUN_c85eeca0),
++ * mts_rx_unwrap_one (FUN_c85eed90), TX submit FUN_c85f1aa0.
++ *
++ * CRITICAL: OWN semantics are INVERTED vs typical descriptors.
++ *   - Driver CLEARS bit 31 (OWN=0) to hand the descriptor to HW.
++ *   - HW SETS bit 31 (OWN=1) when the descriptor is complete/CPU-owned.
++ * WRAP (bit 30) set only on descriptor index 255.
++ * 32-bit DMA address; no addr_hi field.
++ */
++struct mts_desc {
++	__le32	ctl_len;	/* +0x00: OWN/WRAP/SOF/EOF/flags/length */
++	__le32	buf_lo;		/* +0x04: 32-bit DMA buffer address */
++	__le32	aux0;		/* +0x08: TX sentinel/VLAN; RX VLAN tag */
++	__le32	aux1;		/* +0x0c: TX TSO/csum metadata; RX unused */
++} __packed __aligned(16);
++
++#define MTS_DESC_OWN		BIT(31)		/* HW-sets-on-complete */
++#define MTS_DESC_WRAP		BIT(30)		/* last entry */
++#define MTS_DESC_TX_SOF		BIT(29)		/* TX: start-of-frame */
++#define MTS_DESC_TX_EOF		BIT(28)		/* TX: end-of-frame */
++#define MTS_DESC_RX_LEN_MASK	GENMASK(10, 0)	/* RX length (max 2047) */
++#define MTS_DESC_TX_AUX0_FREE	0xffff0000u	/* sentinel: TX desc free */
++
++/* Per hermes: BAR+0x34 is TX engine, BAR+0x38 is RX engine.  bit0 enables,
++ * bit2 is the packet-path kick.  The earlier v82..v91 constants MTS_RX_KICK
++ * (0x34) and MTS_TX_KICK (0x38) had swapped labels but the engine-enable
++ * writes (bit0) work either way since we set both. */
++#define MTS_TX_CTRL		0x034	/* TX engine: bit0=enable, bit2=kick */
++#define MTS_RX_CTRL		0x038	/* RX engine: bit0=enable, bit2=refill */
++#define MTS_KICK_PKT		0x04	/* bit 2: packet-path kick */
++
++/* IRQ bits per hermes mts_intr decompile */
++#define MTS_IRQ_TX_DONE		0x00000080	/* TX completion */
++#define MTS_IRQ_RX_AVAIL	0x00000040	/* RX packet available */
++#define MTS_IRQ_RX_KICKED	0x00000022	/* RX-related condition */
++#define MTS_IRQ_NAPI_MASK	(MTS_IRQ_TX_DONE | MTS_IRQ_RX_AVAIL | MTS_IRQ_RX_KICKED)
+ 
+ struct mts {
++	struct net_device *ndev;		/* v93: netdev wrapper */
++	struct napi_struct napi;		/* v93: NAPI RX/TX poll */
+ 	struct pci_dev *pdev;
+ 	void __iomem *bar;
+ 	struct timer_list link_poll;
+@@ -138,25 +197,32 @@
+ 	struct task_struct *phy_ctrl_thread;
+ 	u8 phy_addr;
+ 	bool link_logged_once;
+-	bool last_phy_link_up;	/* tracked by phy_ctrl kthread */
+-	bool initial_an_done;	/* first AN restart fired? */
++	bool last_phy_link_up;
++	bool initial_an_done;
+ 	unsigned int link_down_iterations;
+ 
+-	/* v84: minimal DMA rings + ISR for engine start. */
++	/* v84/v93: DMA rings + per-descriptor SKB tracking. */
++	struct mts_desc *tx_ring;	/* typed view of tx_ring_virt */
++	struct mts_desc *rx_ring;	/* typed view of rx_ring_virt */
+ 	void *tx_ring_virt;
+ 	void *rx_ring_virt;
+ 	dma_addr_t tx_ring_dma;
+ 	dma_addr_t rx_ring_dma;
++	struct sk_buff *tx_skb[MTS_NUM_TX_DESC];
++	dma_addr_t tx_dma[MTS_NUM_TX_DESC];
++	struct sk_buff *rx_skb[MTS_NUM_RX_DESC];
++	dma_addr_t rx_dma[MTS_NUM_RX_DESC];
++	u16 tx_prod;	/* driver writes here next */
++	u16 tx_cons;	/* HW completion follows */
++	u16 rx_head;	/* NAPI poll cursor */
++	spinlock_t tx_lock;
++
+ 	int irq;
+ 	bool irq_registered;
++	bool netdev_registered;
+ 	atomic_t isr_link_change_count;
+ 
+-	/*
+-	 * v85 telemetry: ISR records a histogram of irq_status patterns.
+-	 * 16 slots, lockless via atomic_t.  Lookup is linear-O(N=16) which is
+-	 * acceptable in the ISR hot path at the IRQ rates we see.  Periodic
+-	 * debug timer dumps this every MTS_DBG_TIMER_PERIOD_MS.
+-	 */
++	/* v85/v93 telemetry: ISR histogram kept as debug aid. */
+ 	atomic_t isr_total_count;
+ 	u32 isr_hist_pattern[MTS_ISR_HIST_SLOTS];
+ 	atomic_t isr_hist_count[MTS_ISR_HIST_SLOTS];
+@@ -815,7 +881,7 @@
+  * Histogram is dumped every 5s by mts_dbg_timer.  This gives us a
+  * full picture of what the MAC is asserting without flooding dmesg.
+  */
+-static irqreturn_t mts_intr_stub(int irq, void *dev_id)
++static irqreturn_t mts_intr(int irq, void *dev_id)
+ {
+ 	struct mts *mts = dev_id;
+ 	u32 status;
+@@ -832,7 +898,15 @@
+ 
+ 	atomic_inc(&mts->isr_total_count);
+ 
+-	/* Histogram update — linear search for matching pattern. */
++	/* v93: schedule NAPI on RX/TX completion bits.  NAPI poll handles
++	 * both directions; we don't mask IRQs here, level-triggered MSI is
++	 * deasserted by the W1C above. */
++	if (mts->ndev && (status & MTS_IRQ_NAPI_MASK)) {
++		if (napi_schedule_prep(&mts->napi))
++			__napi_schedule_irqoff(&mts->napi);
++	}
++
++	/* Histogram update — kept as debug aid for unhandled bits. */
+ 	for (i = 0; i < MTS_ISR_HIST_SLOTS; i++) {
+ 		if (READ_ONCE(mts->isr_hist_pattern[i]) == status) {
+ 			atomic_inc(&mts->isr_hist_count[i]);
+@@ -840,9 +914,6 @@
+ 			break;
+ 		}
+ 		if (READ_ONCE(mts->isr_hist_pattern[i]) == 0) {
+-			/* Empty slot — claim it.  Race tolerant: if two CPUs
+-			 * try simultaneously, one wins, the other will find
+-			 * the now-occupied slot on next IRQ. */
+ 			WRITE_ONCE(mts->isr_hist_pattern[i], status);
+ 			atomic_inc(&mts->isr_hist_count[i]);
+ 			dev_info(&mts->pdev->dev,
+@@ -854,8 +925,6 @@
+ 		}
+ 	}
+ 	if (!found && atomic_read(&mts->isr_total_count) < 100000) {
+-		/* Histogram full but we still want to know it happened.
+-		 * Rate-limited via the total-count guard. */
+ 		dev_info_ratelimited(&mts->pdev->dev,
+ 				     "ISR: irq_status=0x%08x (histogram full)\n",
+ 				     status);
+@@ -863,11 +932,18 @@
+ 
+ 	if (status & MTS_IRQ_LINK_CHANGE) {
+ 		u32 linkreg = readl(mts->bar + MTS_LINK_STATUS);
++		bool up = !!(linkreg & 0x1);
+ 
+ 		atomic_inc(&mts->isr_link_change_count);
+ 		dev_info(&mts->pdev->dev,
+ 			 "ISR: link-change IRQ (irq_status=0x%08x, linkreg=0x%08x)\n",
+ 			 status, linkreg);
++		if (mts->ndev) {
++			if (up && !netif_carrier_ok(mts->ndev))
++				netif_carrier_on(mts->ndev);
++			else if (!up && netif_carrier_ok(mts->ndev))
++				netif_carrier_off(mts->ndev);
++		}
+ 	}
+ 	return IRQ_HANDLED;
+ }
+@@ -1080,16 +1156,406 @@
+ 	return 0;
+ }
+ 
++/* ===================================================================
++ * v93: netdev wrapper — ndo_open / ndo_stop / ndo_start_xmit / NAPI poll.
++ *
++ * Descriptor layout, ownership semantics, kick registers, and IRQ bits
++ * all confirmed via hermes Ghidra dig of Orbis 12.02 mts_init_rings_kick
++ * + mts_tx_complete + mts_rx_process + mts_rx_unwrap_one + mts_intr.
++ * =================================================================== */
++
++static void mts_rx_release_one(struct mts *mts, unsigned int i)
++{
++	if (mts->rx_skb[i]) {
++		dma_unmap_single(&mts->pdev->dev, mts->rx_dma[i],
++				 MTS_RX_BUF_SIZE, DMA_FROM_DEVICE);
++		dev_kfree_skb_any(mts->rx_skb[i]);
++		mts->rx_skb[i] = NULL;
++		mts->rx_dma[i] = 0;
++	}
++}
++
++/*
++ * Pre-fill an RX descriptor slot.  Per hermes mts_init_rings_kick:
++ *   ctl_len = 0x00000600 (length, OWN=0 to give to HW)
++ *   plus WRAP bit if this is the last entry
++ * Driver clears OWN bit to hand to HW; HW will set OWN bit on completion.
++ */
++static int mts_rx_alloc(struct mts *mts, unsigned int i)
++{
++	struct sk_buff *skb;
++	dma_addr_t dma;
++	u32 ctl_len;
++
++	skb = netdev_alloc_skb_ip_align(mts->ndev, MTS_RX_BUF_SIZE);
++	if (!skb)
++		return -ENOMEM;
++
++	dma = dma_map_single(&mts->pdev->dev, skb->data, MTS_RX_BUF_SIZE,
++			     DMA_FROM_DEVICE);
++	if (dma_mapping_error(&mts->pdev->dev, dma)) {
++		dev_kfree_skb_any(skb);
++		return -ENOMEM;
++	}
++
++	mts->rx_skb[i] = skb;
++	mts->rx_dma[i] = dma;
++
++	ctl_len = MTS_RX_BUF_SIZE;	/* OWN=0 → HW takes ownership */
++	if (i == MTS_NUM_RX_DESC - 1)
++		ctl_len |= MTS_DESC_WRAP;
++
++	mts->rx_ring[i].buf_lo = cpu_to_le32(lower_32_bits(dma));
++	mts->rx_ring[i].aux0   = 0;
++	mts->rx_ring[i].aux1   = 0;
++	/* ctl_len last, with dma_wmb so address+aux are visible first */
++	dma_wmb();
++	mts->rx_ring[i].ctl_len = cpu_to_le32(ctl_len);
++	return 0;
++}
++
++/*
++ * Initialize both rings.  Per hermes mts_init_rings_kick:
++ *  - TX descriptors start as "free" with OWN=1 + aux0 sentinel 0xffff0000.
++ *  - RX descriptors built then OWN cleared to hand to HW.
++ */
++static void mts_rings_init(struct mts *mts)
++{
++	unsigned int i;
++
++	memset(mts->tx_ring_virt, 0, MTS_RING_BYTES);
++	memset(mts->rx_ring_virt, 0, MTS_RING_BYTES);
++	memset(mts->tx_skb, 0, sizeof(mts->tx_skb));
++	memset(mts->rx_skb, 0, sizeof(mts->rx_skb));
++	memset(mts->tx_dma, 0, sizeof(mts->tx_dma));
++	memset(mts->rx_dma, 0, sizeof(mts->rx_dma));
++	mts->tx_prod = 0;
++	mts->tx_cons = 0;
++	mts->rx_head = 0;
++
++	for (i = 0; i < MTS_NUM_TX_DESC; i++) {
++		u32 ctl_len = MTS_DESC_OWN;	/* OWN=1 = free (CPU-owned) */
++
++		if (i == MTS_NUM_TX_DESC - 1)
++			ctl_len |= MTS_DESC_WRAP;
++		mts->tx_ring[i].ctl_len = cpu_to_le32(ctl_len);
++		mts->tx_ring[i].aux0    = cpu_to_le32(MTS_DESC_TX_AUX0_FREE);
++	}
++
++	for (i = 0; i < MTS_NUM_RX_DESC; i++) {
++		if (mts_rx_alloc(mts, i)) {
++			dev_warn(&mts->pdev->dev,
++				 "v93: RX prefill failed at %u/%u\n",
++				 i, MTS_NUM_RX_DESC);
++			break;
++		}
++	}
++}
++
++static void mts_rings_release(struct mts *mts)
++{
++	unsigned int i;
++
++	for (i = 0; i < MTS_NUM_RX_DESC; i++)
++		mts_rx_release_one(mts, i);
++
++	for (i = 0; i < MTS_NUM_TX_DESC; i++) {
++		if (mts->tx_skb[i]) {
++			dma_unmap_single(&mts->pdev->dev, mts->tx_dma[i],
++					 mts->tx_skb[i]->len, DMA_TO_DEVICE);
++			dev_kfree_skb_any(mts->tx_skb[i]);
++			mts->tx_skb[i] = NULL;
++		}
++	}
++}
++
++static int mts_open(struct net_device *ndev)
++{
++	struct mts *mts = netdev_priv(ndev);
++
++	mts_rings_init(mts);
++
++	/* Reprogram ring base addresses (probe wrote them too; reconfirm
++	 * since rings_init zeroed the desc memory). */
++	writel(lower_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_LO);
++	writel(upper_32_bits(mts->tx_ring_dma), mts->bar + MTS_TX_DESC_HI);
++	writel(lower_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_LO);
++	writel(upper_32_bits(mts->rx_ring_dma), mts->bar + MTS_RX_DESC_HI);
++
++	napi_enable(&mts->napi);
++	netif_start_queue(ndev);
++
++	/* Re-kick engines so HW notices the new ring contents.  bit 0 of
++	 * the respective CTRL register enables the engine. */
++	writel(readl(mts->bar + MTS_TX_CTRL) | 0x1, mts->bar + MTS_TX_CTRL);
++	writel(readl(mts->bar + MTS_RX_CTRL) | 0x1, mts->bar + MTS_RX_CTRL);
++
++	dev_info(&mts->pdev->dev,
++		 "v93: ndo_open %s tx_ring=%pad rx_ring=%pad\n",
++		 ndev->name, &mts->tx_ring_dma, &mts->rx_ring_dma);
++
++	if (readl(mts->bar + MTS_LINK_STATUS) & 0x1)
++		netif_carrier_on(ndev);
++	else
++		netif_carrier_off(ndev);
++	return 0;
++}
++
++static int mts_stop(struct net_device *ndev)
++{
++	struct mts *mts = netdev_priv(ndev);
++
++	netif_stop_queue(ndev);
++	netif_carrier_off(ndev);
++	napi_disable(&mts->napi);
++
++	/* Do NOT stop MAC engines — link UP depends on them running.
++	 * (deepseek-v84 finding.)  Subsequent ndo_open re-uses the
++	 * still-active engines + reinitialized rings. */
++
++	mts_rings_release(mts);
++
++	dev_info(&mts->pdev->dev, "v93: ndo_stop %s\n", ndev->name);
++	return 0;
++}
++
++/*
++ * TX submit.  Per hermes mts_tx_complete + FUN_c85f1aa0:
++ *  - Free descriptor: OWN=1, aux0 has sentinel 0xffff0000.
++ *  - Driver clears OWN (sets OWN=0) and clears aux0 sentinel — but ONLY
++ *    AFTER writing buf_lo + aux0/aux1.  Last write is ctl_len with
++ *    SOF|EOF|len|WRAP? and OWN=0.
++ *  - Kick: BAR+0x34 |= 4.
++ *  - HW completion: HW sets OWN=1 back; aux0 still 0 (not sentinel).
++ */
++static netdev_tx_t mts_start_xmit(struct sk_buff *skb, struct net_device *ndev)
++{
++	struct mts *mts = netdev_priv(ndev);
++	unsigned int entry;
++	dma_addr_t dma;
++	u32 ctl_len;
++	unsigned long flags;
++
++	if (unlikely(skb_put_padto(skb, ETH_ZLEN)))
++		return NETDEV_TX_OK;
++
++	if (unlikely(skb->len > MTS_TX_BUF_MAX)) {
++		ndev->stats.tx_dropped++;
++		dev_kfree_skb_any(skb);
++		return NETDEV_TX_OK;
++	}
++
++	spin_lock_irqsave(&mts->tx_lock, flags);
++
++	entry = mts->tx_prod & (MTS_NUM_TX_DESC - 1);
++	if (unlikely(mts->tx_skb[entry])) {
++		netif_stop_queue(ndev);
++		spin_unlock_irqrestore(&mts->tx_lock, flags);
++		return NETDEV_TX_BUSY;
++	}
++
++	dma = dma_map_single(&mts->pdev->dev, skb->data, skb->len,
++			     DMA_TO_DEVICE);
++	if (dma_mapping_error(&mts->pdev->dev, dma)) {
++		spin_unlock_irqrestore(&mts->tx_lock, flags);
++		ndev->stats.tx_dropped++;
++		dev_kfree_skb_any(skb);
++		return NETDEV_TX_OK;
++	}
++
++	mts->tx_skb[entry] = skb;
++	mts->tx_dma[entry] = dma;
++
++	/* SOF + EOF for single-fragment frame, length in low 16 bits.
++	 * OWN=0 — driver hands to HW. */
++	ctl_len = MTS_DESC_TX_SOF | MTS_DESC_TX_EOF | (skb->len & 0xffff);
++	if (entry == MTS_NUM_TX_DESC - 1)
++		ctl_len |= MTS_DESC_WRAP;
++
++	mts->tx_ring[entry].buf_lo = cpu_to_le32(lower_32_bits(dma));
++	mts->tx_ring[entry].aux0   = 0;
++	mts->tx_ring[entry].aux1   = 0;
++	dma_wmb();
++	/* ctl_len last with OWN=0; this is the hand-off to HW. */
++	mts->tx_ring[entry].ctl_len = cpu_to_le32(ctl_len);
++	dma_wmb();
++
++	mts->tx_prod++;
++
++	/* TX kick — bit 2 of BAR+0x34 (TX CTRL register). */
++	writel(readl(mts->bar + MTS_TX_CTRL) | MTS_KICK_PKT,
++	       mts->bar + MTS_TX_CTRL);
++
++	spin_unlock_irqrestore(&mts->tx_lock, flags);
++	return NETDEV_TX_OK;
++}
++
++/* Reap completed TX descriptors.  HW sets OWN=1 on a non-sentinel descriptor
++ * to indicate completion (per hermes mts_tx_complete decompile). */
++static int mts_tx_reap(struct mts *mts, int budget)
++{
++	int done = 0;
++	unsigned long flags;
++
++	spin_lock_irqsave(&mts->tx_lock, flags);
++	while (mts->tx_cons != mts->tx_prod && done < budget) {
++		unsigned int entry = mts->tx_cons & (MTS_NUM_TX_DESC - 1);
++		u32 ctl_len = le32_to_cpu(READ_ONCE(mts->tx_ring[entry].ctl_len));
++		u32 aux0    = le32_to_cpu(READ_ONCE(mts->tx_ring[entry].aux0));
++
++		/* HW completion: OWN=1 AND aux0 not the free-sentinel. */
++		if (!(ctl_len & MTS_DESC_OWN) ||
++		    (aux0 & MTS_DESC_TX_AUX0_FREE) == MTS_DESC_TX_AUX0_FREE)
++			break;
++
++		if (mts->tx_skb[entry]) {
++			dma_unmap_single(&mts->pdev->dev, mts->tx_dma[entry],
++					 mts->tx_skb[entry]->len,
++					 DMA_TO_DEVICE);
++			mts->ndev->stats.tx_packets++;
++			mts->ndev->stats.tx_bytes += mts->tx_skb[entry]->len;
++			dev_consume_skb_any(mts->tx_skb[entry]);
++			mts->tx_skb[entry] = NULL;
++		}
++		/* Restore sentinel for HW: mark slot free. */
++		mts->tx_ring[entry].aux0 = cpu_to_le32(MTS_DESC_TX_AUX0_FREE);
++
++		mts->tx_cons++;
++		done++;
++	}
++	spin_unlock_irqrestore(&mts->tx_lock, flags);
++
++	if (done && netif_queue_stopped(mts->ndev))
++		netif_wake_queue(mts->ndev);
++	return done;
++}
++
++/* Drain received frames.  Per hermes mts_rx_process: HW sets OWN=1 with
++ * length in bits 0..10; driver reads skb, refills with new skb, clears
++ * OWN to hand back. */
++static int mts_rx_drain(struct mts *mts, int budget)
++{
++	int done = 0;
++
++	while (done < budget) {
++		unsigned int entry = mts->rx_head & (MTS_NUM_RX_DESC - 1);
++		u32 ctl_len = le32_to_cpu(READ_ONCE(mts->rx_ring[entry].ctl_len));
++		struct sk_buff *skb;
++		unsigned int len;
++
++		/* HW completion: OWN=1 (HW sets when packet received). */
++		if (!(ctl_len & MTS_DESC_OWN))
++			break;
++
++		len = ctl_len & MTS_DESC_RX_LEN_MASK;
++		skb = mts->rx_skb[entry];
++
++		if (skb && len >= ETH_HLEN) {
++			dma_unmap_single(&mts->pdev->dev, mts->rx_dma[entry],
++					 MTS_RX_BUF_SIZE, DMA_FROM_DEVICE);
++			skb_put(skb, len);
++			skb->protocol = eth_type_trans(skb, mts->ndev);
++			mts->ndev->stats.rx_packets++;
++			mts->ndev->stats.rx_bytes += len;
++			napi_gro_receive(&mts->napi, skb);
++			mts->rx_skb[entry] = NULL;
++		} else {
++			if (skb) {
++				dma_unmap_single(&mts->pdev->dev,
++						 mts->rx_dma[entry],
++						 MTS_RX_BUF_SIZE,
++						 DMA_FROM_DEVICE);
++				dev_kfree_skb_any(skb);
++				mts->rx_skb[entry] = NULL;
++			}
++			mts->ndev->stats.rx_errors++;
++		}
++
++		/* Refill slot — alloc new SKB, clear OWN to hand to HW. */
++		if (mts_rx_alloc(mts, entry)) {
++			mts->ndev->stats.rx_dropped++;
++			break;
++		}
++
++		mts->rx_head++;
++		done++;
++	}
++
++	/* RX refill kick — bit 2 of BAR+0x38 (RX CTRL register). */
++	if (done)
++		writel(readl(mts->bar + MTS_RX_CTRL) | MTS_KICK_PKT,
++		       mts->bar + MTS_RX_CTRL);
++
++	return done;
++}
++
++static int mts_poll(struct napi_struct *napi, int budget)
++{
++	struct mts *mts = container_of(napi, struct mts, napi);
++	int rx_done;
++
++	mts_tx_reap(mts, budget);
++	rx_done = mts_rx_drain(mts, budget);
++
++	if (rx_done < budget)
++		napi_complete_done(napi, rx_done);
++
++	return rx_done;
++}
++
++static void mts_get_stats64(struct net_device *ndev,
++			    struct rtnl_link_stats64 *stats)
++{
++	struct mts *mts = netdev_priv(ndev);
++	u32 rx_pkts   = readl(mts->bar + 0x118);
++	u32 rx_drops  = readl(mts->bar + 0x128);
++	u32 rx_errors = readl(mts->bar + 0x12c);
++
++	stats->rx_packets = ndev->stats.rx_packets + rx_pkts;
++	stats->tx_packets = ndev->stats.tx_packets;
++	stats->rx_bytes   = ndev->stats.rx_bytes;
++	stats->tx_bytes   = ndev->stats.tx_bytes;
++	stats->rx_errors  = ndev->stats.rx_errors + rx_errors;
++	stats->rx_dropped = ndev->stats.rx_dropped + rx_drops;
++	stats->tx_dropped = ndev->stats.tx_dropped;
++}
++
++static const struct net_device_ops mts_netdev_ops = {
++	.ndo_open		= mts_open,
++	.ndo_stop		= mts_stop,
++	.ndo_start_xmit		= mts_start_xmit,
++	.ndo_get_stats64	= mts_get_stats64,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_set_mac_address	= eth_mac_addr,
++};
++
++/* end of v93 netdev block */
++
+ static int mts_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
++	struct net_device *ndev;
+ 	struct mts *mts;
+ 	u16 id1 = 0xffff, id2 = 0xffff;
+ 	int ret, i;
+ 
+-	mts = devm_kzalloc(&pdev->dev, sizeof(*mts), GFP_KERNEL);
+-	if (!mts)
++	/* v93: alloc_etherdev_mqs(priv_size, txqs, rxqs) — allocates net_device
++	 * + private (struct mts) in one go.  Single TX queue, single RX queue.
++	 * Auto-freed by devm. */
++	ndev = devm_alloc_etherdev_mqs(&pdev->dev, sizeof(*mts), 1, 1);
++	if (!ndev)
+ 		return -ENOMEM;
++	SET_NETDEV_DEV(ndev, &pdev->dev);
++	ndev->netdev_ops = &mts_netdev_ops;
++	ndev->watchdog_timeo = 5 * HZ;
++	strscpy(ndev->name, "mts%d", IFNAMSIZ);
++	eth_hw_addr_random(ndev);
++
++	mts = netdev_priv(ndev);
++	mts->ndev = ndev;
+ 	mts->pdev = pdev;
++	spin_lock_init(&mts->tx_lock);
++
++	netif_napi_add(ndev, &mts->napi, mts_poll);
+ 
+ 	ret = pcim_enable_device(pdev);
+ 	if (ret)
+@@ -1101,7 +1567,7 @@
+ 	mts->bar = pcim_iomap_table(pdev)[0];
+ 
+ 	pci_set_master(pdev);
+-	pci_set_drvdata(pdev, mts);
++	/* drvdata set to ndev at end of probe (after register_netdev). */
+ 
+ 	dev_info(&pdev->dev, "Baikal MTS: BAR0=%pR, mapped at %p\n",
+ 		 &pdev->resource[0], mts->bar);
+@@ -1129,6 +1595,8 @@
+ 						 &mts->rx_ring_dma, GFP_KERNEL);
+ 	if (!mts->rx_ring_virt)
+ 		return dev_err_probe(&pdev->dev, -ENOMEM, "RX ring alloc\n");
++	mts->tx_ring = (struct mts_desc *)mts->tx_ring_virt;
++	mts->rx_ring = (struct mts_desc *)mts->rx_ring_virt;
+ 	dev_info(&pdev->dev,
+ 		 "DMA rings: TX=%pad RX=%pad (each %u bytes, zeroed)\n",
+ 		 &mts->tx_ring_dma, &mts->rx_ring_dma, MTS_RING_BYTES);
+@@ -1161,7 +1629,7 @@
+ 		pci_free_irq_vectors(pdev);
+ 		return mts->irq;
+ 	}
+-	ret = request_irq(mts->irq, mts_intr_stub, IRQF_SHARED, DRV_NAME, mts);
++	ret = request_irq(mts->irq, mts_intr, IRQF_SHARED, DRV_NAME, mts);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "request_irq(%d) failed: %d\n", mts->irq, ret);
+ 		pci_free_irq_vectors(pdev);
+@@ -1298,12 +1766,32 @@
+ 		mts->phy_ctrl_thread = NULL;
+ 	}
+ 
++	pci_set_drvdata(pdev, ndev);
++
++	/* v93: register netdev LAST in probe.  Until this call userspace
++	 * cannot see mts0; if any earlier step fails, no half-initialized
++	 * interface ever appears.  netif_carrier_off until ndo_open. */
++	netif_carrier_off(ndev);
++	ret = register_netdev(ndev);
++	if (ret) {
++		dev_err(&pdev->dev, "register_netdev failed: %d\n", ret);
++		return ret;
++	}
++	mts->netdev_registered = true;
++	dev_info(&pdev->dev, "v93: netdev %s registered (MAC %pM)\n",
++		 ndev->name, ndev->dev_addr);
++
+ 	return 0;
+ }
+ 
+ static void mts_remove(struct pci_dev *pdev)
+ {
+-	struct mts *mts = pci_get_drvdata(pdev);
++	struct net_device *ndev = pci_get_drvdata(pdev);
++	struct mts *mts = netdev_priv(ndev);
++
++	if (mts->netdev_registered)
++		unregister_netdev(ndev);
++	netif_napi_del(&mts->napi);
+ 
+ 	if (mts->phy_ctrl_thread)
+ 		kthread_stop(mts->phy_ctrl_thread);
+@@ -1323,7 +1811,7 @@
+ 		free_irq(mts->irq, mts);
+ 		pci_free_irq_vectors(pdev);
+ 	}
+-	/* DMA rings are auto-freed by devm/dmam infrastructure. */
++	/* DMA rings auto-freed by dmam; netdev auto-freed by devm. */
+ }
+ 
+ static const struct pci_device_id mts_pci_id_table[] = {
+@@ -1342,5 +1830,5 @@
+ module_pci_driver(mts_pci_driver);
+ 
+ MODULE_AUTHOR("PS4 Linux Baikal Port");
+-MODULE_DESCRIPTION("Sony PS4 Baikal Gigabit Ethernet (MTS) — phase 1 PHY probe");
++MODULE_DESCRIPTION("Sony PS4 Baikal Gigabit Ethernet (MTS)");
+ MODULE_LICENSE("GPL v2");

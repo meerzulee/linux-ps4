@@ -1,0 +1,81 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v95 — fix v94 carrier race with ndo_open
+
+v94 boot showed the fix DOES fire correctly:
+  ps4_mts: v94: netif_carrier_on (PHY-level: BMSR=0x7969 LPA=0xcde1)
+But the kthread sets carrier_on at ~6s, then ndo_open at ~27s reads
+linkreg bit 0 (still 0 since MAC bit 0 doesn't latch on v93+ rings)
+and calls netif_carrier_off, OVERWRITING the kthread's setting.
+
+The kthread's `last_phy_carrier` cache also stayed true so it didn't
+re-fire when carrier got cleared — resulting in permanent carrier=0,
+ip refusing to xmit, ping dropped.
+
+v95 fixes both sides:
+1. Kthread: compare phy_carrier against `netif_carrier_ok(ndev)`
+   instead of the internal cache.  If anything externally clears
+   carrier (ndo_open's blind off, ip toggling), kthread re-asserts
+   on next 3s tick.
+2. ndo_open: drop the unconditional `netif_carrier_off` else branch.
+   Let kthread own the PHY-derived state.  ndo_open still does
+   netif_carrier_on if MAC bit 0 happens to be latched.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1172,24 +1172,32 @@
+ 			u16 v_bmsr = 0xffff, v_lpa = 0xffff;
+ 			bool phy_carrier;
+ 
+-			if (mts_smi_c22_read(mts, 0x01, &v_bmsr) == 0 &&
++			if (mts->ndev &&
++			    mts_smi_c22_read(mts, 0x01, &v_bmsr) == 0 &&
+ 			    mts_smi_c22_read(mts, 0x05, &v_lpa) == 0) {
+ 				phy_carrier = (v_bmsr & 0x0020) &&
+ 					      (v_lpa & 0x4000);
+-				if (mts->ndev && phy_carrier != mts->last_phy_carrier) {
++				/* v95: compare against the actual netdev carrier
++				 * state instead of an internal cache.  Reason:
++				 * ndo_open in v93 unconditionally calls
++				 * netif_carrier_off when linkreg bit 0 is 0,
++				 * which would overwrite an already-set carrier.
++				 * Using netif_carrier_ok() lets us detect that
++				 * override and re-assert on the next tick. */
++				if (phy_carrier != netif_carrier_ok(mts->ndev)) {
+ 					if (phy_carrier) {
+ 						netif_carrier_on(mts->ndev);
+ 						dev_info(&mts->pdev->dev,
+-							 "v94: netif_carrier_on (PHY-level: BMSR=0x%04x LPA=0x%04x)\n",
++							 "v94/v95: netif_carrier_on (PHY-level: BMSR=0x%04x LPA=0x%04x)\n",
+ 							 v_bmsr, v_lpa);
+ 					} else {
+ 						netif_carrier_off(mts->ndev);
+ 						dev_info(&mts->pdev->dev,
+-							 "v94: netif_carrier_off (BMSR=0x%04x LPA=0x%04x)\n",
++							 "v94/v95: netif_carrier_off (BMSR=0x%04x LPA=0x%04x)\n",
+ 							 v_bmsr, v_lpa);
+ 					}
+-					mts->last_phy_carrier = phy_carrier;
+ 				}
++				mts->last_phy_carrier = phy_carrier;
+ 			}
+ 		}
+ 
+@@ -1336,10 +1344,12 @@
+ 		 "v93: ndo_open %s tx_ring=%pad rx_ring=%pad\n",
+ 		 ndev->name, &mts->tx_ring_dma, &mts->rx_ring_dma);
+ 
++	/* v95: only set carrier_on here if the MAC has actually latched
++	 * link bit 0.  Do NOT call netif_carrier_off — the phy_ctrl
++	 * kthread owns the PHY-derived carrier state (see v94), and
++	 * unconditionally clearing it here races with the kthread cache. */
+ 	if (readl(mts->bar + MTS_LINK_STATUS) & 0x1)
+ 		netif_carrier_on(ndev);
+-	else
+-		netif_carrier_off(ndev);
+ 	return 0;
+ }
+ 

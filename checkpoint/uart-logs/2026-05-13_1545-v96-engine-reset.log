@@ -1,0 +1,1010 @@
+[SceLncService] launchApp(AZIF00003)?
+[SceLncService] category={gde} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={0}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_MINI_APP} [] appVer={0.98}?
+[SceLncService] mem_mode = {NORMAL}?
+[SceLncService] Num. of logged-in users is 1?
+[SceLncService] PrepareProcessLaunchDirCheck()?
+[SceLncService] PrepareProcessLaunchDirCheck() returned?
+[SceSystemStateMgr] Power Mode Change: FULL_GAME?
+[ScePatchChecker] (*) check (title_id='AZIF00003', app_version='0.98', check_option=0): status=0, trigger=1 userId=0xffffffff return 0x80412883?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   0 NA  0 18  800  673  609  800  800    711  711     673 1400   1375   NA  NA   3 05b/975  05d/956  00710fa0?
+[SceLncService] PrepareProcessLaunchDir()?
+[ScePatchChecker] check (title_id='AZIF00003', app_version='0.98', check_option=0): status=0, dl_status=0, trigger=1 userId=0xffffffff return 0x80412883?
+[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [ContentAreaScene : ContentAreaScene] -> [SplashScreen : SplashScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [SplashScreen : SplashScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : ActiveUserChanged : From : [BLUE(userId = 1ab07dc7)]?
+[Theme/I] : ActiveUserChanged : To   : [ANONYMOUS(userId = ffffffff)]?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[BGFT] [571] GameStartBoot(AZIF00003, 7) start?
+[BGFT] [573] GameStartBoot(AZIF00003, 7) end?
+[PFS] mount [0x000056f23fdb54d7] finished 1 1 1 1 0 1 1?
+[PFS] mount [0x000056f23fd81c6b] finished 1 0 0 1 0 1 1?
+[BGFT] [606] GameWillStart(AZIF00003, 7) start?
+[BGFT] [608] GameWillStart(AZIF00003, 7) end?
+[SceLncService] PrepareProcessLaunchDir() returned?
+[SceLncService] spawnApp?
+[Syscore App] createApp AZIF00003?
+[Sy[score App]  ExpandCpuSetMode : disable?
+[Syscore App] processSpawn(pid, 0x60000f0c, 0x10f0c130, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/AZIF00003_000, titleId = AZIF00003?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /mnt/sandbox/pfsmnt/AZIF00003-app0-patch0-union/eboot.bin?
+[Syscore App] new pid=0x47[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+KERNEL] dmem_start_app_process pid: 71, map=0xffffac312c8adb28, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0xm47?
+[AppMgr Trace]: New Process, pid=0x47, created.?
+[AppMgr Trace]: New App, appId=0x60000f0c, created?
+[Syscore App]  ExpandCpuSetMode : disable?
+DBG: Process 71 untraced!?
+<71> EXEC /app0/eboot.bin [system], vm#0, dmem#0  <223046 msec>?
+[AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/bMmBLs7NLJ/priv/mms/app.db] flags[0x10000002] result[0x0, 0]?
+[AppDb] AppInfoDbInitializeDaemon()[54]: [File:Open] AppInfoDbInitializeDaemon() call DbAccessor::Init() path[/bMmBLs7NLJ/priv/mms/app.db] result[0x0, 0].?
+[UIProcess] malloc stats freeSize:38826304 (93%) inuseSize:3116736 peakSize:4068672 [pid:0x3b]?
+[AppDb] AppInfoDbTerminateDaemon()[67]: [File:Close] AppInfoDbTerminateDaemon() call DbAccessor::Terminate().?
+[AppDb] Terminate()[768]: [File:Close] DbAccessor::Terminate() call dbutil::Connection::Close().?
+[VCS]checkFocusStatus() [LNC->VCS] Focus Change. appType = 4(MINI_APP). appId = 0x60000f0c.?
+[GoldHEN] <Plugins Loader> Started successfully?
+[GoldHEN] <Plugins Loader> Config parser failed to parse config: /data/GoldHEN/plugins.ini?
+[SL] AppFocusChanged [NPXS20001] -> [AZIF00003]?
+(../game_patch/source/main.cpp:354) [GoldHEN] <game_patch\Ver.0x00000110> module_start?
+(../game_patch/source/main.cpp:355) [GoldHEN] Plugin Author(s): illusion?
+(../game_patch/source/main.cpp:356) Commit: caacf01174654235459d48ab9d0b9e00a588b300 Branch: main Build: 188 (Release)?
+(../game_patch/source/main.cpp:356) Built: May 27 2023 @ 04:49:25?
+(../game_patch/source/main.cpp:356) GoldHEN SDK Ver: 0x00000100?
+(../game_patch/source/main.cpp:356) GoldHEN System SDK Ver: 0xffffffff?
+(../game_patch/source/main.cpp:324) numModules: 5?
+(../game_patch/source/main.cpp:328) ret 0x0?
+(../game_patch/source/main.cpp:329) module 0?
+(../game_patch/source/main.cpp:330) name: eboot.bin?
+(../game_patch/source/main.cpp:331) start: 0x400000?
+(../game_patch/source/main.cpp:332) size: 49152 (0xc000)?
+(../game_patch/source/main.cpp:365) Module start: 0x400000 0xc000?
+(../game_patch/source/main.cpp:371) process info?
+(../game_patch/source/main.cpp:371) pid: 71?
+(../game_patch/source/main.cpp:371) name: eboot.bin?
+(../game_patch/source/main.c?pp:371) path: /app0/eboot.bin?
+(../game_patch/source/main.cpp:371) titleid: AZIF00003?
+(../game_patch/source/main.cpp:371) contentid: IV0000-AZIF00003_00-PAYLOADGUEST0000?
+(../game_patch/source/main.cpp:371) version: 0.98?
+(../game_patch/source/main.cpp:371) base_address: 0x400000?
+(../game_patch/source/main.cpp:130) file /data/GoldHEN/patches/xml/AZIF00003.xml not found?
+[32m[Info ] src/ChainLauncher.c:22: Loading "/app0/guest.elf"?[0m?
+[SceLncService] tryLockSuspendBl[ock: appId={0x60000f0c}?
+[Syscore App] Kill for LoadExec(0x47)?
+KERNEL] dmem_handle_vmspace_exited pid: 71, ptype=1, 0xffffac312c8adb28->pt_loaded is TRUE?
+[KERNEL] dmem_handle_vmspace_exited map #0 0xffffac312c8adb28?
+[KERNEL] dmem_handle_vmspace_exited pid: 71, app_maps_count[1], 1 -> 0?
+[Syscore App] EVFILT_PROC NOTE_EXIT received : pid=0x47?
+[Syscore App] Kill for LoadExec(0x47) => 0?
+[Syscore App] process delete event : pid=0x47?
+[AppMgr Trace]: pid=0x47, deleted.?
+[Syscore App] Syscore Event Queue Push : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[AppMgr] All processes exited, ready for next spawn?
+[AppMgr] Executing next spawn?
+[Syscore App]  ExpandCpuSetMode : disable?
+[Syscore App] processSpawn(pid, 0x60000f0c, 0x10f0c140, appParam, processParam, 1, 1, 1, param, debug, 1)?
+[Syscore App] appParam: appType = 0x1, rootPath = /mnt/sandbox/AZIF00003_000, titleId = AZIF00003?
+[Syscore App] processParam: elfPath = /app0/guest.elf, fullPath = /mnt/sandbox/pfsmnt/AZIF00003-app0-patch0-union/eboot.bin?
+[Syscore App] Syscore Event Queue Pop : SCE_SYSCORE_EVENT_ON_PROCESS_UNLOADED?
+[Syscore App] new pid=0x48[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[KERNEL] dmem_start_app_process pid: 72, map=0xffffac312c8ad8b0, app_maps_count[1], 0 -> 1?
+[Syscore App] Add event : pid=0xm48?
+[SceLncService] unlockSuspendBlock: appId={0x60000f0c}?
+DBG: Process 72 untraced!?
+<72> EXEC /app0/guest.elf [system], vm#0, dmem#0  <223600 msec>?
+[GoldHEN] <Plugins Loader> Started successfully?
+[GoldHEN] <Plugins Loader> Config parser failed to parse config: /data/GoldHEN/plugins.ini?
+(../game_patch/source/main.cpp:354) [GoldHEN] <game_patch\Ver.0x00000110> module_start?
+(../game_patch/source/main.cpp:355) [GoldHEN] Plugin Author(s): illusion?
+(../game_patch/source/main.cpp:356) Commit: caacf01174654235459d48ab9d0b9e00a588b300 Branch: main Build: 188 (Release)?
+(../game_patch/source/mai?n.cpp:356) Built: May 27 2023 @ 04:49:25?
+(../game_patch/source/main.cpp:356) GoldHEN SDK Ver: 0x00000100?
+(../game_patch/source/main.cpp:356) GoldHEN System SDK Ver: 0xffffffff?
+(../game_patch/source/main.cpp:324) numModules: 5?
+(../game_patch/source/main.cpp:328) ret 0x0?
+(../game_patch/source/main.cpp:329) module 0?
+(../game_patch/source/main.cpp:330) name: guest.elf?
+(../game_patch/source/main.cpp:331) start: 0x400000?
+(../game_patch/source/main.cpp:332) size: 851968 (0xd0000)?
+(../game_patch/source/main.cpp:365) Module start: 0x400000 0xd0000?
+(../game_patch/source/main.cpp:371) process info?
+(../game_patch/source/main.cpp:371) pid: 72?
+(../game_patch/source/main.cpp:371) name: guest.elf?
+(../game_patch/source/main.cpp:371) path: /app0/guest.elf?
+(../game_patch/source/main.cpp:371) titleid: AZIF00003?
+(../game_patch/source/main.cpp:371) contentid: IV0000-AZIF00003_00-PAYLOADGUEST0000?
+(../game_patch/source/main.cpp:371) version: 0.98?
+(../game_patch/source/main.cpp:371) base_address: 0x400000?
+(../game_patch/source/main.cpp:130) file /data/GoldHEN/patches/xml/AZIF00003.xml not found?
+error: 0x80020002**** Base Mode ****?
+[36m[Debug] src/App.cpp:29: Initialize Language...?[0m?
+?[36m[Debug] src/App.cpp:31: Initialize Controller...?[0m?
+[mbus] onNewClie?nt. clientNum 10 over 8?
+[36m[Debug] src/App.cpp:33: Initialize Graphics...?[0m?
+?[36m[Debug] src/Graphics.cpp:89: Handle is 1309737216 (0x4e110100)?[0m?
+?[36m[Debug] src/Graphics.cpp:181: DirectMemOff: 0x200000?[0m?
+?[36m[Debug] src/Graphics.cpp:182: DirectMemAllocationSize: 0xc000000?[0m?
+?[36m[Debug] src/Graphics.cpp:183: alignment: 2097152 (0x00200000)?[0m?
+?[36m[Debug] src/Graphics.cpp:188: VideoMem: 0x200200000?[0m?
+?[36m[Debug] src/Graphics.cpp:109: Allocating framebuffer...?[0m?
+?[36m[Debug] src/Graphics.cpp:237: handle: 1309737216 (0x4e110100)?[0m?
+?[36m[Debug] src/Graphics.cpp:239: flipArgLog: 0x2000041a0?[0m?
+?[36m[Debug] src/Graphics.cpp:240: FrameBuffers: 0x2000042c0?[0m?
+?[36m[Debug] src/Graphics.cpp:255: sceVideoOutRegisterBuffers: 0x00000000?[0m?
+?[36m[Debug] src/App.cpp:35: Initialize Resource...?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/Graphics.cpp:627: Loading PNG...?[0m?
+?[36m[Debug] src/Graphics.cpp:637: PNG Loaded!?[0m?
+?[36m[Debug] src/App.cpp:43: Initialize the Main View...?[0m?
+?[36m[Debug] src/PayloadsView.cpp:186: GeneratePayloads is called!?[0m?
+?[36m[Debug] src/PayloadsView.cpp:212: Cleanup payload list...?[0m?
+?[36m[Debug] src/PayloadsView.cpp:206: GeneratePayloads: Refreshed?[0m?
+?[36m[Debug] src/PayloadsView.cpp:252: PayloadsView: End of constructor?[0m?
+?[36m[Debug] src/Ap[SceShellUI] I/PSM.UI : OnFocusActiveSceneChanged [SplashScreen : SplashScreenScene] -> [AppScreen : ApplicationScreenScene]?
+[SceShellUI] I/PSM.UI :      Scene [AppScreen : ApplicationScreenScene] : Alive?
+SetDeviceIndexBehavior: mode=MergeAllConnectedDevice, param=null?
+[Theme/I] : Apply [ANONYMOUS] : [Option:101000]: with not preloaded user?
+[SceShellUI] I/PSM.UI : [NoDraw] : ClearFrameBuffer=False?
+p.cpp:119: Application: RUN?[0m?
+?[36m[Debug] src/PayloadsView.cpp:319: Loading: /data/payloads/linux-1024mb.bin?[0m?
+[GoldHEN] <binloader> accepted a new payload?
+[GoldHEN] <binloader> TCP Mode?
+?[36m[[DGoeblug]dHEN] <bi snlroac/dePaylro> payadsload receViewived [.scize: 283p84p0: 186: Gen-e bufrafteer_sizPea: 290816yl o- ip: 1ads2 is ca7l.led!0.0?[.01]m?
+?
+?[3[G6mo[DebludHEN] <bgi]nloader>  srfoc/Payluoandd sVaiew.cpp:2n12:d C ljaileanbuprok paeyln otad larisgtet...?[ p0m?
+rocess [p?[id:3 64m[7]Deb?ug
+] sr[Gc/PayloadsVieolw.cpp:d20HEN] <binl6oader> :la unchinGg payloaender..ate. P[ayfolromadats: : BIN]?
+Refreshed[?[0m?Gol
+dHEN] <binloader> payload launched?
+kernel_init()?
+Kernel base = ffffffffdd970000?
+Direct map base = ffffac3100000000?
+Testing global variable access (write protection)...?
+OK.?
+Kernel interface initialized?
+Installing sys_kexec to system call #153?
+kexec_init() successful?
+?
+sys_kexec invoked?
+========================================?
+PS4 Linux Payloads AIO?
+FW 12.02 (1202)?
+VRAM 1024 MB?
+Southbridge: Baikal?
+==========#### AudioOut recovery is done [791405(496)-] (791405 43827408)?
+==============================?
+sys_kexec(0x2001c8000, 9872896, 0x200b34000, 4102011, "root=UUID=e2583e19-eb93-4e1d-85e5-b9946c9b5b78 rootfstype=ext4 rw console=ttyS0,115200n8 earlyprintk=serial,ttyS0,115200 loglevel=7")?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_pfp.bin ?
+Copying PFP firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_me.bin ?
+Copying ME firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_ce.bin ?
+Copying CE firmware?
+NOP handler at 0x7f0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec.bin ?
+Copying MEC firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_mec2.bin ?
+Copying MEC2 firmware?
+NOP handler at 0xff0?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_rlc.bin ?
+Copying RLC firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma.bin ?
+Copying SDMA firmware?
+firmware_extract: Extract lib/firmware/amdgpu/liverpool_sdma1.bin ?
+Copying SDMA1 firmware?
+?
+kexec parameters:?
+    Kernel image size:   9872896 bytes?
+    Initramfs size:      4196747 bytes (4102011 from user)?
+    Kernel command line: root=UUID=e2583e19-eb93-4e1d-85e5-b9946c9b5b78 rootfstype=ext4 rw console=ttyS0,115200n8 earlyprintk=serial,ttyS0,115200 loglevel=7?
+    Kernel image buffer: 0xffffac3130000000?
+    Initramfs buffer:    0xffffffffffffffff?
+kernel_hook_install(0xffffff808117d12d, 0xffffffffdddb7ad0)?
+  Using 64bit absolute jump?
+******************************************************?
+kexec successfully armed. Please shut down the system.?
+******************************************************?
+?
+[SceShellUI] I/PSM.UI : [FirstClear] : ClearFrameBuffer=False?
+[KE]sceCameraDevKill::2685 ERROR: sceCameraProcConfigStop 0x802e0006 i=0 handle=257 pid=44?
+Context.cc:174 (ajmContextCleanup) - InstancCoentext.Contecxt.ccc::189 (ajmC17ontex4 t(Cleaajnu[mpC)Ko En-RNtEL]  dmeCemox_dthCealcndle eaO_pvmnuss SpaIuce_exLpi)Kte  d -p EncoiIdns:t d7aern2, pc wtype=1ea,s   106nxo3f9t0f  wfpfroac31ap2sec8a nrdo8lb0-y>t ptu_lon aprdered is TRUEgo?ipe
+s[rKtEelyRNE L]r dmeem_dd.ehas?ndt
+ler_vmspacoe_eyCexd.i?t
+oCend mtaepxo #t0 0nxft.fffac31cex2tc.cc8ca::d8b10?1
+8[8K99E  RNEL(a(j]a djmmemCm_Cohnoantexdtnle_vmstpeCxlaetceCa_lnexeuipt)ae d pnid:- u pC72,) -o ap dpCec_mo Odaepcps_cou nMust[P 13C ]EL,TD 1 e ->c 0?
+oEdnecroder was n owt parsop enrlyo ut npregistered.?
+rCoontepxt.ecrc:18l9 (ajmyCon tuextnClearenguip) - Cstodec Opus Deecrodere was dnot proper.ly un?
+regiCsteorned.t?
+ext.cc:189 (ajmContextCoClntexeat.cnc:189 (ajmCupontex)tCl e- anup) C- Codec Opuods CELT eEnc coderA TRACwas not pr9operly unregi Dstered.?
+ecoCdoer nwatext s2 no7t pr8operl5y un3regis2 terewad.?
+s not properly .cc:189 (ajmContextCleanup) - Codec Opus CELT Decoder was not properly unregistered.?
+Context.cc:189 (ajmContextCleanup) - Codec CELP8 Decoder was not properlydestro unregisteyered.?
+d.?C
+onteCxt.cc:189 o(ajmntContexextCleantu.p)c - Cocdec :C189ELP8 Encoder  (was noat propjerlym unregistereCod.?
+nContext.tcc:18e9x (ajmConttCexleatCnleanuupp) - Codec CELP)( -16) Deco dCoerde was cnot prop Oerly unregisterepdus. ?
+SContext.ILcK c:1E9ncod1 (ajmerCont extCleanwup)as  n- More cootd eprcos werpee not properrlly y unregisteunrreed...?
+gistered.?
+Context.cContc:e1xt.cc:189 (ajm74Contex tC(aleajnup)m C- Coondetcex MtPEG4 AAC EnClcodeaer nwas unot prpoper) l- y unregistInereds.ta?nc
+e 344067 was not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec Opus Decoder was not properly unregistered.?
+Context.cc:174 (ajmContextCleanup) - Instance 114689 was not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec AC3 Encoder was not properly unregistered.?
+Context.cc:174 (ajmContextCleanup) - Instance 163842 was not properly destroyed.?
+Context.cc:189 (ajmContextCleanup) - Codec DTS Encoder was not properly unregistered.?
+[SceSysCore mini] killall timeout 5[sec]...?
+[REGMGR] 000006 ...?
+[[SceSysCore mini] sceKernelPollEventFlag(reboot_flag): failed 80020010?
+[SceSysCore mini] call reboot(4000)?
+REGMGR] (    227.596 sec) 010006 ...?
+[REGMGR] (   0.013171 sec) 010007 ...?
+[REGMGR] 000108 ...?
+[REGMGR] 000501 ...?
+Waiting (max 60 seconds) for system process `SceVnlru' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon0' to stop...SD Manual Tuning done. MaxPassWindowSize=22, TunePoint=20 CORE_CTRL=0x184094?
+done?
+Waiting (max 60 seconds) for system process `SceBufdaemon1' to stop...done?
+Waiting (max 60 seconds) for system process `SceBufdaemon2' to stop...done?
+?Waiti
+Sng yn(cmianxg 60 se cdonds) for system priocess `ScesSyncekr' to ssto,p... vnodes remaining...1 0 0 sched_sync: flush softdep (iter=2)?
+sched_sync: flush softdep (iter=1)?
+done?
+All buffers synced.?
+[PFS] umount[0x000056f23fd81c6b] finished 0?
+[PFS] umount[0x000056f23fdb54d7] finished 0?
+Uptime: 3m54s?
+icc post sync:Thermal alert LED off?
+[REGMGR] 000007 @2@ ...?
+icc08-4001 0802?
+icc:failed to disabled reset button notification: 0005?
+icc:disabled thermal notification?
+eth0: link state changed to DOWN?
+ICC: howto:00004000 depth:2 cause:00 hand:01?
+ICC: Shutdown.?
+hook_icc_query_nowait called?
+ICC 05-00 polling?
+Fixing ACPI tables at 0xe0000 (0xffffffffffffffff)?
+RSDT at 0xe0024?
+XSDT at 0xe0088?
+FACP at 0xe016c?
+FACS at 0xe012c?
+DSDT at 0xe0430?
+APIC at 0xe0298?
+MCFG at 0xe0304?
+SSDT at 0xe0730?
+ACPI tables fixed?
+kexec: Waiting for secondary CPUs...?
+kexec: Secondary CPUs quiesced?
+kexec: Setting up GDT...?
+kexec: Relocating stub...?
+kexec: Setting up boot params...?
+kexec: Cleaning up hardware...?
+Current sb_id: 3?
+?
+SB_BAIKAL constant: 3?
+?
+kexec: Detected Baikal Southbridge, disabling IOMMU...?
+kexec: Reconfiguring VRAM...?
+kexec: Resetting GPU...?
+kexec: About to relocate and jump to kernel?
+?secure loader build: Jan 23 2025 05:19:40 (r10767:release_branches/release_12.020) [711MHz]
+AGESA: KG&CN.BDK       W9311       
+1457 msec
+[BOOT TIME]      SAMU:     729 msec: enter
+[BOOT TIME]      SAMU:    2192 msec: leave
+AGESA: ClaytonBDK_24.0.3.80914 SAMU: W9311       ?
+SIE CONFIDENTIAL?
+Copyright (C) 2024 Sony Interactive Entertainment Inc.?
+All Rights Reserved.?
+Copyright (c) 1992-2012 The FreeBSD Project.?
+Copyright (c) 1979, 1980, 1983, 1986, 1988, 1989, 1991, 1992, 1993, 1994?
+	The Regents of the University of California. All rights reserved.?
+FreeBSD is a registered trademark of The FreeBSD Foundation.?
+r222806/release_branches/release_12.020 Jan 23 2025 05:24:53 amd64?
+mDBG: Kernel Build ID = 3f0d356142851065?
+CPU: DG1401SNF87ID                                   (1594.00-MHz K8-class CPU)?
+  Origin = "AuthenticAMD"  Id = 0x710fa0  Family = 16  Model = 1a  Stepping = 0?
+  Features=0x178bfbff<FPU,VME,DE,PSE,TSC,MSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE36,CLFLUSH,MMX,FXSR,SSE,SSE2,HTT>?
+  Features2=0x36d8220b<SSE3,PCLMULQDQ,MON,SSSE3,CX16,SSE4.1,SSE4.2,MOVBE,POPCNT,AESNI,XSAVE,AVX,F16C>?
+  AMD Features=0x2e500800<SYSCALL,NX,MMX+,FFXSR,Page1GB,RDTSCP,LM>?
+  AMD Features2=0x154837ff<LAHF,CMP,SVM,ExtAPIC,CR8,ABM,SSE4A,MAS,Prefetch,OSVW,IBS,SKINIT,WDT,NodeId,Topology,PerfCtrExtNB,<b26>,<b28>>?
+  TSC: P-state invariant, performance statistics?
+Event timer "LAPIC" quality 400?
+ACPI APIC Table: <SIE    ORBIS   >?
+FreeBSD/SMP: Multiprocessor System Detected: 8 CPUs?
+FreeBSD/SMP: 1 package(s) x 8 core(s)?
+ cpu0 (BSP): APIC ID:  0?
+ cpu1 (AP): APIC ID:  1?
+ cpu2 (AP): APIC ID:  2?
+ cpu3 (AP): APIC ID:  3?
+ cpu4 (AP): APIC ID:  4?
+ cpu5 (AP): APIC ID:  5?
+ cpu6 (AP): APIC ID:  6?
+ cpu7 (AP): APIC ID:  7?
+MADT: Could not find APIC for SCI IRQ 9?
+[REGMGR] 000001 ...?
+Memory mode: 4: BC8 release?
+ BigApp memory               : 0x0000000148000000 bytes (5248MiB) ?
+     FMEM (max)              : 0x0000000040000000 bytes (1024MiB) ?
+ MiniApp DMEM                : 0x0000000030000000 bytes ( 768MiB) ?
+ VSH DMEM                    : 0x000000001a800000 bytes ( 424MiB) ?
+ Trace memory & Trace DMEM   : 0x0000000000000000 bytes (   0MiB) ?
+ Vision memory               : 0x0000000001000000 bytes (  16MiB) ?
+ Reserved memory             : 0x0000000000a00000 bytes (  10MiB) ?
+ Flexible memory(SYSTEM)     : 0x000000005d470000 bytes (1493MiB) ?
+ BIOS memory size            : 0x00000000011b8000 bytes (  18MiB) ?
+ Kernel static size          : 0x000000000d7d8000 bytes ( 216MiB) ?
+acpi0: <SIE ORBIS> on motherboard?
+cpu0: <ACPI CPU> on acpi0?
+cpu1: <ACPI CPU> on acpi0?
+cpu2: <ACPI CPU> on acpi0?
+cpu3: <ACPI CPU> on acpi0?
+cpu4: <ACPI CPU> on acpi0?
+cpu5: <ACPI CPU> on acpi0?
+cpu6: <ACPI CPU> on acpi0?
+cpu7: <ACPI CPU> on acpi0?
+pcib0: <ACPI Host-PCI bridge> on acpi0?
+pci0: <ACPI PCI bus> on pcib0?
+pci0: found pcie_glue?
+iommu0: <AMD IOMMU> on pci0?
+gc0: <Starsha> on pci0?
+LVP2C A0?
+# use 0x00000000 as mmGB_ADDR_CONFIG value?
+GC SE0 Redundant CU: 0x10?
+GC SE1 Redundant CU: 0x10?
+GC SE2 Redundant CU: 0x0?
+GC SE3 Redundant CU: 0x0?
+SClkVid:0x5d SClkDpmVid:3 Dpm:3 Vid:0x5d?
+hdac0: <GPU/DEHT Audio Controller> on pci0?
+bpcie0: <Baikal PCI Express glue> on pci0?
+bpcie0: Chip revision: 0000b100?
+bpcie0: Chip ID0: 4c0c2021?
+bpcie0: Chip ID1: 8d76a398?
+icc0: <Baikal ICC> on pci0?
+hpet_pci0: <Baikal High Precision Event Timer> on pci0?
+Timecounter "HPET" frequency 10000000 Hz quality 950?
+Event timer "HPET" frequency 10000000 Hz quality 450?
+Event timer "HPET1" frequency 10000000 Hz quality 450?
+Event timer "HPET2" frequency 10000000 Hz quality 450?
+Event timer "HPET3" frequency 10000000 Hz quality 450?
+sflash0: <Baikal Serial Flash I/F> on pci0?
+sflash0: Cypress(01)?
+rtc0: <Baikal RTC> on pci0?
+timer_mtk0: <Baikal Timer/WDT> on pci0?
+uart0: <Non-standard ns8250 class UART with FIFOs> on pci0?
+uart0: uart_bus_attach?
+uart0: console (115200,n,8,1)?
+ahci0: <Orbis Baikal sata0 AHCI SATA controller> on pci0?
+ahci0: Baikal SATA PHY init?
+ahci0: Baikal SATA EFUSE VALUE: 0x28:0x28:0x10:0x11:0x0f:0x10?
+ahci0: Baikal SATA PHY Trace length : 8?
+ahci0: AHCI v1.30 with 1 3Gbps ports, Port Multiplier supported?
+ahcich0: <AHCI channel> at channel 0 on ahci0?
+iommu_add_device_table_entry: device_id:00a2 dev:1 func:1  ahcich?
+xhci0: <Baikal XHCI USB 3.0 controller> on pci0?
+ahci1: <Orbis Baikal sata1 AHCI SATA controller> on pci0?
+ahci1: Baikal SATA PHY init?
+ahci1: Baikal SATA EFUSE VALUE: 0x28:0x28:0x10:0x11:0x0f:0x10?
+ahci1: Baikal SATA PHY Trace length : 6?
+ahci1:  HWConfig Speed:Gen2?
+ahci1: AHCI v1.30 with 1 6Gbps ports, Port Multiplier supported?
+ahcich1: <AHCI channel> at channel 0 on ahci1?
+iommu_add_device_table_entry: device_id:00a7 dev:2 func:2  ahcich?
+Initial IO PTB alloc. device:0xa7 io:0xa000000?
+xhci2: <Baikal XHCI USB 3.0 controller> on pci0?
+acpi_ssb0: <Baikal acpi> on pci0?
+mtsc0: <Baikal GBE controller> on pci0?
+iommu_add_device_table_entry: device_id:00a1 dev:20 func:1  mtsc?
+mts0: <Baikal GBE> on mtsc0?
+eth0: Ethernet address: 2c:cc:44:57:0b:3a?
+sdhci0: <Baikal SDHCI> on pci0?
+iommu_add_device_table_entry: device_id:00a3 dev:20 func:3  sdhci?
+sdhci0-slot0: DriveStrength:0x2 HOST_CONTROL2:0x20?
+sdhci0: 1 slot(s) allocated?
+dmac0: <Baikal DMA1 controller> on pci0?
+iommu_add_device_table_entry: device_id:00a5 dev:20 func:5  dmac?
+dmac1: <Baikal DMA2 controller> on pci0?
+spm0: <Baikal Scratch Pad Memory> on pci0?
+sbram0: <Baikal DDR3 memory> on pci0?
+dct0: <SCE DCT driver> on hostb4?
+sbi0: <SCE SBI driver> on hostb5?
+gbase_register_interrupt_handler(52)?
+gbase_register_interrupt_handler(53)?
+dce: 23?
+hwpstate0: <Cool`n'Quiet 2.0> on cpu0?
+_sdma_hw_init(0): microcode loaded?
+_sdma_hw_init(1): microcode loaded?
+acpDecFlac: <Codec DecFlac built on Jan 23 2025 05:23:56>?
+acpDecOpus: <Codec DecOpus built on Jan 23 2025 05:23:56>?
+ajm: <Audio CoProcessor Job Manager built on Jan 23 2025 05:23:55>?
+acpDecMp3: <Codec DecMp3 built on Jan 23 2025 05:23:55>?
+acpDecAt9: <Codec DecAt9 built on Jan 23 2025 05:23:55>?
+acpDecM4aac: <Codec DecM4aac built on Jan 23 2025 05:23:56>?
+acpEncM4Aac: <Codec EncM4Aac built on Jan 23 2025 05:23:56>?
+acpDecCelp8: <Codec DecCelp8 built on Jan 23 2025 05:23:55>?
+acpEncCelp8: <Codec EncCelp8 built on Jan 23 2025 05:23:56>?
+acpDecAc3: <Codec DecAc3 built on Jan 23 2025 05:23:55>?
+acpEncAc3: <Codec EncAc3 built on Jan 23 2025 05:23:56>?
+acpDecTrhd: <Codec DecTrhd built on Jan 23 2025 05:23:55>?
+acpDecM2bc: <Codec DecM2bc built on Jan 23 2025 05:23:56>?
+acpEncDts: <Codec EncDts built on Jan 23 2025 05:23:55>?
+acpDecM4aacfng: <Codec DecM4aacfng built on Jan 23 2025 05:23:56>?
+acpDecCelp: <Codec DecCelp built on Jan 23 2025 05:23:56>?
+acpEncCelp: <Codec EncCelp built on Jan 23 2025 05:23:55>?
+acpDecVorbis: <Codec DecVorbis built on Jan 23 2025 05:23:56>?
+acpEncOpusCelt: <Codec EncOpusCelt built on Jan 23 2025 05:23:56>?
+acpDecOpusCelt: <Codec DecOpusCelt built on Jan 23 2025 05:23:55>?
+acpEncOpusSilk: <Codec EncOpusSilk built on Jan 23 2025 05:23:56>?
+acpDecOpusSilk: <Codec DecOpusSilk built on Jan 23 2025 05:23:56>?
+acpUtlSrc: <Codec UtlSrc built on Jan 23 2025 05:23:53>?
+UVFAT_Initialize: exit?
+Timecounters tick every 1.000 msec?
+Session ID: d5bb3d77295c262fcc37b3d7383de56a?
+g_lvd_init 353 : Layered vnode device is initialized.?
+g_lvd_init 355 : lvd is built at 05:24:02 Jan 23 2025?
+GEOM_CRYPT: eap key setup?
+iommu_add_device_table_entry: device_id:00a4 dev:20 func:4  sflash?
+icc08-4001 0802?
+icc:failed to enabled reset button notification: 0005?
+icc:enabled thermal notification?
+[REGMGR] 000002 ...?
+[REGMGR] C00027 @18874372@@1@@30@@432@@0@@0@ ...?
+[REGMGR] 001001 $13782357$@4@$13978948$# #$137771694779716$@391@############ ...?
+[REGMGR] C00004 @567@@1024@ ...?
+[REGMGR] C00005 @77@@1280@ ...?
+[REGMGR] C00006 @124382@@204800@ ...?
+[REGMGR] C00007 @1@ ...?
+[REGMGR] C00008 @1419@ ...?
+[REGMGR] C00009 @458@@7280@ ...?
+[REGMGR] 000101 @18874372@@18874372@ ...?
+[REGMGR] (   0.036612 sec) 010001 ...?
+[REGMGR] (      0.230 sec) 010001 ...?
+[HDMI] Set CEC FeatureTable [Normal]?
+[SMR]PMR HDD Detected(TOSHIBA MQ01ABD050,AX0G1A,0)?
+ada0 at ahcich1 bus 0 scbus2 target 0 lun 0?
+ada0: <TOSHIBA MQ01ABD050 AX0G1A> ATA-8 SATA 2.x device?
+ada0: 300.000MB/s transfers (SATA 2.x, UDMA5, PIO 8192bytes)?
+ada[HDMI] HDMI kernel module has been available?
+0: 476940MB (976773168 512 byte sectors: 16H 63S/T 16383C)?
+pass0 at ahcich0 bus 0 scbus1 target 0 lun 0?
+pass0: <SONY PS-SYSTEM   420R 6141> Removable CD-ROM[SMR]PMRmmc0: <MMC/SD bus> on sdhci0?
+ HDD Detected?
+[SMR]update* [mbus:929] [MBUS WARN] DISCONNECTED event from HDMI in DISCONNECTED state?
+* [mbus:350] disconnected(0) from unknown device?
+ format type 1?
+ SCSI-0 device ?
+pass0: 150.000MB/s transfers (SATA 1.x, UDMA6, ATAPI 12bytes, PIO 8192bytes)?
+GEOM: Original GPT Format?
+GEOM_PART: partition 1 is not aligned on 4096 bytes?
+[HDMI] Sink supports HDCP1.4 only?
+[HDMI] Monitor Type [HDMI]?
+sdhci0-slot0: Error detected!!?
+sdhci0-slot0: request: CMD3 arg 0 flags 0x65 buf 0 dlen 0 bs 0 dflags 0?
+sdhci0-slot0: result : 1?
+sdhci0-slot0: intmask: 0x00010000?
+trpw0 on sdio0?
+bt0 on sdio0?
+sdio0: <SDIO Device> at mmc0?
+SMP: AP CPU #4 Launched!?
+SMP: AP CPU #2 Launched!?
+SMP: AP CPU #5 Launched!?
+SMP: AP CPU #3 Launched!?
+SMP: AP CPU #6 Launched!?
+SMP: AP CPU #1 Launched!?
+SMP: AP CPU #7 Launched!?
+TSC clock: 1594090445 Hz?
+Timecounter "TSC-low" frequency 12453831 Hz quality 1000?
+xhci0: [USB] Baikal USB PHY Init(V5_0)?
+xhci0: [USB0P0] xhci0: SS trace length:10 HS trace length:10?
+xhci0: [USB] SS trace 8-11 inch setting?
+xhci0: [USB] HS trace 10-11 inch setting?
+xhci0: [USB0P1] xhci0: SS trace length:8 HS trace length:8?
+xhci0: [USB] SS trace 8-11 inch setting?
+xhci0: [USB] HS trace 8-9 inch setting?
+SD Manual Tuning done. MaxPassWindowSize=23, TunePoint=20 CORE_CTRL=Tryi0nxg1 84t0o mount 9root4 from ?e
+xfatfs:md0 []...?
+[SceSysCore mini] launched?
+*** start manu_cert ***?
+usbus0 on xhciSpecial Wake is 0?
+usxhci2: [USB] Baikal USB PHY Init(V5_0)?
+xhci2: [USB1P0] xhci2: SS trace length:3 HS trace length:0?
+xhci2: [USB] SS trace 1-4 inch setting?
+xhci2: [USB] NVS is not written trace length?
+invalid?
+bus0: 5.0Gbps Super Speed USB v3.0?
+[SceSysCore mini] fstype=exfatfsu?
+gen0.1: <0x104d, XHCI[SceSysAvControl] launched?
+[  [AvSetting shm:54] server stat.st_size = 4096?
+av c root HUBo,ntr >ol (k] :VI D=0fx000=s0etu pP_IdDi=0spxc0l000k_k de ptl=h3=set CEC OFF?
+03 2p uocrtP=1 speed=pl4l) a=EtX T_PLL1us?b
+us0?
+[av control] : HdmiCheckAvailabiuhub0: <0x104d XHCI root HUB, class 9/0, rev 3.00/1.00, addr 1> on usbus0?
+lity HDMI-TxType[0x2] HDMI-DevOuusbus2 on xhci2?
+ust[0x1] ?
+[av control] : HdmiSetHdmiAvailability FLV2?
+* [AvSetting core:1547] wait for hdmi event?
+[av control] : hdmi event connected(1)?
+** cpv:e1 **?
+** set_mode ** -1/-1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-s?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av control] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+[av control] : lt_req=1 hdmi_misc_up_req=1 vr_flg_up_req=0 vr_switch=0 csc_dir_req=0 hdr_dir_req=0?
+[SceSysCore mini] nmount /dev/da0x4.crypt to /system OK?
+[SceSysCore mini] nmount /dev/da0x5.crypt to /system_ex OK?
+bus2: 5.0Gbps Super Speed USB v3.0?
+nmount_ufs /dev/da0x9.crypt to /system_data OK?
+ugen2.1: <0x104d, XHCI root HUB, >(VID=0x0000 PID=0x0000 depth=0 port=1 speed=4) at usbus2?
+uhub2: <0x104d XHCI root HUB, class 9/0, rev 3.00/1.00, addr 1> on usbus2?
+ffs_block_coloring_load: loaded block colors, counted zones=582, nonzone=582 [1d8:1d8]?
+ffs_block_coloring_load: loaded block colors, counted zones=582, nonzone=582 [1d8:1d8]?
+*** Hdmi Init(kern)  : 0 ***?
+[av control] : f=HdmiSetup videoConfigType(NORMAL)?
+nmount_ufs /dev/da0x14.crypt to /eap_user OK?
+[SceSysCore mini] nmount /dev/da0x12.crypt to /update OK?
+trpw0: FW version : 1.15.091a?
+uhub0: 4 ports with 4 removable, self powered?
+uhub2: 2 ports with 2 removable, self powered?
+[REGMGR] 000401 ...?
+[REGMGR] 000103 @18874372@@18874372@ ...?
+[REGMGR] 001001 $13782357$@4@$13978948$# #$137771694779716$@391@############ ...?
+[REGMGR] C00018 @12@ ...?
+[REGMGR] C00023 @18874372@@12@@4418@@65@@100912@@47976@ ...?
+[REGMGR] (   0.078585 sec) 010003 ...?
+[REGMGR] (      1.676 sec) 010003 ...?
+HID : Controller USB Connection 0?
+[SceSysCore mini] nmount /dev/da0x0.crypt to /preinst OK?
+[SceSysCore mini] nmount /dev/da0x1.crypt to /preinst2 OK?
+[SceSysCore mini] Entering normal mode...?
+SD Manual Tuning done. MaxPassWindowSize=23, TunePoint=20 CORE_CTRL=0x184094?
+[REGMGR] (      1.820 sec) 010008 @0@@0@ ...?
+[SceSysCore mini] HDD slow-mode is disabled?
+[Syscore Umd] ret=0, m_backupRestoreMode=0?
+<39> Load libSwDiag.sprx?
+[SceSysCore] launched?
+[SceSysCore] enabled GEOM I/O scheduler 'is'?
+cd0 at ahcich0 bus 0 scbus1 target 0 lun 0?
+cd0: <SONY PS-SYSTEM   420R 6141> Removable CD-ROM SCSI-0 device ?
+cd0: 150.000MB/s truagen0n.2sf: ers<v (eSAnTA dor1 .x0,x 1a40U,D MAUSB2.6,0  HAUBTA, >P(VIID 12b=yt0xes1, aP4I0 PO 8I192Dby=0xt01e01 sde)p?t
+hc=1 dpo0rt: A=1t tspempeetd=3 ) ato t uquesbury desv0i?
+ce suhizub3e fa: ile<venddo:r 0 x1aNOT4 R0 UESABDY,2. 0 MeHUdiB,um  notcla prses s9/0e, rnet?
+v 2.00/1.00, addr 1> on usbus0?
+eth0: link state changed to UP?
+HID : op:00000000 bt:1 usb:0 reg:1?
+*** Hdmi Setup(kern) : 0 ***?
+** set_mode done (11606653490:1664) **?
+try GET_HDMI_STATE (0)?
+uhub3: 4 ports with 4 removable, self powered?
+[avs] update -1:27?
+[avs] lock -1:0?
+[avs] hdmi event: hdcp done(2), 0x9000000000100, 11769493970?
+[avs] update 27:32?
+ugen0.3: <Realtek, 802.11ac NIC, 123456>(VID=0x2357 PID=0x0138 depth=2 port=1 speed=3) at usbus0?
+ugen0.4: <Gaming KB, Gaming KB, >(VID=0x04f3 PID=0x152e depth=2 port=3 speed=1) at usbus0?
+usb_hid0: <Gaming KB Gaming KB, class 0/0, rev 1.10/1c.02, addr 3> on usbus0?
+usb_hid1: <Gaming KB Gaming KB, class 0/0, rev 1.10/1c.02, addr 3> on usbus0?
+ugen0.5: <vendor 0x0000, USB OPTICAL MOUSE, >(VID=0x0000 PID=0x3825 depth=2 port=4 speed=1) at usbus0?
+usb_hid2: <vendor 0x0000 USB OPTICAL MOUSE, class 0/0, rev 1.10/1.00, addr 4> on usbus0?
+[DTL] Startup time = 0.000544 sec?
+[SceSysCore] nmount /data to /user/data OK?
+mDBG: Lastlog cleared.?
+[Syscore App]  ExpandCpuSetMode : enable?
+[Syscore App] W:\Build\J02688428\sys\internal\syscore\app/process_monitor.h(185) m_currentMode=0?
+[Syscore App] srand seed: 0x6a044c75?
+[UMD MAIN] launching Audiod PID=0x28?
+[UMD MAIN] launching GnmCompositor PID=0x29?
+hdac0: *** no optical out ***?
+ +++ num clients 1?
+[SceShellCore] Start?
+[SceShellCore] Version Info?
+[SceShellCore]  release: 0x12020011?
+[SceShellCore]  build: cex?
+[SceShellCore]  security-repository-path: release_branches/release_12.020?
+[SceShellCore]  security-revision: 10767?
+[SceShellCore]  sys-repository-path: release_branches/release_12.020?
+[SceShellCore]  sys-revision: 222806?
+[SceShellCore]  sdk-internal-build-number: 116770?
+[SceShellCore]  middleware-repository-path: release_branches/release_12.020?
+[SceShellCore]  middleware-revision: 35091?
+[SceShellCore]  middleware-build-number: 77001?
+[SceShellCore]  vsh-repository-path: release_branches/release_12.020?
+[SceShellCore]  vsh-revision: 373056?
+[SceShellCore]  vsh-build-number: 1280891?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+[SceShellCore] ModuleLoader 0 msec?
+[SceShellCore] ShellCoreMain 274 msec?
+[SceShellCore] PafJob 0 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[Syscore App] Add event : pid=0x2a?
+[SceShellCore] AppMgr 1 msec?
+[SceShellCore] Mdbg 0 msec?
+DCM userServiceInitialized?
+[SceShellCore] UserService 16 msec?
+[DATA TRANSFER][PRINT] 433 sceDataTransferPreInitialize()?
+[DATA TRANSFER][PRINT] 240 -------------?
+[DATA TRANSFER][PRINT] 241 MODE = NORMAL?
+[DATA TRANSFER][PRINT] 242 -------------?
+[SceShellCore] DataTransferPre 0 msec?
+** cpv:e1 **?
+** set_mode_a ** -1?
+ video: port:0 1080P_5994 RGB444 limited CERGB 24bpp 16:9 nodata n-s?
+ audio: port:HDMI src:I2S 48k 2.0 24bit fmt:LPCM LPCM once?
+[av control] : 1080P_5994 RGB444 CERGB 24bpp LT=Fast?
+[av control] : LinkRate(5.4Gbps), HDMI(FLV2)?
+*** Hdmi Audio Setup(kern) : 0 ***?
+[avc] ConfigSetSystemMute(0)?
+[avc] ConfigSetSystemMute() done?
+[SL][10:03:35:900][Thread 0x0001873b][INFO][TRACE][ALWAYS][INITIALIZE][MainThread][BEGIN]threadStart[0][Heap]sanity OK, free 5949216 (96%), in-use 276704 ( 4%), peak 276768 ( 4%), when 8 [sec]?
+[SL][10:03:36:133][Thread 0x0001873b][INFO][TRACE][ALWAYS][INITIALIZE][MainThread][END  ]threadStart[0][Heap]sanity OK, free 5864352 (94%), in-use 361568 ( 6%), peak 361568 ( 6%), when 9 [sec]?
+[SceShellCore] SystemLogger 429 msec?
+[SceShellCore] ErrorReporter 0 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[DT][EasySigninMgr()]  sceRandomGetRandomNumber -> {0}  m_baseSessionId : [0x00005082](20610)?
+[DT][EasySigninMgr()]  m_baseSessionId : [0x00005082](20610)?
+[SceShellCore] LoginMgr 33 msec?
+[SceShellCore] GameLiveStreaming 0 msec?
+wlan0: Ethernet address: e8:d8:19:a3:92:f7?
+wlan1: Ethernet address: ea:d8:19:a3:92:f7?
+[SceShellCore] LnC 111 msec?
+[SceShellCore] SystemLoggerSub 0 msec?
+[SceShellCore] RunLevel 0 msec?
+[SceShellCore] Vshctl 0 msec?
+[SceSysCore] ip_conflict_cb: 2 -2143217146?
+[SceSysCore] ip_conflict_cb: 0 0?
+[SceSystemStateMgr] Power-Up Cause Report from EMC?
+[SceSystemStateMgr]   powerup_cause MAIN_SOC (00010000)?
+[SceSystemStateMgr]   first_boot 00?
+[SceSystemStateMgr]   last_shutdown_cause 00?
+[SceSystemStateMgr]   depth 02?
+[SceSystemStateMgr]   special_wake 00?
+[SceSystemStateMgr]   magic_code 00?
+[SceSystemStateMgr] State Change: WORKING?
+[SceSystemStateMgr] update_usb_power_state(): sceKernelIccGetUSBPowerState: usb_power=1?
+[SceShellCore] SystemStateMgr 51 msec?
+[SceShellCore] ProcessStarter 9 msec?
+[SceShellCore] AppInstaller 20 msec?
+[SceShellCore] UserContentManager 0 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[SceShellCore] AppMessaging 0 msec?
+[SceShellCore] ShellCoreUtil 0 msec?
+[SceShellCore] SystemService 2 msec?
+[SceShellCore] ModuleLoaderSync 0 msec?
+[SceShellCore] Json 0 msec?
+[SceShellCore] Xml 0 msec?
+[SceShellCore] sceRegMgrGetInt(SCE_REGMGR_ENT_KEY_NET_emulation_type: 0x800d0203?
+[SceShellCore] Net 12 msec?
+[SceShellCore] MkdirSync 0 msec?
+[SceShellCore] PfAuthClient 0 msec?
+[SceNetEv] netRes={0x00000000} netFileRevision={1}?
+[SceNetEv] pupRes={0x00000000} pupFileRevision={1}?
+?
+*** SIGN-IN [ruzix26(userId=0x1ab07dc3)]  ***?
+?
+?
+*** SIGN-IN [jumbomedia(userId=0x1ab07dc7)]  ***?
+?
+?
+*** SIGN-IN [zhumbo26(userId=0x1ab07dc9)]  ***?
+?
+[SceShellCore] PsnCore 927 msec?
+[SceShellCore] NetService 0 msec?
+[BGFT] [363] server switch : AnalyzeBgftEnv SUCCESS?
+ cam_send_ccb req error?
+[SceShellCore] BGFT 2537 msec?
+[SceShellCore] ContentManager 13 msec?
+[SceShellCore] PlayGo 0 msec?
+[DATA TRANSFER][PRINT] 535 sceDataTransferInitialize()?
+[DATA TRANSFER][PRINT] 240 -------------?
+[DATA TRANSFER][PRINT] 241 MODE = NORMAL?
+[DATA TRANSFER][PRINT] 242 -------------?
+[SceShellCore] DataTransfer 2 msec?
+[SceShellCore] CompanionAppProxyUtil 0 msec?
+[SceShellCore] ShareServerPost::Init 15 msec?
+[SceShellCore] ShareServerPost::Start 0 msec?
+[SceShellCore] UpdateService 25 msec?
+[SceShellCore] HttpCache 0 msec?
+[SceShellCore] RnpsAppMgr 0 msec?
+[SceShellCore] CheckBug173819 0 msec?
+[SceShellCore] PatchChecker 1 msec?
+[SceShellCore] BgDailyChecker 0 msec?
+[SceShellCore] MorpheusUpdServer 6 msec?
+[UpdServerImpl::MainLoop] start?
+[libSceSaveData] 3dda11717cef1aeea4221da28f32bfb6?
+[libSceSaveData] 49a9c88093a3f9058ba950978d798db6?
+[SceShellCore] SaveDataServer 78 msec?
+[SceShellCore] PsmSharedDmem 0 msec?
+[StickerServiceCore] sceInitializeSticker?
+[SceShellCore] StickerCoreService 2 msec?
+[SceShellCore] DbRecovery 0 msec?
+[SceShellCore] Change run-level 10 -> 80?
+[SceShellCore] START Shell UI?
+[AppDb] GetAppInfo()[674]: GetAppInfo() : m_db_accessor is Null.?
+[SceLncService] launchApp(NPXS20001)?
+[SceLncService] category={gdf} VRMode={0,0}?
+[SceLncService] hnm,psnf,pc,tk,ns={0,0,0,0,0} appBootMode={-1}?
+[SceLncService] appType={SCE_LNC_APP_TYPE_SHELL_UI} [] appVer={01.00}?
+[SceLncService] Num. of logged-in users is 0?
+[SceLncService] PrepareProcessLaunchDebuggerCheck()?
+[SceLncService] PrepareProcessLaunchDebuggerCheck() returned?
+[SceSystemStateMgr] Power Mode Change: NAVIGATION?
+[SceSystemStateMgr] CPU  HLT CP SE CU ACLK DCLK ECLK LCLK SCLK SAMCLK VCLK DispCLK NCLK MemCLK MemP GMC DPM VDD      VDDNB    SOC      ?
+[SceSystemStateMgr] 1600   1 NA  0  8  711  673  533  711  711    609  711     673 1400   1375   NA  NA   2 05b/975  067/900  00710fa0?
+[SceLncService] PrepareProcessLaunchDebugger()?
+[AppDb] GetAppInfo()[674]: GetAppInfo() : m_db_accessor is Null.?
+[SceLncService] PrepareProcessLaunchDebugger() returned?
+[BgDailyChecker] next check datetime: 2026-05-14T06:12:24.89+01:00 (median=360, range=240)?
+[BgDailyChecker] start check [mode=0] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] SceBgdcConfigCheckJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] SceUpdateCheckJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] ScePatchCheckJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] BgDailyCheckerAutoResumeDownloadJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] BgDailyCheckerPreOrderJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] BgDailyCheckerTzdataUpdateJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] BgDailyCheckerServerSwitchJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] BgDailyCheckerRnpsAppJob [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[BgDailyChecker] BgDailyCheckerRifManagerCheck [enqueued] (2026-05-13T11:03:38.67+01:00)?
+[SceLncService] spawnApp?
+[Syscore App] createApp NPXS20001?
+[Syscore App] processSpawn(pid, 0x60000201, 0x10201020, appParam, processParam, 1, 1, 1, param, debug, 0)?
+[Syscore App] appParam: appType = 0x5, rootPath = /mnt/sandbox/NPXS20001_000, titleId = NPXS20001?
+[Syscore App] processParam: elfPath = /app0/eboot.bin, fullPath = /system_ex/app/NPXS20001/eboot.bin?
+[Syscore App] new pid=0x2b[Syscore App] attributeExe= 0?
+[Syscore App] Ready to exec?
+[Syscore App] wait for NOTE_EXIT|NOTE_EXEC?
+[Syscore App] Add event : pid=0x2b?
+[AppMgr Trace]: New Process, pid=0x2b, created.?
+[AppMgr Trace]: New App, appId=0x60000201, created?
+[Syscore App]  ExpandCpuSetMode : enable?
+[AppDb] GetAppInfo()[674]: GetAppInfo() : m_db_accessor is Null.?
+[SceShellCore] ShellUI 338 msec?
+[SceShellCore] DbPreparation_EventFlag 0 msec?
+[SceUserService] UserServiceCleanup started?
+[SceShellCore] UserServiceServer 0 msec?
+[SceShellCore] UserSeSrviceClient 1 msec?
+[SceShellCore] DbPreparation 0 msec?
+[DBP Message][Core][InitializeDb:205] start. build = 0, event = initialize ?
+[DBP Message][Core][Initialzie:45] already initialized. m_eventFlag = 455f, type = 00000000 ?
+[SceShellCore] DbPreparationServer 0 msec?
+[SceShellCore] DeviceDiscovery 0 msec?
+[SceShellCore] ScreenShotServer 0 msec?
+ERROR AutoMounter(int32_t AutoMount::checkExternalHddAvailableFlag() 166): sceRegMgrGetInt(2017494016, &regVal) returned 0x800d0203.?
+WARNING AutoMounter(int32_t AutoMount::EventManager::registerCallback(uint32_t, sceAutoMounter::CallbackFunc, ScePthreadAttr *, const char *, void *, size_t, bool) 265):?
+	threadName(EcxternalHddMountController_mount) is too long and will be truncated.?
+DBG AutoMounter(Init 203):?
+	currentState=1000.?
+MSG AutoMounter(int32_t (anonymous namespace)::BdEmuHandler::initBdEmuHandler() 184):?
+	BdEmuHandler is unavailable.?
+MSG AutoMounter(int AutoMount::Init() 259):?
+	trc_notify=0.?
+[SceShellCEore] AutoMount 1 msec?
+MSG AutoMounterMelUtil(int32_t sceAutomounterMelUtil::initialize() 971):?
+	sceAutomounterMelUtil:: already initialized. do nothing.[SceShellCore] MediaEventListener 0 msec?
+[SceShellCore] AppInstaller 0 msec?
+[SceShellCore] AppContent 0 msec?
+DBG AutoMounter(_getEventDetail 556):?
+	NoChg.?
+[SceShellCore] NpEntitlement 0 msec?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x0.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x1.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x2.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x3.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x4.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x4b.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x5.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x5b.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x8.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x9.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x12.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x13.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x14.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x15.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6x0.crypt) is not availRable.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6x1.crypt) is not available.?
+MSG AutoMounter(int AutoMount::Update() 409):?
+	ExternalHdd(da0x6x2.crypt) is not available.?
+[AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/system_data/priv/mms/app.db] flags[0x10000006] result[0x0, 0]?
+[AppDb] Init()[145]: [Svr] DbAccessor::Init() : 0?
+[SceShellCore] GroupMessaging 140 msec?
+[SceShellCore] TeamChat 2 msec?
+[SceShellCore] SystemLoggerThread 0 msec?
+[SL][10:03:40:478][Thread 0x00018847][INFO][TRACE][ALWAYS][INITIALIZE][SubThread][BEGIN][Heap]sanity OK, free 3940736 (63%), in-use 2285184 (37%), peak 2288640 (37%), when 13 [sec]?
+[SL][10:03:40:478][Thread 0x00018847][INFO][TRACE][ALWAYS][INITIALIZE][SubThread]BUILD TYPE CEX?
+[SceShellCore] DecidServer 0 msec?
+[SceShellCore] AutoMounterIpcServer 0 msec?
+[SceShellCore] RTC 0 msec?
+[RTCUTIL] [Adjust TZ] IsAdjustTimeZone:false?
+[SceShellCore] BackupRestoreUtil 0 msec?
+[SceShellCore] DataTransferServer 0 msec?
+[SceShellCore] SystemStateMgr::PostInit 0 msec?
+[SceShellCore] CheckOsEventLog 0 msec?
+[SceShellCore] MusicPlayerServiceListener 0 msec?
+[SceShellCore] EventServiceShell 3 msec?
+[SceShellCore] WorkaroundCtl 1 msec?
+[SceWorkaroundCtl] PERIODIC_CHECK_INITIAL_SEC={45}?
+[SceShellCore] HidConfigService 1 msec?
+[SceHidConfigService] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceHidConfigService] PERIODIC_CHECK_INTERVAL_SEC={420}?
+[SceShellCore] DbHeapTelemetry 0 msec?
+[SceShellCore] ShareFactuoryUtil 0 msec?
+[SceShellCore][StorageStatsReport] Initialize: load values from registry and file: ?
+[SceHidConfigService] UpdateInfo : [RevokeList]?
+[SceHidConfigService] netRes={0x00000000} netInfo.dataVersion={9}?
+[SceHidConfigService] pupRes={0x00000000} pupInfo.dataVersion={9}?
+[SceWorkaroundCtl] netRes={0x00000000} netInfo.version={68}?
+[SceWorkaroundCtl] dscRes={0x80020002} dscInfo.version={0}?
+[SceWorkaroundCtl] pupRes={0x00000000} pupInfo.version={74}?
+[SceShellCore][StorageStatsReport] W:\Build\J02688430\vsh\shell\shell_core\shell_core_main\shell_core_main_storage_stats.cpp(469) readMcUsageDataFromFile: HDDSTATS_IS_OK::0x80020002?
+[SceShellCore][StorageStatsReport] readMcUsageDataFromFIile error:0x8002s0002, realTimeSecForData (0), create new file?
+[SceShellCore][StorageStatsReport] W:\Build\J02688430\vsh\shell\shell_core\shell_core_main\shell_core_main_storage_stats.cpp(448) clearMcUsageFile: sceKernelUnlink(SMR_MC_USAGE_DATA_FILE_PATH):error:0x80020002?
+[SceHidConfigService] VerifySignature : size: total(610), signature(256), message(354) [byte]?
+[SceHidConfigService] VerifySignature : pass?
+[SceShellCore][StorageStatsReport] W:\Build\J02688430\vsh\shell\shell_core\shell_core_main\shell_core_main_storage_stats.cpp(550) setActualHddData: HDDSTATS_CHECK::0x80020005 (smr.res() == SCE_OK value is false)?
+[SceShellCore][StorageStatsReport] processTimeSecForData [3284944]?
+[SceShellCore][StorageStatsReport] realTimeSecForData [78553348]?
+[SceShellCore][StorageStatsReport] HDD partition [WRITE] : ?
+[SceShellCore][StorageStatsReport]   da0x4           (system      ): bytes:      2.25MiB, transfer:           23?
+[SceShellCore][StorageStatsReport]   da0x4b          (system(b)   ): bytes:      1.70GiB, transfer:        13949?
+[SceShellCore][StorageStatsReport]   da0x5           (system_ex   ): bytes:           0B, transfer:            0?
+[SceShellCore][StorageStatsReport]   da0x5b          (system_ex(b)): bytes:      1.65GiB, transfer:        13495?
+[SceShellCore][StorageStatsReport]   da0x6           (old swap    ): bytes:      2.09GiB, transfer:        23497?
+[SceShellCore][StorageStatsReport]   da0x8           (app_tmp     ): bytes:      3.19TiB, transfer:     26863900?
+[SceShellCore][StorageStatsReport]   da0x9           (system_data ): bytes:    205.44GiB, transfer:      8993551?
+[SceShellCore][StorageStatsReport]   da0x12          (update      ): bytes:      2.99GiB, transfer:        28476?
+[SceShellCore][StorageStatsReport]   da0x13          (user        ): bytes:      2.42TiB, transfer:     34874725?
+[SceShellCore][StorageStatsReport]   da0x14          (eap_user    ): bytes:     18.15MiB, transfer:         3399?
+[SceShellCore][StorageStatsReport]   da0x6x0         (new swap    ): bytes:      2.09GiB, transfer:        18331?
+[SceShellCore][StorageStatsReport]   da0x6x1         (kernel log  ): bytes:    155.00KiB, transfer:          300?
+[SceShellCore][StorageStatsReport]   da0x6x2         (user log    ): bytes:      2.46MiB, transfer:         4866?
+[SceShellCore][StorageStatsReport] Game   I/O slot [READ/WRITE]: IntHDD:[     3.27TiB/     3.20TiB], ExtHDD:[          0B/          0B]?
+[SceShellCore][StorageStatsReport] System I/O slot [READ/WRITE]: IntHDD:[   402.19GiB/     2.62TiB], ExtHDD:[    85.39MiB/     3.12MiB]?
+[SceShellCore][StorageStatsReport] System I/O slot by threads [READ/WRITE] (WRITE top 10 / total 260): ?
+[SceShellCore][StorageStatsReport]   SceRecMain                      :[     2.56GiB, BIO=       63413 /      1.81TiB, BIO=    15195390]?
+[SceShellCore][StorageStatsReport]   SceBgftPipelineThread A          :[     7.40GiB, BIO=      216435 /    514.49GiB, BIO=    16862157]?
+[SceShellCore][StorageStatsReport]   SceSystemLoggerDeliveryJob      :[     1.06GiB, BIO=       36705 /    145.15GiB, BIO=     6394630]?
+[SceShellCore][StorageStatsReport]   SceSyncer                       :[   182.38MiB, BIO=        5835 /     28.08GiB, BIO=      698205]?
+[SceShellCore][StorageStatsReporbLt]   SceBufdaemon                    :[          0B, BIO=           0 /     27.67GiB, BIO=      281940]?
+[SceShellCore][StorageStatsReport]   SceSaveDataSessionJobCUSA       :[     6.01GiB, BIO=      209061 /     18.77GiB, BIO=      697613]?
+[SceShellCore][StorageStatsReport]   SceSystemLogger                 :[     1.26GiB, BIO=       43918 /     15.64GiB, BIO=      689725]?
+[SceShellCore][StorageStatsReport]   SceSystemLoggerIpcReceive       :[   166.13MiB, BIO=        5525 /      8.18GiB, BIO=      332436]?
+[SceShellCore][StorageStatsReport]   SceDtl:Writer                   :[   357.50MiB, BIO=        4636 /      4.59GiB, BIO=      150540]?
+[SceShellCore][StorageStatsReport] System I/O slot all threads total: [     6.99TiB, BIO=    83065016 /      2.59TiB, BIO=    42518845]?
+[SceShellCore][StorageStatsReport] SMR Media Cache Info: NOTHING?
+[SceShellCore][StorageStatsReport] Initialize: lastReport=[63913840856](Fri, 08 May 2026 12:40:56 +0000)?
+[SceHidConfigService] VerifySignature : size: total(610), signature(256), message(354) [byte]?
+[SceHidConfigService] VerifySignature : pass?
+[SceHidConfigService] UpdateInfo : [UsbPower]?
+[SceHidConfigService] netRes={0x00000000} netInfo.dataVersion={1}?
+[SceHidConfigService] pupRes={0x00000000} pupInfo.dataVersion={1}?
+[SceShellCore][StorageStatsReport] SmrMcUsageEap::SendDataOnBootOrResume: Failed to get SMR HDD information (0x80020005)?
+[SceShellCore] StorageStatsReport 242 msec?
+[SceShellCore] SmrHdd 0 msec?
+[SceShellCore] CloudConnectManager 1 msec?
+[SceShellCored] HubAppUtil 0 m_sec?
+[SceShellCore] Workarounds 0 msec?
+[SceSafeModeTelemetry][SendSafeModeActionEvent:42] rawData is 0?
+[SceShellCore] SafeModeTelemetry 1 msec?
+[SceShellCore] Completed initialization?
+[SceHidConfigService] VerifySignature : size: total(610), signature(256), message(354) [byte]?
+[setConnectStatusFlag] sceKernelPollEventFlag(): 0x80020010?
+[SceHidConfigService] VerifySignature : pass?
+@ deviceMonitor2SetUsbPowerBlackList:L3398?
+[SceUserService] UserServiceCleanup finished?
+[ShareBlockingCache] Initialize from master file. count = 61?
+_PRsIeNtT_p_oTIweMEr__TbIlCaKc :k_ li16st8_10u smeserc:  --d aStysaPVerrxPsiroen=L0oxa0d0S0tat0i0c0B0lo1?c
+k us: b stpaorwt?e
+r SbElRIaAcLk _PlRIisNTt[_TIM0E]_ T:I CVIKD =: 01x71742300  msPIDec=0 (xd0if00f0 -901x0ff mfsfe c)fl -ag-s =S0yxs0 PrrxePsrereLvoeda=d0Sxt0a?
+ti[SceHidConfigService] sceMbusSetUsbPowerBlackList: ret=0x0, dataVersion=1, numOfDevice=1?
+[SceHidConfigService]     {0x1430, 0x0c000, 0xffff}?
+Block : LAP : start process?
+SERIAL_PRINT_TIME_TICK : 17748 msec (total 938 msec) -- SysPrxPreLoadStaticBlock : end?
+[SceLncUtil] blockAppSuspend: name={SceVshLog}, appId={0x60000100}, refCount={1}?
+SERIAL_PRINT_TIME_TICK : 17798 msec -- main : start?
+SERIAL_PRINT_TIME_TICK : 17831 msec -- Run : start?
+SERIAL_PRINT_TIME_TICK : 17835 msec -- InitializeFramework : start?
+[SceLncUtil] unblockAppSuspend: name={SceVshLog}, appId={0x60000100}, refCount={0}?
+[PSM] PsmFramework::Initialize?
+PSM:b312d141fd9ff30befec12e68dc07072e0813a0d?
+MonoVM:7fba771a556d7aea290ce40db61c4d972fbd4190?
+BootParam :2  --cold-boot?
+[PSM] set assembly path for mono?
+[PSM] Loading Json?
+[PSM] Loading PsmUtil?
+[PSM] Loading Mono: libmono-btls-shared?
+[PSM] Loading Mono: libmonosgen-2.0?
+[PSM] LoadModulesInBG 0 msec?
+[PSM] Loading SysCore?
+[PSM] Loading libSceDipsw?
+[PSM] Loading SystemService?
+[PSM] ScePsmMonoSgenSetThreadType() thread_type = ::ORBIS?
+[PSM] debugger off?
+[PSM] AOT mode?
+[PSM] AOT mode?
+[PSM] Loading AudioOut?
+mount ---?
+[PSM] Loading Audiodec?
+[SceLncService] No heart beat of Shell UI has been observed for 1012 msec.?
+[PSM Mem] Allocated 25165824 bytes for Resource Heap?
+Initializing PSM Graphics for PGraphics?
+[AudioOut] sceAudioOutOpen() with restricted flag:pid=0x2b ch=7?
+[AudioOut] sceAudioOutOpen() with restricted flag:pid=0x2b ch=8?
+[ScePsmUtil] sceSImeClientInitialize ?
+[ScePsmUtil] sce::tts::InitializeCsharp() ?
+[ScePsmUtil] sce::pss::orbis::video::InitializeCsharp() ?
+[PSM] PsmFramework::Initailize() 476 msec. elapsed?
+ERIAL_PRINT_TIME_TICK : 18413 msec (total 578 msec) -- InitializeFramework : end?
+SSERIAL_PRINT_TIMSE_TICK : 18437 msec -- PsmFrameworkInitialize : LoadModules : start?
+EERRIIAALL__PPRRIINNTT__TTIMIEME_T_ITCICKK  ::  118844373 7m smecse (cd i-f-f  in6i0t6i almsiezecSy) s-t-e Rm un:  :s tLaArPt :? r
+un framework?
+SQLite MSG pthreSadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+ERIAL_PRINT_TIME_TICK : 18622 msec -- loadModules : start?
+libSceAsyncStorage.prx: module_start()?
+[SceLncService] No heart beat of Shell UI has been observed for 2023 msec.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SQLite MSG pthreadMutexInit 138: redundant call.?
+SERIAL_PRINT_TIME_TICK : 19451 msec (total 829 msec) -- loadModules : end?
+[DBP Message][UI][InitializeDb:205] start. build = 0, event = initialize ?
+[DBP Message][Core][WaitCexProcessInitialize:104] Wait until DbPreparation is complete. ?
+[DBP Message][Core][InitializeDb:233] end. 0x00000000 ?
+[DBP Message][Core][WaitCexProcessInitialize:107] DbPreparation is complete. elapsed 1646841 (usec)?
+[AppDb] openDb()[1063]: [File:Open] openDb() call dbutil::Connection::Open() path[/t38su3Z12B/priv/mms/app.db] flags[0x10000002] result[0x0, 0]?
+[SceLncService] No heart beat of Shell UI has been observed for 4044 msec.?
+[AppDb] InitClient()[158]: [Cnt] InitClient DbAccessor::Init() : 0?
+[AppDb] InitClient()[202]: [INFO] call LoadNotFinishedCmds()?
+?
+*** network ready. myaddr: 192.168.50.215 ***?
+[ScePatchChecker] Patch Check Request (type=0 trigger=3)?
+[BgDailyChecker] Checking http://ps4-system.sec.np.dl.playstation.net/ps4-system/bgdc/np/v00/bgdc-config.xml.env?
+[SceShellCore] NpManager acquires /eap_user (refCount 1)?
+[SceShellCore] NpManager releases /eap_user (refCount 0)?
+[SceShellCore] NpManager acquires /eap_user (refCount 1)?
+[SceShellCore] NpManager releases /eap_user (refCount 0)?
+[DBP Message][UI][InitializeDb:233] end. 0x00000000 ?
+[BgDailyChecker] SceBgdcConfigCheckJob end (2026-05-13T11:03:43.84+01:00)?
+MSG: Setup AbstractStorage.?
+[UpdateChecker] sceHttpGetStatusCode() status code failed : 404?
+[BgDailyChecker] SceUpdateCheckJob end (2026-05-13T11:03:44.24+01:00)?

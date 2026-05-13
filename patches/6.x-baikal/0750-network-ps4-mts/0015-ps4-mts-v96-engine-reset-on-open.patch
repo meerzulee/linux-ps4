@@ -1,0 +1,73 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v96 — engine reset in ndo_open so HW refetches descriptors
+
+v95 boot: netdev mts0 → enp0s20f1, carrier ON via PHY-derived v94 fix,
+admin UP, LOWER_UP all good.  But ping fails 100%, TX counters stay 0
+even on attempted ARP send.
+
+Critical observation: when host pings PS4, an RX_AVAIL IRQ fires on the
+PS4 side (pattern 0x00040040 in histogram increments) — HW IS receiving
+the packet electrically.  But NAPI poll never delivers it to the netdev
+RX counters.
+
+Hypothesis (now patched): probe path starts the RX/TX engines while
+ring memory is still freshly dma_alloc_coherent-zero-filled.  HW
+fetches descriptors once at engine-enable and caches them: buf_lo=0
+across all RX descriptors.  When ndo_open later re-initializes the
+rings with valid SKB DMA addresses, HW does NOT refetch — packets get
+written to physical address 0 (or just dropped).  The RX IRQ fires
+because HW saw a frame on the wire, but the descriptor never marks
+OWN=1 in our ring → NAPI sees nothing to do.
+
+Fix: in ndo_open, STOP the engines, re-init rings, re-program the
+descriptor ring base addresses, then restart engines.  HW is forced
+to refetch descriptors with the new addresses.
+
+The probe-time engine start stays in place to keep PHY/MAC link
+detection working through to v95's PHY-derived carrier signaling.
+On the first ip link set up, engines get cycled cleanly.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1322,6 +1322,21 @@
+ static int mts_open(struct net_device *ndev)
+ {
+ 	struct mts *mts = netdev_priv(ndev);
++	u32 tx_ctrl_before, rx_ctrl_before;
++
++	/* v96: STOP engines BEFORE re-filling rings.  HW caches descriptor
++	 * state after first read at engine-enable time; if it sampled the
++	 * old zero-filled rings (probe-time engine start), it never refetches
++	 * even after we update buf_lo with real SKB DMA addresses.  Stop
++	 * engines → re-init rings → re-program base addresses → restart
++	 * engines.  This forces HW to fetch the new descriptor contents.
++	 */
++	tx_ctrl_before = readl(mts->bar + MTS_TX_CTRL);
++	rx_ctrl_before = readl(mts->bar + MTS_RX_CTRL);
++	writel(tx_ctrl_before & ~0x1u, mts->bar + MTS_TX_CTRL);
++	writel(rx_ctrl_before & ~0x1u, mts->bar + MTS_RX_CTRL);
++	(void)readl(mts->bar + MTS_TX_CTRL);
++	mdelay(5);
+ 
+ 	mts_rings_init(mts);
+ 
+@@ -1335,8 +1350,13 @@
+ 	napi_enable(&mts->napi);
+ 	netif_start_queue(ndev);
+ 
+-	/* Re-kick engines so HW notices the new ring contents.  bit 0 of
+-	 * the respective CTRL register enables the engine. */
++	dev_info(&mts->pdev->dev,
++		 "v96: ndo_open engine-reset (TX 0x%08x->0x%08x RX 0x%08x->0x%08x)\n",
++		 tx_ctrl_before, readl(mts->bar + MTS_TX_CTRL),
++		 rx_ctrl_before, readl(mts->bar + MTS_RX_CTRL));
++
++	/* Start engines fresh.  bit 0 of the respective CTRL register
++	 * enables the engine. */
+ 	writel(readl(mts->bar + MTS_TX_CTRL) | 0x1, mts->bar + MTS_TX_CTRL);
+ 	writel(readl(mts->bar + MTS_RX_CTRL) | 0x1, mts->bar + MTS_RX_CTRL);
+ 

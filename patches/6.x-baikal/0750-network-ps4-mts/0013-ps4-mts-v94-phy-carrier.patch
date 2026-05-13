@@ -1,0 +1,97 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-13
+Subject: [PATCH] ps4_mts: v94 — PHY-derived netif_carrier (workaround MAC bit 0)
+
+v93 boot result: probe + netdev register succeed cleanly, mts0 → enp0s20f1.
+Host RTL8153 partner reports `Link detected: yes, Speed: 1000Mb/s,
+Duplex: Full` — link is electrically working at 1Gbps.  PS4 PHY reports
+healthy (BMSR=0x7969 AN done, reg5=0xcde1 partner ACK + 100/10
+advertise, reg10=0x3800 both receivers OK).
+
+BUT BAR+0x04 bit 0 (MAC's internal link-detect bit) never latches in
+v93 — pattern 0x00040084 (TX_DONE + LINK_CHANGE + bit18) never appears
+in the IRQ histogram, only 0x00040000 (bit18) fires repeatedly.  So
+the ISR's `if (status & MTS_IRQ_LINK_CHANGE)` never executes, never
+calls netif_carrier_on, and Linux drops every TX packet with
+"NO-CARRIER" (proven: TX_dropped counter went 23→32 on a 3-packet
+ping, TX_packets stayed 0).
+
+Why bit 0 latched in v91 but not v93:  v91's RX descriptor ring was
+zero-filled (all-zero descriptors).  HW was probably erroring on every
+RX fetch, and that error path generated the link-change IRQ as a side
+effect.  v93's RX ring is *correctly* pre-filled with valid skb DMA
+addresses, so HW processes the ring cleanly and never trips the
+side-effect link-change IRQ.
+
+Fix: trust the PHY directly.  In the existing phy_ctrl kthread (3s
+heartbeat), evaluate BMSR bit 5 (AN done) AND reg 5 bit 14 (partner
+ACK).  When both true, call netif_carrier_on().  This bypasses the
+MAC's broken bit-0 latch.
+
+The ISR path still calls netif_carrier_on/off on link-change IRQ if
+the MAC ever does latch bit 0 — both paths are idempotent so they
+compose cleanly.
+
+Cost: 3s latency on initial carrier-up (kthread period).  Acceptable.
+
+Signed-off-by: Meerzulee <mirzaali@screeninternational.org>
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -198,6 +198,7 @@
+ 	u8 phy_addr;
+ 	bool link_logged_once;
+ 	bool last_phy_link_up;
++	bool last_phy_carrier;	/* v94: PHY-derived netif_carrier state */
+ 	bool initial_an_done;
+ 	unsigned int link_down_iterations;
+ 
+@@ -1151,6 +1152,47 @@
+ 			mts->link_down_iterations++;
+ 		}
+ 
++		/*
++		 * v94: PHY-derived carrier detection.  v93 boot proved the MAC's
++		 * BAR+0x04 bit 0 doesn't always latch even when the PHY-level
++		 * link is fully healthy (AN done, both receivers OK, partner
++		 * ACK).  When that bit fails to latch the link-change IRQ never
++		 * fires, the ISR never calls netif_carrier_on, and Linux refuses
++		 * to call ndo_start_xmit -> all packets get dropped at the qdisc
++		 * layer.
++		 *
++		 * Workaround: trust the PHY directly.  If BMSR bit 5 (AN done)
++		 * AND reg 5 bit 14 (partner ACK) are both set, the partner has
++		 * acknowledged us at the AN layer and the link is functionally
++		 * up — even if the MAC's status bit hasn't latched.  Toggle
++		 * netif_carrier from this thread so userspace can use the
++		 * interface.  Re-checked every 3s with the existing heartbeat.
++		 */
++		{
++			u16 v_bmsr = 0xffff, v_lpa = 0xffff;
++			bool phy_carrier;
++
++			if (mts_smi_c22_read(mts, 0x01, &v_bmsr) == 0 &&
++			    mts_smi_c22_read(mts, 0x05, &v_lpa) == 0) {
++				phy_carrier = (v_bmsr & 0x0020) &&
++					      (v_lpa & 0x4000);
++				if (mts->ndev && phy_carrier != mts->last_phy_carrier) {
++					if (phy_carrier) {
++						netif_carrier_on(mts->ndev);
++						dev_info(&mts->pdev->dev,
++							 "v94: netif_carrier_on (PHY-level: BMSR=0x%04x LPA=0x%04x)\n",
++							 v_bmsr, v_lpa);
++					} else {
++						netif_carrier_off(mts->ndev);
++						dev_info(&mts->pdev->dev,
++							 "v94: netif_carrier_off (BMSR=0x%04x LPA=0x%04x)\n",
++							 v_bmsr, v_lpa);
++					}
++					mts->last_phy_carrier = phy_carrier;
++				}
++			}
++		}
++
+ 		msleep_interruptible(MTS_PHY_CTRL_PERIOD_MS);
+ 	}
+ 	return 0;
