@@ -52,3 +52,10 @@ vendor/ps4-payload-sdk/libPS4/*.o
 # Reproduce by running tools/orbis-kernel-dumper/ on your own console.
 checkpoint/docs/research/orbis-kernel/*.elf
 checkpoint/docs/research/orbis-kernel/*.bin
+
+# Orbis-side payload tools build outputs — sources + Makefiles
+# under tools/orbis-*/ are tracked, build/ + .bin + .map are not.
+tools/orbis-*/build/
+tools/orbis-*/*.bin
+tools/orbis-*/*.map
+tools/orbis-*/*.o
