@@ -923,3 +923,32 @@ checkpoint/docs/research/2026-05-11-v70-uvd-vce-result.md.
 
 Rollback path if v71 still breaks display: bzImage-prev on USB is
 v68 (post-v67); bzImage-stable is v60 HDMI-working baseline.
+
+## 2026-05-14 — v133 BAR2+0x10a030 chip-tuning RMW (FALSIFIED)
+
+Built 6.15.4-Baikal_TESTING_crashniels-dirty (md5
+`b94d9f712752e57edf37ceafffc36dc7`, 11437056 bytes) with one new patch
+`0200-ps4-drivers/0099-bpcie-v133-baikal-chip-tuning-write.patch`
+adding a Ghidra-cited Orbis RMW at parent BAR2+0x10a030 inside
+`bpcie_glue_probe()`.  Hypothesis: a clocking/fabric routing knob
+gating host→chip descriptor fetch (the TX silicon-gate found in
+v126-v132).
+
+Staged via manual swap (preserved previous bzImage as `bzImage-v131-prev`
+on USB).  Triple-checked md5: source / mounted / after unmount+
+drop_caches+remount — all three `b94d9f71…`.
+
+Boot result: kernel up, SSH on wlan0 at 192.168.50.125, RMW visible
+in dmesg at line 347 with byte-exact readback (`0x16c9 → 0x16d9`,
+matching Orbis Ghidra math).  **Ethernet TX gate unchanged**: after
+197s, `tx_prod=93` but `tx_cons=0`, total_irq frozen at 1, zero
+packets sent.  RX also 0 (regression vs v93-v98).
+
+This closes the last single-register hypothesis from the v126-v132
+hunt and pivots the search toward write-ordering / non-static-trace
+mechanisms (ICC mailbox, ACPI method, ordering constraints).
+
+Full result + signal table:
+`checkpoint/docs/research/2026-05-14-v133-baikal-chip-tuning-result.md`
+Saved state:
+`checkpoint/uart-logs/2026-05-14_1556-v133-bar2-chip-tuning-{dmesg,ethstate}.log`
