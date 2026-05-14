@@ -1,0 +1,97 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-14
+Subject: [PATCH] ps4_mts: v126 — write TX_CTRL config bits (8+16) on engine start
+
+Through v82..v125 the TX DMA engine never fetched descriptors despite
+ring base addresses being programmed correctly and bit-0 "go" being
+asserted on BAR+0x034.  v125 BAR0 telemetry confirmed: TX current
+pointer (BAR+0x03c) stays at base across many xmit attempts → HW
+never reads our descriptors.
+
+Ghidra decompile of Orbis FW 12.02 reveals the missing piece:
+
+  mts_mac_init @ ffffffffc85ecb60:
+      *BAR+0x030 = 0x10100    ← MAC_MODE (Linux already does this)
+
+  mts_init_rings_kick @ ffffffffc85ef1b0:
+      *BAR+0x034 |= 1         ← TX engine GO
+      *BAR+0x038 |= 1         ← RX engine GO
+
+The Orbis BAR0 snapshot from a running idle interface shows BOTH
+0x030 AND 0x034 at 0x00010100.  Linux's MTS_MAC_MODE write puts the
+value at 0x030 only; the v125 snapshot in Linux shows BAR+0x034 = 0x4
+(just bit 2 "kick") after MAC init — confirming 0x030 and 0x034 are
+SEPARATE registers, despite appearing as a mirrored pair in the Orbis
+dump.
+
+Hypothesis: TX_CTRL (BAR+0x034) requires the same persistent config
+bits 8+16 (= 0x00010100) before HW accepts the bit-0 "go".  Without
+these bits, HW silently auto-clears bit 0 and never starts the DMA
+fetch sequence.  This explains why every iteration since v82 left
+tx_cons stuck at 0 — Linux was asking the engine to GO without ever
+configuring it.
+
+This patch writes 0x10101 (cfg bits 8+16 + go bit) in one transaction
+at engine-start time in mts_open.  HW should accept the go bit, clear
+it, and leave 0x10100 in the register — matching the Orbis steady
+state seen in the snapshot.  RX_CTRL (BAR+0x038) is left as-is since
+RX already works.
+
+After this lands and is tested, the expected signal in dmesg is:
+  v126: TX_CTRL 0x00000000 -> writel(|0x10101) -> 0x00010100
+
+And practically:
+  - dmesg: tx_cons starts advancing past tx_prod (was stuck at 0)
+  - ip link enp0s20f1: TX bytes/packets non-zero
+  - ping out succeeds
+  - speedtest upload works
+---
+ drivers/net/ethernet/sony/ps4_mts.c | 34 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/sony/ps4_mts.c b/drivers/net/ethernet/sony/ps4_mts.c
+--- a/drivers/net/ethernet/sony/ps4_mts.c
++++ b/drivers/net/ethernet/sony/ps4_mts.c
+@@ -1970,8 +1970,40 @@ static int mts_open(struct net_device *ndev)
+ 		 rx_ctrl_before, readl(mts->bar + MTS_RX_CTRL));
+
+ 	/* 3. Start engines with empty rings → MAC's link-detect state
+-	 *    machine samples PHY MII status now (no datapath work yet). */
+-	writel(readl(mts->bar + MTS_TX_CTRL) | 0x1, mts->bar + MTS_TX_CTRL);
++	 *    machine samples PHY MII status now (no datapath work yet).
++	 *
++	 * v126: Orbis Ghidra dump confirms TX_CTRL (BAR+0x034) needs
++	 * persistent config bits 8+16 (= 0x00010100) before the bit-0 "go"
++	 * pulse is honoured.  Without those bits, HW accepts the go bit
++	 * (auto-clears it) but never starts the TX DMA fetch.  v82..v125
++	 * only wrote bit 0; v125 BAR0 telemetry confirmed TX current
++	 * pointer (BAR+0x03c) never advanced past base — i.e. zero
++	 * descriptors fetched across 22 xmit attempts.
++	 *
++	 * Why Linux missed this: mts_mac_init writes 0x00010100 to BAR+0x030
++	 * (MTS_MAC_MODE) already, and BAR+0x030 / 0x034 are visible at the
++	 * same value in the Orbis idle snapshot — we assumed they aliased.
++	 * They don't: 0x030 is MAC_MODE config; 0x034 is the TX engine
++	 * control register and needs its own programming.  See Ghidra
++	 * decompile of Orbis mts_mac_init @ 0xffffffffc85ecb60 (writes
++	 * 0x10100 to 0x030) and mts_init_rings_kick @ 0xffffffffc85ef1b0
++	 * (ORs bit 0 to 0x034) — Orbis must also write 0x10100 to 0x034
++	 * somewhere we haven't yet localised, since the snapshot shows
++	 * both registers at 0x00010100 in working state.
++	 *
++	 * Write cfg bits + go bit in one transaction.  After this write the
++	 * read-back should show 0x00010100 (HW clears go, cfg persists).
++	 * Same RX_CTRL pattern is left as-is since RX already works. */
++	{
++		u32 tx_before = readl(mts->bar + MTS_TX_CTRL);
++		u32 tx_after;
++
++		writel(tx_before | 0x00010101u, mts->bar + MTS_TX_CTRL);
++		tx_after = readl(mts->bar + MTS_TX_CTRL);
++		dev_info(&mts->pdev->dev,
++			 "v126: TX_CTRL 0x%08x -> writel(|0x10101) -> 0x%08x (Orbis cfg bits 8+16 + go)\n",
++			 tx_before, tx_after);
++	}
+ 	writel(readl(mts->bar + MTS_RX_CTRL) | 0x1, mts->bar + MTS_RX_CTRL);
+
+ 	/*
