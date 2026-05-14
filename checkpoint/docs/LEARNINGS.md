@@ -1166,3 +1166,40 @@ DP-state regression.
 
 See `checkpoint/docs/research/2026-05-11-v70-uvd-vce-result.md` for
 full signal counts, boot timing, and v71 expected-outcome matrix.
+
+## 2026-05-14 — v133 (Orbis BAR2+0x10a030 chip-tuning RMW) FALSIFIED
+
+Strongest remaining TX-gate hypothesis after the v126-v132 hunt was
+that Linux had never touched parent BAR2+0x10a030, while Orbis bpcie
+attach performs a `(val & 0xfffffe07) | 0xd8` RMW there per Ghidra
+decompile of FW 12.02.  Region sits between HPET (0x109000) and UART
+(0x10e000) in the parent — plausibly a clocking / fabric routing knob
+that could gate host→chip descriptor fetch (TX) without affecting
+chip→host writes (RX).
+
+v133 patch
+(`patches/6.x-baikal/0200-ps4-drivers/0099-bpcie-v133-baikal-chip-tuning-write.patch`)
+adds the RMW inside `bpcie_glue_probe()`.  Boot-time readback
+confirmed the write landed byte-exact: `0x16c9 → 0x16d9`.  Math
+matches Orbis decompile exactly.
+
+Result: **TX gate state identical to v126-v132.**  After 197s of
+runtime the driver had queued 94 descriptors (`tx_prod=93`),
+`tx_cons` was frozen at 0, `total_irq` was frozen at 1 (boot-time
+only), `linkreg`/`tx_ctrl`/`mask` registers unchanged from initial
+arm.  Zero TX packets actually sent.  RX also at zero this boot
+(regression to be reinvestigated next iteration).
+
+**Lesson: matching Orbis register writes one-by-one is converging on
+a null hypothesis.**  Every single concrete BAR0/BAR2/parent-BAR
+write Orbis performs that we could see in Ghidra has now been
+replicated (v82..v133), except BAR2+0x2880 which userspace-wedged the
+PS4 in v124.  Either there is one more write that does not appear in
+the static decompile (timing-dependent, ICC mailbox, ACPI method,
+SMC handshake), or the gate is an ordering constraint between writes
+we already do.  Future iterations should pivot away from
+"find one more register" toward "instrument the existing sequence
+for ordering / settling time".
+
+See `checkpoint/docs/research/2026-05-14-v133-baikal-chip-tuning-result.md` for
+full state snapshot, signal table, and surviving-hypothesis ranking.

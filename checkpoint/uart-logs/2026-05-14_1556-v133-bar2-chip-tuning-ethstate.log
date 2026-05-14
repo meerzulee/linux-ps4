@@ -1,0 +1,70 @@
+=== ip -s link enp0s20f1 ===
+5: enp0s20f1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether ee:57:74:42:33:75 brd ff:ff:ff:ff:ff:ff
+    RX:  bytes packets errors dropped  missed   mcast           
+             0       0      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+             0       0      0       5       0       0 
+
+=== ethtool -i ===
+driver: ps4_mts
+version: 6.15.4-Baikal_TESTING_crashniel
+firmware-version: 
+expansion-rom-version: 
+bus-info: 0000:00:14.1
+supports-statistics: no
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no
+
+=== /sys carrier/operstate/speed/duplex ===
+fish: Missing end to balance this for loop
+for f in carrier operstate speed duplex; do echo -n "$f: "; cat /sys/class/net/enp0s20f1/$f 2>&1; done
+^~^
+
+=== v133 init dmesg ===
+[    1.456788] baikal_pcie 0000:00:14.4: v133: BAR2+0x10a030 0x000016c9 -> 0x000016d9 (Orbis chip tuning)
+
+=== last 30 mts dmesg ===
+[  169.965240] ps4_mts 0000:00:14.1: v98 xmit[75] desc: ctl=0x3000005a buf=0x7b8c6800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  169.983396] ps4_mts 0000:00:14.1: v97 xmit: len=110 tx_prod=76 tx_cons=0
+[  169.990279] ps4_mts 0000:00:14.1: v98 xmit[76] desc: ctl=0x3000006e buf=0x7d599800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  170.020693] ps4_mts 0000:00:14.1: v97 xmit: len=62 tx_prod=77 tx_cons=0
+[  170.027486] ps4_mts 0000:00:14.1: v98 xmit[77] desc: ctl=0x3000003e buf=0x7ede2800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  170.280672] ps4_mts 0000:00:14.1: v97 xmit: len=89 tx_prod=78 tx_cons=0
+[  170.287466] ps4_mts 0000:00:14.1: v98 xmit[78] desc: ctl=0x30000059 buf=0x7d59a000 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  170.302532] ps4_mts 0000:00:14.1: v97 xmit: len=123 tx_prod=79 tx_cons=0
+[  170.309383] ps4_mts 0000:00:14.1: v98 xmit[79] desc: ctl=0x3000007b buf=0x7d59a800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  172.199422] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+[  173.951782] mts_start_xmit: 9 callbacks suppressed
+[  173.951795] ps4_mts 0000:00:14.1: v97 xmit: len=62 tx_prod=89 tx_cons=0
+[  173.963472] mts_start_xmit: 9 callbacks suppressed
+[  173.963480] ps4_mts 0000:00:14.1: v98 xmit[89] desc: ctl=0x3000003e buf=0x7ede3800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  175.692358] ps4_mts 0000:00:14.1: v97 xmit: len=329 tx_prod=90 tx_cons=0
+[  175.699238] ps4_mts 0000:00:14.1: v98 xmit[90] desc: ctl=0x30000149 buf=0x7ede4000 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  177.321754] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+[  181.703377] ps4_mts 0000:00:14.1: v97 xmit: len=62 tx_prod=91 tx_cons=0
+[  181.710173] ps4_mts 0000:00:14.1: v98 xmit[91] desc: ctl=0x3000003e buf=0x7ede4800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  182.443877] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+[  183.754263] ps4_mts 0000:00:14.1: v97 xmit: len=329 tx_prod=92 tx_cons=0
+[  183.761140] ps4_mts 0000:00:14.1: v98 xmit[92] desc: ctl=0x30000149 buf=0x7ede5000 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  187.565838] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+[  192.687687] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+[  197.426202] ps4_mts 0000:00:14.1: v97 xmit: len=62 tx_prod=93 tx_cons=0
+[  197.433009] ps4_mts 0000:00:14.1: v98 xmit[93] desc: ctl=0x3000003e buf=0x7b8cc000 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  197.809249] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+[  200.582346] ps4_mts 0000:00:14.1: v97 xmit: len=329 tx_prod=94 tx_cons=0
+[  200.589258] ps4_mts 0000:00:14.1: v98 xmit[94] desc: ctl=0x30000149 buf=0x7b8cc800 a0=0x00000000 a1=0x00000000 | tx_ctrl=0x00000005 base=0x0115a000 pair=0x0115a000
+[  202.930723] ps4_mts 0000:00:14.1: DBG: linkreg=0x00000b18 rxkick=0x00000005 txkick=0x00000008 mask=0x007beffe status=0x00000040 total_irq=1
+==> /sys/class/net/enp0s20f1/carrier <==
+1
+
+==> /sys/class/net/enp0s20f1/operstate <==
+up
+
+==> /sys/class/net/enp0s20f1/speed <==
+head: error reading '/sys/class/net/enp0s20f1/speed': Invalid argument
+
+==> /sys/class/net/enp0s20f1/duplex <==
+head: error reading '/sys/class/net/enp0s20f1/duplex': Invalid argument

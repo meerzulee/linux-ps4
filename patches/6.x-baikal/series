@@ -117,6 +117,7 @@
 # from orbis-12.02.elf — RE notes in
 # checkpoint/docs/research/orbis-kernel/2026-05-11-orbis-poweroff-discovered.md.
 0200-ps4-drivers/0015-ps4-bpcie-pm-power-off-handler.patch
+0200-ps4-drivers/0099-bpcie-v133-baikal-chip-tuning-write.patch
 
 # === 0300: Liverpool GPU (amdgpu + radeon + amdkfd + drm_bridge)
 0300-gpu-liverpool/0001-amdgpu-add-ps4-liverpool-bridge.patch

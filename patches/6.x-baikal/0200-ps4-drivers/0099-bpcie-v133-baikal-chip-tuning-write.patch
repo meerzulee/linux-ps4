@@ -1,0 +1,40 @@
+From: Meerzulee <mirzaali@screeninternational.org>
+Date: 2026-05-14
+Subject: [PATCH] ps4-bpcie: v133 — Orbis chip-tuning write at BAR2+0x10a030
+
+Ghidra decompile of Orbis FW 12.02 bpcie attach function reveals a
+previously unreplicated read-modify-write at parent BAR2 + 0x10a030:
+
+  val = (val & 0xfffffe07) | 0xd8     // clear bits 8:3, set bits 3,4,6,7
+
+Region 0x10a000 sits between HPET (0x109000) and UART (0x10e000) in
+parent BAR2 — never mapped/programmed in our driver.  Hypothesis: this
+tunes a clocking / fabric routing parameter that the TX DMA path
+depends on, gating host->chip reads while leaving chip->host RX writes
+unaffected.  Strongest remaining hypothesis after v82..v132 exhausted
+every BAR0-level avenue.
+---
+ drivers/ps4/ps4-bpcie.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -787,6 +787,18 @@
+ 		ioread32(sc->bar4 + BPCIE_REG_CHIPID_1),
+ 		ioread32(sc->bar4 + BPCIE_REG_CHIPREV));
+ 
++	/* v133: Orbis chip-tuning write at parent BAR2 + 0x10a030.
++	 * See FUN_ffffffffc8765090 in Orbis FW 12.02.  Read-modify-write:
++	 * clear bits 8:3, set bits 3,4,6,7 (=0xd8).  Region 0x10a000 sits
++	 * between HPET (0x109000) and UART (0x10e000) in parent BAR2. */
++	{
++		u32 v_before = ioread32(sc->bar2 + 0x10a030);
++		u32 v_after  = (v_before & 0xfffffe07u) | 0xd8u;
++		iowrite32(v_after, sc->bar2 + 0x10a030);
++		sc_info("v133: BAR2+0x10a030 0x%08x -> 0x%08x (Orbis chip tuning)\n",
++			v_before, v_after);
++	}
++
+ 	//sc->irqdomain = bpcie_create_irq_domain(sc);
+ 	bpcie_create_irq_domains(sc);
+ 	if (!sc->irqdomain) {
