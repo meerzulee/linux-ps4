@@ -751,6 +751,7 @@
 # Bit-18 handler clears master cleanly, no storm.  Trade-off: no MSIs
 # after handshake fires — v118+ needs polled completion.
 0750-network-ps4-mts/0029-ps4-mts-v117-lazy-bar204-enable.patch
+0750-network-ps4-mts/0030-ps4-mts-v126-tx-ctrl-cfg-bits.patch
 
 # === 0800: xHCI Aeolia/Baikal USB controller
 0800-usb-aeolia/0001-xhci-aeolia-controller.patch
