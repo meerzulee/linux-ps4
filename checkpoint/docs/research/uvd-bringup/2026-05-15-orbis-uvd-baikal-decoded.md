@@ -702,3 +702,141 @@ Sony source path tags embedded in the kernel rodata:
 
 These are the original Sony source files. Build identifier `J02688428`
 appears in many file paths and corresponds to the 12.02 SDK build job.
+
+---
+
+## Round 3 + 4: Hardware iteration log (2026-05-15 → 2026-05-16)
+
+After Round 2's mc_resume add-back was falsified, hardware testing
+continued on a tighter loop (~10 min/iteration). Five iterations:
+
+### v0060 (Round 2 — initial) — 13 VM faults, vmid 4 page 0x300000
+- Patches: 0034 + my k=4/no-mc_resume/LMI_VBASE=fw_gpu_addr
+- Result: same vmid 4 fault wall as before. LMI_VBASE write took effect
+  (HI/LO readback shows 0xf00400000) but UVD walks vmid 4 PT, finds no
+  mapping at VA 0x300000000, faults.
+
+### v0060.1 (Round 2.5 — mc_resume add-back) — 50 VM faults
+- Patches: v0060 + restore mc_resume call inside start_liverpool
+- Result: WORSE. mc_resume's LMI_ADDR_EXT writes don't redirect the
+  vmid 4 walk path. VCPU still faults; mc_resume just makes it retry
+  more frequently (50 vs 13 faults). FALSIFIED hypothesis cleanly.
+
+### v0061 (Round 3 — VC4 DEPTH=0, BROKEN) — 0 faults but GFX -110
+- Patches: v0060 + write `mmVM_CONTEXT1_CNTL + 3` (intended VC4_CNTL)
+  with PAGE_TABLE_DEPTH=0
+- Result: 0 VM faults — looked like a win. But `gfx_v7_0` hw_init
+  failed -110, no /dev/dri.
+- Diagnosis: GCN1/gmc_v7 has NO per-VMID CNTL register. VC[2-15]_CNTL
+  doesn't exist; mainline only writes VC0_CNTL (0x504) and VC1_CNTL
+  (0x505), and VC[2-15] inherit VC1's settings. My computed VC4_CNTL
+  offset `0x508` actually hits `mmVM_CONTEXT0_CNTL2` — corrupted VC0's
+  fault-response settings → GFX broke.
+- The "0 faults" was a coincidence (GFX died before UVD's turn).
+
+### v0062 (Round 4 — custom vmid 4 PD) — 0 faults, GFX healthy, VCPU "released" idle
+- Patches: drop the broken VC4_CNTL write; new patch 0062 instead.
+  - Allocates a tiny PD for vmid 4 via `amdgpu_bo_create_kernel`
+  - Uses `mmVM_CONTEXT4_PAGE_TABLE_START_ADDR = 0x300000` to shift PDE
+    index origin → only 2 PDEs needed, fits in 4KB
+  - **Trick**: PDE format = PTE format on GCN1, so PDE entries point at
+    chunks of the EXISTING GART table (where 0042-44 already bound the
+    firmware mirror). The "PT" the walker reaches IS GART entries.
+  - PDE[0] = (gart_table_addr + 0x300000*8) | 1
+  - PDE[1] = (gart_table_addr + 0x300200*8) | 1
+- Result:
+  - ✅ Custom PD allocated and configured
+  - ✅ 0 VM faults (vmid 4 walks succeed)
+  - ✅ GFX healthy (no -110)
+  - ✅ /dev/dri/card0 + renderD128 exist
+  - ✅ UVD's `liverpool start` runs to completion (function returned)
+  - ❌ STATUS bit 1 never fires (10s poll); `ring uvd test failed -110`
+  - **VCPU is "alive but idle"** — sample registers static across all
+    10 timepoints; `0x3d67` changes by 1 bit at 8s (not totally dead).
+    `STATUS=0x4` (busy bit), `LMI_STATUS=0x4`.
+
+### v0062.1 (LMI_VBASE = literal 0x300000000) — same idle state
+- Patches: v0062 + change LMI_VBASE write to literal 0x300000000
+  instead of `lower/upper_32_bits(fw_gpu_addr)`. Sony's source uses
+  ctx[+0x88] = 0x300000000 (the UVD-VMID VA), not the BO physical addr.
+- Result: identical to v0062. LMI_VBASE_HI=3, LO=0 confirmed in
+  readback. VCPU still idle. Same sample table values.
+
+---
+
+## Round 5 — comparison-driven diagnosis (LMI_ADDR_EXT/EXT40 left set)
+
+Side-by-side comparison of Sony's verbatim `uvd_vcpu_start_baikal` vs
+our patched `uvd_v4_2_start_liverpool` reveals **one significant
+divergence**:
+
+```c
+/* OUR CODE (after all patches apply) */
+/* line 794 of src/.../uvd_v4_2.c */
+uvd_v4_2_mc_resume(adev);    /* ← Sony does NOT do this */
+```
+
+Sony's `uvd_vcpu_start_baikal` doesn't call any equivalent of
+`uvd_v4_2_mc_resume`. Sony's per-VMID PT setup (gbase_map) handles
+all the address translation that mc_resume's LMI_ADDR_EXT/EXT40
+writes try to do for mainline UVD.
+
+**What mc_resume writes:**
+| Register | Value | Overwritten by Sony? |
+|---|---|---|
+| `mmUVD_VCPU_CACHE_OFFSET0/SIZE0` | `(gpu_addr + AMDGPU_UVD_FIRMWARE_OFFSET) >> 3` | YES (Sony's 0x3d82=0, 0x3d83=0x7d000 win) |
+| `mmUVD_VCPU_CACHE_OFFSET1/SIZE1` | mainline values | YES (Sony's 0x3d84-0x3d85) |
+| `mmUVD_VCPU_CACHE_OFFSET2/SIZE2` | mainline values | YES (Sony's 0x3d86-0x3d87) |
+| `mmUVD_LMI_ADDR_EXT` | `(gpu_addr >> 28) & 0xF` | **NO — stays set** |
+| `mmUVD_LMI_EXT40_ADDR` | `top_byte | (0x9<<16) | (0x1<<31)` | **NO — stays set** |
+| `mmUDEC_ADDR_CONFIG` etc. | tile config | NO (Sony intentionally avoids per 0046) |
+
+**Live readback from v0062.1 boot confirms this:**
+```
+LMI_VM_VBASE_HI=0x00000003  LMI_VM_VBASE_LO=0x00000000   (0x300000000 ✓)
+LMI_EXT40_ADDR=0x8009000f                                 (mc_resume left it set!)
+```
+
+**Hypothesis (high confidence — 60-70%)**: When `mmUVD_LMI_EXT40_ADDR`
+is set with the high-byte field, UVD's MMU prepends `0xF` to addresses.
+VCPU's instruction fetch at internal VA `0x300000000` becomes physical
+`0xF_300000000` (way out of GART range, garbage data). VCPU executes
+garbage → stuck in busy state, never sets STATUS bit 1.
+
+**Test plan**: explicitly write `mmUVD_LMI_ADDR_EXT = 0` and
+`mmUVD_LMI_EXT40_ADDR = 0` AFTER Sony's cache writes. Either remove
+the `mc_resume()` call entirely, or zero the EXT registers right after.
+This is what disabled patch 0037 (v76b) used to do — should re-enable.
+
+---
+
+## State of play — 5 walls broken, 1 left
+
+| # | Wall | Status |
+|---|---|---|
+| 1 | UVD soft-fail / amdgpu probe dies | ✅ broken (0054 soft-fail in v0060+) |
+| 2 | GFX vmid 1 regression from depth=0 hack | ✅ broken (v0062 isolated to vmid 4) |
+| 3 | vmid 4 PT walk fault at page 0x300000 | ✅ broken (v0062 custom PD) |
+| 4 | LMI_VBASE = wrong address | ✅ broken (v0062.1 = 0x300000000) |
+| 5 | mc_resume's LMI_EXT redirecting addresses | 🟡 **next test** |
+| 6 | Sony's chip state preconditions we still miss | ❓ (might surface after #5) |
+
+**State of system after v0062.1**:
+- ✅ Boot to userspace, SSH, desktop
+- ✅ amdgpu probe complete, /dev/dri/card0 + renderD128 exist
+- ✅ HDMI bridge runs, GFX healthy
+- ✅ Custom vmid 4 PD walking correctly (0 VM faults)
+- ✅ UVD fw loads, BO sized correctly (3168 KB), ring set up
+- ❌ UVD VCPU starts but goes idle — STATUS=0x4 (busy), never reaches ready
+- ⚠️ Soft-fail 0054 catches the timeout; ring test fails -110 but boot continues
+
+**Next iteration**: re-enable patch 0037 (zero LMI_ADDR_EXT/EXT40 after
+mc_resume) OR add explicit zero writes in our 0060. ~5-10 min cycle.
+
+If wall #5 falls and VCPU still idle → wall #6 is real (chip state we
+don't reproduce). Likely candidates: UDEC_ADDR_CONFIG values (chip
+default vs Sony's leave-alone vs mainline's settings), some IRQ
+acknowledgment, or a power gating bit Sony's source touches that
+we missed in the variant diff.
+
+If wall #5 falls AND VCPU starts → 🎯 hardware UVD on PS4 Linux.
