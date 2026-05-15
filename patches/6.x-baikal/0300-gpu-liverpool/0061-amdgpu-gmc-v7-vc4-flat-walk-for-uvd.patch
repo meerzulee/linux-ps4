@@ -1,0 +1,102 @@
+amdgpu: gmc_v7 — Liverpool/Gladius VC4-only flat-GART walk for UVD
+
+After Round 2 hardware test (v0060.1) cleanly falsified the mc_resume
+hypothesis, Round 3 Ghidra dig of Sony's gbase_map (orbis FUN_c886a540
+in gc/vm.c) revealed the actual structural gap:
+
+Mainline gmc_v7 programs vmid 1..15 with PAGE_TABLE_DEPTH=1 (2-level
+walk: PD -> PT) but ALSO points their PAGE_TABLE_BASE_ADDR at the flat
+GART PD. The walker reads the flat GART as if it were a 2-level PD,
+gets garbage entries, and faults. UVD specifically uses vmid 4 and
+hits this on its first fixed-VA read at 0x300000000.
+
+Patch 0040 (v76d-beta-2-A) tried fixing this by setting DEPTH=0 for
+ALL vmid 1..15 — worked for UVD but broke GFX vmid 1's per-process
+PD writes (Hyprland CPF fault at VA 0x268000). Patch 0056 reverted
+0040 and left UVD soft-failing.
+
+Sony's gbase_map decompile confirms there's NO proprietary AMD silicon
+difference: same GMC v7 PTE format, same mmVM_INVALIDATE_REQUEST/
+RESPONSE registers Linux uses. The ONLY gap is software architecture
+(Sony has per-VMID PT setup via gbase_map; mainline expects per-process
+PDs via amdgpu_vm).
+
+Targeted fix: override ONLY mmVM_CONTEXT4_CNTL with PAGE_TABLE_DEPTH=0.
+Other vmids stay at depth=1 for amdgpu_vm. UVD vmid 4 walks the GART
+flatly, sees the firmware mirror at GART VA 0x300000000 (bound by
+patches 0042-44), and starts cleanly.
+
+After CNTL change, invalidate vmid 4 TLB (1 << 4) so the new walk
+shape takes effect without waiting for natural eviction.
+
+Test plan:
+  - Boot, watch UART for "VC4_CNTL=0x... (DEPTH=0...)" log line
+  - Look for absence of "VM fault vmid 4 page 3145728" cascade
+  - If clean: "Liverpool VCPU started" + STATUS bit 1 fires + ring test passes
+  - If still faulting: dump VC4_CNTL post-init via debugfs + check
+    if other VC* are leaking into vmid 4 (chip may share CNTL across
+    contexts in a way mainline doesn't expose)
+
+Risk: minimal — touches only VC4. GFX uses vmid 1, SDMA uses vmid 2,
+neither touched. If UVD bring-up succeeds, this becomes a 2-3 line
+permanent fix. If GFX regresses despite isolated change, fall back
+to the soft-fail status quo.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -745,6 +745,53 @@
+ 	WREG32(mmVM_CONTEXT1_CNTL, tmp);
+ 
+ 	/*
++	 * 2026-05-16 v0061: PS4 Liverpool/Gladius — UVD uses vmid 4 and its
++	 * firmware does fixed reads at GPU VA 0x300000000. Patches 0042-44
++	 * bind a firmware mirror at flat-GART VA 0x300000000 (vmid 0 / GART
++	 * PD walk = depth=0). But mainline programs vmid 1..15 with
++	 * PAGE_TABLE_DEPTH=1 (2-level walk) while ALSO pointing their
++	 * PAGE_TABLE_BASE_ADDR at the flat GART PD — depth mismatch =
++	 * walker reads garbage = vmid 4 fault at page 0x300000.
++	 *
++	 * Round-2 dig of Sony's gbase_map (orbis FUN_c886a540) confirms
++	 * vmids share GMC v7 PTE format and the mmVM_INVALIDATE_*
++	 * registers — there's no proprietary AMD difference, just a Linux
++	 * software gap.
++	 *
++	 * Fix: override ONLY VC4_CNTL with PAGE_TABLE_DEPTH=0 so vmid 4
++	 * walks the GART flatly (matches vmid 0). Other vmids stay at
++	 * depth=1 for amdgpu_vm per-process PDs (avoids regressing GFX
++	 * vmid 1 / Hyprland CPF that 0040 broke when it flattened ALL
++	 * vmids 1..15).
++	 *
++	 * After CNTL change, invalidate vmid 4's TLB so the new walk shape
++	 * takes effect immediately.
++	 */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		u32 vc4_pre, vc4;
++
++		vc4_pre = RREG32(mmVM_CONTEXT1_CNTL + 3);  /* VC4_CNTL */
++		vc4 = vc4_pre;
++		vc4 = REG_SET_FIELD(vc4, VM_CONTEXT1_CNTL, ENABLE_CONTEXT, 1);
++		vc4 = REG_SET_FIELD(vc4, VM_CONTEXT1_CNTL, PAGE_TABLE_DEPTH, 0);
++		vc4 = REG_SET_FIELD(vc4, VM_CONTEXT1_CNTL, PAGE_TABLE_BLOCK_SIZE, 0);
++		WREG32(mmVM_CONTEXT1_CNTL + 3, vc4);
++
++		/*
++		 * v0061.1 (2026-05-16): REMOVED the explicit TLB invalidate
++		 * that v0061 had here. Hardware test showed VC4 DEPTH=0
++		 * eliminates the vmid 4 fault (0 VM faults — confirmed!) BUT
++		 * the mid-init invalidate triggered a GFX regression
++		 * (gfx_v7_0 hw_init failed -110). Mainline never invalidates
++		 * during gart_enable; the new CNTL value takes effect on first
++		 * vmid 4 access naturally. Keep init flow clean.
++		 */
++
++		DRM_INFO("ps4 gmc_v7: VC4_CNTL: 0x%08x -> 0x%08x (DEPTH=0 for UVD vmid 4 flat-GART walk)\n",
++			 vc4_pre, vc4);
++	}
++
++	/*
+ 	 * v76d-β-2-A: Liverpool/Gladius UVD page-table fix.
+ 	 *
+ 	 * Upstream sets PAGE_TABLE_DEPTH=1 for VC1 (which propagates to

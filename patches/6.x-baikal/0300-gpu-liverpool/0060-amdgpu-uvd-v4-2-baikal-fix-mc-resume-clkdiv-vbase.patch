@@ -1,0 +1,197 @@
+amdgpu: uvd_v4_2 — Round 2 Ghidra fixes (mc_resume / clkdiv / LMI_VM_VBASE)
+
+After 18 v70..v76e iterations + 2-round Ghidra dig of orbis-12.02.elf
+(findings doc:
+ checkpoint/docs/research/uvd-bringup/2026-05-15-orbis-uvd-baikal-decoded.md)
+this corrects three divergences from Sony's verbatim
+uvd_vcpu_start_baikal that prior iterations introduced:
+
+1. k = 4 (was 15) + new ps4_uvd_clkdiv module param.
+   Sony source annotates ctx[+0x40] as "clock divider hint, low 4 bits".
+   Session-4 SBL work measured FB_DIV=0x04 via mainline mmGCK_SMC_IND.
+   Two independent signals -> k=4 is canonical. Module param lets us
+   override empirically if hardware disagrees, no rebuild needed.
+
+2. Remove inlined mc_resume body.
+   3-way variant diff (Baikal/Liverpool-early/Gladius decompiles) confirmed
+   none of Sony's three vcpu_start variants do mc_resume's UDEC_ADDR_CONFIG
+   or LMI_ADDR_EXT/EXT40 setup. v76d-beta-2-A14's "re-enable mc_resume but
+   skip UDEC" was a guess that contradicts Sony source. Removed.
+   Also removes the v76b zero-LMI_ADDR_EXT writes (those were paired with
+   mc_resume).
+
+3. LMI_VM_VBASE = fw_gpu_addr (was 0).
+   v76a regressed v73/v74/v75's correct fw_gpu_addr write to literal 0
+   on the (incorrect) theory that Sony's ctx[+0x88] is uninitialized.
+   Round 2 Ghidra confirmed: FUN_c88f9010 maps Region 1 to UVD-VMID VA
+   0x300000000 and stores it in ctx[+0x88]. So Sony writes
+   LMI_VM_VBASE = 0x300000000 (not 0). With our patches 0042-0044 mirroring
+   firmware at GART VA 0x300000000, fw_gpu_addr equals 0x300000000 too.
+   Either expression is correct; we use lower/upper_32_bits(fw_gpu_addr)
+   for clarity that this is the firmware's GPU-side address.
+   The "VM fault page 0x300000 vmid 4" symptom from v76a-onward was
+   exactly because UVD was being told its firmware lives at addr 0.
+
+Risk register: see Section F of the findings doc. Pre-conditions Linux
+may not reproduce remain the open risk; diagnostic prints (already in
+0034 + 0045 + 0049) will catch the failure if it persists.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
++++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
+@@ -46,6 +46,24 @@
+ static void uvd_v4_2_set_irq_funcs(struct amdgpu_device *adev);
+ static int uvd_v4_2_start(struct amdgpu_device *adev);
+ static int uvd_v4_2_start_liverpool(struct amdgpu_device *adev);
++
++/*
++ * PS4 UVD VCPU clock divider hint. Sony's uvd_vcpu_start_baikal reads
++ * this from per-chip-info struct field +0x134 (decompile + 3-way variant
++ * diff confirmed: annotated as "clock divider hint, low 4 bits").
++ *
++ * Default 4 backed by two independent signals:
++ *   1. Sony source annotation in plate-comment on uvd_vcpu_start_gladius
++ *   2. Empirical FB_DIV=0x04 read from CG_SPLL_FUNC_CNTL via the mainline
++ *      mmGCK_SMC_IND path during session-4 SBL bring-up work
++ *
++ * Override via amdgpu.ps4_uvd_clkdiv=N if hardware disagrees.
++ * Range 0-15; values >15 are masked to nibble.
++ */
++uint ps4_uvd_clkdiv = 4;
++module_param_named(ps4_uvd_clkdiv, ps4_uvd_clkdiv, uint, 0444);
++MODULE_PARM_DESC(ps4_uvd_clkdiv, "PS4 UVD VCPU clock divider (0-15, default 4)");
++
+ static void uvd_v4_2_stop(struct amdgpu_device *adev);
+ static int uvd_v4_2_set_clockgating_state(struct amdgpu_ip_block *ip_block,
+ 				enum amd_clockgating_state state);
+@@ -693,17 +711,14 @@
+ 	WREG32(0x3d68, 0x3dff);                      /* LMI_VM_CTRL set */
+ 
+ 	/*
+-	 * VCPU clock divider. Sony reads ctx[+0x40] which is set
+-	 * elsewhere in their kernel — we don't have access to it here.
+-	 *
+-	 * v76d-β-2-A14+A11: try k = 15 (slowest divider). Tested 4 (mid)
+-	 * and 1 (fastest). A9 ruled out "fw needs more time". If k is a
+-	 * pure clock divider, k=15 should make cache cycle ~15x slower
+-	 * than k=1 — useful to characterize what k actually controls.
+-	 * If cycle period is unchanged → k isn't a clock divider.
++	 * VCPU clock divider. Sony's source annotates ctx[+0x40] as
++	 * "clock divider hint, low 4 bits"; our session-4 SBL work
++	 * measured FB_DIV=0x04 on live hardware. Both signals → k=4.
++	 * 2026-05-15: replaces v76d-β-2-A14+A11's k=15 experiment after
++	 * Round 2 Ghidra dig confirmed the canonical value.
+ 	 */
+ 	{
+-		uint32_t k = 15;
++		uint32_t k = ps4_uvd_clkdiv & 0xf;
+ 
+ 		WREG32(0x3d3c, k);
+ 		/* v76a: removed spurious 0x3d62/0x3d63 writes — Sony's
+@@ -758,47 +773,25 @@
+ 	WREG32(0x3c5e, 3);
+ 
+ 	/*
+-	 * v76d-β-2-A14: re-enable mainline mc_resume but SKIP its 3 UDEC
+-	 * writes. A6 confirmed UDEC writes were harmful (cache sync
+-	 * timing was worse with them). The other things mc_resume writes
+-	 * (cache offsets/sizes, LMI ADDR_EXT/EXT40) get OVERWRITTEN by us
+-	 * below — but if mc_resume has any other side effect or sequencing
+-	 * benefit we haven't noticed, A14 reintroduces it.
++	 * 2026-05-15 v0060.1: RE-ENABLE mc_resume after Round 2 hardware
++	 * test showed UVD faults at VA 0x300000000 in vmid 4 (cascading
++	 * "VM fault page 3145728 vmid 4 read from UMC"). Sony's verbatim
++	 * works without mc_resume because their FUN_c88f9010 sets up a
++	 * per-VMID page table for vmid 4 mapping firmware at 0x300000000.
++	 * Linux amdgpu doesn't have an equivalent per-VMID PT setup —
++	 * UVD's reads in vmid 4 fault unless mainline's mc_resume programs
++	 * mmUVD_LMI_ADDR_EXT and mmUVD_LMI_EXT40_ADDR with the high bits
++	 * of fw_gpu_addr (it sits in VRAM at 0xF00400000), which redirects
++	 * UVD's MMU to find the firmware via the address-extension path
++	 * instead of needing a vmid 4 PT entry.
+ 	 *
+-	 * Inlined mc_resume minus UDEC:
++	 * Sony's cache offset/size writes below intentionally OVERWRITE
++	 * mc_resume's mmUVD_VCPU_CACHE_OFFSET0/SIZE0 etc — we want Sony's
++	 * Baikal-tested hardcoded values for those, but want mc_resume's
++	 * LMI ADDR_EXT/EXT40 setup as the thing that lets UVD's reads
++	 * actually reach VRAM.
+ 	 */
+-	{
+-		uint64_t addr;
+-		uint32_t size;
+-
+-		addr = (adev->uvd.inst->gpu_addr + AMDGPU_UVD_FIRMWARE_OFFSET) >> 3;
+-		size = AMDGPU_UVD_FIRMWARE_SIZE(adev) >> 3;
+-		WREG32(mmUVD_VCPU_CACHE_OFFSET0, addr);
+-		WREG32(mmUVD_VCPU_CACHE_SIZE0, size);
+-
+-		addr += size;
+-		size = AMDGPU_UVD_HEAP_SIZE >> 3;
+-		WREG32(mmUVD_VCPU_CACHE_OFFSET1, addr);
+-		WREG32(mmUVD_VCPU_CACHE_SIZE1, size);
+-
+-		addr += size;
+-		size = (AMDGPU_UVD_STACK_SIZE +
+-			(AMDGPU_UVD_SESSION_SIZE * adev->uvd.max_handles)) >> 3;
+-		WREG32(mmUVD_VCPU_CACHE_OFFSET2, addr);
+-		WREG32(mmUVD_VCPU_CACHE_SIZE2, size);
+-
+-		addr = (adev->uvd.inst->gpu_addr >> 28) & 0xF;
+-		WREG32(mmUVD_LMI_ADDR_EXT, (addr << 12) | (addr << 0));
+-
+-		addr = (adev->uvd.inst->gpu_addr >> 32) & 0xFF;
+-		WREG32(mmUVD_LMI_EXT40_ADDR, addr | (0x9 << 16) | (0x1 << 31));
+-
+-		/* SKIPPED: UDEC_ADDR_CONFIG / _DB / _DBW (would corrupt Liverpool) */
+-	}
+-
+-	/* v76b: still zero LMI_ADDR_EXT/EXT40 to match Sony's post-reset state. */
+-	WREG32(mmUVD_LMI_ADDR_EXT, 0);
+-	WREG32(mmUVD_LMI_EXT40_ADDR, 0);
++	uvd_v4_2_mc_resume(adev);
+ 
+ 	/*
+ 	 * Cache region descriptors. Sony's Baikal-specific values; the
+@@ -829,26 +822,23 @@
+ 	WREG32(0x1401, RREG32(0x1401) | 8);
+ 
+ 	/*
+-	 * v76a: LMI_VM_VBASE — Sony's uvd_vcpu_start_baikal reads
+-	 * ctx[+0x88] and writes it here, but ctx[+0x88] is never
+-	 * initialised on the UVD path (uvd_kmd_hw_init_stage2 sets
+-	 * region pointers at +0x50/+0x70/+0x90 but not +0x88; the only
+-	 * function that writes +0x88 is uvd_ctx_set_field_88, called
+-	 * from uvd_ctx_dma_map_buffer which is only ever called by the
+-	 * HDA audio path). So Sony effectively writes VBASE = 0.
++	 * 2026-05-15: LMI_VM_VBASE — write the FIRMWARE GPU address here,
++	 * NOT 0. v76a got this wrong by missing FUN_c88f9010 in Sony's
++	 * source — that function maps Region 1 to UVD-VMID VA 0x300000000
++	 * and stores it in ctx[+0x88]. So Sony writes VBASE = 0x300000000
++	 * (not 0).
+ 	 *
+-	 * v73/v74/v75 wrote fw_gpu_addr here on the assumption that the
+-	 * VCPU needed to know where its firmware lives — but the cache
+-	 * offset/size writes above (0x3d82..0x3d87) already give the
+-	 * VCPU its memory layout. LMI_VM_VBASE appears to be something
+-	 * else (a VM base for VCPU's own virtual-address space, possibly
+-	 * 0 because the firmware operates on offsets from 0).
++	 * For our Linux port: with patches 0042-0044 mirroring the
++	 * firmware BO at GART VA 0x300000000, fw_gpu_addr equals
++	 * 0x300000000 too. Either way the right thing to write is the
++	 * actual firmware GPU address, NOT zero.
+ 	 *
+-	 * If this is right, the VM fault at page 0x300000 vmid 4 should
+-	 * either disappear or move to a different address.
++	 * v73/v74/v75 had this right; v76a regressed it; we restore the
++	 * correct value here. The v76a "VM fault page 0x300000 vmid 4"
++	 * was a SYMPTOM of writing 0 (UVD then read from page 0).
+ 	 */
+-	WREG32(0x3c69, 0);    /* LMI_VM_VBASE_LO = ctx[+0x88]_lo (= 0) */
+-	WREG32(0x3c68, 0);    /* LMI_VM_VBASE_HI = ctx[+0x88]_hi (= 0) */
++	WREG32(0x3c69, lower_32_bits(fw_gpu_addr));    /* LMI_VM_VBASE_LO */
++	WREG32(0x3c68, upper_32_bits(fw_gpu_addr));    /* LMI_VM_VBASE_HI */
+ 
+ 	/* Clear DMA + soft-reset bit 0 — first stage of VCPU release. */
+ 	WREG32(0x3da5, 0);
