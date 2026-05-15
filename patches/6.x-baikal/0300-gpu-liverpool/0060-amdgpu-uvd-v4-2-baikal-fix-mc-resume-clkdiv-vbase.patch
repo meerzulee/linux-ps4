@@ -40,10 +40,24 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 ---
 --- a/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
 +++ b/drivers/gpu/drm/amd/amdgpu/uvd_v4_2.c
-@@ -46,6 +46,24 @@
+@@ -46,6 +46,38 @@
  static void uvd_v4_2_set_irq_funcs(struct amdgpu_device *adev);
  static int uvd_v4_2_start(struct amdgpu_device *adev);
  static int uvd_v4_2_start_liverpool(struct amdgpu_device *adev);
++
++#include <linux/debugfs.h>
++
++/* v0064: hot-iteration debugfs hooks. After boot, SSH in and:
++ *   echo any > /sys/kernel/debug/dri/0/ps4_uvd_retry  → re-run start_liverpool
++ *   cat /sys/kernel/debug/dri/0/ps4_uvd_status        → live UVD regs + BO bytes
++ * Lets us iterate fixes without rebooting through PSFree gauntlet.
++ */
++static struct dentry *ps4_uvd_debugfs_dir;
++static struct amdgpu_device *ps4_uvd_dbgfs_adev;	/* set in hw_init */
++/* BO mirror state — actual storage; setup_fw_mirror_liverpool populates these. */
++static struct amdgpu_bo *uvd_fw_mirror_bo;
++static void *uvd_fw_mirror_cpu_ptr;
++static bool uvd_fw_mirror_done;
 +
 +/*
 + * PS4 UVD VCPU clock divider hint. Sony's uvd_vcpu_start_baikal reads
@@ -65,15 +79,129 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  static void uvd_v4_2_stop(struct amdgpu_device *adev);
  static int uvd_v4_2_set_clockgating_state(struct amdgpu_ip_block *ip_block,
  				enum amd_clockgating_state state);
-@@ -502,6 +520,7 @@
+@@ -154,6 +186,100 @@
+  *
+  * Initialize the hardware, boot up the VCPU and do some testing
+  */
++/* v0064 debugfs: ps4_uvd_retry — write anything → re-run start_liverpool. */
++static ssize_t ps4_uvd_retry_write(struct file *file, const char __user *buf,
++				   size_t cnt, loff_t *ppos)
++{
++	int r;
++
++	if (!ps4_uvd_dbgfs_adev) {
++		pr_err("ps4 uvd: debugfs adev not set\n");
++		return -ENODEV;
++	}
++	pr_info("ps4 uvd: ps4_uvd_retry → re-running uvd_v4_2_start_liverpool\n");
++	r = uvd_v4_2_start_liverpool(ps4_uvd_dbgfs_adev);
++	pr_info("ps4 uvd: retry returned %d\n", r);
++	return cnt;
++}
++static const struct file_operations ps4_uvd_retry_fops = {
++	.owner = THIS_MODULE,
++	.write = ps4_uvd_retry_write,
++};
++
++/* v0064 debugfs: ps4_uvd_status — read → key UVD regs + R1/R2/R3 bytes. */
++static ssize_t ps4_uvd_status_read(struct file *file, char __user *buf,
++				   size_t cnt, loff_t *ppos)
++{
++	char tmp[1024];
++	int len;
++	struct amdgpu_device *adev = ps4_uvd_dbgfs_adev;
++	u8 *m = (u8 *)uvd_fw_mirror_cpu_ptr;
++	u64 r1_lo = 0, r1_hi = 0, r2_lo = 0, r2_hi = 0, r3_lo = 0, r3_hi = 0;
++
++	if (!adev)
++		return -ENODEV;
++
++	if (m) {
++		r1_lo = *(u64 *)(m + 0x000000);
++		r1_hi = *(u64 *)(m + 0x000008);
++		r2_lo = *(u64 *)(m + 0x1E0000);
++		r2_hi = *(u64 *)(m + 0x1E0008);
++		r3_lo = *(u64 *)(m + 0x304000);
++		r3_hi = *(u64 *)(m + 0x304008);
++	}
++
++	len = snprintf(tmp, sizeof(tmp),
++		"PS4 UVD live status\n"
++		"==== UVD regs ====\n"
++		"  STATUS  (0x3daf) = 0x%08x   (bit 1=ready, bit 2=busy)\n"
++		"  0x3d67           = 0x%08x   (LMI VCPU sync)\n"
++		"  0x3d40           = 0x%08x   (LMI_CTRL2)\n"
++		"  0x3d98           = 0x%08x   (VCPU_CNTL)\n"
++		"  0x3da0 SOFT_RST  = 0x%08x\n"
++		"  0x3da9 DMA       = 0x%08x\n"
++		"  0x3dab sync      = 0x%08x\n"
++		"  RB_RPTR          = 0x%08x\n"
++		"  RB_WPTR          = 0x%08x\n"
++		"  LMI_VBASE_HI/LO  = 0x%08x / 0x%08x\n"
++		"  LMI_ADDR_EXT     = 0x%08x\n"
++		"  LMI_EXT40_ADDR   = 0x%08x\n"
++		"==== BO contents (first 16 bytes) ====\n"
++		"  R1 firmware @+0x000000 = %016llx %016llx\n"
++		"  R2 heap     @+0x1E0000 = %016llx %016llx\n"
++		"  R3 msgq     @+0x304000 = %016llx %016llx\n"
++		"\n",
++		RREG32(mmUVD_STATUS), RREG32(0x3d67), RREG32(0x3d40),
++		RREG32(0x3d98), RREG32(0x3da0), RREG32(0x3da9),
++		RREG32(0x3dab), RREG32(mmUVD_RBC_RB_RPTR),
++		RREG32(mmUVD_RBC_RB_WPTR),
++		RREG32(0x3c68), RREG32(0x3c69),
++		RREG32(mmUVD_LMI_ADDR_EXT), RREG32(mmUVD_LMI_EXT40_ADDR),
++		r1_lo, r1_hi, r2_lo, r2_hi, r3_lo, r3_hi);
++
++	return simple_read_from_buffer(buf, cnt, ppos, tmp, len);
++}
++static const struct file_operations ps4_uvd_status_fops = {
++	.owner = THIS_MODULE,
++	.read = ps4_uvd_status_read,
++};
++
++static void ps4_uvd_debugfs_register(struct amdgpu_device *adev)
++{
++	struct dentry *root;
++
++	if (!adev->ddev.primary)
++		return;
++	root = adev->ddev.primary->debugfs_root;
++	if (!root)
++		return;
++	if (ps4_uvd_debugfs_dir)	/* already registered */
++		return;
++	ps4_uvd_dbgfs_adev = adev;
++	debugfs_create_file("ps4_uvd_retry",  0200, root, NULL, &ps4_uvd_retry_fops);
++	debugfs_create_file("ps4_uvd_status", 0444, root, NULL, &ps4_uvd_status_fops);
++	pr_info("ps4 uvd: debugfs hooks registered: ps4_uvd_retry, ps4_uvd_status\n");
++}
++
+ static int uvd_v4_2_hw_init(struct amdgpu_ip_block *ip_block)
+ {
+ 	struct amdgpu_device *adev = ip_block->adev;
+@@ -164,6 +290,10 @@
+ 	uvd_v4_2_enable_mgcg(adev, true);
+ 	amdgpu_asic_set_uvd_clocks(adev, 10000, 10000);
+ 
++	/* v0064: register hot-iteration debugfs hooks if Liverpool/Gladius. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		ps4_uvd_debugfs_register(adev);
++
+ 	r = amdgpu_ring_test_helper(ring);
+ 	if (r)
+ 		goto done;
+@@ -501,8 +631,7 @@
+ 				 PS4_UVD_REGION3_SIZE)	/* 3.1 MB */
  #define PS4_UVD_FW_MIRROR_VA	0x300000000ULL		/* Sony's region 1 VA */
  
- static struct amdgpu_bo *uvd_fw_mirror_bo;
-+static void *uvd_fw_mirror_cpu_ptr;	/* v0063: kept for instrumentation */
- static bool uvd_fw_mirror_done;
+-static struct amdgpu_bo *uvd_fw_mirror_bo;
+-static bool uvd_fw_mirror_done;
++/* uvd_fw_mirror_bo, uvd_fw_mirror_cpu_ptr, uvd_fw_mirror_done declared up top. */
  
  static int uvd_v4_2_setup_fw_mirror_liverpool(struct amdgpu_device *adev)
-@@ -543,6 +562,10 @@
+ {
+@@ -543,40 +672,26 @@
  	/* Copy the firmware bytes into the start of region 1. */
  	memcpy(mirror_cpu_addr, adev->uvd.fw->data + ucode_offset, ucode_size);
  
@@ -82,9 +210,56 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 +	uvd_fw_mirror_cpu_ptr = mirror_cpu_addr;
 +
  	/*
- 	 * v76d-β-2-A15: try Sony's IOCTL-returned constants as the
- 	 * "host setup" values at region 2/3[0].
-@@ -693,17 +716,14 @@
+-	 * v76d-β-2-A15: try Sony's IOCTL-returned constants as the
+-	 * "host setup" values at region 2/3[0].
++	 * v0064 (2026-05-16): R2/R3 left at zeros (memset above).
++	 *
++	 * Round 6 instrumentation showed firmware never writes Region 2/3
++	 * across 10s window. Per Codex's framing, fw never reaches mailbox
++	 * path → wall is in fw fetch/init. The previous v76d-A15 magic
++	 * writes (0x300308000, 0x20000 at R2/R3 first u64 pair) might be
++	 * MISLEADING firmware: if fw reads R2/R3 as configuration on
++	 * startup and the magic values don't match what fw expects, fw
++	 * could halt silently before doing anything else.
+ 	 *
+-	 * From Ghidra dungeon-map:
+-	 *   IOCTL 0x4008830c returns 0x300308000 (= 0x300000000 + total
+-	 *     region size). Sony's userspace receives this — likely a
+-	 *     "first user-allocatable VA" hint.
+-	 *   IOCTL 0x4004830b returns 0x20000 (128 KB — possibly a buffer
+-	 *     size or ring size).
+-	 *
+-	 * If the fw expects the host to write THESE values into region 2/3
+-	 * before VCPU release, A15 unblocks. A8 tried plain region SIZES;
+-	 * A15 tries Sony's specific runtime constants.
+-	 *
+-	 * Layout we try:
+-	 *   region2[0]   = 0x300308000  (user-buffer-start VA)
+-	 *   region2[4]   = 0x20000      (buffer size)
+-	 *   region3[0]   = 0x300308000  (same — userspace's view of where
+-	 *                                its allocations start)
+-	 *   region3[4]   = 0x20000
++	 * Removing the writes lets us test "does zero-init unblock fw?".
++	 * If fw now writes to R2/R3 (visible via debugfs ps4_uvd_status),
++	 * the magic was the bug. If fw still doesn't write, magic wasn't
++	 * the issue and we look elsewhere (cache config, GPU PTE writer).
+ 	 */
+-	{
+-		u64 *region2 = (u64 *)(mirror_cpu_addr + PS4_UVD_REGION1_SIZE);
+-		u64 *region3 = (u64 *)(mirror_cpu_addr +
+-				       PS4_UVD_REGION1_SIZE +
+-				       PS4_UVD_REGION2_SIZE);
+-		region2[0] = 0x300308000ULL;	/* user-buffer-start VA */
+-		region2[1] = 0x20000ULL;	/* buffer size */
+-		region3[0] = 0x300308000ULL;	/* same on msgq */
+-		region3[1] = 0x20000ULL;
+-		DRM_INFO("ps4 uvd: A15 wrote IOCTL constants — "
+-			 "region2/3[0]=0x300308000, [1]=0x20000\n");
+-	}
+ 
+ 	/*
+ 	 * Rebind GART at 0x300000000 for the full 3-region span (3.1 MB).
+@@ -693,17 +808,14 @@
  	WREG32(0x3d68, 0x3dff);                      /* LMI_VM_CTRL set */
  
  	/*
@@ -108,7 +283,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  
  		WREG32(0x3d3c, k);
  		/* v76a: removed spurious 0x3d62/0x3d63 writes — Sony's
-@@ -758,45 +778,23 @@
+@@ -758,45 +870,23 @@
  	WREG32(0x3c5e, 3);
  
  	/*
@@ -118,8 +293,6 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 -	 * (cache offsets/sizes, LMI ADDR_EXT/EXT40) get OVERWRITTEN by us
 -	 * below — but if mc_resume has any other side effect or sequencing
 -	 * benefit we haven't noticed, A14 reintroduces it.
--	 *
--	 * Inlined mc_resume minus UDEC:
 +	 * 2026-05-16 v0060.3: REMOVE mc_resume call AND zero LMI_ADDR_EXT/
 +	 * EXT40_ADDR. Round 4 hardware test (v0062.1) confirmed VCPU goes
 +	 * idle with STATUS=0x4 forever, sample registers static. Live
@@ -127,7 +300,8 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 +	 * write IS taking effect, prepending 0xF to all UVD addresses.
 +	 * VCPU's instruction fetch at internal VA 0x300000000 becomes
 +	 * physical 0xF_300000000 = out of GART range = garbage = VCPU stuck.
-+	 *
+ 	 *
+-	 * Inlined mc_resume minus UDEC:
 +	 * Sony's uvd_vcpu_start_baikal does NO equivalent of mc_resume.
 +	 * With our patch 0062 custom vmid 4 PD mapping firmware at VA
 +	 * 0x300000000, UVD doesn't need address-extension — it does the
@@ -170,7 +344,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  	WREG32(mmUVD_LMI_ADDR_EXT, 0);
  	WREG32(mmUVD_LMI_EXT40_ADDR, 0);
  
-@@ -829,26 +827,32 @@
+@@ -829,26 +919,32 @@
  	WREG32(0x1401, RREG32(0x1401) | 8);
  
  	/*
@@ -188,15 +362,14 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 -	 * VCPU its memory layout. LMI_VM_VBASE appears to be something
 -	 * else (a VM base for VCPU's own virtual-address space, possibly
 -	 * 0 because the firmware operates on offsets from 0).
--	 *
--	 * If this is right, the VM fault at page 0x300000 vmid 4 should
--	 * either disappear or move to a different address.
 +	 * 2026-05-15: LMI_VM_VBASE — write the FIRMWARE GPU address here,
 +	 * NOT 0. v76a got this wrong by missing FUN_c88f9010 in Sony's
 +	 * source — that function maps Region 1 to UVD-VMID VA 0x300000000
 +	 * and stores it in ctx[+0x88]. So Sony writes VBASE = 0x300000000
 +	 * (not 0).
-+	 *
+ 	 *
+-	 * If this is right, the VM fault at page 0x300000 vmid 4 should
+-	 * either disappear or move to a different address.
 +	 * For our Linux port: with patches 0042-0044 mirroring the
 +	 * firmware BO at GART VA 0x300000000, fw_gpu_addr equals
 +	 * 0x300000000 too. Either way the right thing to write is the
@@ -222,7 +395,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  
  	/* Clear DMA + soft-reset bit 0 — first stage of VCPU release. */
  	WREG32(0x3da5, 0);
-@@ -923,6 +927,18 @@
+@@ -923,6 +1019,18 @@
  		u32 sample_3bc6[V76D_A5_SAMPLES]   = { 0 };
  		u32 sample_3e41[V76D_A5_SAMPLES]   = { 0 };
  		u32 sample_3d45[V76D_A5_SAMPLES]   = { 0 };
@@ -241,7 +414,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  		int sample_idx = 0;
  		int next_sample_ms = 0;
  		bool succeeded = false;
-@@ -940,6 +956,27 @@
+@@ -940,6 +1048,27 @@
  				sample_3bc6[sample_idx]   = RREG32(0x3bc6);
  				sample_3e41[sample_idx]   = RREG32(0x3e41);
  				sample_3d45[sample_idx]   = RREG32(0x3d45);
@@ -269,7 +442,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  				sample_idx++;
  				next_sample_ms += V76D_A5_INTERVAL_MS;
  			}
-@@ -966,6 +1003,28 @@
+@@ -966,6 +1095,28 @@
  				 sample_3da0[i], sample_3bc6[i], sample_3e41[i],
  				 sample_3d45[i]);
  
