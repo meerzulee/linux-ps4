@@ -1,0 +1,135 @@
+amdgpu: gmc_v7 — Liverpool/Gladius custom vmid 4 PD for UVD bring-up
+
+Round 3 hardware test of v0061 (VC4 DEPTH=0) exposed a structural truth:
+GCN1/gmc_v7 has NO per-VMID CNTL register (VC[2-15]_CNTL doesn't exist
+in the chip's register layout). All vmids 1..15 share VC1_CNTL settings
+as a template. So my v0061 attempt to "set VC4 to depth=0" actually
+wrote to mmVM_CONTEXT0_CNTL2 at offset 0x508 (the correct VC4_CNTL doesn't
+exist), corrupting VC0's secondary fault config — that's why GFX failed
+-110 in v0061 hardware test.
+
+Sony's gbase model (decompile of FUN_c886a540 in gc/vm.c) allocates a
+SEPARATE PD per VMID. Each vmid gets its own PT_BASE pointing at its
+own PD that walks correctly under VC1's depth=1 template.
+
+Linux mainline doesn't have an equivalent. This patch implements the
+smallest viable form for Liverpool/Gladius UVD bring-up:
+
+  1. Allocate a 4 KB PD for vmid 4.
+  2. Use mmVM_CONTEXT4_PAGE_TABLE_START_ADDR to shift the PDE index
+     origin to VA 0x300000000 (where Sony's UVD firmware does its
+     fixed reads). Without START_ADDR shifting, PDE 6144 would be
+     needed → 49 KB PD allocation; with it, just PDE[0] and PDE[1].
+  3. Trick: PDE format = PTE format on GCN1. Point PDE entries at
+     chunks of the EXISTING GART table where patches 0042-44 already
+     bound the firmware mirror at GART VA 0x300000000. The "PT" the
+     walker reaches is actually GART entries — same format, valid
+     firmware physical addresses already populated.
+
+PDE values (table_addr = amdgpu_bo_gpu_offset(adev->gart.bo)):
+  PDE[0] = (table_addr + 0x300000*8) | 1   → covers VA 0x300000000-0x300200000
+  PDE[1] = (table_addr + 0x300200*8) | 1   → covers VA 0x300200000-0x300400000
+
+Two PDEs cover 4 MB of VA; firmware is 3.1 MB. END_ADDR = page 0x300400.
+
+Does NOT touch VC1_CNTL — leaves GFX vmid 1 at DEPTH=1/block_size for
+amdgpu_vm per-process PDs. Avoids the v0061 GFX regression (which was
+actually caused by writing to mmVM_CONTEXT0_CNTL2 at 0x508, not VC4_CNTL).
+
+Test plan:
+  - Watch for "vmid 4 custom PD @ GPU 0x...PDE[0]=0x...PDE[1]=0x..."
+  - GFX should init cleanly (no -110)
+  - UVD's uvd_v4_2_start_liverpool should run, write LMI_VM_VBASE,
+    release VCPU. With vmid 4 PT walks now succeeding, STATUS bit 1
+    should fire, ring test should pass.
+
+Risk:
+  - GART entries used as PT entries assumes their format is identical.
+    On GCN1 PTE/PDE share bit layout (page addr in bits 12+, flags in
+    low bits). If firmware reads need protection bits other than what
+    0042-44 set (READABLE | WRITEABLE | VALID | SYSTEM), need to update
+    those bindings too.
+  - PD lifetime: BO is `static`, leaks if amdgpu unloads. Acceptable
+    for kernel-lifetime allocation; not a regression.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -745,6 +745,76 @@
+ 	WREG32(mmVM_CONTEXT1_CNTL, tmp);
+ 
+ 	/*
++	 * 2026-05-16 v0062: PS4 Liverpool/Gladius custom vmid 4 PD for UVD.
++	 *
++	 * Round 3 dig (Sony gbase_map in gc/vm.c) revealed mainline points
++	 * vmid 4's PT_BASE at the shared flat GART PD, but VC1_CNTL forces
++	 * 2-level walks (DEPTH=1). GCN1 has NO per-VMID CNTL register
++	 * (VC[2-15]_CNTL doesn't exist) — all vmids 1..15 share VC1's
++	 * settings as a template. So vmid 4 walks GART flat-PD as if 2-level,
++	 * gets garbage PDE values, and faults at UVD fw read of VA 0x300000000.
++	 *
++	 * Sony allocates per-VMID PDs (gbase_create_vmid). Linux mainline
++	 * doesn't have an equivalent. We replicate the smallest viable form:
++	 *
++	 *   - Allocate a tiny PD (1 page, only 2 PDEs used).
++	 *   - Use mmVM_CONTEXT4_PAGE_TABLE_START_ADDR to shift the PDE
++	 *     index origin to 0x300000000 (otherwise PDE 6144 needs a
++	 *     49 KB PD).
++	 *   - PDE format = PTE format on GCN1 — so we can point PDE entries
++	 *     into chunks of the existing GART table where 0042-44 already
++	 *     bound the firmware mirror. The "PT" the walker reaches is
++	 *     actually GART entries (PTE-format, firmware physical addresses).
++	 *
++	 *   PDE[0] = (gart_table_addr + 0x300000*8) | 1
++	 *     → walker reads PT at GART byte offset 0x1800000 = GART page
++	 *       0x300000 entry = firmware page 0 (VA 0x300000000)
++	 *   PDE[1] = (gart_table_addr + 0x300200*8) | 1
++	 *     → walker reads PT at GART byte offset 0x1801000 = GART page
++	 *       0x300200 entry = firmware page 0x200 (VA 0x300200000)
++	 *
++	 * Two PDEs cover 4 MB of VA (firmware is 3.1 MB, fits).
++	 * VC4_END_ADDR set to 0x300400 (page) = VA 0x300400000.
++	 * Does NOT touch VC1_CNTL — leaves GFX vmid 1 at DEPTH=1 / block_size
++	 * for amdgpu_vm. Avoids the v0061 GFX regression (which was actually
++	 * caused by writing to mmVM_CONTEXT0_CNTL2 at 0x508, not VC4_CNTL).
++	 */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) {
++		static struct amdgpu_bo *ps4_vmid4_pd_bo;
++		u64 pd_gpu_addr;
++		void *pd_cpu;
++		int r;
++
++		r = amdgpu_bo_create_kernel(adev, PAGE_SIZE, PAGE_SIZE,
++					    AMDGPU_GEM_DOMAIN_VRAM,
++					    &ps4_vmid4_pd_bo,
++					    &pd_gpu_addr, &pd_cpu);
++		if (!r && pd_cpu) {
++			u64 *pd = (u64 *)pd_cpu;
++
++			memset(pd, 0, PAGE_SIZE);
++			/* PDE format on GCN1 = PTE format: addr | flags (bit 0 = valid) */
++			pd[0] = (table_addr + 0x300000ULL * 8) | 1;
++			pd[1] = (table_addr + 0x300200ULL * 8) | 1;
++
++			WREG32(mmVM_CONTEXT4_PAGE_TABLE_BASE_ADDR,
++			       pd_gpu_addr >> 12);
++			WREG32(mmVM_CONTEXT0_PAGE_TABLE_START_ADDR + 4,
++			       0x300000ULL);
++			WREG32(mmVM_CONTEXT0_PAGE_TABLE_END_ADDR + 4,
++			       0x300400ULL);
++
++			DRM_INFO("ps4 gmc_v7: vmid 4 custom PD @ GPU 0x%llx, "
++				 "PDE[0]=0x%016llx PDE[1]=0x%016llx, "
++				 "VA range [0x300000000, 0x300400000)\n",
++				 pd_gpu_addr, pd[0], pd[1]);
++		} else {
++			DRM_WARN("ps4 gmc_v7: vmid 4 custom PD alloc failed (%d); "
++				 "UVD VCPU will still fault\n", r);
++		}
++	}
++
++	/*
+ 	 * v76d-β-2-A: Liverpool/Gladius UVD page-table fix.
+ 	 *
+ 	 * Upstream sets PAGE_TABLE_DEPTH=1 for VC1 (which propagates to

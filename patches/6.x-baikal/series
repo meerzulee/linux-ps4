@@ -461,7 +461,22 @@
 # depth=1 for amdgpu_vm. Should unlock UVD bring-up if Sony's gbase_map
 # decompile interpretation is correct.
 # See checkpoint/docs/research/uvd-bringup/2026-05-15-orbis-uvd-baikal-decoded.md
-0300-gpu-liverpool/0061-amdgpu-gmc-v7-vc4-flat-walk-for-uvd.patch
+# 2026-05-16: DISABLED — Round 3 hardware test exposed structural wall.
+# GCN1/gmc_v7 has NO per-VMID CNTL registers — only VC0_CNTL (0x504) and
+# VC1_CNTL (0x505) exist; VC[2-15] share VC1's settings as a template.
+# Our `mmVM_CONTEXT1_CNTL + 3 = 0x508` hit mmVM_CONTEXT0_CNTL2 (VC0
+# secondary fault config), corrupting GFX init. To replicate Sony's
+# UVD bring-up needs a separate per-vmid PD allocation (gbase model)
+# in amdgpu — superseded by 0062 below. Kept in tree as historical
+# record + so the wrong-offset bug isn't repeated.
+# 0300-gpu-liverpool/0061-amdgpu-gmc-v7-vc4-flat-walk-for-uvd.patch
+# 0062: 2026-05-16 v0062 — custom vmid 4 PD for UVD (Round 4 fix).
+# Replaces failed 0061 with the actually-correct approach: allocate a
+# tiny PD for vmid 4, point its 2 PDE entries into chunks of the
+# existing GART table where 0042-44 bound the firmware mirror. PDE
+# format = PTE format on GCN1, so the walker reaches valid firmware
+# physical addresses without touching VC1_CNTL (no GFX regression).
+0300-gpu-liverpool/0062-amdgpu-gmc-v7-vmid4-custom-pd-for-uvd.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
