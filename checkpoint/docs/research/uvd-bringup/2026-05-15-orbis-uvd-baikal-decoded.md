@@ -1022,3 +1022,88 @@ from amdgpu_debugfs.c right after `ps4_sbl_debugfs_init(adev, root)` line.
    gbase_map calls with vmid=4 OR start_va=0x300000000 OR size=0x1e0000.
    One of the 5 gbase_map callers should match.
 
+
+---
+
+## Codex consult #4 (post-Round 7) — targeted Ghidra strategy
+
+After Round 7 result + my Ghidra inventory of "what's done vs what's
+left", Codex returned this prioritized strategy:
+
+### Top 3 Ghidra angles (do BEFORE more hardware tests)
+
+1. **A: Find Sony's actual UVD VMID4 PT writer.** Decompile each of
+   the 5 `gbase_map` callers (FUN_c8867260, FUN_c886ddf0, FUN_c88c7b40,
+   FUN_c8964840, FUN_c8a1e640) and look for `vmid=4`, `va=0x300000000`,
+   `size=0x1e0000`. **This can invalidate our entire current hardware
+   approach.** Our PDE-into-GART trick is "guilty until proven match"
+   against Sony's actual setup.
+
+2. **B: Audit UVD register writes mechanically.** Search patterns:
+   - Functions containing constants in `0x3b00..0x3eff`
+   - Functions touching `0x3d28`/`0x3d29` indirect window
+   - Functions calling MMIO write helper with first arg in UVD range
+   - Functions with 5+ UVD writes
+   - Indirect signature: `3d28 → 3d29 → 3d28` (not just constants)
+   - Cross-refs to `uvd_kmd_hw_init`, `uvd_kmd_module_op`, probe/open paths
+
+3. **D: Use Devkit kernel symbols as leverage.** The Devkit (12_020_011.elf,
+   12,945+ functions, 33,696 symbols) likely has function names where retail
+   has FUN_xxxx. Use Devkit to LABEL the 5 gbase_map callers — turns
+   archaeology into name-driven work. Don't deep-dive devkit broadly.
+
+### Skip (until A/B/D surfaces them):
+- **C** uBIOS persistent state — relevant only if we prove Linux missing it
+- **E** SBL service IDs — already-burned dead end
+- **F** UVD VCPU microcode disasm — proprietary AMD ISA, no docs
+- **G** IRQ 0x7c handler — IRQs irrelevant pre-ready
+- **H** Sony userspace — relevant only after ready
+
+### What to extract when we find Sony's UVD PT writer (A)
+
+- VMID number + exact VC[N]_CNTL/PT_BASE/START/END register programming
+- Page table levels (1-level flat? 2-level? deeper?)
+- Root PD physical address format
+- PTE/PDE bit layout: VALID, SYSTEM, SNOOP/cache, R/W/X, fragment/page
+  size, aperture, MTYPE, privilege
+- Physical address source (GART / bus / VRAM / Sony allocator)
+- Alignment constraints for Regions and PT pages
+- TLB invalidate sequence + delays/readbacks
+- Whether R1/R2/R3 mapped as 1 contiguous span or 3 separate attributed
+  mappings
+- Permission diff: fw region X+RO vs heap RW
+- VM fault mask/handling (could explain our 0 faults differently)
+- VMID4 SRBM routing or shared-with-other-clients status
+
+### Codex's order recommendation
+
+> Do the binary firmware-fetch hardware test NOW, unless A is genuinely
+> a one-hour dig.
+>
+> The test answers the highest-value binary question: is the VCPU
+> consuming Region 1?  If corrupting/moving firmware changes nothing,
+> A/E become urgent. If it changes behavior, VM fetch works and B/C
+> become more likely.
+>
+> Best order: quick A triage for the five callers using devkit symbols,
+> then hardware fetch test. Do not spend days in Ghidra before proving
+> whether your firmware is even in the execution path.
+
+### Stop condition
+
+> If Round 8 + Round 9 together don't unblock UVD, accept soft-fail as
+> final state.
+
+Software decode (libavcodec) on PS4 Jaguar handles all video adequately.
+Hardware UVD is "nice to have" not blocker. Other features (ethernet,
+BT, suspend) deserve attention more.
+
+---
+
+## Next session checklist
+
+1. Decompile 5 gbase_map callers, find UVD PT writer (Phase 1, ~45 min)
+2. Build firmware-corruption canary patch (Phase 2, ~15 min)
+3. Boot test: compare 0x3d67 cadence
+4. Synthesize: PT writer + corruption result → next concrete patch OR accept soft-fail
+5. Bonus: fix debugfs registration (move from hw_init to amdgpu_debugfs.c init)
