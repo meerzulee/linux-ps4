@@ -84,25 +84,42 @@ For PS4 Linux RE (UVD bring-up, ethernet TX, future features):
 The autonomous indexing loop picks the next binary to import + analyze
 from this list. Edit it freely to redirect.
 
-### Currently waiting to be imported + analyzed
-1. **Filesystem/Retail/1202.7z** — extract, then list each SELF/PRX, identify the UVD/AvPlayer/VideoOut ones
-2. **PUP/System/PS4UPDATE_1202.PUP** — split into components, see if there are SAMU IPL or sub-firmware blobs we don't already have
-3. **AMD uBIOS/Devkit/12_020_011.elf** — likely has more uBIOS symbols vs retail
-4. **Full Kernel/Devkit/12_020_011.elf** — devkit symbols layered on the combined image
-5. **EAP KBL/Devkit/Baikal/12_020_011.elf** — devkit symbols for Baikal EAP boot
-6. **EMC IPL/Retail/Belize 2/1202.bin** — Belize 2 EMC IPL (Baikal SKUs use this)
+### Currently waiting to be imported + analyzed (loop pickable)
+*(Empty as of iteration 2 — all loop-pickable Tier 1+2 items either imported
+or blocked on user-installed tooling. Blocked items below.)*
+
+### Blocked — needs user to install tooling
+1. **Filesystem/Retail/1202.7z** — needs `7z` (`sudo pacman -S p7zip`).
+   Then extract, then import the UVD/AvPlayer/VideoOut SELF/PRXs.
+2. **PUP/System/PS4UPDATE_1202.PUP** + **PUP/Recovery/PS4UPDATE_1202.PUP** —
+   needs `pup_unpack` (e.g. https://github.com/idc/ps4-pup-unpack) or similar.
+   Then split into components.
 
 ### Already imported + indexed (see Section 5)
 - Kernel/Retail/1202.elf
-- Kernel/Devkit/12_020_011.elf (analyzed mid-session, may need full reanalyze)
+- Kernel/Devkit/12_020_011.elf (in progress reanalyze; auto found 0 fns)
 - AMD uBIOS/Retail/1202.elf
-- EAP KBL/Retail/Baikal/1202.elf
+- AMD uBIOS/Devkit/12_020_011.elf (auto found 0 fns; reanalyze failed —
+  unusual base addr layout, may need manual fix-up)
+- EAP KBL/Retail/Baikal/1202.elf — **same md5 as Devkit/Baikal** (Sony ships
+  identical KBL across Retail/Devkit for 12.02; one import covers both)
 - EAP Kernel/Retail/1202.elf (small / mostly stripped)
 - Full Kernel/Retail/1202.elf
+- Full Kernel/Devkit/12_020_011.elf (auto found 0 fns; reanalyze in progress)
+- EMC IPL/Retail/Belize 2/1202.bin — ARM Cortex, 1873 fns / 4599 syms
+
+### Possible Tier 3 follow-ups (lower value, not active)
+- EMC IPL/Retail/Aeolia/1202.bin — for SoC-comparison with Belize 2
+- EMC IPL/Retail/Belize/1202.bin — same
+- EAP KBL/Devkit/Belize 2/12_020_011.elf — devkit symbols for non-Baikal SoC
+- EAP Kernel/Devkit/12_020_011.elf — devkit version of EAP runtime
+- AMD uBIOS/Testkit/12_020_011.elf — third symbol-set for Devkit reanalysis triangulation
 
 ### Skip (intentionally deprioritized)
 - All Beta variants
-- All non-12.02 versions (until current goals exhausted)
+- All non-12.02 versions (until current UVD/ethernet goals exhausted)
+- VR MUP firmware
+- Disc Drive firmware
 
 ---
 
@@ -219,6 +236,70 @@ Format per entry:
 - **Notes**: combined uBIOS + FreeBSD image. Useful for cross-referencing
   when functions span the boundary. Less detailed analysis vs the split
   binaries.
+
+### Full Kernel/Devkit/12_020_011.elf
+- **Path**: `/home/meerzulee/Downloads/PS4/Full Kernel/Devkit/12_020_011.elf`
+- **Size**: 22,711,704 bytes (~22 MB)
+- **MD5**: `740a3382d3046ed1a988dc6abf786d80`
+- **Ghidra**: imported as `/full-kernel-devkit/12_020_011.elf`
+- **Architecture**: x86-64
+- **Base address**: `0x00680000` (unusual — not the high-half kernel layout
+  Retail uses at `0xffffffffc839c000`)
+- **Function count**: 1 (auto-analyze didn't trace code paths;
+  reanalyze running in background — check next iteration)
+- **Notes**: same base-addr quirk as the split Devkit kernels. Likely
+  needs manual base relocation or different language/loader option to
+  unlock Ghidra's code-trace heuristics. Useful for symbol cross-ref
+  with retail once analysis completes.
+
+### AMD uBIOS/Devkit/12_020_011.elf
+- **Path**: `/home/meerzulee/Downloads/PS4/AMD uBIOS/Devkit/12_020_011.elf`
+- **Size**: 1,572,984 bytes (~1.5 MB)
+- **MD5**: `ad2def9bf0820e80f05ae269fbdf92d7`
+- **Ghidra**: imported as `/ubios-devkit/12_020_011.elf`
+- **Base address**: `0x00680000` (same unusual layout as Devkit kernel)
+- **Function count**: 1 (auto-analysis didn't trace; reanalyze FAILED).
+  Different from Retail uBIOS (248 functions) — Retail is at different
+  base addr and Ghidra's heuristics work there.
+- **Notes**: BLOCKED on Ghidra's inability to handle this file's layout.
+  May need user to manually fix up segments in Ghidra UI, set entry
+  point, OR `import_file` with explicit base address override. For now
+  the Retail uBIOS (`/ubios-retail/1202.elf`) covers any cross-ref need.
+
+### EAP KBL/Devkit/Baikal/12_020_011.elf
+- **Path**: `/home/meerzulee/Downloads/PS4/EAP KBL/Devkit/Baikal/12_020_011.elf`
+- **MD5**: `df50581bb413c1ff5fe7fdbe0940f0d8`
+- **Ghidra**: NOT separately imported — **same md5 as Retail Baikal KBL**
+  (`/eap-kbl-baikal/1202.elf`). Sony ships identical KBL binary across
+  Retail/Devkit for 12.02 Baikal. The Retail import covers both. If you
+  need a separate Devkit-tagged view, re-import; otherwise skip.
+
+### EMC IPL/Retail/Belize 2/1202.bin
+- **Path**: `/home/meerzulee/Downloads/PS4/EMC IPL/Retail/Belize 2/1202.bin`
+- **Size**: 313,504 bytes (~313 KB)
+- **MD5**: `46c7c8deb2381a9b2407bb40f785049c`
+- **Ghidra**: imported as `/emc-ipl-belize2/1202.bin`
+- **Architecture**: ARM Cortex-M (32-bit, LE, base `0x10000000`)
+- **Function count**: 1873
+- **Symbol count**: 4599
+- **Type**: raw ARM binary (not ELF)
+- **Encrypted**: no (decrypted dump)
+- **Key strings**:
+  - `EMC firmware started.` @ `100024b8`
+  - `EMC ID Checkcsum Error` @ `10001e3c` / `EMC HWCTRL Checkcsum Error` @ `10001e68` / `EMC THERMAL Checkcsum Error` @ `10001e9c`
+  - `<SoC-EMC MsgLog>` @ `100144c0` / `SoC->EMC QMsg:Len Err` @ `100144d4`
+  - `EMC Reply ErrNo:%4hx` @ `1001454c`
+  - `<EMC-SC GetTemp MsgLog>` @ `10014564` (SC = System Controller)
+  - `EMC-SC Watchdog Start` @ `10028594`
+  - `<history SoC-EMC>` @ `10028b34`
+  - `Converted address : EMC Addr(0x%x) PCIe Addr(0x%x)` @ `1000c31c`
+  - HDCP2 stuff: `AKE Init, HDCP2 Version Check Error` @ `1001bec4`
+  - `scversion` (System Controller version) @ `1004a992`
+- **Notes**: this is the EMC firmware that Baikal SKUs use (Sony has no
+  separate Baikal EMC IPL — Baikal boards reuse Belize 2 EMC). Touches:
+  thermal/temperature, watchdog, HDCP2, SoC↔EMC message queues,
+  address translation (EMC vs PCIe), and SC (System Controller) protocol.
+  Useful for any future thermal/power/HDCP RE work.
 
 ### PUP/System/PS4UPDATE_1202.PUP
 - **Path**: `/home/meerzulee/Downloads/PS4/PUP/System/PS4UPDATE_1202.PUP`
