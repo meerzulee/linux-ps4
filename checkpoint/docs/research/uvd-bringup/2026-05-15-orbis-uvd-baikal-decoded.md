@@ -930,3 +930,95 @@ Firmware never reaches ring init.
    matches extracted blob across the full 1.92 MB region 1, not just the
    start.
 
+
+---
+
+## Round 7 result: zero R2/R3 — magic values not the issue
+
+v0064 (md5 a3f0051f...) test 2026-05-16 ~03:00.
+
+Boot log `2026-05-16_0255-uvd-0064-zero-r23-debugfs.log`.
+
+R2/R3 first-16-bytes readback:
+```
+ms      | R2[0..15]                            | R3[0..15]
+0       | 0000000000000000 0000000000000000    | 0000000000000000 0000000000000000  ← zero ✓
+1000+   | 0000000000000000 0000000000000000    | 0000000000000000 0000000000000000  ← unchanged
+9000    | 0000000000000000 0000000000000000    | 0000000000000000 0000000000000000  ← still zero
+```
+
+**Verdict: magic values were inert.** Removing the v76d-A15 inlined writes
+of `0x300308000`/`0x20000` at R2/R3 first u64 pair did NOT change firmware
+behavior:
+- Firmware still doesn't write to R2/R3 (stays zero across full 10s)
+- STATUS=0x4 still stuck
+- 0x3d67 still cycling between 0x196f and 0x3f7f
+- Still 0 VM faults
+
+Hypothesis "firmware reads R2/R3 magic values as host config and halts when
+they don't match" → **falsified**.
+
+### Round 7 also added debugfs hot-iteration hooks — but they didn't register
+
+`ps4_uvd_retry` and `ps4_uvd_status` files don't appear in
+`/sys/kernel/debug/dri/0/`. Cause: my `ps4_uvd_debugfs_register(adev)`
+runs inside `uvd_v4_2_hw_init`, but at that point
+`adev->ddev.primary->debugfs_root` is NULL — DRM's per-device debugfs root
+is created later by amdgpu's general debugfs init.
+
+Comparison: `ps4_sbl_smu` debugfs file (from patch 0058) DID register because
+patch 0058 hooks into `amdgpu_debugfs_init_dev` (in amdgpu_debugfs.c) which
+runs AFTER all hw_init calls and HAS the proper `root` dentry.
+
+Fix for next round: rename `ps4_uvd_debugfs_register(adev)` to
+`ps4_uvd_debugfs_init(adev, root)`, remove call from hw_init, add call
+from amdgpu_debugfs.c right after `ps4_sbl_debugfs_init(adev, root)` line.
+
+### Updated wall list
+
+| # | Wall | Status |
+|---|---|---|
+| 1 | UVD soft-fail (0054 catches everything) | ✅ broken |
+| 2 | GFX vmid 1 unaffected by our patches | ✅ broken |
+| 3 | vmid 4 PT walk (custom PD) | ✅ broken (0 faults) |
+| 4 | LMI_VBASE = correct value (`0x300000000`) | ✅ broken |
+| 5 | mc_resume's LMI_EXT (zeroed) | ✅ broken |
+| 6 | Round 6 ruled out: fw bytes corrupted, host-handshake | ✅ ruled out |
+| 7 | Round 7 ruled out: R2/R3 magic values misleading fw | ✅ ruled out |
+| 8 | 🟡 fw fetch/init still — actual cause unknown | open |
+
+### Remaining hypotheses for wall #8
+
+1. **GMC translation looks valid (0 faults) but produces wrong physical addresses**.
+   PDE-into-GART trick assumes PDE format == PTE format on GCN1. If there's
+   a subtle difference (e.g., PDE entries should clear specific bits, or
+   need different protection encoding), VCPU walks succeed but reads
+   garbage from "valid" but wrong physical pages.
+
+2. **Cache region values 0x3d82-0x3d87 wrong**.
+   Sony writes raw bytes (0, 0x7d000, 0xfa00, 0x40000, 0x17a00, 0x120800).
+   We replicate exactly. But chip behavior depends on what these mean
+   semantically — if mainline thinks they're 8-byte units and Sony thinks
+   they're 1-byte units, OR if they're "offsets from VBASE" vs "absolute",
+   our cache config might be wrong size.
+
+3. **Firmware needs cache flush/invalidate before VCPU release**.
+   Sony might do an UVD-internal cache invalidate via IDX register that
+   we miss.
+
+4. **Sony's actual GPU PTE writer for UVD is somewhere we haven't found**.
+   `gbase_map` (FUN_c886a540) has 5 callers; FUN_c88f9010 is NOT one of
+   them. So Sony's per-VMID PT for UVD must come from a different path
+   than `uvd_kmd_hw_init_stage2` → `FUN_c88f9010`. Worth re-tracing.
+
+### Next-session plan
+
+1. **Fix debugfs registration timing** (small, 10 lines, enables hot
+   iteration in subsequent rounds).
+2. **Compare cache region semantics**: read mmUVD_VCPU_CACHE_OFFSET0/SIZE0
+   readback in our debugfs status, compare to mainline's expected
+   `(gpu_addr + AMDGPU_UVD_FIRMWARE_OFFSET) >> 3` vs Sony's hardcoded `0`.
+3. **Re-trace Sony's UVD per-VMID PT writer** in Ghidra. Search for
+   gbase_map calls with vmid=4 OR start_va=0x300000000 OR size=0x1e0000.
+   One of the 5 gbase_map callers should match.
+
