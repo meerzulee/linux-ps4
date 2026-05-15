@@ -444,6 +444,24 @@
 # rmmio + 0x22000/0x22004 index/data window). This matches Sony's actual
 # gc/samu.c access pattern. Re-runs the "does SAMU respond?" probe.
 0300-gpu-liverpool/0058-amdgpu-ps4-sbl-phase1-v2-direct-and-indirect-access.patch
+# 0060: 2026-05-15 Round 2 Ghidra fixes — applies on top of 0034..0055.
+# Three corrections from 12.02 kernel decompile + Codex challenge follow-up:
+#   - k = 4 (canonical, was 15) + ps4_uvd_clkdiv module param
+#   - remove inlined mc_resume body (3-way variant diff confirmed Sony
+#     does no equivalent)
+#   - LMI_VM_VBASE = fw_gpu_addr (was 0; v76a regressed v73-v75's
+#     correct value)
+# See checkpoint/docs/research/uvd-bringup/2026-05-15-orbis-uvd-baikal-decoded.md
+# for the dig + 4-section risk register.
+0300-gpu-liverpool/0060-amdgpu-uvd-v4-2-baikal-fix-mc-resume-clkdiv-vbase.patch
+# 0061: 2026-05-16 — VC4-only PAGE_TABLE_DEPTH=0 from Round-3 gbase_map dig.
+# The vmid 4 fault at page 0x300000 = VA 0x300000000 (UVD fw fixed read)
+# is a flat-vs-2-level PD walker mismatch, not a missing mapping. Override
+# only VC4 (UVD) to depth=0 so it walks GART flatly; other vmids keep
+# depth=1 for amdgpu_vm. Should unlock UVD bring-up if Sony's gbase_map
+# decompile interpretation is correct.
+# See checkpoint/docs/research/uvd-bringup/2026-05-15-orbis-uvd-baikal-decoded.md
+0300-gpu-liverpool/0061-amdgpu-gmc-v7-vc4-flat-walk-for-uvd.patch
 
 # === 0400: AHCI internal HDD support
 0400-storage-ahci/0001-ahci-ps4-internal-hdd-quirks.patch
