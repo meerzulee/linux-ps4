@@ -89,7 +89,7 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
  
  		WREG32(0x3d3c, k);
  		/* v76a: removed spurious 0x3d62/0x3d63 writes — Sony's
-@@ -758,47 +773,25 @@
+@@ -758,45 +773,23 @@
  	WREG32(0x3c5e, 3);
  
  	/*
@@ -99,24 +99,23 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 -	 * (cache offsets/sizes, LMI ADDR_EXT/EXT40) get OVERWRITTEN by us
 -	 * below — but if mc_resume has any other side effect or sequencing
 -	 * benefit we haven't noticed, A14 reintroduces it.
-+	 * 2026-05-15 v0060.1: RE-ENABLE mc_resume after Round 2 hardware
-+	 * test showed UVD faults at VA 0x300000000 in vmid 4 (cascading
-+	 * "VM fault page 3145728 vmid 4 read from UMC"). Sony's verbatim
-+	 * works without mc_resume because their FUN_c88f9010 sets up a
-+	 * per-VMID page table for vmid 4 mapping firmware at 0x300000000.
-+	 * Linux amdgpu doesn't have an equivalent per-VMID PT setup —
-+	 * UVD's reads in vmid 4 fault unless mainline's mc_resume programs
-+	 * mmUVD_LMI_ADDR_EXT and mmUVD_LMI_EXT40_ADDR with the high bits
-+	 * of fw_gpu_addr (it sits in VRAM at 0xF00400000), which redirects
-+	 * UVD's MMU to find the firmware via the address-extension path
-+	 * instead of needing a vmid 4 PT entry.
++	 * 2026-05-16 v0060.3: REMOVE mc_resume call AND zero LMI_ADDR_EXT/
++	 * EXT40_ADDR. Round 4 hardware test (v0062.1) confirmed VCPU goes
++	 * idle with STATUS=0x4 forever, sample registers static. Live
++	 * readback shows LMI_EXT40_ADDR=0x8009000f — mc_resume's high-byte
++	 * write IS taking effect, prepending 0xF to all UVD addresses.
++	 * VCPU's instruction fetch at internal VA 0x300000000 becomes
++	 * physical 0xF_300000000 = out of GART range = garbage = VCPU stuck.
  	 *
 -	 * Inlined mc_resume minus UDEC:
-+	 * Sony's cache offset/size writes below intentionally OVERWRITE
-+	 * mc_resume's mmUVD_VCPU_CACHE_OFFSET0/SIZE0 etc — we want Sony's
-+	 * Baikal-tested hardcoded values for those, but want mc_resume's
-+	 * LMI ADDR_EXT/EXT40 setup as the thing that lets UVD's reads
-+	 * actually reach VRAM.
++	 * Sony's uvd_vcpu_start_baikal does NO equivalent of mc_resume.
++	 * With our patch 0062 custom vmid 4 PD mapping firmware at VA
++	 * 0x300000000, UVD doesn't need address-extension — it does the
++	 * GMC walk through vmid 4 and finds firmware directly.
++	 *
++	 * Belt-and-suspenders: explicitly zero LMI_ADDR_EXT and EXT40
++	 * (chip reset value might not be 0; previous 0050 patch left them
++	 * set via inlined mc_resume, this defensively undoes that).
  	 */
 -	{
 -		uint64_t addr;
@@ -148,13 +147,10 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 -	}
 -
 -	/* v76b: still zero LMI_ADDR_EXT/EXT40 to match Sony's post-reset state. */
--	WREG32(mmUVD_LMI_ADDR_EXT, 0);
--	WREG32(mmUVD_LMI_EXT40_ADDR, 0);
-+	uvd_v4_2_mc_resume(adev);
+ 	WREG32(mmUVD_LMI_ADDR_EXT, 0);
+ 	WREG32(mmUVD_LMI_EXT40_ADDR, 0);
  
- 	/*
- 	 * Cache region descriptors. Sony's Baikal-specific values; the
-@@ -829,26 +822,23 @@
+@@ -829,26 +822,32 @@
  	WREG32(0x1401, RREG32(0x1401) | 8);
  
  	/*
@@ -187,11 +183,20 @@ Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
 +	 * v73/v74/v75 had this right; v76a regressed it; we restore the
 +	 * correct value here. The v76a "VM fault page 0x300000 vmid 4"
 +	 * was a SYMPTOM of writing 0 (UVD then read from page 0).
++	 */
++	/*
++	 * v0060.2 (2026-05-16): LMI_VM_VBASE = literal 0x300000000, NOT
++	 * fw_gpu_addr. Sony's ctx[+0x88] = 0x300000000 (UVD-VMID VA where
++	 * firmware is mapped by FUN_c88f9010), NOT the BO physical addr.
++	 * Round 4 test (v0062) confirmed vmid 4 PD walks succeed but VCPU
++	 * went idle — likely fetching VRAM directly via fw_gpu_addr instead
++	 * of going through vmid 4 where 0062's PD has firmware mapped at
++	 * VA 0x300000000. Use Sony's literal value to route fetch via PT.
  	 */
 -	WREG32(0x3c69, 0);    /* LMI_VM_VBASE_LO = ctx[+0x88]_lo (= 0) */
 -	WREG32(0x3c68, 0);    /* LMI_VM_VBASE_HI = ctx[+0x88]_hi (= 0) */
-+	WREG32(0x3c69, lower_32_bits(fw_gpu_addr));    /* LMI_VM_VBASE_LO */
-+	WREG32(0x3c68, upper_32_bits(fw_gpu_addr));    /* LMI_VM_VBASE_HI */
++	WREG32(0x3c69, 0x00000000);    /* LMI_VM_VBASE_LO = lower(0x300000000) */
++	WREG32(0x3c68, 0x00000003);    /* LMI_VM_VBASE_HI = upper(0x300000000) */
  
  	/* Clear DMA + soft-reset bit 0 — first stage of VCPU release. */
  	WREG32(0x3da5, 0);
