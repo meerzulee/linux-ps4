@@ -840,3 +840,93 @@ acknowledgment, or a power gating bit Sony's source touches that
 we missed in the variant diff.
 
 If wall #5 falls AND VCPU starts → 🎯 hardware UVD on PS4 Linux.
+
+---
+
+## Round 6 instrumentation result (2026-05-16 ~02:32)
+
+Per Codex's prior consult ("stop blind patching, get observational data"),
+0060 v0063 added 3 sample tables to start_liverpool's existing 10×1000ms
+poll loop:
+1. Original 10-register table (unchanged)
+2. NEW: extra UVD registers (LMI_STATUS, DMA, sync, RB_RPTR, RB_WPTR)
+3. NEW: BO contents — first 16 bytes of Region 1 / 2 / 3 via CPU-mapped pointer
+
+bzImage md5 `bb38fce9aa0738730efca6a53f1a73a2`. Test log
+`checkpoint/uart-logs/2026-05-16_0231-uvd-0063-r6-instrumentation.log`.
+
+### Result — three decisive findings
+
+**1. Firmware bytes are correctly placed in the BO** ✅
+```
+R1[0..15] = e52049d5 1049c500 00003400 49f53049
+```
+That's bytes `00 c5 49 10 d5 49 20 e5 49 30 f5 49 00 34 00 00` (LE-decoded).
+Exact match with our extracted Sony firmware blob
+(`xxd /tmp/uvd_baikal_1.101.42.fw` first 16 bytes). So the
+fw mirror is correctly populated.
+
+**2. Firmware is NOT writing to Region 2 or Region 3** ❌
+```
+R2[0..15] = 00000003 00308000 00000000 00020000   (10 samples, all identical)
+R3[0..15] = 00000003 00308000 00000000 00020000   (10 samples, all identical)
+```
+These are the inlined v76d-A15 host-setup magic values
+(`0x300308000` and `0x20000`) written by `setup_fw_mirror_liverpool`
+BEFORE VCPU release. Firmware never overwrites them across the
+full 10s window.
+
+**Per Codex's framing**: this means **wall 6 is in fw fetch/init, NOT
+host-handshake**. If firmware reached the mailbox path, R2 and/or R3
+would change.
+
+**3. Ring buffer untouched** ❌
+```
+RB_RPTR = 00000000   (10 samples, all identical)
+RB_WPTR = 00000000
+```
+Firmware never reaches ring init.
+
+### What this rules in / out
+
+| Hypothesis | Status |
+|---|---|
+| Cache region values wrong (Sony's units) | ❓ Possible — would explain "fw can't fetch" |
+| R2/R3 need magic init bytes firmware reads | 🟡 Currently HAVE magic bytes (v76d-A15); maybe they're fooling fw |
+| Firmware needs host-mailbox handshake | ❌ Excluded — fw never reaches mailbox |
+| Firmware bytes corrupted | ❌ Excluded — bytes exactly match extracted blob |
+| Cache-coherency issue (CPU sees stale R2/R3) | ⚠️ Possible caveat — fw COULD be writing but our CPU read sees stale |
+
+### Caveats
+
+- **CPU cache coherency on the BO read**: BO is `AMDGPU_GEM_DOMAIN_GTT` which
+  should be snooped/coherent on x86, but not 100% verified. If firmware DOES
+  write to R2/R3 but our CPU read sees stale cached zero, we'd misread the
+  evidence. Next-session test: write a canary pattern (`0xCAFEBABE` etc.) to
+  R2/R3 first 16 bytes deliberately, and check if firmware overwrites.
+
+- **Magic values misleading firmware**: The values currently in R2/R3
+  (`0x300308000`, `0x20000`) are from v76d-A15 — Sony's IOCTL-returned
+  constants. They were written speculatively. If firmware reads R2/R3 first
+  as configuration and these values are wrong/incompatible, fw might decide
+  "host setup invalid" and halt silently.
+
+### Next-session priorities (in order)
+
+1. **Zero out R2/R3** (remove v76d-A15 inlined magic writes from
+   `setup_fw_mirror_liverpool`), retest. If fw now progresses → magic values
+   were misleading. If still stuck → ruled out.
+2. **Add DMA sync before BO reads** in next instrumentation, ensure cache
+   coherency for accurate "is fw writing" data.
+3. **Find the actual GPU PTE writer for UVD**: re-dig Ghidra. We confirmed
+   FUN_c88f9010 doesn't write GPU PTEs (only CPU-side vm_protect via
+   FUN_c88f9640). The 5 callers of `gbase_map` (FUN_c886a540) are the ones
+   that write GPU PTEs. None is FUN_c88f9010. So Sony has SEPARATE per-VMID
+   PT setup for UVD — not yet traced. Without it, our PD trick (PDE entries
+   into GART chunks) is approximate; fw might be fetching from
+   wrong-but-walking addresses.
+4. **Compare R1 contents at multiple offsets** — read first 16 bytes at
+   offset 0, 0x80, 0x1000, 0x10000, 0x1E0000-1 to confirm fw byte sequence
+   matches extracted blob across the full 1.92 MB region 1, not just the
+   start.
+
