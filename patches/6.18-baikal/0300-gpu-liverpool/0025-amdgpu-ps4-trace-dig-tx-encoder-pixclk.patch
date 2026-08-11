@@ -1,0 +1,152 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v51 - trace setup_dig_transmitter/encoder args + PIXCLK_RESYNC dump
+
+After v50 (patch 0024) traced every ATOM master/sub-table call, three
+candidate hypotheses remained for why the bridge cq_wait_set still hangs
+3 seconds despite all ATOM calls returning ret=0:
+
+  H1: UNIPHYTransmitterControl (idx 0x4c) is being called with wrong args
+      — wrong UNIPHY block (e.g., UNIPHYA when PS4 wiring needs UNIPHYE),
+      wrong link rate, wrong lane count.
+  H2: PIXCLK_RESYNC_CNTL routing isn't picking up our v49 ATOM_PPLL2 —
+      v45 dumps showed PIXCLK1_RESYNC_CNTL=0x1 (others=0); we need to
+      verify ATOM SetPixelClock v6 updated this routing.
+  H3: Skip-DP-link-train (patch 0006) starves the bridge of TPS pattern
+      that the MN864729 actually needs to lock.
+
+H1 and H2 are visibility-only. H3 is a behavior change. Bundle H1 + H2
+in one patch (visibility stacks safely); save H3 for v52 if H1+H2
+don't yield a clear answer.
+
+Three instrumentation points, all gated on CHIP_LIVERPOOL/CHIP_GLADIUS:
+
+  1. atombios_encoders.c::amdgpu_atombios_encoder_setup_dig_encoder
+     (just before the ATOM execute_table call at line 739):
+     - print action (ATOM_ENCODER_CMD_*: 0x0f SETUP, 0x0d DP_VIDEO_ON,
+       0x0c DP_VIDEO_OFF, 0x08-0x0b LINK_TRAINING phases)
+     - frev/crev (which version of args was used)
+     - encoder_id, dig_encoder, pixel_clock, dp_clock, dp_lane_count,
+       hpd_id
+
+  2. atombios_encoders.c::amdgpu_atombios_encoder_setup_dig_transmitter
+     (just before the ATOM execute_table call at line 1143):
+     - print action (ATOM_TRANSMITTER_ACTION_*:
+         0 DISABLE        1 ENABLE
+         7 INIT           8 DISABLE_OUTPUT
+         9 ENABLE_OUTPUT  10 SETUP
+         11 SETUP_VSEMPH  12 POWER_ON   13 POWER_OFF)
+     - frev/crev, encoder_id (which UNIPHY block A/B/C/D/E/F)
+     - dig_encoder, pll_id, is_dp, dp_clock, dp_lane_count
+     - lane_num, lane_set (function params), connector_object_id, hpd_id
+
+  3. dce_v8_0.c::dce_v8_0_crtc_mode_set (immediately after
+     amdgpu_atombios_crtc_set_pll):
+     - read mmPIXCLK0_RESYNC_CNTL, mmPIXCLK1_RESYNC_CNTL,
+       mmPIXCLK2_RESYNC_CNTL
+     - print the trio along with crtc_id and pll_id
+
+The v50 trace showed UNIPHYTransmitterControl runs 3 times during
+modeset and DIGxEncoderControl 3 times. With H1 visibility we'll see
+which actions and which UNIPHY block. With H2 we'll see whether ATOM
+updated the PIXCLK routing for our PPLL2 selection.
+
+Expected v51 output excerpt during the second-cycle modeset:
+
+  ps4_atom: AdjustDisplayPll v1.3 OUT r=0 freq=270000 ...
+  ps4_atom: SetPixelClock IN ... pll=1 ref=2 fb=118 ...
+  ps4_atom: SetPixelClock OUT r=0
+  ps4_atom: post-SetPixelClock PIXCLK0/1/2 RESYNC: 0xN 0xN 0xN crtc_id=0 pll_id=1
+  ps4_atom: dig_encoder action=0x0f (SETUP) frev=1 crev=4 enc_id=0xNNNN dig=N ...
+  ps4_atom: dig_tx action=7 (INIT) ...
+  ps4_atom: dig_tx action=10 (SETUP) ...
+  ps4_atom: dig_tx action=1 (ENABLE) enc_id=0xNNNN ...
+  ps4_atom: dig_encoder action=0x0d (DP_VIDEO_ON) ...
+
+What it answers:
+
+  - encoder_id printed in tx + enc traces tells us which UNIPHY block.
+    Standard CIK encoder_ids (atombios_encoders.h):
+      0x1F INTERNAL_KLDSCP_LVTMA
+      0x1E INTERNAL_UNIPHY    (== UNIPHY1 / "UNIPHYA")
+      0x1F INTERNAL_KLDSCP_LVTMA
+      0x20 INTERNAL_UNIPHY1   (UNIPHYC/D)
+      0x21 INTERNAL_UNIPHY2   (UNIPHYE/F)
+    v48/v49 trace showed enc_id=30 (0x1E = INTERNAL_UNIPHY) — first UNIPHY.
+    If PS4 wiring routes the bridge to UNIPHYE/F, this is wrong and we
+    need to override.
+
+  - PIXCLK_RESYNC values tell us which PPLL drives which PIXCLK output.
+    If PIXCLK1=0x1 means "PIXCLK1 is enabled, sourced from PPLL?" we'll
+    learn whether PPLL2 (our pick) is the actual source.
+
+If H1 reveals wrong UNIPHY selection, v52 forces it. If H2 reveals wrong
+PPLL routing, v52 fixes the routing. If both look correct, v52 disables
+patch 0006 to test H3.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_encoders.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_encoders.c
+@@ -736,6 +736,14 @@
+ 		break;
+ 	}
+
++	/* v51 H1a: trace setup_dig_encoder args on Liverpool/Gladius. action
++	 * decoded from atombios.h ATOM_ENCODER_CMD_*: 0x0f=SETUP, 0x0d=DP_VIDEO_ON,
++	 * 0x0c=DP_VIDEO_OFF, 0x08-0x0b=DP_LINK_TRAINING phases. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		pr_info("ps4_atom: dig_encoder action=0x%02x frev=%u crev=%u enc_id=0x%04x dig=%d pclk=%u dp_clk=%d dp_lanes=%d hpd=%d\n",
++			action, frev, crev, amdgpu_encoder->encoder_id,
++			dig->dig_encoder, amdgpu_encoder->pixel_clock,
++			dp_clock, dp_lane_count, hpd_id);
+ 	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
+
+ }
+@@ -1140,6 +1148,19 @@
+ 		break;
+ 	}
+
++	/* v51 H1b: trace setup_dig_transmitter args on Liverpool/Gladius. action
++	 * decoded from atombios.h ATOM_TRANSMITTER_ACTION_*:
++	 *   0=DISABLE 1=ENABLE 7=INIT 8=DISABLE_OUTPUT 9=ENABLE_OUTPUT
++	 *  10=SETUP  11=SETUP_VSEMPH  12=POWER_ON  13=POWER_OFF
++	 * Most important fields for diagnosis: action (which phase),
++	 * encoder_id (which UNIPHY block — A/B/C/D/E/F), pll_id (which PPLL
++	 * the TX uses as ref clock), dp_clock/dp_lane_count (link config),
++	 * dig_encoder (which DIG block 0/1), connector_object_id (HDMI A/B). */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		pr_info("ps4_atom: dig_tx action=%d frev=%u crev=%u enc_id=0x%04x dig=%d pll=%d is_dp=%d dp_clk=%d dp_lanes=%d lane_num=%u lane_set=0x%02x conn_obj=0x%04x hpd=%d\n",
++			action, frev, crev, amdgpu_encoder->encoder_id,
++			dig_encoder, pll_id, is_dp, dp_clock, dp_lane_count,
++			lane_num, lane_set, connector_object_id, hpd_id);
+ 	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
+ }
+
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -2562,6 +2562,7 @@
+ 				  int x, int y, struct drm_framebuffer *old_fb)
+ {
+ 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
++	struct amdgpu_device *adev = drm_to_adev(crtc->dev);
+
+ 	if (!amdgpu_crtc->adjusted_clock) {
+ 		/* v28: PS4 ATOM BIOS sometimes returns 0 from
+@@ -2579,6 +2580,18 @@
+ 	}
+
+ 	amdgpu_atombios_crtc_set_pll(crtc, adjusted_mode);
++	/* v51 H2: dump PIXCLKn_RESYNC_CNTL on Liverpool/Gladius right after
++	 * SetPixelClock to verify PPLL→CRTC routing. v45 dumps showed
++	 * PIXCLK1_RESYNC_CNTL=0x1 (others=0) — likely PIXCLK1 selects
++	 * which PPLL drives our active CRTC, but we don't know if our
++	 * v49 pll_id=ATOM_PPLL2 is actually routed there. ATOM SetPixelClock
++	 * v6 should have programmed the routing; this dump confirms. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		pr_info("ps4_atom: post-SetPixelClock PIXCLK0/1/2 RESYNC: 0x%08x 0x%08x 0x%08x  crtc_id=%d pll_id=%d\n",
++			RREG32(mmPIXCLK0_RESYNC_CNTL),
++			RREG32(mmPIXCLK1_RESYNC_CNTL),
++			RREG32(mmPIXCLK2_RESYNC_CNTL),
++			amdgpu_crtc->crtc_id, amdgpu_crtc->pll_id);
+ 	amdgpu_atombios_crtc_set_dtd_timing(crtc, adjusted_mode);
+ 	dce_v8_0_crtc_do_set_base(crtc, old_fb, x, y, 0);
+ 	amdgpu_atombios_crtc_overscan_setup(crtc, mode, adjusted_mode);

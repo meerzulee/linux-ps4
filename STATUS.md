@@ -1,116 +1,70 @@
 # Status — PS4 Linux on Baikal
 
-Snapshot as of 2026-05-11 (v67 commit `368a708`, v68 patch `<latest>`).
-For chronological history see [BUILD_LOG.md](BUILD_LOG.md);
-for current focus see [checkpoint/docs/PLAN.md](checkpoint/docs/PLAN.md).
+Snapshot: 2026-08-11. The default target is Linux `6.18.44` with local version
+`-ps4-baikal`. Claims below distinguish the exact hardware-tested target from
+older 6.15 experiments.
 
-## Headline numbers
+## Tested platform
 
-| | Time | Boot fully reaches |
+- PS4 Baikal B1, firmware 12.02
+- ps4-linux-loader v25, `linux-1024mb.elf`
+- external Kingston USB: FAT boot partition plus ext4 root labeled
+  `OMARCHY-PS4`
+- Arch Linux, Xorg, XFCE 4.20
+- internal MediaTek MT7668 Wi-Fi
+
+## Linux 6.18.44 result
+
+| Capability | State | Evidence / limitation |
 |---|---|---|
-| **v62 baseline** | 8 min 28 s | login eventually |
-| **v64 (Arch tweaks)** | 2 min 12 s | login |
-| **v67 (full kernel + bootargs)** | **36 s** | login |
+| Kernel and initramfs | Working | `6.18.44-ps4-baikal` build `#5` reached initramfs repeatedly |
+| External USB root | Working | Kingston ext4 root resolved as `/dev/sda2` and mounted read-write |
+| HDMI 1080p60 | Working candidate | A43 and A51 displayed XFCE; true cold-boot repetition is still required for release-stability status |
+| XFCE/Xorg | Working | LightDM reached graphical target and started user session `ps4` |
+| Internal MT7668 Wi-Fi | Working | NetworkManager associated and obtained a DHCP lease in A51 |
+| OpenSSH | Working candidate | Pinned-key login as `ps4` passed; repeat after a true cold boot |
+| USB RTL8822BU fallback | Driver present | Requires uncompressed `rtw88/rtw8822b_fw.bin` in userspace |
+| Internal SATA | Degraded | Toshiba disk probes, but IDENTIFY/read timeouts delayed root discovery by about 96 seconds; Sony partitions were not mounted or modified |
+| Built-in Ethernet | Not working | Prior `sky2` work did not produce a usable transmit path |
+| GPU acceleration | Not accepted yet | KMS/fbcon works; EGL/OpenGL, sustained rendering and Vulkan remain separate 6.18 tests |
+| HDMI audio | Not tested | HDA enumerates, but playback is not accepted |
+| Bluetooth / DualShock 4 | Not tested | Requires bounded USB and Bluetooth tests |
+| Thermal/fan control | Not accepted | Must be measured before long stress tests |
+| Internal Linux installation | Not supported | The tested system boots kernel and root filesystem from external USB |
 
-**14× boot speedup** through v62 → v67 via masked services, zram in-kernel, libata-disable for the broken Sony HDD, and tighter systemd timeouts.
+## Exact accepted kernel artifact
 
-## What works on 6.x (v67)
+- bzImage SHA-256:
+  `b54490ed1f5d12432bf4ead11f27f1cf8aed008f0b76787c0060141b97414614`
+- base: Linux `v6.18.44` commit
+  `1efe5d048a391de3ead2804b2e7f86376c356cc5`
+- active patches: 54
+- hardware-positive experiment artifact: A39
 
-| Subsystem | 5.4 | 6.x | Notes |
-|---|---|---|---|
-| **Boot to userspace** | ✅ | ✅ | systemd, multi-user.target |
-| **HDMI display (1080p60)** | ✅ | ✅ | 6.x via v60 fix (preserve firmware DP TX) |
-| **USB enumeration** | ✅ | ✅ | xhci_aeolia / xhci_baikal |
-| **SATA storage** | ✅ | ✅ | AHCI on 0000:00:14.7 |
-| **Internal eMMC / SD** | ✅ | ✅ | sdhci-pci |
-| **HID (keyboard / mouse)** | ✅ | ✅ | Generic USB HID |
-| **Audio (analog + HDMI)** | ✅ | ⚠️ | 6.x: snd_hda detected, not fully tested |
-| **WiFi (built-in MT7668)** | ✅ | ✅ | **v67: 754-line cfg80211 6.15+ port** — wlan0 binds, scans, connects |
-| **Bluetooth (built-in MT7668)** | ✅ | ✅ | btmtksdio mainline, autoload via udev |
-| **WiFi (USB TP-Link RTL8822BU)** | ⚠️ | ✅ | rtw88_8822bu still works as backup |
-| **SSH from host** | ✅ | ✅ | Either WiFi adapter or internal MT7668 |
-| **Switch_root into psxitarch** | ✅ | ✅ | better-initramfs + bootargs |
-| **zram swap (1.5 GB zstd)** | — | ✅ | **v67**: in-kernel, active out-of-box |
-| **Hyprland desktop** | — | ✅ | Wayland on Liverpool radeonsi 25.1 |
+See [docs/6.18-PORT.md](docs/6.18-PORT.md) for the port history and acceptance
+gate, and [docs/PATCH-PROVENANCE.md](docs/PATCH-PROVENANCE.md) for immutable
+source URLs.
 
-## What still doesn't work
+## Build
 
-| Subsystem | Status | Notes |
-|---|---|---|
-| **Ethernet (built-in Marvell sky2)** | ❌ sky2 dead-end (proven) | v68 binds the driver (`enp0s20f1` appears with MAC), but v69's MDIO scan proved **no PHY responds at any of 32 MDIO addresses**. The chip is NOT actually a Yukon family despite our chip_id force — it's Synopsys DWMAC1000 (per rmuxnet) with a different PHY block. Sky2 cannot drive it. See [research/2026-05-11-sky2-phy-dead-end-mdio-proven.md](checkpoint/docs/research/2026-05-11-sky2-phy-dead-end-mdio-proven.md). Next path: stmmac/DWMAC1000 port (multi-day RE). |
-| **GPU 3D acceleration** | ⚠️ Mesa works userspace | radeonsi 25.1.0-devel + RADV LIVERPOOL detected, OpenGL ES 3.2; KMS works. Hyprland renders. Full GL/Vulkan throughput not benchmarked. |
-| **Suspend / resume** | ❌ | ICC dependency unverified on 6.x; not a priority. |
-| **Fan / thermal management** | ❓ | hwmon (fam15h_power, k10temp) loads. Fan speed control via APcie ICC not tested; may need rmuxnet's Aeolia-fan-driver port. |
-| **GPU reset / recovery** | ❌ | GPU jobs that timeout cause cascade failures (uses ATOM BIOS init via ICC). |
-| **HDD permanent install** | ❓ | Internal HDD enumerates as `sdb` (or `sda` post-kexec — devices reorder). Has Sony's encrypted partitions. v67 disables ata1 by default to save boot time; would re-enable if you want to repartition for native install. |
-| **HDMI after kexec** | ❌ | amdgpu doesn't recover after kexec (ICC link to bridge times out). Use full PSFree gauntlet for HDMI tests; kexec is fine for kernel/network/userspace work. |
-
-## Hardware identification
-
-| PCI ID | Function | Status |
-|---|---|---|
-| `104d:9920..9924` | PS4 console PCI device IDs (model-specific) | ✅ identified |
-| `104d:90d0..90df` | 8 BPCIe (Baikal southbridge) functions | ✅ all 8 detected |
-| `104d:90d8` | Baikal Ethernet Controller (Marvell Yukon-2 family) | 🔄 chip detection works, MSI delivery v68 |
-| `1002:9923` | AMD Liverpool GPU | ✅ amdgpu working |
-| `1002:9924` | AMD HD audio (HDMI) | ✅ snd_hda |
-| `2357:0138` | TP-Link Archer T3U Plus (RTL8822BU) | ✅ rtw88_8822bu (USB backup) |
-| `0e8d:7668` | MediaTek MT7668 (internal WiFi+BT, SDIO) | ✅ **v67 vendor port working** |
-
-## Build status
-
-| Target | Builds | Boots | Configs |
-|---|---|---|---|
-| `5.4-baikal` (`v5.4.247`) | ✅ Clang 22 | ✅ | feeRnt-derived working config |
-| `6.x-baikal` (`v6.15.4`) | ✅ GCC 16 | ✅ | + RTW88, **+ MT76X8 builtin (v67)**, **+ ZRAM (v67)**, **+ libata force-disable HDD** |
-
-## Outstanding tracks
-
-Active investigation:
-
-1. **v68 sky2 ethernet (in-flight)** — patch 0006 extends MSI-test skip to the APCIE/BPCIE early-bind branch. Awaiting USB swap + boot test. If eth0 binds → ethernet ships.
-2. **GPU 3D benchmarks** — try `glmark2`, Vulkan demos. Most likely Just Works given Hyprland renders cleanly.
-3. **Audio test on 6.x** — speaker-test, alsa, pipewire chain.
-4. **CI/CD** — GitHub Actions for build + Releases (Phase 2 of repo modernization).
-5. **Multi-version target framework** — easier porting to 7.x once mainline ships.
-6. **Upstreaming candidates** — v60 DP TX preserve, v40 IRQ 9 desc, sky2 chip_id override (once full path proves), MT76X8 cfg80211 port (would need significant upstreaming work since vendor blob isn't mainline-friendly).
-
-Parked indefinitely:
-- **HDMI-after-kexec recovery** — needs ICC bridge reset sequence, multi-day RE.
-- **Fan/thermal native control** — could port rmuxnet's Aeolia LED+fan driver but not a priority.
-
-## How to test current state
+Linux 6.18 is now the default:
 
 ```sh
-# Build
-make TARGET=6.x-baikal
+# Linux host
+make
 
-# Stage to PS4 USB stick (FAT32 PS4BOOT, ext4 psxitarch)
-sudo bash scripts/swap-bzimage.sh output/6.x-baikal/bzImage
-sudo bash scripts/dev/update-bootargs.sh 6.x-rootfs-psxitarch
-bash scripts/dev/boot-capture.sh start mybuildname
-
-# Move USB to PS4, run PSFree+ArabPixel gauntlet, kexec linux-1024mb.bin
-# Watch UART live: cd ps4-uart && python3 ps4uart.py live
+# macOS: OrbStack must be running and Docker context must be orbstack
+./scripts/build-kernel-orbstack
 ```
 
-After boot reaches `archlinux login:`:
+Use `make TARGET=5.4-baikal` for the recovery baseline or
+`make TARGET=6.x-baikal` for the archived 6.15 development target.
 
-```sh
-# WiFi auto-connects via NetworkManager. Check:
-ip -br addr
-nmcli connection show --active
+## Next acceptance work
 
-# Then SSH from host:
-ssh ps4
-```
-
-Internal MT7668 wlan0 will be the primary interface; USB rtw88 still works as a backup if you have it plugged.
-
-For kernel-only iteration (skip the PSFree gauntlet):
-```sh
-bash scripts/dev/kexec-from-ssh.sh
-# follow on-screen instructions on PS4
-# session dies, ssh back in ~30s
-```
-Note: kexec works for kernel/network/userspace tests. For HDMI tests, do a full power-cycle gauntlet (kexec doesn't restore HDMI on PS4 — bridge ICC stays dead).
+1. Diagnose internal SATA timeouts without mounting or modifying Sony data.
+2. Repeat the unchanged artifact from a true cold boot.
+3. Verify EGL/OpenGL renderer and sustained GPU load.
+4. Test HDMI audio, Bluetooth, DualShock 4, thermals and clean shutdown.
+5. Only then begin minimal Wayland, bare Hyprland and Omarchy layers one at a
+   time.

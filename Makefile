@@ -1,16 +1,16 @@
 # PS4 Linux Baikal Kernel — Makefile
 #
 # All real work happens in build.sh. The Makefile is just convenience
-# shortcuts. Pass TARGET= to switch (default: 5.4-baikal).
+# shortcuts. Pass TARGET= to switch (default: 6.18-baikal).
 #
 # Examples:
-#   make                        # build default target (5.4-baikal)
-#   make TARGET=6.x-baikal      # build 6.x target
+#   make                        # build default target (6.18-baikal)
+#   make TARGET=6.x-baikal      # build archived 6.15 target
 #   make clean TARGET=5.4-baikal
 #   make patches-only TARGET=5.4-baikal
 
 SHELL := /bin/bash
-TARGET ?= 5.4-baikal
+TARGET ?= 6.18-baikal
 
 .PHONY: all build clean update patches-only clone-refs firmware init help
 
@@ -37,8 +37,8 @@ firmware:
 init: clone-refs firmware
 	@echo ""
 	@echo "Project initialized."
-	@echo "Next: make TARGET=5.4-baikal patches-only  # verify patches apply"
-	@echo "      make TARGET=5.4-baikal               # build kernel"
+	@echo "Next: make patches-only  # verify the 6.18 patches apply"
+	@echo "      make               # build the default 6.18 kernel"
 
 help:
 	@echo "PS4 Linux Baikal Kernel Build System"

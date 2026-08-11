@@ -1,0 +1,127 @@
+From 3c49f6b2af497a2f64dc4bb4657dd75a46b62ed3 Mon Sep 17 00:00:00 2001
+From: Omarchy PS4 maintainers <omarchy-ps4@localhost>
+Date: Tue, 11 Aug 2026 02:10:00 +0600
+Subject: [PATCH] drm/amdgpu/ps4: use the 6.18 managed bridge lifetime
+
+Linux 6.18 requires every registered DRM bridge to come from
+devm_drm_bridge_alloc().  The PS4 Liverpool bridge still uses a static,
+zero-initialized object, so drm_bridge_add() takes a reference on an
+uninitialized kref.  Connector probing then reports refcount underflow and
+use-after-free from drm_bridge_put().
+
+Allocate the bridge with the 6.18 managed API, register it with the matching
+managed helper, and clear the temporary global lookup pointer from the bridge
+destroy callback.  Keep the PS4 bridge programming and mode behavior intact.
+
+Origin: local; required by the Linux 6.18 DRM bridge API
+Reference: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/gpu/drm/drm_bridge.c?h=v6.18.44
+Hardware-evidence: EXP-20260810-001-A25
+
+Signed-off-by: Omarchy PS4 maintainers <omarchy-ps4@localhost>
+---
+ drivers/gpu/drm/amd/amdgpu/ps4_bridge.c | 52 +++++++++++++++++++------
+ 1 file changed, 40 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+index 1c0cbec0b..291bc8f2b 100644
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -151,11 +151,9 @@ struct ps4_bridge {
+ 	int mode;
+ };
+ 
+ /* this should really be taken care of by the connector, but that is currently
+  * contained/owned by radeon_connector so just use a global for now */
+-static struct ps4_bridge g_bridge = {
+-	.mutex = __MUTEX_INITIALIZER(g_bridge.mutex)
+-};
++static struct ps4_bridge *g_bridge;
+ 
+ static void cq_init(struct i2c_cmdqueue *q, u8 code)
+ {
+@@ -724,12 +722,15 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
+ enum drm_connector_status ps4_bridge_detect(struct drm_connector *connector,
+ 		bool force)
+ {
+-	struct ps4_bridge *mn_bridge = &g_bridge;
++	struct ps4_bridge *mn_bridge = g_bridge;
+ 	u8 reg;
+ 
+ 	struct amdgpu_connector *amdgpu_connector = to_amdgpu_connector(connector);
+ 	struct amdgpu_connector_atom_dig *amdgpu_dig_connector = amdgpu_connector->con_priv;
+ 
++	if (!mn_bridge || mn_bridge->connector != connector)
++		return connector_status_disconnected;
++
+ 	amdgpu_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
+ 	amdgpu_atombios_dp_get_dpcd(amdgpu_connector);
+ 
+@@ -801,7 +802,18 @@ static bool ps4_bridge_mode_fixup(struct drm_bridge *bridge,
+ 	return true;
+ }
+ 
+-static struct drm_bridge_funcs ps4_bridge_funcs = {
++static void ps4_bridge_destroy(struct drm_bridge *bridge)
++{
++	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
++
++	if (g_bridge == mn_bridge)
++		g_bridge = NULL;
++
++	mutex_destroy(&mn_bridge->mutex);
++}
++
++static const struct drm_bridge_funcs ps4_bridge_funcs = {
++	.destroy = ps4_bridge_destroy,
+ 	.pre_enable = ps4_bridge_pre_enable,
+ 	.enable = ps4_bridge_enable,
+ 	/* v31: bridge_disable + post_disable removed.  When CRTC mode_set
+@@ -819,23 +831,39 @@ static struct drm_bridge_funcs ps4_bridge_funcs = {
+ int ps4_bridge_register(struct drm_connector *connector,
+ 			     struct drm_encoder *encoder)
+ {
++	struct device *parent = connector->dev->dev;
++	struct ps4_bridge *mn_bridge;
+ 	int ret;
+-	struct ps4_bridge *mn_bridge = &g_bridge;
++
++	if (g_bridge)
++		return g_bridge->connector == connector &&
++		       g_bridge->encoder == encoder ? 0 : -EBUSY;
++
++	mn_bridge = devm_drm_bridge_alloc(parent, struct ps4_bridge, bridge,
++					  &ps4_bridge_funcs);
++	if (IS_ERR(mn_bridge))
++		return PTR_ERR(mn_bridge);
+ 
++	mutex_init(&mn_bridge->mutex);
+ 	mn_bridge->encoder = encoder;
+ 	mn_bridge->connector = connector;
+ 	mn_bridge->bridge.type = DRM_MODE_CONNECTOR_HDMIA;
+-	mn_bridge->bridge.funcs = &ps4_bridge_funcs;
+ 
+-	// TODO (ps4patches): This seems to be the new way of adding bridges
+-	drm_bridge_add(&mn_bridge->bridge);
++	ret = devm_drm_bridge_add(parent, &mn_bridge->bridge);
++	if (ret) {
++		DRM_ERROR("Failed to register PS4 bridge: %d\n", ret);
++		return ret;
++	}
+ 
+-	ret = drm_bridge_attach(mn_bridge->encoder, &mn_bridge->bridge, NULL, DRM_BRIDGE_ATTACH_NO_CONNECTOR);
++	ret = drm_bridge_attach(encoder, &mn_bridge->bridge, NULL,
++				DRM_BRIDGE_ATTACH_NO_CONNECTOR);
+ 	if (ret) {
+-		DRM_ERROR("Failed to initialize bridge with drm\n");
+-		return -EINVAL;
++		DRM_ERROR("Failed to attach PS4 bridge: %d\n", ret);
++		return ret;
+ 	}
+ 
++	g_bridge = mn_bridge;
++
+ 	/* v21: amdgpu's dce_v8_0 uses LEGACY drm encoder helpers
+ 	 * (.prepare/.commit) — the bridge chain pre_enable/enable callbacks
+ 	 * are NEVER invoked from that path on PS4.  Force-program the bridge
+-- 
+2.50.1

@@ -1,0 +1,81 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v22 - ps4_bridge default to VIC 16 + permissive mode_valid
+
+When boot reaches lightdm at t=195s the user's UART log shows DRM
+atomic modeset DOES call ps4_bridge_mode_set / ps4_bridge_enable
+(after we forced it earlier with v21 -- so v21 was redundant but
+harmless). However:
+
+  [195.939] [drm:ps4_bridge_mode_set] *ERROR* attempted to set non-CEA mode
+  [195.953] [drm:ps4_bridge_enable] *ERROR* mode not available
+
+drm_match_cea_mode() returns 0 for the mode DRM is trying to set, so
+mn_bridge->mode = 0, then ps4_bridge_enable bails with "mode not
+available".
+
+Two layers to fix:
+
+1. ps4_bridge_mode_set: default to VIC 16 (1080p60) when CEA match
+   fails. The MN864729 bridge handles minor timing differences
+   internally as long as the VIC profile is correct.
+
+2. ps4_bridge_mode_valid: also accept any mode with hdisplay==1920
+   vdisplay==1080 or hdisplay==1280 vdisplay==720, even when CEA
+   match fails. Otherwise DRM's mode-pick logic rejects everything
+   (a user-mode like 1920x1080 with custom timing) and falls back to
+   garbage. Pre-existing TODO comment confirmed:
+     "Apparently the vrefresh option is calculated on the fly now"
+
+If v22 works:
+- "attempted to set non-CEA mode" still logs but the bridge gets
+  programmed with VIC 16
+- ps4_bridge_enable runs the full MN864729 sequence
+- Monitor lights up
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -293,7 +293,16 @@
+ 	mn_bridge->mode = drm_match_cea_mode(adjusted_mode);
+ 	DRM_DEBUG_KMS("vic mode: %d\n", mn_bridge->mode);
+ 	if (!mn_bridge->mode) {
+-		DRM_ERROR("attempted to set non-CEA mode\n");
++		/* v22: PS4 has no EDID so DRM picks a fallback mode whose
++		 * timings don't exactly match a CEA VIC. Without the bridge
++		 * mode set, ps4_bridge_enable bails with "mode not available"
++		 * and HDMI output stays dark. Default to VIC 16 (1080p60)
++		 * since that's what the MN864729 expects for the typical
++		 * PS4 HDMI output. The bridge handles minor timing
++		 * differences internally. */
++		pr_info("ps4_bridge: non-CEA mode (%dx%d), defaulting to VIC 16 (1080p60)\n",
++			adjusted_mode->hdisplay, adjusted_mode->vdisplay);
++		mn_bridge->mode = 16;
+ 	}
+ }
+ 
+@@ -741,12 +750,20 @@
+ {
+ 	int vic = drm_match_cea_mode(mode);
+ 
+-	/* Allow anything that we can match up to a VIC (CEA modes) */
+-	if (!vic || (vic != 16 && vic != 4 && vic != 63)) {
+-		return MODE_BAD;
+-	}
++	/* Allow CEA VIC matches we explicitly support */
++	if (vic == 16 || vic == 4 || vic == 63)
++		return MODE_OK;
++
++	/* v22: also accept any mode whose pixel resolution matches one of
++	 * our supported modes, even if drm_match_cea_mode doesn't match
++	 * (e.g. due to vrefresh-on-the-fly differences in 6.x kernels).
++	 * mode_set will default to VIC 16 in those cases. */
++	if (mode->hdisplay == 1920 && mode->vdisplay == 1080)
++		return MODE_OK;
++	if (mode->hdisplay == 1280 && mode->vdisplay == 720)
++		return MODE_OK;
+ 
+-	return MODE_OK;
++	return MODE_BAD;
+ }
+ 
+ static int ps4_bridge_attach(struct drm_bridge *bridge,

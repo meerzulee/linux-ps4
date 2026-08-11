@@ -1,0 +1,82 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: v13 - bpcie per-subfunc mask handling for ICC
+
+After v12 + intremap=off achieved milestone (USB/SATA/amdgpu init
+working, caps lock LED), one remaining issue blocks the GPU display:
+ICC i2c times out continuously, ps4_bridge_disable fails, amdgpu can't
+configure the display.
+
+Root cause: Baikal southbridge has TWO levels of MSI masking per
+function — bit 31 (function-level enable) AND bits 0..30 (per-subfunc
+mask).  v10/v11/v12 set the function-level bit in bpcie_config_msi but
+NEVER unmask the per-subfunc bits.
+
+5.4 Aeolia (the working baseline) handles this in apcie_msi_unmask:
+
+  static void apcie_msi_unmask(struct irq_data *data) {
+      struct apcie_dev *sc = data->chip_data;
+      u32 func = data->hwirq >> 8;
+      glue_set_mask(sc, APCIE_REG_MSI_MASK(func), data->mask);
+  }
+
+where data->mask = 1 << subfunc (set by apcie_msi_calc_mask at init).
+
+This patch ports that pattern to bpcie, alongside the standard
+pci_msi_unmask_irq call (which manipulates the device's standard PCI
+MSI cap mask).  Symmetric mask in bpcie_msi_mask.
+
+Func extraction uses the same pattern as v11's bpcie_msi_write_msg:
+PCI_FUNC(pdev->devfn) where pdev comes from msi_desc.  Subfunc = the
+leaf hwirq (per-device MSI subfunc index, 0..31).
+
+If v13 works:
+- ICC handler will fire when bpcie's ICC subfunc receives MSI
+- ps4_bridge_disable should succeed
+- amdgpu should make further display init progress
+- "icc: interrupted or timeout" should drop to 0
+- "vector 0.227 No irq handler" should not recur (ICC stays unmasked
+---
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -196,6 +196,22 @@
+ static void bpcie_msi_unmask(struct irq_data *data)
+ {
+ 	pci_msi_unmask_irq(data);
++	/* v13: also unmask the Baikal southbridge per-subfunc bit (bit
++	 * (1<<subfunc) in MSI_MASK(func)).  Aeolia's apcie_msi_unmask does
++	 * the same.  Without this, ICC and other bpcie subfuncs stay
++	 * masked at the southbridge level even though the function-level
++	 * enable bit (1<<31) was set in bpcie_config_msi. */
++	{
++		struct bpcie_dev *sc_local = data->chip_data;
++		struct msi_desc *desc = irq_data_get_msi_desc(data);
++		struct pci_dev *pdev = desc ? msi_desc_to_pci_dev(desc) : NULL;
++		if (sc_local && pdev) {
++			u32 func = PCI_FUNC(pdev->devfn);
++			u32 mask_bit = 1u << (data->hwirq & 0x1f);
++			glue_set_mask(sc_local, BPCIE_REG_MSI_MASK(func),
++				      mask_bit);
++		}
++	}
+ 	return;
+ 	struct bpcie_dev *sc = data->chip_data;
+ 	u8 subfunc = get_subfunc(data->hwirq);//data->hwirq & 0xff;
+@@ -249,6 +265,18 @@
+ static void bpcie_msi_mask(struct irq_data *data)
+ {
+ 	pci_msi_mask_irq(data);
++	/* v13: also mask the Baikal southbridge per-subfunc bit. */
++	{
++		struct bpcie_dev *sc_local = data->chip_data;
++		struct msi_desc *desc_local = irq_data_get_msi_desc(data);
++		struct pci_dev *pdev_local = desc_local ? msi_desc_to_pci_dev(desc_local) : NULL;
++		if (sc_local && pdev_local) {
++			u32 func = PCI_FUNC(pdev_local->devfn);
++			u32 mask_bit = 1u << (data->hwirq & 0x1f);
++			glue_clear_mask(sc_local, BPCIE_REG_MSI_MASK(func),
++					mask_bit);
++		}
++	}
+ 	return;
+ 	struct bpcie_dev *sc = data->chip_data;
+ 	u8 subfunc = get_subfunc(data->hwirq);

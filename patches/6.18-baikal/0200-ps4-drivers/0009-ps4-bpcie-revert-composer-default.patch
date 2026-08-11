@@ -1,0 +1,42 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: v12 - revert bpcie compose_msg to kernel default
+
+The 5.4 Aeolia driver (the working baseline for this hardware family)
+uses the kernel's standard irq_msi_compose_msg, which produces a real
+LAPIC encoding (addr=0xFEE0X000|apic_id<<12, data=real vector).  Then
+apcie_msi_write_msg passes that into apcie_config_msi to program the
+southbridge's per-function MSI block.
+
+v9 (Option E) introduced bpcie_irq_msi_compose_msg writing
+addr=0xFEE00000 + data=irq_map_index — a custom composer lifted from
+feeRnt's experimental BaikalLove branch.  v10/v11 then added
+bpcie_config_msi (the southbridge programming, ported correctly from
+Aeolia) but it was being called with garbage values (irq_map indexes
+instead of LAPIC vectors).
+
+This 1-line revert swaps back to x86_vector_msi_compose_msg.  Now:
+- Device's MSI cap gets real LAPIC encoding
+- bpcie_msi_write_msg calls bpcie_config_msi(sc, func, subfunc,
+  real_addr, real_data) — same flow as Aeolia
+- Southbridge programs its per-func block with REAL values
+- When device fires MSI, southbridge re-emits with REAL LAPIC encoding
+- Kernel runs bpcie_handle_edge_irq → demuxes via BPCIE_ACK_READ
+
+irq_map[] field and bpcie_irq_msi_compose_msg become unused — leave for
+now, can clean up in v13.
+
+References:
+  src/5.4-baikal/drivers/ps4/ps4-apcie.c (Aeolia working baseline)
+  checkpoint/docs/research/2026-05-09-v11-result.md (root cause analysis)
+---
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -329,7 +329,7 @@
+ 	.irq_ack = irq_chip_ack_parent,
+ 	.irq_set_affinity = msi_domain_set_affinity,
+ 	.irq_retrigger = irq_chip_retrigger_hierarchy,
+-	.irq_compose_msi_msg = bpcie_irq_msi_compose_msg, /* Option E v9 — Baikal-magic */
++	.irq_compose_msi_msg = x86_vector_msi_compose_msg, /* v12: real LAPIC encoding (matches 5.4 Aeolia) */
+ 	.irq_write_msi_msg = bpcie_msi_write_msg,
+ 	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };

@@ -1,0 +1,74 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] usb: xhci-aeolia: route Baikal IRQ through apcie_assign_irqs
+
+Diagnosis from the 5th boot
+(checkpoint/docs/uart-boot-2026-05-08-6x-bpcie-non-fatal.log + the
+new boot at line 26778 with msleep(50) settle delay):
+
+  [    7.058456] xhci_aeolia 0000:00:14.7: new USB bus registered, ...   ← buses up
+  [    7.119292] usb usb1: New USB device found, idVendor=1d6b           ← root hubs OK
+  [    7.158316] hub 1-0:1.0: USB hub found, 2 ports detected            ← all 4 root hubs alive
+  ...
+  [   14.484468] xhci_aeolia 0000:00:14.7: Error while assigning
+                  device slot ID: Command Aborted                        ← 5+s after bus reg
+
+The 5+ second gap between bus registration and Command Aborted is
+exactly the kernel's TRB_RING_TIMEOUT (5 s) for command completion.
+That signature points at IRQ delivery, not controller setup: the xHCI
+host completes the ENABLE_SLOT command and fires its MSI to notify
+the kernel, but the MSI never gets delivered to the right handler,
+so xhci_handshake() times out and aborts the command.
+
+The current xhci_aeolia_probe takes a Baikal-only branch that calls
+`pci_alloc_irq_vectors(... PCI_IRQ_MSIX | PCI_IRQ_MSI)` directly,
+bypassing the BPCIe glue's MSI domain. On Aeolia/Belize the standard
+glue path runs via apcie_assign_irqs(). On Baikal that helper now
+delegates to bpcie_assign_irqs() (since the bpcie cascade fix landed).
+
+Just always use apcie_assign_irqs() for both. It does the right thing
+on Aeolia/Belize/Baikal alike now, and routes through the per-function
+MSI domain that bpcie_create_irq_domain() set up for function 14.7.
+
+Source: rmuxnet/ps4-linux-12xx 8f2f907b
+("usb: xhci-aeolia: Define extra_priv_size and enforce apcie IRQ
+assignment").
+
+Note: rmuxnet's commit also adds `.extra_priv_size = sizeof(struct
+xhci_hcd)` to xhci_aeolia_overrides — but that line is already present
+in our base (it never got removed because we didn't apply rmuxnet's
+dcf8b509 that originally removed it).
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/usb/host/xhci-aeolia.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -409,13 +409,18 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
+ 	}
+ 	pci_set_drvdata(dev, axhci);
+
+-	if (dev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI) {
+-		axhci->nr_irqs = retval = pci_alloc_irq_vectors(dev, NR_DEVICES, INT_MAX,
+-			PCI_IRQ_MSIX | PCI_IRQ_MSI);
+-	}
+-	else {
+-		axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+-	}
++	/*
++	 * Always go through the PS4 glue's IRQ assignment.  On Aeolia/Belize
++	 * apcie_assign_irqs() runs the apcie code; on Baikal it delegates to
++	 * bpcie_assign_irqs() (see drivers/ps4/ps4-apcie.c).  The previous
++	 * Baikal-specific pci_alloc_irq_vectors() path bypassed the bpcie
++	 * MSI domain entirely, so command-completion IRQs from the xHCI
++	 * controller never reached the kernel — leading to the kernel's
++	 * 5-second TRB_RING_TIMEOUT and "Error while assigning device slot
++	 * ID: Command Aborted" on the first ENABLE_SLOT.
++	 * Source: rmuxnet/ps4-linux-12xx 8f2f907b.
++	 */
++	axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+
+ 	if (retval < 0) {
+ 		goto free_axhci;

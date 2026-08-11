@@ -1,0 +1,74 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: make bpcie_uart_init failure non-fatal in probe
+
+When `serial8250_register_8250_port()` fails on 6.x — which happens because
+the BPCIe UART hardware is registered without a `port.type`, causing modern
+serial8250 autoconfig to mark it `PORT_UNKNOWN` and reject the port —
+`bpcie_uart_init` returns `-EIO`, and the current `bpcie_probe` treats
+that as fatal and tears down the entire southbridge.
+
+The cascading consequence is everything downstream that gates on
+`apcie_status() == 1` defers forever:
+
+  baikal_pcie 0000:00:14.4: Failed to register serial port 0
+  baikal_pcie 0000:00:14.4: bpcie glue remove
+  baikal_pcie 0000:00:14.4: probe with driver baikal_pcie failed with error -5
+
+  amdgpu  0000:00:01.0  probe returns -EPROBE_DEFER
+  ahci    0000:00:14.2  probe returns -EPROBE_DEFER
+  sdhci   0000:00:14.3  probe returns -EPROBE_DEFER
+  xhci    0000:00:14.7  probe returns -EPROBE_DEFER
+  sky2    0000:00:14.1  probe returns -EPROBE_DEFER
+  ...
+
+— and so the kernel reaches /init but the initramfs spins forever on
+`LABEL=psxitarch: Can't lookup blockdev` because no storage is up.
+
+UART is a debug aid; ICC, MSI, BAR mapping, and child-device routing
+are what `bpcie_probe` actually needs to succeed. Demote the UART
+failure to a warning and continue probe.
+
+Safety:
+- `bpcie_uart_init` initializes `sc->serial_line[i] = -1` on entry,
+  before any registration attempt. If registration fails partway, its
+  own internal cleanup leaves all entries at -1.
+- `bpcie_uart_remove`, `bpcie_uart_suspend`, `bpcie_uart_resume` all
+  guard on `sc->serial_line[i] >= 0`, so the "we never had any line"
+  case is already a no-op in the teardown paths.
+- The `remove_uart:` label after the icc-init failure path therefore
+  remains safe to reach when UART was never registered.
+- `ret = 0` is set after the warning so any subsequent successful
+  step (icc_init) leaves the probe with a clean return value. If
+  icc_init then fails, ret is overwritten by it and we go to
+  `remove_uart` cleanly as before.
+
+Cost: when this fires we lose `ttySN`-via-driver UART output. Earlycon
+via direct MMIO (`earlycon=uart8250,mmio32,0xC890E000,...`) keeps
+working through the entire boot, so kernel printk is not affected.
+
+Discovered 2026-05-08 while diagnosing why 6.x reaches /init but
+initramfs can't find the rootfs partition. See
+`checkpoint/docs/research/2026-05-08-6x-breakthrough.md`.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/ps4/ps4-bpcie.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ps4/ps4-bpcie.c b/drivers/ps4/ps4-bpcie.c
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -585,8 +585,11 @@ static int bpcie_probe(struct pci_dev *dev, const struct pci_device_id *id) {
+
+ 	if ((ret = bpcie_glue_init(sc)) < 0)
+ 		goto free_bars;
+-	if ((ret = bpcie_uart_init(sc)) < 0)
+-		goto remove_glue;
++	if ((ret = bpcie_uart_init(sc)) < 0) {
++		sc_warn("UART init failed (%d); continuing without serial console\n",
++			ret);
++		ret = 0;
++	}
+ 	if ((ret = bpcie_icc_init(sc)) < 0)
+ 		goto remove_uart;
+

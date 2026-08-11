@@ -1,0 +1,82 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: skip MSI self-test on Baikal (silicon doesn't respond to CS_ST_SW_IRQ)
+
+After patch 0004 forces chip_id to YUKON_PRM, sky2_init() succeeds.
+sky2_probe() then calls pci_enable_msi(pdev), which goes through the
+bpcie MSI domain and programs the chip's MSI message:
+
+    bpcie_assign_irqs(1)
+    bpcie_msi_write_msg(fee00000, 000000ef)
+    bpcie_msi_write_msg(fee01000, 00000024)
+
+But the next step — sky2_test_msi() — fails:
+
+    No interrupt generated using MSI, switching to INTx mode.
+    probe with driver sky2 failed with error -95
+
+sky2_test_msi() works by writing CS_ST_SW_IRQ to B0_CTST to generate a
+software-triggered interrupt and waiting for the IRQ handler to set
+SKY2_HW_USE_MSI. On real Yukon silicon, this generates a test MSI that
+arrives via the kernel's IRQ infrastructure within ~100ms.
+
+On Sony's Baikal GBE silicon, the CS_ST_SW_IRQ register either doesn't
+trigger an MSI at all, or triggers it through a path bpcie can't
+demultiplex. The test wait-event times out, sky2 falls back to INTx
+(which PS4 has no routing for), and the probe fails.
+
+The Aeolia path (added by patch 0001) avoids this by going through
+apcie_assign_irqs() and either trusts the test or has a working SW-IRQ
+trigger. Baikal goes through pci_enable_msi() (default path) and hits
+the failing test.
+
+Fix: skip the MSI self-test when the device is Sony Baikal GBE. The
+real MSI delivery works (bpcie has programmed the message; subsequent
+TX/RX interrupts go through normally) — only the SW-trigger test
+fails. Set SKY2_HW_USE_MSI directly so the rest of probe proceeds.
+
+Sequence after this patch:
+    PS4 Baikal: B2_CHIP_ID=0x0, forcing YUKON_PRM       (patch 0004)
+    chip type 0xbd, Yukon-2 OptimaEEE chip revision 0   (sky2_init OK)
+    bpcie_assign_irqs(1)                                 (pci_enable_msi)
+    PS4 Baikal: skipping MSI self-test, trusting bpcie routing
+    [no more "probe failed -95"]
+    eth0: Yukon-2 OptimaEEE, addr xx:xx:xx:xx:xx:xx     (probe success)
+
+If real-world MSI delivery turns out to also be broken (i.e., not just
+the test register), this patch becomes the diagnostic stepping stone:
+"probe succeeds but TX/RX hangs" → next iteration investigates the
+bpcie demux path for sky2's vector specifically. For now, getting eth0
+to register is necessary infrastructure either way.
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -5066,11 +5066,24 @@
+ 	#endif
+
+ 	if (!disable_msi && pci_enable_msi(pdev) == 0) {
+-		err = sky2_test_msi(hw);
+-		if (err) {
+-			pci_disable_msi(pdev);
+-			if (err != -EOPNOTSUPP)
+-				goto err_out_free_netdev;
++#ifdef CONFIG_X86_PS4
++		if (pdev->vendor == PCI_VENDOR_ID_SONY &&
++		    pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE) {
++			/* Baikal silicon does not respond to CS_ST_SW_IRQ
++			 * (sky2's MSI test trigger) — skip the test and
++			 * trust bpcie's MSI routing. Real interrupts via
++			 * the bpcie MSI domain still deliver normally. */
++			dev_info(&pdev->dev, "PS4 Baikal: skipping MSI self-test, trusting bpcie routing\n");
++			hw->flags |= SKY2_HW_USE_MSI;
++		} else
++#endif
++		{
++			err = sky2_test_msi(hw);
++			if (err) {
++				pci_disable_msi(pdev);
++				if (err != -EOPNOTSUPP)
++					goto err_out_free_netdev;
++			}
+ 		}
+ 	}
+

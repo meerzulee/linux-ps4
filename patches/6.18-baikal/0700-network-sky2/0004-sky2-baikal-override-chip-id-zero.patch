@@ -1,0 +1,50 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: force Baikal GBE chip_id when hw reports 0x0
+
+After patch 0003 made the PHY-reset and probe-time IF blocks include
+Baikal alongside Aeolia, sky2_probe still aborts in sky2_init() with:
+
+    sky2 0000:00:14.1: unsupported chip type 0x0
+    sky2 0000:00:14.1: probe with driver sky2 failed with error -95
+
+The B2_CHIP_ID register on Sony's Baikal GBE silicon (0x90d8) returns
+0x00 instead of one of the documented YUKON family IDs. The
+sky2_init() switch on chip_id therefore falls into the `default` case
+and bails -EOPNOTSUPP.
+
+Aeolia GBE 0x909e reports CHIP_ID_YUKON_FE_P; Belize GBE 0x90c9 reports
+the same family. Baikal silicon is otherwise functionally compatible,
+so override chip_id to YUKON_PRM (newest documented family) when the
+register reports 0x0 and the device is the Sony Baikal GBE. Gated on
+hw->chip_id == 0 — if a future Baikal revision starts reporting a real
+chip ID, this becomes a no-op.
+
+This is the second half of "treat Baikal like Aeolia for sky2" —
+patch 0003 covered the conditional code paths; this covers the
+chip-type detection that runs first.
+
+Reference: rmuxnet/ps4-linux-12xx never resolved this on the
+ps4-baikal-ethernet-experiment branch (846b0b28 only covered the same
+surface as our patch 0003). Chip-id override is original to this tree.
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -3137,6 +3137,18 @@
+ 	sky2_write8(hw, B0_CTST, CS_RST_CLR);
+
+ 	hw->chip_id = sky2_read8(hw, B2_CHIP_ID);
++#ifdef CONFIG_X86_PS4
++	if (hw->chip_id == 0 &&
++	    hw->pdev->vendor == PCI_VENDOR_ID_SONY &&
++	    hw->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE) {
++		/* Sony Baikal GBE reports 0x00 on B2_CHIP_ID. The chip is
++		 * functionally compatible with the Yukon-PRM family used in
++		 * Aeolia/Belize variants. Force the family so the switch
++		 * below finds a matching case. */
++		dev_info(&hw->pdev->dev, "PS4 Baikal: B2_CHIP_ID=0x0, forcing YUKON_PRM\n");
++		hw->chip_id = CHIP_ID_YUKON_PRM;
++	}
++#endif
+ 	hw->chip_rev = (sky2_read8(hw, B2_MAC_CFG) & CFG_CHIP_R_MSK) >> 4;
+
+ 	switch (hw->chip_id) {

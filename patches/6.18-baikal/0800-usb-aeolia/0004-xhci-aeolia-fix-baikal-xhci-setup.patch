@@ -1,0 +1,118 @@
+From 02fcd65edeca33bf6b7743e4189637ef6aa6ebc0 Mon Sep 17 00:00:00 2001
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Fri, 1 May 2026 23:09:16 +0200
+Subject: [PATCH] usb: xhci-aeolia: fix Baikal xHCI setup
+
+---
+ drivers/usb/host/xhci-aeolia.c | 56 +++++++++++++++++++++++++++++-----
+ 1 file changed, 48 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+index 27fc24185538cd..29a41d40b71f67 100644
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -39,6 +39,8 @@ struct xhci_aeolia_caps {
+ 	u32 hcs_params2;
+ 	u32 hcc_params;
+ 	u32 page_size;
++	u32 protocol_cap_off;
++	u32 protocol_port_info;
+ };
+ 
+ static bool xhci_aeolia_is_baikal(struct device *dev)
+@@ -62,11 +64,38 @@ static void xhci_aeolia_read_caps(struct usb_hcd *hcd,
+ 	caps->hcs_params1 = readl(&cap->hcs_params1);
+ 	caps->hcs_params2 = readl(&cap->hcs_params2);
+ 	caps->hcc_params = readl(&cap->hcc_params);
++	caps->protocol_cap_off =
++		xhci_find_next_ext_cap(hcd->regs, 0, XHCI_EXT_CAPS_PROTOCOL);
++	if (caps->protocol_cap_off) {
++		struct xhci_protocol_caps __iomem *proto;
++
++		proto = hcd->regs + caps->protocol_cap_off;
++		caps->protocol_port_info = readl(&proto->port_info);
++	}
+ 
+ 	op = hcd->regs + HC_LENGTH(caps->capbase);
+ 	caps->page_size = readl(&op->page_size) & XHCI_PAGE_SIZE_MASK;
+ }
+ 
++static bool xhci_aeolia_protocol_caps_ready(const struct xhci_aeolia_caps *caps)
++{
++	u32 port_off;
++	u32 port_count;
++	u32 max_ports;
++
++	if (!caps->protocol_cap_off)
++		return false;
++
++	port_off = XHCI_EXT_PORT_OFF(caps->protocol_port_info);
++	port_count = XHCI_EXT_PORT_COUNT(caps->protocol_port_info);
++	max_ports = HCS_MAX_PORTS(caps->hcs_params1);
++
++	if (!port_off || !port_count || !max_ports)
++		return false;
++
++	return port_off + port_count - 1 <= max_ports;
++}
++
+ static bool xhci_aeolia_caps_suspicious(const struct xhci_aeolia_caps *caps)
+ {
+ 	if (!caps->capbase || caps->capbase == ~0u)
+@@ -91,12 +120,15 @@ static void xhci_aeolia_log_caps(struct device *dev, const char *tag,
+ 				 const struct xhci_aeolia_caps *caps)
+ {
+ 	dev_err(dev,
+-		"%s capbase=%08x hcs1=%08x hcs2=%08x hcc=%08x pagesz=%x ports=%u intrs=%u scratchpad=%u\n",
++		"%s capbase=%08x hcs1=%08x hcs2=%08x hcc=%08x pagesz=%x ports=%u intrs=%u scratchpad=%u protocap=%03x protooff=%u protocnt=%u\n",
+ 		tag, caps->capbase, caps->hcs_params1, caps->hcs_params2,
+ 		caps->hcc_params, caps->page_size,
+ 		HCS_MAX_PORTS(caps->hcs_params1),
+ 		HCS_MAX_INTRS(caps->hcs_params1),
+-		HCS_MAX_SCRATCHPAD(caps->hcs_params2));
++		HCS_MAX_SCRATCHPAD(caps->hcs_params2),
++		caps->protocol_cap_off,
++		XHCI_EXT_PORT_OFF(caps->protocol_port_info),
++		XHCI_EXT_PORT_COUNT(caps->protocol_port_info));
+ }
+ 
+ static void xhci_aeolia_quirks(struct device *dev, struct xhci_hcd *xhci)
+@@ -120,9 +152,14 @@ static int xhci_aeolia_setup(struct usb_hcd *hcd)
+ 
+ 	if (xhci_aeolia_is_baikal(dev)) {
+ 		xhci_aeolia_read_caps(hcd, &caps);
+-		if (xhci_aeolia_caps_suspicious(&caps)) {
+-			dev_warn(dev,
+-				 "Baikal xHCI caps not ready, waiting 20ms before setup\n");
++		/*
++		 * The working 5.4 Baikal path effectively stalled here long enough
++		 * for the supported-protocol capability list to become readable.
++		 * Make that settle time explicit instead of relying on printk side
++		 * effects during probe.
++		 */
++		if (xhci_aeolia_caps_suspicious(&caps) ||
++		    !xhci_aeolia_protocol_caps_ready(&caps)) {
+ 			msleep(20);
+ 		}
+ 	}
+@@ -133,14 +170,17 @@ static int xhci_aeolia_setup(struct usb_hcd *hcd)
+ 
+ 	if (retval == -ENOMEM && xhci_aeolia_is_baikal(dev)) {
+ 		xhci_aeolia_read_caps(hcd, &caps);
+-		if (xhci_aeolia_caps_suspicious(&caps)) {
++		if (!xhci_aeolia_protocol_caps_ready(&caps)) {
+ 			dev_warn(dev,
+-				 "Baikal xHCI setup saw unstable caps, retrying: capbase=%08x hcs1=%08x hcs2=%08x hcc=%08x pagesz=%x ports=%u intrs=%u scratchpad=%u\n",
++				 "Baikal xHCI protocol caps not ready, retrying: capbase=%08x hcs1=%08x hcs2=%08x hcc=%08x pagesz=%x ports=%u intrs=%u scratchpad=%u protocap=%03x protooff=%u protocnt=%u\n",
+ 				 caps.capbase, caps.hcs_params1, caps.hcs_params2,
+ 				 caps.hcc_params, caps.page_size,
+ 				 HCS_MAX_PORTS(caps.hcs_params1),
+ 				 HCS_MAX_INTRS(caps.hcs_params1),
+-				 HCS_MAX_SCRATCHPAD(caps.hcs_params2));
++				 HCS_MAX_SCRATCHPAD(caps.hcs_params2),
++				 caps.protocol_cap_off,
++				 XHCI_EXT_PORT_OFF(caps.protocol_port_info),
++				 XHCI_EXT_PORT_COUNT(caps.protocol_port_info));
+ 			msleep(20);
+ 			retval = xhci_gen_setup(hcd, xhci_aeolia_quirks);
+ 			if (!retval)

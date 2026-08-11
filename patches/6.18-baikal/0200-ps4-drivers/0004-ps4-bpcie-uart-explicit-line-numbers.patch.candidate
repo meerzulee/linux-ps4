@@ -1,0 +1,49 @@
+From: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+Date: Thu, 7 May 2026 12:00:00 +0600
+Subject: [PATCH] ps4-bpcie-uart: assign port.line explicitly (UART0=ttyS4)
+
+The 8250 driver auto-numbers ttyS lines in registration order
+starting from the first free slot. With `8250.nr_uarts=8` (which
+we set in cmdline so PS4 UARTs aren't crowded out), ttyS0–ttyS3
+are reserved as phantom legacy 8250s; the first free slot is 4.
+
+The current driver registers UART0 first (i=0) then UART1 (i=1).
+Naively this should mean ttyS4 = UART0 and ttyS5 = UART1, but
+empirically (per `checkpoint/docs/LEARNINGS.md` and live
+inspection of /proc/tty/driver/serial), ttyS4 ends up bound to
+UART1 (`mmio:0xC890F000`) and ttyS5 to UART0 (`mmio:0xC890E000`).
+
+The user's physical UART cable is wired to UART0. So today the
+cable is attached to ttyS5, not ttyS4. That's confusing in docs
+("connect to ttyS5") and asymmetric with conventions in other
+PS4 Linux trees that say "ttyS4 is the cable".
+
+Fix: assign `port.line` explicitly so UART0 deterministically
+becomes ttyS4 regardless of how the 8250 auto-numbering walks
+the slot table.
+
+After this patch:
+  - cat /dev/ttyS4 listens to UART0 (the cable).
+  - cat /dev/ttyS5 listens to UART1 (currently unused).
+  - earlycon target stays the same (`0xC890E000` = UART0).
+
+This patch is independent of the port.type fix (0002 / 0003) —
+both work standalone or layered. Currently disabled until we test.
+
+Signed-off-by: Meerzulee <17146298+meerzulee@users.noreply.github.com>
+---
+ drivers/ps4/ps4-bpcie-uart.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/ps4/ps4-bpcie-uart.c b/drivers/ps4/ps4-bpcie-uart.c
+--- a/drivers/ps4/ps4-bpcie-uart.c
++++ b/drivers/ps4/ps4-bpcie-uart.c
+@@ -25,6 +25,8 @@ int bpcie_uart_init(struct bpcie_dev *sc)
+ 		uart.port.mapbase	= pci_resource_start(sc->pdev, 2) + off;
+ 		uart.port.membase	= sc->bar2 + off;
+ 		uart.port.regshift	= 2;
++		/* Pin UART0 → ttyS4, UART1 → ttyS5. Auto-numbering on this hw is reversed. */
++		uart.port.line		= 4 + i;
+ 		uart.port.dev		= &sc->pdev->dev;
+
+ 		sc->serial_line[i] = serial8250_register_8250_port(&uart);

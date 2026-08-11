@@ -1,0 +1,104 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v50 - generic ATOM table tracer for modeset diagnosis
+
+After v49 (patch 0023) clobbered Sony's bogus dp_extclk and got the
+picker to return ATOM_PPLL2 instead of ATOM_PPLL_INVALID, the v46 trace
+showed:
+
+  SetPixelClock IN  ... pll=1 ref=2 fb=118 frac=8 post=22 ...
+  SetPixelClock OUT r=0   <-- 355 us after IN (was 22 us in v48)
+
+The 355 us execute time (16x longer than v48's no-op) proves ATOM
+bytecode is now actually programming the real Liverpool display PLL
+(whatever its real register addresses are). The PLL is healthy.
+
+But the bridge cq_wait_set still hangs 3 seconds polling for DP lane
+lock that never asserts. So the GPU is producing some output but the
+bridge doesn't see a valid DP signal.
+
+The v46 trace only catches AdjustDisplayPll and SetPixelClock — the two
+specific ATOM tables we instrumented. There are ~20 other ATOM tables
+that run during modeset (DIGxEncoderControl, UNIPHYTransmitterControl,
+EnableCRTC, BlankCRTC, SetCRTC_UsingDTDTiming, EnableScaler,
+EnableGraphSurfaces, etc.). We have zero visibility into whether any of
+them fire, in what order, or with what return codes.
+
+This patch adds a single hook in amdgpu_atom_execute_table_locked() —
+the central function that ALL ATOM table calls go through, both
+top-level (from amdgpu_atom_execute_table) and recursive (from
+atom_op_calltable opcode handler when a parent table calls a sub-table
+via CALL_TABLE bytecode). One trace point catches everything.
+
+The kernel already has a 74-entry atom_table_names[] array (gated by
+ATOM_DEBUG, which is defined at the top of atom.c). The trace prints
+the index, the human-readable name, parameter size, return value, and
+the nesting depth (debug_depth) so we can see parent/child relationships.
+
+Expected next-boot output (illustrative — actual table set depends on
+DCE 8.x DP path):
+
+  ps4_atom_table: [d=0] enter idx=0x4d (?) ps_size=8
+    ps4_atom_table: [d=1] enter idx=... (sub-table)
+    ps4_atom_table: [d=1] exit  idx=... ret=0
+  ps4_atom_table: [d=0] exit  idx=0x4d (?) ret=0
+  ps4_atom_table: [d=0] enter idx=0x0c (SetPixelClock) ps_size=24
+  ps4_atom_table: [d=0] exit  idx=0x0c (SetPixelClock) ret=0
+  ps4_atom_table: [d=0] enter idx=0x22 (BlankCRTC) ...
+  ps4_atom_table: [d=0] enter idx=0x23 (EnableCRTC) ...
+  ...
+
+After the next boot we'll know the complete sequence between
+SetPixelClock and the bridge's second cq_wait_set, including any tables
+that should run but don't, or run but return non-zero. That will
+identify the real failure point inside the GPU's DP TX / DIG / CRTC
+enable path.
+
+Note on log volume: each modeset triggers ~20-50 master+sub table
+calls, ASIC_Init at boot triggers ~50-100. Each line is one pr_info, so
+~150 extra log lines per boot. Acceptable for diagnosis. Once we
+identify the failing table, this patch should be removed or gated.
+
+The trace is unconditional (no asic_type guard) because (a)
+amdgpu_atom_execute_table_locked has no easy access to asic_type, (b)
+the prefix "ps4_atom_table:" makes log filtering trivial, and (c) the
+tracer's only consumer right now is PS4 hardware. If repurposed for a
+non-Liverpool build later, comment out or wrap in a Kconfig.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atom.c
++++ b/drivers/gpu/drm/amd/amdgpu/atom.c
+@@ -1234,9 +1234,23 @@
+ 	unsigned char op;
+ 	atom_exec_context ectx;
+ 	int ret = 0;
+-
+-	if (!base)
++	/* v50: trace every ATOM master/sub table call so we can see the
++	 * sequence of tables fired during modeset on Liverpool. debug_depth
++	 * indicates nesting (top-level call = 0, sub-table from
++	 * atom_op_calltable = 1+). atom_table_names[] is from atom-names.h
++	 * gated by ATOM_DEBUG, which is defined at top of this file. */
++	int my_depth = debug_depth;
++	const char *tname = (index < ATOM_TABLE_NAMES_CNT) ?
++			    atom_table_names[index] : "?";
++
++	pr_info("ps4_atom_table: [d=%d] enter idx=0x%02x (%s) ps_size=%d\n",
++		my_depth, index, tname, params_size);
++
++	if (!base) {
++		pr_info("ps4_atom_table: [d=%d] exit  idx=0x%02x (%s) ret=-EINVAL (no base)\n",
++			my_depth, index, tname);
+ 		return -EINVAL;
++	}
+
+ 	len = CU16(base + ATOM_CT_SIZE_PTR);
+ 	ws = CU8(base + ATOM_CT_WS_PTR);
+@@ -1290,6 +1304,8 @@
+ free:
+ 	if (ws)
+ 		kfree(ectx.ws);
++	pr_info("ps4_atom_table: [d=%d] exit  idx=0x%02x (%s) ret=%d\n",
++		my_depth, index, tname, ret);
+ 	return ret;
+ }
+

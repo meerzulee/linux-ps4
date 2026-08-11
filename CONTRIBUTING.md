@@ -17,10 +17,10 @@ is organized and how to land work.
 Each kernel target is a single env file plus a series of patches.
 
 ```
-targets/6.x-baikal.env       # BASE_REF=v6.15.4, COMPILER=gcc, CONFIG=config/6.x-baikal.config
-patches/6.x-baikal/series    # ordered list of patch filenames
-patches/6.x-baikal/0XXX-*/   # patches bucketed by subsystem
-config/6.x-baikal.config     # full kernel .config
+targets/6.18-baikal.env       # pinned base tag/commit, compiler and config
+patches/6.18-baikal/series    # ordered list of patch filenames
+patches/6.18-baikal/0XXX-*/   # patches bucketed by subsystem
+config/6.18-baikal.config     # full kernel .config
 ```
 
 `build.sh` clones the upstream tag specified by `BASE_REF`, applies the
@@ -58,25 +58,25 @@ The simplest reliable way is via a snapshot diff:
 
 ```sh
 # Before editing:
-cp -r src/6.x-baikal/<dir-you'll-touch> /tmp/snapshot/
+cp -r src/6.18-baikal/<dir-you'll-touch> /tmp/snapshot/
 
-# Edit src/6.x-baikal/...
+# Edit src/6.18-baikal/...
 
 # Generate the patch:
-diff -urN /tmp/snapshot/ src/6.x-baikal/<dir-you'll-touch>/ \
+diff -urN /tmp/snapshot/ src/6.18-baikal/<dir-you'll-touch>/ \
   | sed 's|^\(--- /tmp/snapshot/\)|--- a/<dir-you-touch>/|' \
-  | sed 's|^\(+++ src/6.x-baikal/\)|+++ b/|' \
-  > patches/6.x-baikal/0XXX-mysubsystem/00YY-my-fix.patch
+  | sed 's|^\(+++ src/6.18-baikal/\)|+++ b/|' \
+  > patches/6.18-baikal/0XXX-mysubsystem/00YY-my-fix.patch
 ```
 
 Or if you're editing a single existing patch's territory, the
 `scripts/dev/` directory has helpers — see existing patch headers in
-`patches/6.x-baikal/0300-gpu-liverpool/` for the patch-format convention.
+`patches/6.18-baikal/0300-gpu-liverpool/` for the patch-format convention.
 
 ### 3. Verify it builds
 
 ```sh
-./build.sh -t 6.x-baikal
+./build.sh
 ```
 
 Look for "BUILD COMPLETE" at the end. Patch-apply failures during the
@@ -106,17 +106,17 @@ Suppose mainline 6.16 ships and you want to port. Worked example:
 
 ```sh
 # 1. Create env file
-cp targets/6.x-baikal.env targets/6.16-baikal.env
+cp targets/6.18-baikal.env targets/<NEW>.env
 # Edit BASE_REF=v6.16.x
 
 # 2. Copy patch series (try as-is first)
-cp -r patches/6.x-baikal patches/6.16-baikal
+cp -r patches/6.18-baikal patches/<NEW>
 
 # 3. Copy config
-cp config/6.x-baikal.config config/6.16-baikal.config
+cp config/6.18-baikal.config config/<NEW>.config
 
 # 4. First build
-./build.sh -t 6.16-baikal -c   # -c for clean (re-clone src tree)
+./build.sh -t <NEW> -c   # -c for clean (re-clone src tree)
 
 # 5. Triage: any patches that fail to apply because the surrounding
 #    code drifted? Refresh them. Any new compile errors from API
@@ -203,7 +203,7 @@ reference.
 - **Patch filenames**: `0NNN-<short-name>.patch` where `0NNN` is a
   4-digit number sortable in apply order within a subsystem directory.
 - **Patch headers**: `From:`, `Subject:` lines + a multi-paragraph
-  description explaining *why*. We optimize for "future-Claude / future-you
+  description explaining *why*. We optimize for "future maintainers / future-you
   reading this 6 months later".
 - **Series file**: comments above each patch explaining the version
   number that introduced it, what it fixed, and any disabled/superseded

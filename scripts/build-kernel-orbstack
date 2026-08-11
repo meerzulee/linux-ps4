@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly IMAGE="linux-ps4-kernel-builder:trixie-20260810"
+readonly BUILD_VOLUME="linux-ps4-kernel-build"
+
+if ! command -v orb >/dev/null 2>&1 || [[ "$(orb status)" != "Running" ]]; then
+    echo "error: OrbStack must be running" >&2
+    exit 1
+fi
+
+if [[ "$(docker context show)" != "orbstack" ]]; then
+    echo "error: Docker context must be 'orbstack'" >&2
+    exit 1
+fi
+
+docker build \
+    --file "${REPO_DIR}/containers/kernel-builder/Containerfile" \
+    --tag "${IMAGE}" \
+    "${REPO_DIR}"
+
+readonly IMAGE_ID="$(docker image inspect --format '{{.Id}}' "${IMAGE}")"
+
+docker volume create "${BUILD_VOLUME}" >/dev/null
+
+docker run --rm \
+    --platform linux/arm64 \
+    --mount "type=bind,src=${REPO_DIR},dst=/repo" \
+    --mount "type=volume,src=${BUILD_VOLUME},dst=/build" \
+    --workdir /repo \
+    --env CROSS_COMPILE=x86_64-linux-gnu- \
+    --env KERNEL_ARCH=x86_64 \
+    --env PS4_KERNEL_BUILD_ROOT=/build \
+    --env PS4_KERNEL_BUILDER_IMAGE="${IMAGE}" \
+    --env PS4_KERNEL_BUILDER_IMAGE_ID="${IMAGE_ID}" \
+    "${IMAGE}" \
+    ./build.sh "$@"

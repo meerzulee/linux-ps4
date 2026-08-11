@@ -1,0 +1,73 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: v30 - ICC walk msi_desc list for real virq
+
+Eliminates spurious vector log spam:
+  call_irq_handler: 0.227 No irq handler for vector
+
+Walk pdev's msi_desc list to find descriptor with msi_index ==
+BPCIE_SUBFUNC_ICC, use desc->irq for request_irq.  pdev->irq + 3 was
+returning virq 3 (since pdev->irq=0 -- per-device MSI domain doesn't
+update it), but the real virq for vector 0xe3 (= MSI base | 3) is
+elsewhere.
+
+Also #include <linux/msi.h> for msi_lock_descs / msi_for_each_desc /
+MSI_DESC_ASSOCIATED.
+
+If found_virq == -1, falls back to old bpcie_irqnum behavior — no
+regression.
+
+---
+--- a/drivers/ps4/ps4-bpcie-icc.c
++++ b/drivers/ps4/ps4-bpcie-icc.c
+@@ -8,6 +8,7 @@
+ #include <linux/delay.h>
+ #include <linux/fs.h>
+ #include <linux/uaccess.h>
++#include <linux/msi.h>
+ #include <asm/ps4.h>
+ #include "baikal.h"
+ 
+@@ -557,11 +558,38 @@
+ 	iowrite32(BPCIE_ICC_SEND | BPCIE_ICC_ACK,
+ 		  sc->bar2 + BPCIE_REG_ICC_STATUS);
+ 
+-	ret = request_irq(bpcie_irqnum(sc, BPCIE_SUBFUNC_ICC),
+-			  icc_interrupt, IRQF_SHARED, "icc", sc);
+-	if (ret) {
+-		sc_err("icc: could not request IRQ: %d\n", ret);
+-		goto iounmap;
++	{
++		/* v30: walk msi_desc list to find the actual virq for ICC's
++		 * msi_index.  Old pdev->irq + 3 path returned virq 3 because
++		 * pdev->irq=0 (per-device MSI domain doesn't update it).  The
++		 * actual virq the kernel allocated for vector 0xe3 (= MSI base
++		 * + 3) is in msi_desc list with msi_index == 3.  Without this
++		 * the kernel logs "0.227 No irq handler for vector" every
++		 * time southbridge fires the ICC MSI -- cosmetic since v19's
++		 * polling fallback makes ICC commands work, but noisy. */
++		struct msi_desc *desc;
++		int icc_virq = bpcie_irqnum(sc, BPCIE_SUBFUNC_ICC);
++		int found_virq = -1;
++
++		msi_lock_descs(&sc->pdev->dev);
++		msi_for_each_desc(desc, &sc->pdev->dev, MSI_DESC_ASSOCIATED) {
++			pr_info("bpcie_icc_init: msi_desc msi_index=%u irq=%u\n",
++				desc->msi_index, desc->irq);
++			if (desc->msi_index == BPCIE_SUBFUNC_ICC)
++				found_virq = desc->irq;
++		}
++		msi_unlock_descs(&sc->pdev->dev);
++
++		pr_info("bpcie_icc_init: ICC subfunc %d -> bpcie_irqnum=%d found_virq=%d\n",
++			BPCIE_SUBFUNC_ICC, icc_virq, found_virq);
++		if (found_virq > 0)
++			icc_virq = found_virq;
++
++		ret = request_irq(icc_virq, icc_interrupt, IRQF_SHARED, "icc", sc);
++		if (ret) {
++			sc_err("icc: could not request IRQ: %d\n", ret);
++			goto iounmap;
++		}
+ 	}
+ 
+ 	req_empty = ioread32(REQUEST + BUF_EMPTY);

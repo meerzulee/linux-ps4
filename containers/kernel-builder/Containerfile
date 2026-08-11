@@ -1,0 +1,29 @@
+FROM debian@sha256:3a39a0592364683e6bab97937b72cad5a8fa6dcbbee90edb3bb48c7f8e94f258
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bc \
+        binutils-x86-64-linux-gnu \
+        bison \
+        ca-certificates \
+        cpio \
+        dwarves \
+        flex \
+        gcc \
+        gcc-x86-64-linux-gnu \
+        git \
+        kmod \
+        libelf-dev \
+        libssl-dev \
+        make \
+        patch \
+        python3 \
+        ripgrep \
+        rsync \
+        xz-utils \
+        zstd \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /repo

@@ -1,0 +1,552 @@
+From ed975cc6042db03ac8b283586a627d79b0695181 Mon Sep 17 00:00:00 2001
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Wed, 15 Apr 2026 02:38:55 +0200
+Subject: [PATCH] wifi: mt76x8: silence MT6632 clang warnings
+
+---
+ .../drv_wlan/MT6632/wlan/common/wlan_p2p.c    |  2 +-
+ .../drv_wlan/MT6632/wlan/include/nic/hal.h    |  1 +
+ .../drv_wlan/MT6632/wlan/include/nic/mac.h    |  6 ++---
+ .../drv_wlan/MT6632/wlan/include/wlan_oid.h   |  2 +-
+ .../mt76x8/drv_wlan/MT6632/wlan/mgmt/bss.c    |  4 ++--
+ .../drv_wlan/MT6632/wlan/mgmt/p2p_func.c      |  4 ++--
+ .../mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_ie.c |  2 +-
+ .../drv_wlan/MT6632/wlan/mgmt/p2p_role_fsm.c  |  2 +-
+ .../drv_wlan/MT6632/wlan/mgmt/rlm_domain.c    |  3 +--
+ .../drv_wlan/MT6632/wlan/mgmt/rlm_obss.c      |  2 +-
+ .../mt76x8/drv_wlan/MT6632/wlan/mgmt/rsn.c    | 10 +++++---
+ .../mt76x8/drv_wlan/MT6632/wlan/mgmt/tdls.c   |  7 ++----
+ .../drv_wlan/MT6632/wlan/mgmt/tkip_mic.c      |  2 +-
+ .../mt76x8/drv_wlan/MT6632/wlan/nic/nic.c     |  5 ++--
+ .../mt76x8/drv_wlan/MT6632/wlan/nic/nic_tx.c  |  2 +-
+ .../mt76x8/drv_wlan/MT6632/wlan/nic/que_mgt.c |  8 +++----
+ .../MT6632/wlan/os/linux/gl_cfg80211.c        |  2 +-
+ .../MT6632/wlan/os/linux/gl_hook_api.c        |  2 +-
+ .../drv_wlan/MT6632/wlan/os/linux/gl_init.c   |  4 ++--
+ .../drv_wlan/MT6632/wlan/os/linux/gl_kal.c    |  6 ++---
+ .../MT6632/wlan/os/linux/gl_p2p_cfg80211.c    |  2 +-
+ .../drv_wlan/MT6632/wlan/os/linux/gl_wext.c   |  6 ++++-
+ .../MT6632/wlan/os/linux/gl_wext_priv.c       | 23 +++++++++++++++----
+ .../MT6632/wlan/os/linux/hif/sdio/hal_api.c   |  3 +--
+ 24 files changed, 63 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/common/wlan_p2p.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/common/wlan_p2p.c
+index 21362d9b9199df..75cd86edf2e96f 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/common/wlan_p2p.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/common/wlan_p2p.c
+@@ -493,7 +493,7 @@ wlanoidSetRemoveP2PKey(IN P_ADAPTER_T prAdapter,
+ * \return WLAN_STATUS_INVALID_LENGTH
+ */
+ /*----------------------------------------------------------------------------*/
+-static WLAN_STATUS
++static __maybe_unused WLAN_STATUS
+ wlanoidSetP2pNetworkAddress(IN P_ADAPTER_T prAdapter,
+ 			    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+ {
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/hal.h b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/hal.h
+index b823f29d09d753..e4ea0855e60cde 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/hal.h
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/hal.h
+@@ -107,6 +107,7 @@
+ #if defined(_HIF_SDIO)
+ #define HAL_MCR_RD(_prAdapter, _u4Offset, _pu4Value) \
+ do { \
++	*((PUINT_32) (_pu4Value)) = 0; \
+ 	if (HAL_TEST_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR) == FALSE) { \
+ 		if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
+ 			ASSERT(0); \
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/mac.h b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/mac.h
+index eeed15bf259fc7..6500ceffca98d5 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/mac.h
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/nic/mac.h
+@@ -1425,7 +1425,7 @@ typedef struct _BOOTP_PROTOCOL_T {
+ 	UINT_8 aucCHAddr[16];
+ 	UINT_8 aucServerName[64];
+ 	UINT_8 aucFileName[128];
+-	UINT_8 aucOptions[0];
++	UINT_8 aucOptions[];
+ } __KAL_ATTRIB_PACKED__ BOOTP_PROTOCOL_T, *P_BOOTP_PROTOCOL_T;
+ 
+ /* IEEE 802.11 WLAN Frame Structure */
+@@ -1803,7 +1803,7 @@ typedef struct _IE_TPC_REPORT_T {
+ typedef struct _IE_SUPPORTED_CHANNELS_T {
+ 	UINT_8 ucId;
+ 	UINT_8 ucLength;
+-	UINT_8 ucChannelNum[0];
++	UINT_8 ucChannelNum[];
+ } __KAL_ATTRIB_PACKED__ IE_SUPPORTED_CHANNELS_T, *P_IE_SUPPORTED_CHANNELS_T;
+ 
+ /* 7.3.2.20 Channel Switch Announcement element*/
+@@ -1987,7 +1987,7 @@ typedef struct _IE_QUIET_T {
+ typedef struct _IE_EXT_CAP_T {
+ 	UINT_8 ucId;
+ 	UINT_8 ucLength;
+-	UINT_8 aucCapabilities[1];
++	UINT_8 aucCapabilities[];
+ } __KAL_ATTRIB_PACKED__ IE_EXT_CAP_T, *P_EXT_CAP_T;
+ 
+ /* 7.3.2.27 Extended Capabilities element */
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/wlan_oid.h b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/wlan_oid.h
+index 56f2c3c2972e8a..2f7b9e403db7ac 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/wlan_oid.h
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/include/wlan_oid.h
+@@ -383,7 +383,7 @@ typedef struct _PARAM_BSSID_EX_T {
+ 	ENUM_PARAM_OP_MODE_T eOpMode;
+ 	PARAM_RATES_EX rSupportedRates;
+ 	UINT_32 u4IELength;
+-	UINT_8 aucIEs[1];
++	UINT_8 aucIEs[];
+ } PARAM_BSSID_EX_T, *P_PARAM_BSSID_EX_T;
+ 
+ typedef struct _PARAM_BSSID_LIST_EX {
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/bss.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/bss.c
+index 2cee056041a6e7..07e82a669de730 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/bss.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/bss.c
+@@ -2370,12 +2370,12 @@ VOID bssSetTIMBitmap(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN UIN
+ 
+ #endif /* CFG_SUPPORT_AAA */
+ 
+-static VOID bssCreateStaRecFromAuth(IN P_ADAPTER_T prAdapter)
++static __maybe_unused VOID bssCreateStaRecFromAuth(IN P_ADAPTER_T prAdapter)
+ {
+ 
+ }
+ 
+-static VOID bssUpdateStaRecFromAssocReq(IN P_ADAPTER_T prAdapter)
++static __maybe_unused VOID bssUpdateStaRecFromAssocReq(IN P_ADAPTER_T prAdapter)
+ {
+ 
+ }
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_func.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_func.c
+index f36b133d19fe22..82b223a47b1aae 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_func.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_func.c
+@@ -499,7 +499,7 @@ p2pFuncUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter,
+ 	} while (FALSE);
+ }				/* end of p2pUpdateBssInfoForJOIN() */
+ 
+-static WLAN_STATUS
++static __maybe_unused WLAN_STATUS
+ p2pFunMgmtFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+ {
+ 	BOOLEAN fgIsSuccess = FALSE;
+@@ -4131,7 +4131,7 @@ p2pFuncGenerateBeaconProbeRsp(IN P_ADAPTER_T prAdapter,
+ 	return rWlanStatus;
+ }				/* p2pFuncGenerateBeaconProbeRsp */
+ 
+-static WLAN_STATUS
++static __maybe_unused WLAN_STATUS
+ p2pFuncComposeBeaconProbeRspTemplate(IN P_ADAPTER_T prAdapter,
+ 				     IN P_BSS_INFO_T prP2pBssInfo,
+ 				     IN PUINT_8 pucBcnBuffer,
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_ie.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_ie.c
+index 1b52b8f536c0cc..f217dc1abf4b79 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_ie.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_ie.c
+@@ -145,7 +145,7 @@ VOID p2pGenerate_IEForAssocReq(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsdu
+ 
+ }				/* p2pGenerate_IEForAssocReq */
+ 
+-static UINT_32
++static __maybe_unused UINT_32
+ wfdFuncAppendAttriDevInfo(IN P_ADAPTER_T prAdapter,
+ 			  IN BOOLEAN fgIsAssocFrame, IN PUINT_16 pu2Offset, IN PUINT_8 pucBuf, IN UINT_16 u2BufSize)
+ {
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_role_fsm.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_role_fsm.c
+index f638ae78ab5722..0e960defe94d85 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_role_fsm.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_role_fsm.c
+@@ -1765,7 +1765,7 @@ VOID p2pRoleFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prM
+ 			 */
+ 			if (prJoinInfo->prTargetBssDesc)
+ 				scanReportBss2Cfg80211(prAdapter,
+-						       OP_MODE_P2P_DEVICE, prJoinInfo->prTargetBssDesc);
++						       BSS_TYPE_P2P_DEVICE, prJoinInfo->prTargetBssDesc);
+ #if CFG_WPS_DISCONNECT || (KERNEL_VERSION(4, 4, 0) <= CFG80211_VERSION_CODE)
+ 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+ 							prP2pRoleFsmInfo->ucRoleIndex,
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_domain.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_domain.c
+index 64c1d3978edf58..7044ceb07d46ba 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_domain.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_domain.c
+@@ -669,7 +669,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
+ 
+ 	{
+ 	 /* default passive channel table is empty */
+-	 COUNTRY_CODE_NULL, 0,
++	 NULL, 0,
+ 	 {
+ 	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0}
+ 	  ,			/* CH_SET_2G4_1_14_NA */
+@@ -3193,4 +3193,3 @@ void rlmDomainAssert(BOOLEAN cond)
+ 
+ }
+ 
+-
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_obss.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_obss.c
+index 5cfe96c73e7b07..7cbc305e4994a9 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_obss.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rlm_obss.c
+@@ -137,7 +137,7 @@ VOID rlmObssInit(P_ADAPTER_T prAdapter)
+ * \return none
+ */
+ /*----------------------------------------------------------------------------*/
+-static BOOLEAN rlmObssUpdateChnlLists(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
++static __maybe_unused BOOLEAN rlmObssUpdateChnlLists(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
+ {
+ 	return TRUE;
+ }
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rsn.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rsn.c
+index 983bcf9965a750..b02d43ed249f24 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rsn.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/rsn.c
+@@ -701,7 +701,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
+ 	UINT_32 u4PairwiseCipher = 0;
+ 	UINT_32 u4GroupCipher = 0;
+ 	UINT_32 u4AkmSuite = 0;
+-	P_RSN_INFO_T prBssRsnInfo;
++	P_RSN_INFO_T prBssRsnInfo = NULL;
+ 	UINT_8 ucBssIndex;
+ 	BOOLEAN fgIsWpsActive = (BOOLEAN) FALSE;
+ 
+@@ -2672,6 +2672,11 @@ static void rsnApStartSaQueryTimer(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
+ 
+ }
+ 
++static VOID rsnApStartSaQueryTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
++{
++	rsnApStartSaQueryTimer(prAdapter, (P_STA_RECORD_T) ulParamPtr, ulParamPtr);
++}
++
+ /*----------------------------------------------------------------------------*/
+ /*!
+ *
+@@ -2691,7 +2696,7 @@ void rsnApStartSaQuery(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
+ 	if (prStaRec) {
+ 		cnmTimerStopTimer(prAdapter, &prStaRec->rPmfCfg.rSAQueryTimer);
+ 		cnmTimerInitTimer(prAdapter, &prStaRec->rPmfCfg.rSAQueryTimer,
+-			(PFN_MGMT_TIMEOUT_FUNC)rsnApStartSaQueryTimer, (ULONG) prStaRec);
++			rsnApStartSaQueryTimeout, (ULONG) prStaRec);
+ 	}
+ 
+ 	if (prStaRec->rPmfCfg.u4SAQueryCount == 0)
+@@ -2872,4 +2877,3 @@ void rsnApSaQueryAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
+ }
+ 
+ #endif /* CFG_SUPPORT_802_11W */
+-
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tdls.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tdls.c
+index 25d93febc41ec8..552da34aed1d9f 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tdls.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tdls.c
+@@ -919,11 +919,8 @@ TdlsDataFrameSend_SETUP_RSP(ADAPTER_T *prAdapter,
+ 	}
+ 
+ 	if (pAppendIe != NULL) {
+-		if ((ucActionCode != TDLS_FRM_ACTION_TEARDOWN) ||
+-		    ((ucActionCode == TDLS_FRM_ACTION_TEARDOWN))) {
+-			kalMemCopy(pPkt, pAppendIe, AppendIeLen);
+-			LR_TDLS_FME_FIELD_FILL(AppendIeLen);
+-		}
++		kalMemCopy(pPkt, pAppendIe, AppendIeLen);
++		LR_TDLS_FME_FIELD_FILL(AppendIeLen);
+ 	}
+ 
+ 	/* 7. Append Supported Operating Classes IE */
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tkip_mic.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tkip_mic.c
+index 192ea5948ed3b0..f4444fcb3f7c5b 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tkip_mic.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/tkip_mic.c
+@@ -346,7 +346,7 @@ tkipMicGen(IN PUCHAR pucMickey,
+ * \retval NONE
+ */
+ /*----------------------------------------------------------------------------*/
+-static VOID
++static __maybe_unused VOID
+ tkipMicEncapsulate(IN PUINT_8 pucDa,
+ 		   IN PUINT_8 pucSa,
+ 		   IN UINT_8 ucPriority,
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic.c
+index 36d57486cbc115..423f71391b495f 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic.c
+@@ -669,7 +669,7 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
+ * @return (none)
+ */
+ /*----------------------------------------------------------------------------*/
+-static VOID nicProcessFwOwnBackInterrupt(IN P_ADAPTER_T prAdapter)
++static __maybe_unused VOID nicProcessFwOwnBackInterrupt(IN P_ADAPTER_T prAdapter)
+ { 
+ 
+ }				/* end of nicProcessFwOwnBackInterrupt() */
+@@ -2122,7 +2122,7 @@ WLAN_STATUS nicSetAutoTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_AUTO_POWER_PARA
+ *         WLAN_STATUS_FAILURE
+ */
+ /*----------------------------------------------------------------------------*/
+-static WLAN_STATUS nicSetAutoTxPowerControl(IN P_ADAPTER_T prAdapter, IN P_CMD_TX_PWR_T prTxPwrParam)
++static __maybe_unused WLAN_STATUS nicSetAutoTxPowerControl(IN P_ADAPTER_T prAdapter, IN P_CMD_TX_PWR_T prTxPwrParam)
+ {
+ 	DEBUGFUNC("nicUpdateTxPower");
+ 
+@@ -3683,4 +3683,3 @@ BOOLEAN nicSerIsRxStop(IN P_ADAPTER_T prAdapter)
+ 		return FALSE;
+ 	}
+ }
+-
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic_tx.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic_tx.c
+index 5e8db59ea5878e..4ce51beced72a1 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic_tx.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/nic_tx.c
+@@ -1432,7 +1432,7 @@ nicTxFillDataDesc(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
+ 	nicTxFillDesc(prAdapter, prMsduInfo, pucOutputBuf, NULL);
+ }
+ 
+-static VOID
++static __maybe_unused VOID
+ nicTxCopyDesc(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucTarTxDesc, IN PUINT_8 pucSrcTxDesc, OUT PUINT_8 pucTxDescLength)
+ {
+ 	UINT_8 ucTxDescLength;
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/que_mgt.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/que_mgt.c
+index fba11b456818ee..fe944ed3335abb 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/que_mgt.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/nic/que_mgt.c
+@@ -1205,13 +1205,13 @@ VOID qmDetermineStaRecIndex(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInf
+ #endif
+ }
+ 
+-static P_STA_RECORD_T qmDetermineStaToBeDequeued(IN P_ADAPTER_T prAdapter, IN UINT_32 u4StartStaRecIndex)
++static __maybe_unused P_STA_RECORD_T qmDetermineStaToBeDequeued(IN P_ADAPTER_T prAdapter, IN UINT_32 u4StartStaRecIndex)
+ {
+ 
+ 	return NULL;
+ }
+ 
+-static P_QUE_T qmDequeueStaTxPackets(IN P_ADAPTER_T prAdapter)
++static __maybe_unused P_QUE_T qmDequeueStaTxPackets(IN P_ADAPTER_T prAdapter)
+ {
+ 
+ 	return NULL;
+@@ -1420,7 +1420,7 @@ qmDequeueTxPacketsFromPerTypeQueues(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
+ 	DBGLOG(QM, LOUD, "Enter %s (TC = %d, quota = %u)\n", __func__, ucTC, u4CurrentQuota);
+ 
+ 	/* Broadcast/Multicast data packets */
+-	if ((u4CurrentQuota == 0))
++	if (u4CurrentQuota == 0)
+ 		return;
+ 
+ 	prQM = &prAdapter->rQM;
+@@ -2882,7 +2882,7 @@ VOID qmInsertFallWithinReorderPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
+ 	else {
+ 		do {
+ 			/* Case 1: Terminate. A duplicate packet */
+-			if (((prExaminedQueuedSwRfb->u2SSN) == (prSwRfb->u2SSN))) {
++			if (prExaminedQueuedSwRfb->u2SSN == prSwRfb->u2SSN) {
+ #if CFG_SUPPORT_RX_AMSDU
+ 				/* RX reorder for one MSDU in AMSDU issue */
+ 				/* if middle or last and first is not duplicated, not a duplicat packet */
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
+index aed0ce6b8b63b2..65217e97ffc757 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
+@@ -2659,7 +2659,7 @@ int mtk_cfg80211_assoc(struct wiphy *wiphy, struct net_device *ndev, struct cfg8
+ 
+ #if CFG_SUPPORT_NFC_BEAM_PLUS
+ 
+-static int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
++static __maybe_unused int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
+ {
+ #define NL80211_TESTMODE_P2P_SCANDONE_INVALID 0
+ #define NL80211_TESTMODE_P2P_SCANDONE_STATUS 1
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_hook_api.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_hook_api.c
+index 4b28ec7a590c55..74c32a8dce8f0e 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_hook_api.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_hook_api.c
+@@ -3476,7 +3476,7 @@ INT_32 TxBfPfmuMemRelease(struct net_device *prNetDev, UINT_8 ucWlanId)
+ 	return i4Status;
+ }
+ 
+-INT_32 TxBfBssInfoUpdate(struct net_device *prNetDev, UINT_8 ucOwnMacIdx, UINT_8 ucBssIdx, UINT_8 ucBssId[MAC_ADDR_LEN]) /* Warning: defined but not used */
++static __maybe_unused INT_32 TxBfBssInfoUpdate(struct net_device *prNetDev, UINT_8 ucOwnMacIdx, UINT_8 ucBssIdx, UINT_8 ucBssId[MAC_ADDR_LEN]) /* Warning: defined but not used */
+ {
+ 	INT_32 i4Status = 0;
+ 	P_GLUE_INFO_T prGlueInfo = NULL;
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+index f426aaec1146ae..e8e4d98acef375 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+@@ -196,7 +196,7 @@ static PUINT_8 apucEepromName[] = {
+ };
+ #endif
+ 
+-static int CFG80211_Suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
++static __maybe_unused int CFG80211_Suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
+ {
+ 	DBGLOG(INIT, INFO, "CFG80211 suspend CB\n");
+ 
+@@ -2012,7 +2012,7 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
+ * \retval VOID
+ */
+ /*----------------------------------------------------------------------------*/
+-static VOID wlanGetParseConfig(P_ADAPTER_T prAdapter)
++static __maybe_unused VOID wlanGetParseConfig(P_ADAPTER_T prAdapter)
+ {
+ 	PUINT_8 pucConfigBuf;
+ 	UINT_32 u4ConfigReadLen;
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
+index e32015543c01f0..39fe395de516a0 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
+@@ -157,7 +157,7 @@ static PUINT_8 apucPatchName[] = {
+ 	NULL
+ };
+ 
+-static PPUINT_8 appucFwNameTable[] = {
++static __maybe_unused PPUINT_8 appucFwNameTable[] = {
+ 	apucFwName
+ };
+ #if CFG_ASSERT_DUMP
+@@ -1781,9 +1781,9 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
+ * \note
+ */
+ /*----------------------------------------------------------------------------*/
+-static VOID kalQueryRegistryMacAddr(IN P_GLUE_INFO_T prGlueInfo, OUT PUINT_8 paucMacAddr)
++static __maybe_unused VOID kalQueryRegistryMacAddr(IN P_GLUE_INFO_T prGlueInfo, OUT PUINT_8 paucMacAddr)
+ {
+-	UINT_8 aucZeroMac[MAC_ADDR_LEN] = { 0, 0, 0, 0, 0, 0 }
++	UINT_8 aucZeroMac[MAC_ADDR_LEN] = { 0, 0, 0, 0, 0, 0 };
+ 
+ 	DEBUGFUNC("kalQueryRegistryMacAddr");
+ 
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c
+index 085dd2e190a9d2..dd47ea9b5d456f 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_cfg80211.c
+@@ -2101,7 +2101,7 @@ int mtk_p2p_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy, struct wirele
+ 	P_MSG_P2P_CHNL_ABORT_T prMsgChnlAbort = (P_MSG_P2P_CHNL_ABORT_T) NULL;
+ 
+ 	do {
+-		if ((wiphy == NULL) /* || (dev == NULL) */)
++		if (wiphy == NULL /* || (dev == NULL) */)
+ 			break;
+ 
+ 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext.c
+index c850a47b54d652..6955b170f89823 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext.c
+@@ -251,8 +251,10 @@ wext_support_ioctl_SIOCSIWPMKSA_Action(IN struct net_device *prDev, IN char *prE
+ ********************************************************************************
+ */
+ 
+-static void MAP_CHANNEL_ID_TO_KHZ(UINT_32 ch, UINT_32 khz)
++static __maybe_unused UINT_32 MAP_CHANNEL_ID_TO_KHZ(UINT_32 ch)
+ {
++	UINT_32 khz;
++
+ 	switch (ch) {
+ 	case 1:
+ 		khz = 2412000;
+@@ -405,6 +407,8 @@ static void MAP_CHANNEL_ID_TO_KHZ(UINT_32 ch, UINT_32 khz)
+ 		khz = 2412000;
+ 		break;
+ 	}
++
++	return khz;
+ }
+ 
+ /*----------------------------------------------------------------------------*/
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext_priv.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext_priv.c
+index 675b50abcdf65e..2952cbe8954418 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext_priv.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_wext_priv.c
+@@ -148,6 +148,9 @@ static UINT_8 aucOidBuf[4096] = { 0 };
+ /* Order is important here because the OIDs should be in order of
+  *  increasing value for binary searching.
+  */
++__diag_push();
++__diag_ignore_all("-Wcast-function-type-strict",
++		  "Legacy WEXT OID table mixes adapter and glue handlers");
+ static WLAN_REQ_ENTRY arWlanOidReqTable[] = {
+ #if 0
+ 	   {(NDIS_OID)rOid,
+@@ -434,6 +437,16 @@ static WLAN_REQ_ENTRY arWlanOidReqTable[] = {
+ 	,
+ #endif
+ };
++__diag_pop();
++
++static inline PFN_OID_HANDLER_FUNC req_to_oid_handler(PFN_OID_HANDLER_FUNC_REQ handler)
++{
++	__diag_push();
++	__diag_ignore_all("-Wcast-function-type-strict",
++			  "Legacy WEXT OID table stores heterogeneous handler types");
++	return (PFN_OID_HANDLER_FUNC) handler;
++	__diag_pop();
++}
+ 
+ /*******************************************************************************
+ *                              F U N C T I O N S
+@@ -1687,7 +1700,7 @@ priv_set_ndis(IN struct net_device *prNetDev, IN NDIS_TRANSPORT_STRUCT * prNdisR
+ 		/* driver core */
+ 
+ 		status = kalIoctl(prGlueInfo,
+-				  (PFN_OID_HANDLER_FUNC) prWlanReqEntry->pfOidSetHandler,
++				  req_to_oid_handler(prWlanReqEntry->pfOidSetHandler),
+ 				  prNdisReq->ndisOidContent,
+ 				  prNdisReq->inNdisOidlength, FALSE, FALSE, TRUE, &u4SetInfoLen);
+ 	} else {
+@@ -1804,7 +1817,7 @@ priv_get_ndis(IN struct net_device *prNetDev, IN NDIS_TRANSPORT_STRUCT * prNdisR
+ 		/* driver core */
+ 
+ 		status = kalIoctl(prGlueInfo,
+-				  (PFN_OID_HANDLER_FUNC) prWlanReqEntry->pfOidQueryHandler,
++				  req_to_oid_handler(prWlanReqEntry->pfOidQueryHandler),
+ 				  prNdisReq->ndisOidContent, prNdisReq->inNdisOidlength, TRUE, TRUE, TRUE, &u4BufLen);
+ 	} else {
+ 		DBGLOG(REQ, INFO, "priv_set_ndis(): unsupported OID method:0x%x\n", prWlanReqEntry->eOidMethod);
+@@ -2487,7 +2500,7 @@ const struct COEX_REF_TABLE coex_ref_table[] = {
+ };
+ 
+ 
+-static int priv_driver_get_dbg_level(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
++static __maybe_unused int priv_driver_get_dbg_level(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+ {
+ 	P_GLUE_INFO_T prGlueInfo = NULL;
+ 	INT_32 i4BytesWritten = 0;
+@@ -3706,7 +3719,7 @@ static int priv_driver_iso_detect(IN P_GLUE_INFO_T prGlueInfo,
+ 		return -1;
+ 
+ 	/* If all pass, return u4Ret to 0 */
+-		return u4Ret;
++	return u4Ret;
+ }
+ 
+ /* Private Coex Ctrl Subcmd for Getting Coex Info */
+@@ -7276,7 +7289,7 @@ static int priv_driver_get_linkspeed(IN struct net_device *prNetDev, IN char *pc
+ 
+ }				/* priv_driver_get_linkspeed */
+ 
+-int priv_driver_set_band(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
++static int priv_driver_set_band(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+ {
+ 	P_ADAPTER_T prAdapter = NULL;
+ 	P_GLUE_INFO_T prGlueInfo = NULL;
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/hif/sdio/hal_api.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/hif/sdio/hal_api.c
+index a346cb41e7419d..6f6175896d806c 100755
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/hif/sdio/hal_api.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/hif/sdio/hal_api.c
+@@ -617,7 +617,7 @@ BOOLEAN halTxIsDataBufEnough(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduIn
+ * @return FALSE     no available resource to release
+ */
+ /*----------------------------------------------------------------------------*/
+-static BOOLEAN halTxCalculateResource(IN P_ADAPTER_T prAdapter, IN PUINT_16 au2TxRlsCnt, OUT PUINT_16 au2FreeTcResource)
++static __maybe_unused BOOLEAN halTxCalculateResource(IN P_ADAPTER_T prAdapter, IN PUINT_16 au2TxRlsCnt, OUT PUINT_16 au2FreeTcResource)
+ {
+ 	P_TX_TCQ_STATUS_T prTcqStatus;
+ 	BOOLEAN bStatus = FALSE;
+@@ -2211,4 +2211,3 @@ VOID halTxResourceResetHwTQCounter(IN P_ADAPTER_T prAdapter)
+                 kalMemFree(pu4WHISR, PHY_MEM_TYPE, sizeof(UINT_32));
+ }
+ 
+-
