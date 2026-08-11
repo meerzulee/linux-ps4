@@ -17,7 +17,7 @@ test passed; device enumeration alone is not enough.
 | Internal SATA | controller and disk enumerate | read-only health and timeout inspection | Degraded |
 | Internal Wi-Fi | MT7668 driver and firmware loaded | association, DHCP and bounded network transfer | Working |
 | Built-in Ethernet | driver and carrier state | DHCP and bounded transfer | Not working |
-| HDMI audio | HDA, ALSA and PipeWire enumerate; direct PCM accepts stereo | five-second playback needs human confirmation | Partial |
+| HDMI audio | HDA, ALSA and PipeWire enumerate; direct PCM accepts stereo | five-second playback produced no audible sound | Partial |
 | USB | Aeolia xHCI exposes four buses | external root, keyboard and mouse are active | Working |
 | Bluetooth | MT7668 `hci0` and firmware are present | start BlueZ, bounded scan and DualShock 4 pairing | Partial |
 | Temperature | `k10temp` exposes a credible value | 60.25→61.0°C across short GPU and CPU tests | Partial |

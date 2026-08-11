@@ -28,14 +28,15 @@ Other PS4 revisions, including PS4 Pro, are not yet verified by this project.
 | GPU acceleration | OpenGL and Vulkan smoke tests working |
 | Internal SATA | Degraded; discovery timeouts |
 | Built-in Ethernet | Not working |
-| HDMI audio | Partial; human confirmation pending |
+| HDMI audio | Partial; stream accepted but no physical sound |
 | Bluetooth | Controller present; pairing pending |
 | Temperature and fan | Temperature visible; fan interface missing |
 | Suspend | Not exposed by the kernel |
 | Internal Linux installation | Not supported |
 
 The detailed matrix is in [STATUS.md](STATUS.md). The acceptance sequence is
-in [CAPABILITY-TESTS.md](docs/CAPABILITY-TESTS.md).
+in [CAPABILITY-TESTS.md](docs/CAPABILITY-TESTS.md). Omarchy readiness is tracked
+in [OMARCHY-READINESS.md](docs/OMARCHY-READINESS.md).
 
 ## Release
 

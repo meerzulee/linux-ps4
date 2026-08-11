@@ -30,7 +30,7 @@ older 6.15 experiments.
 | Built-in Ethernet | Not working | Prior `sky2` work did not produce a usable transmit path |
 | GPU acceleration | Working smoke test | amdgpu/radeonsi direct rendering, OpenGL 4.6 and an eight-second 59.17 FPS `glxgears` test passed without a new GPU warning; sustained rendering remains pending |
 | Vulkan | Working smoke test | RADV exposed Vulkan 1.3 and rendered `vkcube` for eight seconds without a new GPU warning |
-| HDMI audio | Partial | HDA, ALSA and PipeWire enumerate; direct HDMI stereo PCM accepted a bounded test stream; human confirmation is pending |
+| HDMI audio | Partial | HDA, ALSA and PipeWire enumerate; direct HDMI stereo PCM accepted a bounded test stream, but no sound was heard |
 | USB | Working | Aeolia xHCI runs the external root disk, keyboard and mouse |
 | Bluetooth / DualShock 4 | Partial | MT7668 `hci0` and firmware are present; BlueZ is installed but its service is disabled; pairing is pending |
 | Temperature | Partial | `k10temp` reports plausible values around 60–61°C |
@@ -69,7 +69,7 @@ Use `make TARGET=5.4-baikal` for the recovery baseline or
 ## Next acceptance work
 
 1. Diagnose internal SATA timeouts without mounting or modifying Sony data.
-2. Repeat the unchanged artifact from a true cold boot.
+2. Cold boot with `libata.force=1.00:disable` and confirm the internal HDD is absent without delaying USB-root discovery.
 3. Add fan visibility/control before sustained CPU or GPU load.
 4. Confirm HDMI audio, start BlueZ, and test DualShock 4 pairing.
 5. Diagnose the recurring `No irq handler for 0.227` warning.
