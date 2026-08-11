@@ -1,0 +1,754 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] mt76x8: port to cfg80211 / fs API in Linux 6.15+
+
+Bring the 2018-vintage MediaTek MT7668 vendor driver forward to compile
+against Linux 6.15.4. The driver still targets the kernel 5.4-era cfg80211
+and VFS APIs; this patch is the mechanical wire-up to the modern surfaces.
+
+Changes are split per call site, each behind a LINUX_VERSION_CODE guard so
+the driver still builds against older trees:
+
+  - platform.c, gl_kal.c: replace get_fs/set_fs/mm_segment_t + f_op->{read,write}
+    file I/O with kernel_read/kernel_write (the in-kernel fs-segment dance was
+    removed in 5.18).
+  - gl_kal.c: drop netif_rx_ni() in favour of netif_rx() (removed in 5.18,
+    netif_rx() is now safe in any context).
+  - gl_kal.c: rename del_timer_sync() -> timer_delete_sync() (renamed in 6.2).
+  - gl_kal.c: cfg80211_roam_info channel/bssid moved into links[0] for MLO.
+  - gl_kal.c: drop the struct module* argument from
+    kallsyms_on_each_symbol() callback (signature changed in 6.0).
+  - gl_kal.h: include <linux/sched/clock.h> for local_clock().
+  - gl_init.c: drop MODULE_SUPPORTED_DEVICE() (removed in 5.16+).
+  - gl_init.c: rename del_timer_sync() -> timer_delete_sync().
+  - gl_init.c, gl_p2p.c: cfg80211_ops callbacks grew "unsigned int link_id"
+    (or "int link_id") parameters for MLO; add thin adapter wrappers so the
+    static vendor functions match the new struct cfg80211_ops signatures
+    without rewriting them. Affected callbacks: add_key, get_key, del_key,
+    set_default_key, set_default_mgmt_key, tdls_mgmt, change_beacon,
+    stop_ap, set_bitrate_mask, get_tx_power, start_radar_detection,
+    set_tx_power, set_wiphy_params.
+  - gl_p2p.c: cfg80211_ap_update wraps cfg80211_beacon_data; change_beacon
+    adapter unwraps the embedded beacon.
+  - gl_cfg80211.c: cfg80211_scan_request::scan_width was retired with 802.11n;
+    skip the field on 6.7+.
+  - gl_cfg80211.c: station_parameters::{supported_rates,ht_capa,vht_capa}
+    moved into link_sta_params. A STA_PARAMS_LINK(p) macro hides the
+    difference at each access.
+  - gl_p2p_kal.c: wireless_dev::cac_started moved to links[0].cac_started in
+    6.0; cfg80211_cac_event() gained a link_id parameter in 6.5.
+  - p2p_func.c: cfg80211_ch_switch_notify() gained a link_id parameter in
+    6.3.
+  - common/wlan_oid.c: replace userspace <stddef.h> with <linux/stddef.h>.
+  - mt76x8/Kconfig, drv_wlan/Kconfig: declare bool instead of tristate so
+    the driver can be linked into vmlinux (required for PS4 boot where the
+    rootfs has no module loader for early WiFi bring-up).
+
+Builds clean with CONFIG_MT76X8=y, CONFIG_MT6632=y, and CONFIG_CFG80211=y
+on Linux 6.15.4. Only warnings remain (missing prototypes, mostly
+pre-existing in the vendor tree).
+---
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/platform.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/platform.c
+@@ -316,44 +316,19 @@
+ #if CFG_SUPPORT_NVRAM
+ 	struct file *fd;
+ 	int retLen = -1;
+-
+-	mm_segment_t old_fs = get_fs();
+-
+-	set_fs(KERNEL_DS);
++	loff_t pos = offset;
+ 
+ 	fd = filp_open(filename, O_RDONLY, 0644);
+ 
+ 	if (IS_ERR(fd)) {
+ 		DBGLOG(INIT, INFO, "[nvram_read] : failed to open!!\n");
+-		set_fs(old_fs);
+ 		return -1;
+ 	}
+ 
+-	do {
+-		if ((fd->f_op == NULL) || (fd->f_op->read == NULL)) {
+-			DBGLOG(INIT, INFO, "[nvram_read] : file can not be read!!\n");
+-			break;
+-		}
+-
+-		if (fd->f_pos != offset) {
+-			if (fd->f_op->llseek) {
+-				if (fd->f_op->llseek(fd, offset, 0) != offset) {
+-					DBGLOG(INIT, INFO, "[nvram_read] : failed to seek!!\n");
+-					break;
+-				}
+-			} else {
+-				fd->f_pos = offset;
+-			}
+-		}
+-
+-		retLen = fd->f_op->read(fd, buf, len, &fd->f_pos);
+-
+-	} while (FALSE);
++	retLen = kernel_read(fd, buf, len, &pos);
+ 
+ 	filp_close(fd, NULL);
+ 
+-	set_fs(old_fs);
+-
+ 	return retLen;
+ 
+ #else /* !CFG_SUPPORT_NVRAM */
+@@ -381,44 +356,19 @@
+ #if CFG_SUPPORT_NVRAM
+ 	struct file *fd;
+ 	int retLen = -1;
+-
+-	mm_segment_t old_fs = get_fs();
+-
+-	set_fs(KERNEL_DS);
++	loff_t pos = offset;
+ 
+ 	fd = filp_open(filename, O_WRONLY | O_CREAT, 0644);
+ 
+ 	if (IS_ERR(fd)) {
+ 		DBGLOG(INIT, INFO, "[nvram_write] : failed to open!!\n");
+-		set_fs(old_fs);
+ 		return -1;
+ 	}
+ 
+-	do {
+-		if ((fd->f_op == NULL) || (fd->f_op->write == NULL)) {
+-			DBGLOG(INIT, INFO, "[nvram_write] : file can not be write!!\n");
+-			break;
+-		}
+-		/* End of if */
+-		if (fd->f_pos != offset) {
+-			if (fd->f_op->llseek) {
+-				if (fd->f_op->llseek(fd, offset, 0) != offset) {
+-					DBGLOG(INIT, INFO, "[nvram_write] : failed to seek!!\n");
+-					break;
+-				}
+-			} else {
+-				fd->f_pos = offset;
+-			}
+-		}
+-
+-		retLen = fd->f_op->write(fd, buf, len, &fd->f_pos);
+-
+-	} while (FALSE);
++	retLen = kernel_write(fd, buf, len, &pos);
+ 
+ 	filp_close(fd, NULL);
+ 
+-	set_fs(old_fs);
+-
+ 	return retLen;
+ 
+ #else /* !CFG_SUPPORT_NVRAMS */
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_cfg80211.c
+@@ -93,6 +93,16 @@
+ }
+ #include "gl_cfg80211.h"
+ 
++/* Linux 6.x moved supported_rates/ht_capa/vht_capa from struct station_parameters
++ * into struct link_station_parameters (link_sta_params). Provide a uniform
++ * accessor macro so the call sites stay readable.
++ */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
++#define STA_PARAMS_LINK(p)	((p)->link_sta_params)
++#else
++#define STA_PARAMS_LINK(p)	(*(p))
++#endif
++
+ /*******************************************************************************
+ *                              C O N S T A N T S
+ ********************************************************************************
+@@ -876,7 +886,7 @@
+ 			rScanRequest.arChnlInfoList[i].u4CenterFreq1 = request->channels[i]->center_freq;
+ 			rScanRequest.arChnlInfoList[i].u4CenterFreq2 = 0;
+ 			rScanRequest.arChnlInfoList[i].u2PriChnlFreq = request->channels[i]->center_freq;
+-#if KERNEL_VERSION(3, 12, 0) <= CFG80211_VERSION_CODE
++#if KERNEL_VERSION(3, 12, 0) <= CFG80211_VERSION_CODE && KERNEL_VERSION(6, 7, 0) > LINUX_VERSION_CODE
+ 			rScanRequest.arChnlInfoList[i].ucChnlBw = request->scan_width;
+ #else
+ 			rScanRequest.arChnlInfoList[i].ucChnlBw = 0;
+@@ -2736,19 +2746,19 @@
+ 
+ 	if (params == NULL)
+ 		return 0;
+-	else if (params->supported_rates == NULL)
++	else if (STA_PARAMS_LINK(params).supported_rates == NULL)
+ 		return 0;
+ 
+ 	/* init */
+ 	kalMemZero(&rCmdUpdate, sizeof(rCmdUpdate));
+ 	kalMemCopy(rCmdUpdate.aucPeerMac, mac, 6);
+ 
+-	if (params->supported_rates != NULL) {
++	if (STA_PARAMS_LINK(params).supported_rates != NULL) {
+ 
+-		u4Temp = params->supported_rates_len;
++		u4Temp = STA_PARAMS_LINK(params).supported_rates_len;
+ 		if (u4Temp > CMD_PEER_UPDATE_SUP_RATE_MAX)
+ 			u4Temp = CMD_PEER_UPDATE_SUP_RATE_MAX;
+-		kalMemCopy(rCmdUpdate.aucSupRate, params->supported_rates, u4Temp);
++		kalMemCopy(rCmdUpdate.aucSupRate, STA_PARAMS_LINK(params).supported_rates, u4Temp);
+ 		rCmdUpdate.u2SupRateLen = u4Temp;
+ 	}
+ 
+@@ -2770,23 +2780,23 @@
+ 		rCmdUpdate.u2ExtCapLen = u4Temp;
+ 	}
+ 
+-	if (params->ht_capa != NULL) {
++	if (STA_PARAMS_LINK(params).ht_capa != NULL) {
+ 
+-		rCmdUpdate.rHtCap.u2CapInfo = params->ht_capa->cap_info;
+-		rCmdUpdate.rHtCap.ucAmpduParamsInfo = params->ht_capa->ampdu_params_info;
+-		rCmdUpdate.rHtCap.u2ExtHtCapInfo = params->ht_capa->extended_ht_cap_info;
+-		rCmdUpdate.rHtCap.u4TxBfCapInfo = params->ht_capa->tx_BF_cap_info;
+-		rCmdUpdate.rHtCap.ucAntennaSelInfo = params->ht_capa->antenna_selection_info;
++		rCmdUpdate.rHtCap.u2CapInfo = STA_PARAMS_LINK(params).ht_capa->cap_info;
++		rCmdUpdate.rHtCap.ucAmpduParamsInfo = STA_PARAMS_LINK(params).ht_capa->ampdu_params_info;
++		rCmdUpdate.rHtCap.u2ExtHtCapInfo = STA_PARAMS_LINK(params).ht_capa->extended_ht_cap_info;
++		rCmdUpdate.rHtCap.u4TxBfCapInfo = STA_PARAMS_LINK(params).ht_capa->tx_BF_cap_info;
++		rCmdUpdate.rHtCap.ucAntennaSelInfo = STA_PARAMS_LINK(params).ht_capa->antenna_selection_info;
+ 		kalMemCopy(rCmdUpdate.rHtCap.rMCS.arRxMask,
+-			   params->ht_capa->mcs.rx_mask, sizeof(rCmdUpdate.rHtCap.rMCS.arRxMask));
++			   STA_PARAMS_LINK(params).ht_capa->mcs.rx_mask, sizeof(rCmdUpdate.rHtCap.rMCS.arRxMask));
+ 
+-		rCmdUpdate.rHtCap.rMCS.u2RxHighest = params->ht_capa->mcs.rx_highest;
+-		rCmdUpdate.rHtCap.rMCS.ucTxParams = params->ht_capa->mcs.tx_params;
++		rCmdUpdate.rHtCap.rMCS.u2RxHighest = STA_PARAMS_LINK(params).ht_capa->mcs.rx_highest;
++		rCmdUpdate.rHtCap.rMCS.ucTxParams = STA_PARAMS_LINK(params).ht_capa->mcs.tx_params;
+ 		rCmdUpdate.fgIsSupHt = TRUE;
+ 	}
+ 	/* vht */
+ 
+-	if (params->vht_capa != NULL) {
++	if (STA_PARAMS_LINK(params).vht_capa != NULL) {
+ 		/* rCmdUpdate.rVHtCap */
+ 		/* rCmdUpdate.rVHtCap */
+ 	}
+@@ -2839,19 +2849,19 @@
+ 
+ 	if (params == NULL)
+ 		return 0;
+-	else if (params->supported_rates == NULL)
++	else if (STA_PARAMS_LINK(params).supported_rates == NULL)
+ 		return 0;
+ 
+ 	/* init */
+ 	kalMemZero(&rCmdUpdate, sizeof(rCmdUpdate));
+ 	kalMemCopy(rCmdUpdate.aucPeerMac, mac, 6);
+ 
+-	if (params->supported_rates != NULL) {
++	if (STA_PARAMS_LINK(params).supported_rates != NULL) {
+ 
+-		u4Temp = params->supported_rates_len;
++		u4Temp = STA_PARAMS_LINK(params).supported_rates_len;
+ 		if (u4Temp > CMD_PEER_UPDATE_SUP_RATE_MAX)
+ 			u4Temp = CMD_PEER_UPDATE_SUP_RATE_MAX;
+-		kalMemCopy(rCmdUpdate.aucSupRate, params->supported_rates, u4Temp);
++		kalMemCopy(rCmdUpdate.aucSupRate, STA_PARAMS_LINK(params).supported_rates, u4Temp);
+ 		rCmdUpdate.u2SupRateLen = u4Temp;
+ 	}
+ 
+@@ -2873,23 +2883,23 @@
+ 		rCmdUpdate.u2ExtCapLen = u4Temp;
+ 	}
+ 
+-	if (params->ht_capa != NULL) {
++	if (STA_PARAMS_LINK(params).ht_capa != NULL) {
+ 
+-		rCmdUpdate.rHtCap.u2CapInfo = params->ht_capa->cap_info;
+-		rCmdUpdate.rHtCap.ucAmpduParamsInfo = params->ht_capa->ampdu_params_info;
+-		rCmdUpdate.rHtCap.u2ExtHtCapInfo = params->ht_capa->extended_ht_cap_info;
+-		rCmdUpdate.rHtCap.u4TxBfCapInfo = params->ht_capa->tx_BF_cap_info;
+-		rCmdUpdate.rHtCap.ucAntennaSelInfo = params->ht_capa->antenna_selection_info;
++		rCmdUpdate.rHtCap.u2CapInfo = STA_PARAMS_LINK(params).ht_capa->cap_info;
++		rCmdUpdate.rHtCap.ucAmpduParamsInfo = STA_PARAMS_LINK(params).ht_capa->ampdu_params_info;
++		rCmdUpdate.rHtCap.u2ExtHtCapInfo = STA_PARAMS_LINK(params).ht_capa->extended_ht_cap_info;
++		rCmdUpdate.rHtCap.u4TxBfCapInfo = STA_PARAMS_LINK(params).ht_capa->tx_BF_cap_info;
++		rCmdUpdate.rHtCap.ucAntennaSelInfo = STA_PARAMS_LINK(params).ht_capa->antenna_selection_info;
+ 		kalMemCopy(rCmdUpdate.rHtCap.rMCS.arRxMask,
+-			   params->ht_capa->mcs.rx_mask, sizeof(rCmdUpdate.rHtCap.rMCS.arRxMask));
++			   STA_PARAMS_LINK(params).ht_capa->mcs.rx_mask, sizeof(rCmdUpdate.rHtCap.rMCS.arRxMask));
+ 
+-		rCmdUpdate.rHtCap.rMCS.u2RxHighest = params->ht_capa->mcs.rx_highest;
+-		rCmdUpdate.rHtCap.rMCS.ucTxParams = params->ht_capa->mcs.tx_params;
++		rCmdUpdate.rHtCap.rMCS.u2RxHighest = STA_PARAMS_LINK(params).ht_capa->mcs.rx_highest;
++		rCmdUpdate.rHtCap.rMCS.ucTxParams = STA_PARAMS_LINK(params).ht_capa->mcs.tx_params;
+ 		rCmdUpdate.fgIsSupHt = TRUE;
+ 	}
+ 	/* vht */
+ 
+-	if (params->vht_capa != NULL) {
++	if (STA_PARAMS_LINK(params).vht_capa != NULL) {
+ 		/* rCmdUpdate.rVHtCap */
+ 		/* rCmdUpdate.rVHtCap */
+ 	}
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
+@@ -129,28 +129,89 @@
+ #if CFG_ENABLE_WIFI_DIRECT_CFG_80211
+ 
+ /* Wrapper for set_wiphy_params to match expected signature */
+-static int mtk_p2p_cfg80211_set_wiphy_params_adapter(struct wiphy *wiphy, int param, u32 val)
++static int mtk_p2p_cfg80211_set_wiphy_params_adapter(struct wiphy *wiphy, u32 changed)
+ {
+-	/* Original: int mtk_p2p_cfg80211_set_wiphy_params(struct wiphy *, u32) */
+-	return mtk_p2p_cfg80211_set_wiphy_params(wiphy, val);
++	return mtk_p2p_cfg80211_set_wiphy_params(wiphy, changed);
+ }
+ 
+ /* Wrapper for set_tx_power to match expected signature */
+ static int mtk_p2p_cfg80211_set_txpower_adapter(struct wiphy *wiphy, struct wireless_dev *wdev,
+-	int ifindex, enum nl80211_tx_power_setting type, int dbm)
++	enum nl80211_tx_power_setting type, int mbm)
+ {
+-	/* Original: int mtk_p2p_cfg80211_set_txpower(struct wiphy *, struct wireless_dev *, enum nl80211_tx_power_setting, int) */
+-	return mtk_p2p_cfg80211_set_txpower(wiphy, wdev, type, dbm);
++	return mtk_p2p_cfg80211_set_txpower(wiphy, wdev, type, mbm);
+ }
+ 
+-/* Wrapper for get_tx_power to match expected signature */
++/* Wrapper for get_tx_power to match expected signature (link_id added in 6.x) */
+ static int mtk_p2p_cfg80211_get_txpower_adapter(struct wiphy *wiphy, struct wireless_dev *wdev,
+-	int ifindex, unsigned int dbm, int *type)
++	unsigned int link_id, int *dbm)
+ {
+-	unsigned int out = dbm;
+-	return mtk_p2p_cfg80211_get_txpower(wiphy, wdev, ifindex, &out);
++	return mtk_p2p_cfg80211_get_txpower(wiphy, wdev, dbm);
+ }
+ 
++/* Adapters for cfg80211_ops signature changes in Linux 6.x */
++static int mtk_p2p_cfg80211_change_beacon_adapter(struct wiphy *wiphy,
++	struct net_device *dev, struct cfg80211_ap_update *info)
++{
++	return mtk_p2p_cfg80211_change_beacon(wiphy, dev, &info->beacon);
++}
++
++static int mtk_p2p_cfg80211_stop_ap_adapter(struct wiphy *wiphy,
++	struct net_device *dev, unsigned int link_id)
++{
++	return mtk_p2p_cfg80211_stop_ap(wiphy, dev);
++}
++
++static int mtk_p2p_cfg80211_add_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool pairwise, const u8 *mac_addr, struct key_params *params)
++{
++	return mtk_p2p_cfg80211_add_key(wiphy, netdev, key_index, pairwise, mac_addr, params);
++}
++
++static int mtk_p2p_cfg80211_get_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool pairwise, const u8 *mac_addr, void *cookie,
++	void (*callback)(void *cookie, struct key_params *))
++{
++	return mtk_p2p_cfg80211_get_key(wiphy, netdev, key_index, pairwise, mac_addr, cookie, callback);
++}
++
++static int mtk_p2p_cfg80211_del_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool pairwise, const u8 *mac_addr)
++{
++	return mtk_p2p_cfg80211_del_key(wiphy, netdev, key_index, pairwise, mac_addr);
++}
++
++static int mtk_p2p_cfg80211_set_default_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool unicast, bool multicast)
++{
++	return mtk_p2p_cfg80211_set_default_key(wiphy, netdev, key_index, unicast, multicast);
++}
++
++static int mtk_p2p_cfg80211_set_mgmt_key_adapter(struct wiphy *wiphy,
++	struct net_device *dev, int link_id, u8 key_index)
++{
++	return mtk_p2p_cfg80211_set_mgmt_key(wiphy, dev, key_index);
++}
++
++static int mtk_p2p_cfg80211_set_bitrate_mask_adapter(struct wiphy *wiphy,
++	struct net_device *dev, unsigned int link_id,
++	const u8 *peer, const struct cfg80211_bitrate_mask *mask)
++{
++	return mtk_p2p_cfg80211_set_bitrate_mask(wiphy, dev, peer, mask);
++}
++
++#if (CFG_SUPPORT_DFS_MASTER == 1)
++static int mtk_p2p_cfg80211_start_radar_detection_adapter(struct wiphy *wiphy,
++	struct net_device *dev, struct cfg80211_chan_def *chandef,
++	u32 cac_time_ms, int link_id)
++{
++	return mtk_p2p_cfg80211_start_radar_detection(wiphy, dev, chandef, cac_time_ms);
++}
++#endif
++
+ static struct cfg80211_ops mtk_p2p_ops = {
+ #if (CFG_ENABLE_WIFI_DIRECT_CFG_80211 != 0)
+ 	/* Froyo */
+@@ -168,29 +229,29 @@
+ 	.deauth = mtk_p2p_cfg80211_deauth,
+ 	.disassoc = mtk_p2p_cfg80211_disassoc,
+ 	.start_ap = mtk_p2p_cfg80211_start_ap,
+-	.change_beacon = mtk_p2p_cfg80211_change_beacon,
+-	.stop_ap = mtk_p2p_cfg80211_stop_ap,
++	.change_beacon = mtk_p2p_cfg80211_change_beacon_adapter,
++	.stop_ap = mtk_p2p_cfg80211_stop_ap_adapter,
+ 	.set_wiphy_params = mtk_p2p_cfg80211_set_wiphy_params_adapter,
+ 	.del_station = mtk_p2p_cfg80211_del_station,
+-	.set_bitrate_mask = mtk_p2p_cfg80211_set_bitrate_mask,
++	.set_bitrate_mask = mtk_p2p_cfg80211_set_bitrate_mask_adapter,
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0))
+ 	.update_mgmt_frame_registrations = mtk_p2p_cfg80211_mgmt_frame_register,
+ #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)) || defined(COMPAT_KERNEL_RELEASE)
+ 	.mgmt_frame_register = mtk_p2p_cfg80211_mgmt_frame_register,
+ #endif
+ 	.get_station = mtk_p2p_cfg80211_get_station,
+-	.add_key = mtk_p2p_cfg80211_add_key,
+-	.get_key = mtk_p2p_cfg80211_get_key,
+-	.del_key = mtk_p2p_cfg80211_del_key,
+-	.set_default_key = mtk_p2p_cfg80211_set_default_key,
+-	.set_default_mgmt_key = mtk_p2p_cfg80211_set_mgmt_key,
++	.add_key = mtk_p2p_cfg80211_add_key_adapter,
++	.get_key = mtk_p2p_cfg80211_get_key_adapter,
++	.del_key = mtk_p2p_cfg80211_del_key_adapter,
++	.set_default_key = mtk_p2p_cfg80211_set_default_key_adapter,
++	.set_default_mgmt_key = mtk_p2p_cfg80211_set_mgmt_key_adapter,
+ 	.join_ibss = mtk_p2p_cfg80211_join_ibss,
+ 	.leave_ibss = mtk_p2p_cfg80211_leave_ibss,
+ 	.set_tx_power = mtk_p2p_cfg80211_set_txpower_adapter,
+ 	.get_tx_power = mtk_p2p_cfg80211_get_txpower_adapter,
+ 	.set_power_mgmt = mtk_p2p_cfg80211_set_power_mgmt,
+ #if (CFG_SUPPORT_DFS_MASTER == 1)
+-	.start_radar_detection = mtk_p2p_cfg80211_start_radar_detection,
++	.start_radar_detection = mtk_p2p_cfg80211_start_radar_detection_adapter,
+ #if KERNEL_VERSION(3, 13, 0) <= CFG80211_VERSION_CODE
+ 	.channel_switch = mtk_p2p_cfg80211_channel_switch,
+ #endif
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_init.c
+@@ -125,7 +125,7 @@
+ 
+ MODULE_AUTHOR(NIC_AUTHOR);
+ MODULE_DESCRIPTION(NIC_DESC);
+-MODULE_SUPPORTED_DEVICE(NIC_NAME);
++/* MODULE_SUPPORTED_DEVICE removed in kernel 5.16+ */
+ 
+ /* MODULE_LICENSE("MTK Propietary"); */
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -350,12 +350,53 @@
+ 	WLAN_CIPHER_SUITE_AES_CMAC
+ };
+ 
++/* Adapters for cfg80211_ops signature changes in Linux 6.x */
++static int mtk_cfg80211_add_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool pairwise, const u8 *mac_addr, struct key_params *params)
++{
++	return mtk_cfg80211_add_key(wiphy, netdev, key_index, pairwise, mac_addr, params);
++}
++
++static int mtk_cfg80211_get_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool pairwise, const u8 *mac_addr, void *cookie,
++	void (*callback)(void *cookie, struct key_params *))
++{
++	return mtk_cfg80211_get_key(wiphy, netdev, key_index, pairwise, mac_addr, cookie, callback);
++}
++
++static int mtk_cfg80211_del_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool pairwise, const u8 *mac_addr)
++{
++	return mtk_cfg80211_del_key(wiphy, netdev, key_index, pairwise, mac_addr);
++}
++
++static int mtk_cfg80211_set_default_key_adapter(struct wiphy *wiphy,
++	struct net_device *netdev, int link_id, u8 key_index,
++	bool unicast, bool multicast)
++{
++	return mtk_cfg80211_set_default_key(wiphy, netdev, key_index, unicast, multicast);
++}
++
++#if CFG_SUPPORT_TDLS
++static int mtk_cfg80211_tdls_mgmt_adapter(struct wiphy *wiphy,
++	struct net_device *dev, const u8 *peer, int link_id,
++	u8 action_code, u8 dialog_token, u16 status_code,
++	u32 peer_capability, bool initiator, const u8 *buf, size_t len)
++{
++	return mtk_cfg80211_tdls_mgmt(wiphy, dev, peer, action_code, dialog_token,
++		status_code, peer_capability, initiator, buf, len);
++}
++#endif
++
+ static struct cfg80211_ops mtk_wlan_ops = {
+ 	.change_virtual_intf = mtk_cfg80211_change_iface,
+-	.add_key = mtk_cfg80211_add_key,
+-	.get_key = mtk_cfg80211_get_key,
+-	.del_key = mtk_cfg80211_del_key,
+-	.set_default_key = mtk_cfg80211_set_default_key,
++	.add_key = mtk_cfg80211_add_key_adapter,
++	.get_key = mtk_cfg80211_get_key_adapter,
++	.del_key = mtk_cfg80211_del_key_adapter,
++	.set_default_key = mtk_cfg80211_set_default_key_adapter,
+ 	.get_station = mtk_cfg80211_get_station,
+ #if CFG_SUPPORT_TDLS
+ 	.change_station = mtk_cfg80211_change_station,
+@@ -399,7 +440,7 @@
+ #endif
+ #if CFG_SUPPORT_TDLS
+ 	.tdls_oper = mtk_cfg80211_tdls_oper,
+-	.tdls_mgmt = mtk_cfg80211_tdls_mgmt,
++	.tdls_mgmt = mtk_cfg80211_tdls_mgmt_adapter,
+ #endif
+ };
+ 
+@@ -2789,11 +2830,11 @@
+ 	if (HAL_IS_TX_DIRECT(prAdapter)) {
+ 		if (prAdapter->fgTxDirectInited) {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+-			del_timer_sync(&(prAdapter->rTxDirectSkbTimer).t);
+-			del_timer_sync(&(prAdapter->rTxDirectHifTimer).t);
++			timer_delete_sync(&(prAdapter->rTxDirectSkbTimer).t);
++			timer_delete_sync(&(prAdapter->rTxDirectHifTimer).t);
+ #else
+-			del_timer_sync(&prAdapter->rTxDirectSkbTimer);
+-			del_timer_sync(&prAdapter->rTxDirectHifTimer);
++			timer_delete_sync(&prAdapter->rTxDirectSkbTimer);
++			timer_delete_sync(&prAdapter->rTxDirectHifTimer);
+ #endif
+ 		}
+ 	}
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_kal.c
+@@ -936,10 +936,8 @@
+ 		kal_skb_reset_mac_len(prSkb);
+ 	}
+ 
+-	if (!in_interrupt())
+-		netif_rx_ni(prSkb);	/* only in non-interrupt context */
+-	else
+-		netif_rx(prSkb);
++	/* netif_rx_ni() removed in 5.18; netif_rx() is now safe in any context */
++	netif_rx(prSkb);
+ 
+ 	return WLAN_STATUS_SUCCESS;
+ }
+@@ -1074,8 +1072,13 @@
+ 									  (ucChannelNum, KAL_BAND_5GHZ));
+ 				}
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
++		roam_info.links[0].channel = prChannel;
++		roam_info.links[0].bssid = arBssid;
++#else
+ 		roam_info.channel = prChannel;
+ 		roam_info.bssid = arBssid;
++#endif
+ 		roam_info.req_ie =
+ 			prGlueInfo->aucReqIe;
+ 		roam_info.req_ie_len =
+@@ -3543,13 +3546,13 @@
+ #endif
+ 	} else {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+-		del_timer_sync(&(prGlueInfo->tickfn).t);
++		timer_delete_sync(&(prGlueInfo->tickfn).t);
+ 		
+ 		add_timer(&(prGlueInfo->tickfn).t);
+ 		mod_timer(&(prGlueInfo->tickfn).t, jiffies + u4Interval * HZ / MSEC_PER_SEC);
+ //		add_timer(&(prGlueInfo->tickfn).t);
+ #else
+-		del_timer_sync(&(prGlueInfo->tickfn));
++		timer_delete_sync(&(prGlueInfo->tickfn));
+ 
+ 		prGlueInfo->tickfn.expires = jiffies + u4Interval * HZ / MSEC_PER_SEC;
+ 		add_timer(&(prGlueInfo->tickfn));
+@@ -3576,9 +3579,9 @@
+ 	clear_bit(GLUE_FLAG_TIMEOUT_BIT, &prGlueInfo->ulFlag);
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+-	if (del_timer_sync(&(prGlueInfo->tickfn).t) >= 0)
++	if (timer_delete_sync(&(prGlueInfo->tickfn).t) >= 0)
+ #else
+-	if (del_timer_sync(&(prGlueInfo->tickfn)) >= 0)
++	if (timer_delete_sync(&(prGlueInfo->tickfn)) >= 0)
+ #endif
+ 		return TRUE;
+ 	else
+@@ -4062,17 +4065,9 @@
+ struct file *kalFileOpen(const char *path, int flags, int rights)
+ {
+ 	struct file *filp = NULL;
+-	mm_segment_t oldfs;
+ 	int err = 0;
+ 
+-	oldfs = get_fs();
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
+-	set_fs(KERNEL_DS);
+-#else
+-	set_fs(get_ds());
+-#endif
+ 	filp = filp_open(path, flags, rights);
+-	set_fs(oldfs);
+ 	if (IS_ERR(filp)) {
+ 		err = PTR_ERR(filp);
+ 		return NULL;
+@@ -4087,48 +4082,19 @@
+ 
+ UINT_32 kalFileRead(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
+ {
+-	mm_segment_t oldfs;
+ 	int ret;
++	loff_t pos = offset;
+ 
+-	oldfs = get_fs();
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
+-	set_fs(KERNEL_DS);
+-#else
+-	set_fs(get_ds());
+-#endif
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+-		ret = kernel_read(file, data, size, &offset);
+-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)
+-		ret = __vfs_read(file, data, size, &offset);
+-#else
+-		ret = vfs_read(file, data, size, &offset);
+-#endif
+-
+-	set_fs(oldfs);
++	ret = kernel_read(file, data, size, &pos);
+ 	return ret;
+ }
+ 
+ UINT_32 kalFileWrite(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
+ {
+-	mm_segment_t oldfs;
+ 	int ret;
++	loff_t pos = offset;
+ 
+-	oldfs = get_fs();
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
+-	set_fs(KERNEL_DS);
+-#else
+-	set_fs(get_ds());
+-#endif
+-
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+-		ret = kernel_write(file, data, size, &offset);
+-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)
+-		ret = __vfs_write(file, data, size, &offset);
+-#else
+-		ret = vfs_write(file, data, size, &offset);
+-#endif
+-
+-	set_fs(oldfs);
++	ret = kernel_write(file, data, size, &pos);
+ 	return ret;
+ }
+ 
+@@ -4889,8 +4855,14 @@
+ 
+ static unsigned long __read_mostly tracing_mark_write_addr;
+ 
+-static int __mt_find_tracing_mark_write_symbol_fn(void *prData, const char *pcNameBuf,
++static int __mt_find_tracing_mark_write_symbol_fn(
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
++						   void *prData, const char *pcNameBuf,
++						   unsigned long ulAddress)
++#else
++						   void *prData, const char *pcNameBuf,
+ 						   struct module *prModule, unsigned long ulAddress)
++#endif
+ {
+ 	if (strcmp(pcNameBuf, "tracing_mark_write") == 0) {
+ 		tracing_mark_write_addr = ulAddress;
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/include/gl_kal.h
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/include/gl_kal.h
+@@ -86,6 +86,7 @@
+ #endif
+ 
+ #include "linux/kallsyms.h"
++#include <linux/sched/clock.h>
+ /*#include <linux/ftrace_event.h>*/
+ 
+ #if DBG
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_kal.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p_kal.c
+@@ -1313,7 +1313,11 @@
+ 		}
+ 
+ 		/* cac start disable for next cac slot if enable in dfs channel */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
++		prGlueInfo->prP2PInfo[ucRoleIndex]->prWdev->links[0].cac_started = FALSE;
++#else
+ 		prGlueInfo->prP2PInfo[ucRoleIndex]->prWdev->cac_started = FALSE;
++#endif
+ 		DBGLOG(INIT, INFO, "kalP2PRddDetectUpdate: Update to OS\n");
+ 		cfg80211_radar_event(prGlueInfo->prP2PInfo[ucRoleIndex]->prWdev->wiphy,
+ 				prGlueInfo->prP2PInfo[ucRoleIndex]->chandef, GFP_KERNEL);
+@@ -1350,7 +1354,11 @@
+ 		}
+ 
+ 		DBGLOG(INIT, INFO, "kalP2PCacFinishedUpdate: Update to OS\n");
+-#if KERNEL_VERSION(3, 14, 0) <= CFG80211_VERSION_CODE
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
++		cfg80211_cac_event(prGlueInfo->prP2PInfo[ucRoleIndex]->prDevHandler,
++				prGlueInfo->prP2PInfo[ucRoleIndex]->chandef,
++				NL80211_RADAR_CAC_FINISHED, GFP_KERNEL, 0);
++#elif KERNEL_VERSION(3, 14, 0) <= CFG80211_VERSION_CODE
+ 		cfg80211_cac_event(prGlueInfo->prP2PInfo[ucRoleIndex]->prDevHandler,
+ 				prGlueInfo->prP2PInfo[ucRoleIndex]->chandef, NL80211_RADAR_CAC_FINISHED, GFP_KERNEL);
+ #else
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_func.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/mgmt/p2p_func.c
+@@ -1221,8 +1221,13 @@
+ 	prGlueInfo = prAdapter->prGlueInfo;
+ 
+ 	DBGLOG(P2P, INFO, "p2pFuncDfsSwitchCh: Update to OS\n");
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
++	cfg80211_ch_switch_notify(prGlueInfo->prP2PInfo[prP2pRoleFsmInfo->ucRoleIndex]->prDevHandler,
++					prGlueInfo->prP2PInfo[prP2pRoleFsmInfo->ucRoleIndex]->chandef, 0);
++#else
+ 	cfg80211_ch_switch_notify(prGlueInfo->prP2PInfo[prP2pRoleFsmInfo->ucRoleIndex]->prDevHandler,
+ 					prGlueInfo->prP2PInfo[prP2pRoleFsmInfo->ucRoleIndex]->chandef);
++#endif
+ 	DBGLOG(P2P, INFO, "p2pFuncDfsSwitchCh: Update to OS Done\n");
+ 
+ 	if (prGlueInfo->prP2PInfo[prP2pRoleFsmInfo->ucRoleIndex]->chandef) {
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/common/wlan_oid.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/common/wlan_oid.c
+@@ -72,7 +72,7 @@
+ #include "mgmt/rsn.h"
+ #include "gl_wext.h"
+ #include "debug.h"
+-#include <stddef.h>
++#include <linux/stddef.h>
+ 
+ /******************************************************************************
+ *                              C O N S T A N T S
+--- a/drivers/net/wireless/mediatek/mt76x8/Kconfig
++++ b/drivers/net/wireless/mediatek/mt76x8/Kconfig
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ 
+ config MT76X8
+-	tristate "MediaTek MT76X8 devices support"
++	bool "MediaTek MT76X8 devices support"
+ 	depends on CFG80211
+ 	default y
+ 	help
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/Kconfig
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/Kconfig
+@@ -5,7 +5,7 @@
+ #	prompt "MT76x8 combo driver variant"
+ 	#default MT6632
+ config MT6632
+-    tristate "Mediatek MT6632 combo driver support"
++    bool "Mediatek MT6632 combo driver support"
+     default y
+     help
+       This adds support for the MT6632 combo driver,

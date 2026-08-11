@@ -1,0 +1,128 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: add pointer-safe bridge CQ and lane diagnostics
+
+Hardware experiment EXP-20260810-001-A28 proved that the Linux 6.18 DRM
+bridge lifetime repair removes the kref/use-after-free failure, while the
+monitor still remains black with its backlight on. ICC, USB root, fbcon,
+LightDM, and the v60 TX-lock preservation paths all succeed.
+
+Add one read-only diagnostic layer after the lifetime repair:
+
+- time every bridge ICC command queue and record its reply status;
+- read MN864729 registers 0x60f8, 0x60f9, 0x10f6, and 0x7204 before and
+  after the main enable sequence; and
+- bracket the main sequence so UART evidence has an unambiguous boundary.
+
+Use the explicit devm-managed bridge pointer throughout. Do not restore the
+archived v58 diagnostic's stale global-object assumption, and do not split
+the functional command sequence. The four individual read queues preserve
+the one-byte result layout already proven by the working v60 trace.
+
+This is local diagnostic work, not attributed to rmux. It is derived from
+the hardware-tested v55/v60 instrumentation history at:
+https://github.com/meerzulee/linux-ps4/commit/f5aea5d4d442d3227039d5bd0e7acb05aa4b01c7
+
+The current Liverpool comparison implementation remains:
+https://github.com/rmuxnet/ps4-linux-12xx/commit/c9e16f3ad2591c5e35fbe1fb81f02a8e799775ac
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -28,6 +28,7 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
+ #include <linux/delay.h>
++#include <linux/ktime.h>
+ 
+ 
+ #include "amdgpu.h"
+@@ -183,6 +184,8 @@
+ static int cq_exec(struct i2c_cmdqueue *q)
+ {
+ 	int res;
++	ktime_t started;
++	s64 elapsed_us;
+ 
+ 	if (!q->cmd)
+ 		return 0;
+@@ -190,9 +193,15 @@
+ 	q->cmd->length = q->p - (u8 *)q->cmd;
+ 	q->req.length = q->p - (u8 *)&q->req;
+ 
++	started = ktime_get();
+ 	res = apcie_icc_cmd(0x10, 0, &q->req, q->req.length,
+ 		      &q->reply, sizeof(q->reply));
++	elapsed_us = ktime_us_delta(ktime_get(), started);
+ 
++	pr_info("ps4_bridge_diag: cq code=%u req_len=%u groups=%u rc=%d reply=%u/%u count=%u elapsed=%lldus\n",
++		q->req.code, q->req.length, q->req.count, res,
++		q->reply.res1, q->reply.res2, q->reply.count, elapsed_us);
++
+ 	if (res < 5) {
+ 		DRM_ERROR("icc i2c commandqueue failed: %d\n", res);
+ 		return -EIO;
+@@ -280,7 +289,31 @@
+ {
+ 	return container_of(bridge, struct ps4_bridge, bridge);
+ }
++
++static void ps4_bridge_log_status(struct ps4_bridge *mn_bridge,
++				  const char *phase)
++{
++	static const u16 regs[] = { 0x60f8, 0x60f9, 0x10f6, 0x7204 };
++	unsigned int i;
+ 
++	/* Read-only post-v60 probe. Keep the bridge pointer explicit: the global
++	 * bridge object no longer has the lifetime assumed by the archived v58
++	 * diagnostic. Each register gets a separate queue so databuf[3] remains
++	 * the unambiguous one-byte read result used by the working v60 trace. */
++	mutex_lock(&mn_bridge->mutex);
++	for (i = 0; i < ARRAY_SIZE(regs); i++) {
++		int rc;
++
++		cq_init(&mn_bridge->cq, 4);
++		cq_read(&mn_bridge->cq, regs[i], 1);
++		rc = cq_exec(&mn_bridge->cq);
++		pr_info("ps4_bridge_diag: phase=%s reg=0x%04x rc=%d value=0x%02x\n",
++			phase, regs[i], rc,
++			rc >= 0 ? mn_bridge->cq.reply.databuf[3] : 0);
++	}
++	mutex_unlock(&mn_bridge->mutex);
++}
++
+ void ps4_bridge_mode_set(struct drm_bridge *bridge,
+ 			 const struct drm_display_mode *mode,
+ 			 const struct drm_display_mode *adjusted_mode)
+@@ -521,6 +554,7 @@
+ 	else
+ 	{
+ 		/* Panasonic MN864729 */
++		ps4_bridge_log_status(mn_bridge, "enable-entry");
+ 		mutex_lock(&mn_bridge->mutex);
+ 		cq_init(&mn_bridge->cq, 4);
+ 		cq_mask(&mn_bridge->cq, 0x6005, 0x01, 0x01);
+@@ -589,8 +623,14 @@
+ 		cq_mask(&mn_bridge->cq, 0x1e00, 0x01, 0x01);
+ 		cq_writereg(&mn_bridge->cq, VMUTECNT, VMUTECNT_LINEWIDTH_90);
+ 		cq_writereg(&mn_bridge->cq, HDCPEN, 0x00);
+-		if (cq_exec(&mn_bridge->cq) < 0) {
+-			DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
++		{
++			int rc;
++
++			pr_info("ps4_bridge_diag: MN864729-main-begin\n");
++			rc = cq_exec(&mn_bridge->cq);
++			pr_info("ps4_bridge_diag: MN864729-main-end rc=%d\n", rc);
++			if (rc < 0)
++				DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
+ 		}
+ 		#if 1
+ 		// AUDIO preinit
+@@ -634,6 +674,7 @@
+ 		}
+ 		#endif
+ 		mutex_unlock(&mn_bridge->mutex);
++		ps4_bridge_log_status(mn_bridge, "enable-exit");
+ 	}
+ 
+ }

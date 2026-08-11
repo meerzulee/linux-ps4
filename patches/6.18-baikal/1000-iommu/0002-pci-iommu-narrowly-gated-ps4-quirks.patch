@@ -1,0 +1,102 @@
+From c30160e0e1f41fb18c388207a36303b01909670e Mon Sep 17 00:00:00 2001
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Thu, 30 Apr 2026 23:20:32 +0200
+Subject: [PATCH] pci/iommu: add narrowly gated PS4 quirks
+
+---
+ drivers/iommu/amd/init.c | 11 +++++++++--
+ drivers/pci/probe.c      | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 46 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/amd/init.c b/drivers/iommu/amd/init.c
+index f3fd7f39efb488..5c97703deef619 100644
+--- a/drivers/iommu/amd/init.c
++++ b/drivers/iommu/amd/init.c
+@@ -28,6 +28,9 @@
+ #include <asm/x86_init.h>
+ #include <asm/io_apic.h>
+ #include <asm/irq_remapping.h>
++#ifdef CONFIG_X86_PS4
++#include <asm/setup.h>
++#endif
+ #include <asm/set_memory.h>
+ #include <asm/sev.h>
+ 
+@@ -3269,8 +3272,12 @@ static int __init early_amd_iommu_init(void)
+ 	if (!is_kdump_kernel() || amd_iommu_disabled)
+ 		disable_iommus();
+ 
+-	if (amd_iommu_irq_remap)
+-		amd_iommu_irq_remap = check_ioapic_information();
++	if (amd_iommu_irq_remap) {
++#ifdef CONFIG_X86_PS4
++		if (boot_params.hdr.hardware_subarch != X86_SUBARCH_PS4)
++#endif
++			amd_iommu_irq_remap = check_ioapic_information();
++	}
+ 
+ 	if (amd_iommu_irq_remap) {
+ 		struct amd_iommu_pci_seg *pci_seg;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index bccc7a4bdd7943..b4dffe2d17fa4f 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -23,6 +23,9 @@
+ #include <linux/irqdomain.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/bitfield.h>
++#ifdef CONFIG_X86_PS4
++#include <asm/setup.h>
++#endif
+ #include <trace/events/pci.h>
+ #include "pci.h"
+ 
+@@ -2853,6 +2856,32 @@ static int only_one_child(struct pci_bus *bus)
+ 	return 0;
+ }
+ 
++/* It can be arbitrary (above 2). FreeBSD uses 20, so use that too. */
++#define AEOLIA_SLOT_NUM 20
++
++#ifdef CONFIG_X86_PS4
++static bool ps4_skip_phantom_sony_dev(struct pci_bus *bus, unsigned int devfn)
++{
++	u32 id;
++
++	if (boot_params.hdr.hardware_subarch != X86_SUBARCH_PS4)
++		return false;
++
++	if (PCI_SLOT(devfn) == AEOLIA_SLOT_NUM)
++		return false;
++
++	if (!pci_bus_read_dev_vendor_id(bus, devfn, &id, 60 * 1000))
++		return false;
++
++	return (id & 0xffff) == PCI_VENDOR_ID_SONY;
++}
++#else
++static inline bool ps4_skip_phantom_sony_dev(struct pci_bus *bus, unsigned int devfn)
++{
++	return false;
++}
++#endif
++
+ /**
+  * pci_scan_slot - Scan a PCI slot on a bus for devices
+  * @bus: PCI bus to scan
+@@ -2872,7 +2901,15 @@ int pci_scan_slot(struct pci_bus *bus, int devfn)
+ 	if (only_one_child(bus) && (devfn > 0))
+ 		return 0; /* Already scanned the entire slot */
+ 
++	if (ps4_skip_phantom_sony_dev(bus, devfn))
++		return 0;
++
+ 	do {
++		if (fn > 0 && ps4_skip_phantom_sony_dev(bus, devfn + fn)) {
++			fn = next_fn(bus, dev, fn);
++			continue;
++		}
++
+ 		dev = pci_scan_single_device(bus, devfn + fn);
+ 		if (dev) {
+ 			if (!pci_dev_is_added(dev))

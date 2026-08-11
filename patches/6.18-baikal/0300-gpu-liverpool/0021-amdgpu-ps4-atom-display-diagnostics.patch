@@ -1,0 +1,178 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v46 - PS4 Liverpool ATOM/IIO/dp_clock diagnostics
+
+Five parallel research agents (Opus, Hermes, GLM, Kimi, DeepSeek — captured
+under research/ideas/2026-05-10-*.md) analyzed the v42/v43 dark-screen logs
+and converged on the same blocker: `amdgpu_atom_execute_table()` returns 0
+for AdjustDisplayPll, the kernel falls back to `mode->clock`, but the
+resulting GPU programming produces no live DP signal — the bridge times out
+on lane-lock and the monitor stays dark.
+
+The agents disagree on *why* ATOM returns 0:
+  - Opus:    GPU register state is wrong when ATOM runs.
+  - Hermes / GLM: 6.x dropped `ioreg_read/write` callbacks; if PS4 VBIOS uses
+                  ATOM IIO opcodes they now hit the wrong path (MMIO instead
+                  of PCI I/O BAR).
+  - Kimi:    `dp_clock` is being zeroed *upstream* of ATOM by a failed DPCD
+             read (lost ddc adapter in 6.x connector init), and ATOM dutifully
+             returns 0 when fed usPixelClock=0.
+  - DeepSeek: PPLL writes need a reset/lock sequence — but self-flags as
+              likely wrong (memory ps4_6x_v45_pll_writes_drop already proved
+              those mmDCCG_PLL banks don't store on Liverpool).
+
+Goal of v46: stop guessing. Bundle the cheapest data-gathering pieces from
+Opus + Hermes + GLM, add Kimi's two-line defensive `dp_clock` floor (zero
+cost if wrong, fixes the screen if right). Skip DeepSeek entirely. One boot
+disambiguates four of five hypotheses.
+
+Four instrumentation points (no behavior change beyond Kimi's floor):
+
+  1. atombios_crtc.c::amdgpu_atombios_crtc_adjust_pll v3 case
+     - Capture `ret` from amdgpu_atom_execute_table (currently discarded)
+     - Print usPixelClock, ucTransmitterID, ucEncodeMode, ucDispPllConfig,
+       ucExtTransmitterID, dp_clock BEFORE the call
+     - Print ret, ulDispPllFreq, ucRefDiv, ucPostDiv AFTER the call
+     - Gated on CHIP_LIVERPOOL || CHIP_GLADIUS — no-op on other ASICs
+
+  2. atombios_crtc.c::amdgpu_atombios_crtc_program_pll
+     - Capture `ret` from the SetPixelClock execute_table call
+     - Print enter line with frev, crev, crtc_id, clock, pll_id, ref_div,
+       fb_div, frac_fb_div, post_div, encoder_id, encoder_mode, bpc,
+       ss_enabled
+     - Tells us whether the *second* ATOM call (downstream of
+       AdjustDisplayPll) is reaching the hardware.
+
+  3. atom.c::atom_iio_execute (ATOM_IIO_READ / ATOM_IIO_WRITE)
+     - pr_info_once on first IIO opcode of either kind
+     - Definitively tells us whether Starsha2-018 uses ATOM indirect I/O
+     - If it does: GLM/Hermes I/O BAR restoration is the next iteration
+     - If it doesn't: IIO hypothesis killed, focus on register-state (Opus)
+       or dp_clock (Kimi)
+
+  4. ps4_bridge.c::ps4_bridge_detect (Kimi Change B — defensive write)
+     - After amdgpu_atombios_dp_get_dpcd, force
+         dp_clock      = 270000  (2.7 Gbps)
+         dp_lane_count = 4
+     - PS4 internal DP -> MN864729 link is hardwired at 4 lanes @ 2.7 Gbps
+       regardless of DPCD. If the DPCD read silently failed, this restores
+       the correct link config; if DPCD succeeded, this overwrites with the
+       same correct values. No downside on Liverpool.
+
+What the next boot tells us (read UART log):
+  - "ps4_atom: ATOM indirect I/O path used" line appears
+       -> GLM/Hermes IIO hypothesis confirmed; restore rio_mem + ioreg_read/
+          write next iteration.
+  - No IIO line, AdjustDisplayPll OUT freq=148500, screen lights up
+       -> Kimi was right; promote dp_clock floor permanent.
+  - No IIO line, OUT freq=148500, screen still dark
+       -> ATOM healthy; failure downstream in DP TX or bridge lock. Pivot to
+          dumping DIG/DP-TX state and bridge 0x60f8/0x60f9 lane status.
+  - No IIO line, OUT freq=0 with non-zero input dp_clock
+       -> VBIOS table runs but takes "no output" branch under 6.x register
+          state. Opus crashniels golden-register port; or amdgpu.atom_debug=1.
+  - r=-EINVAL (or other negative)
+       -> Bytecode aborted. Add amdgpu.atom_debug=1 for opcode trace.
+  - "SetPixelClock OUT r=" non-zero or absent
+       -> Second ATOM call is the actual blocker. Trace
+          amdgpu_atombios_crtc_set_pll and DP TX programming.
+
+This patch keeps the v44 PPLL dump (0019), v45 manual programmer (0020),
+v40 IRQ9/ACPI fix, and v42 no-skip-ATOM all active. Visibility-only addition,
+plus the one defensive write in ps4_bridge.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atom.c
++++ b/drivers/gpu/drm/amd/amdgpu/atom.c
+@@ -118,10 +118,19 @@
+ 			base++;
+ 			break;
+ 		case ATOM_IIO_READ:
++			/* v46: confirm whether VBIOS uses ATOM indirect-I/O
++			 * opcodes at all. 6.x routes IIO via reg_read (MMIO);
++			 * 5.4 routed it via ioreg_read (PCI I/O BAR). If this
++			 * fires on Liverpool/Gladius, restoring the I/O BAR
++			 * path is the next iteration's fix. */
++			pr_info_once("amdgpu_atom_iio: first IIO_READ reg=0x%x (6.x routes via reg_read; 5.4 used ioreg_read)\n",
++				     CU16(base + 1));
+ 			temp = ctx->card->reg_read(ctx->card, CU16(base + 1));
+ 			base += 3;
+ 			break;
+ 		case ATOM_IIO_WRITE:
++			pr_info_once("amdgpu_atom_iio: first IIO_WRITE reg=0x%x val=0x%x (6.x routes via reg_write; 5.4 used ioreg_write)\n",
++				     CU16(base + 1), temp);
+ 			ctx->card->reg_write(ctx->card, CU16(base + 1), temp);
+ 			base += 3;
+ 			break;
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
+@@ -427,8 +427,29 @@
+ 			else
+ 				args.v3.sInput.ucExtTransmitterID = 0;
+
+-			amdgpu_atom_execute_table(adev->mode_info.atom_context,
+-					   index, (uint32_t *)&args, sizeof(args));
++			/* v46: Liverpool/Gladius diagnostic — capture ret + in/out
++			 * of the AdjustDisplayPll ATOM call. Helps disambiguate
++			 * whether the table aborts (-EINVAL), runs but writes
++			 * zero, or runs and writes a real freq. */
++			if (adev->asic_type == CHIP_LIVERPOOL ||
++			    adev->asic_type == CHIP_GLADIUS)
++				pr_info("ps4_atom: AdjustDisplayPll v1.3 IN pix=%u tx=0x%02x enc=%u cfg=0x%02x ext_tx=0x%02x dp_clock=%u\n",
++					le16_to_cpu(args.v3.sInput.usPixelClock) * 10,
++					args.v3.sInput.ucTransmitterID,
++					args.v3.sInput.ucEncodeMode,
++					args.v3.sInput.ucDispPllConfig,
++					args.v3.sInput.ucExtTransmitterID,
++					dp_clock);
++			{
++				int r = amdgpu_atom_execute_table(adev->mode_info.atom_context,
++						   index, (uint32_t *)&args, sizeof(args));
++				if (adev->asic_type == CHIP_LIVERPOOL ||
++				    adev->asic_type == CHIP_GLADIUS)
++					pr_info("ps4_atom: AdjustDisplayPll v1.3 OUT r=%d freq=%u ref=%u post=%u\n",
++						r, le32_to_cpu(args.v3.sOutput.ulDispPllFreq) * 10,
++						args.v3.sOutput.ucRefDiv,
++						args.v3.sOutput.ucPostDiv);
++			}
+ 			adjusted_clock = le32_to_cpu(args.v3.sOutput.ulDispPllFreq) * 10;
+ 			if (args.v3.sOutput.ucRefDiv) {
+ 				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
+@@ -740,7 +761,19 @@
+ 		return;
+ 	}
+
+-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
++	/* v46: Liverpool/Gladius diagnostic — capture ret of SetPixelClock
++	 * ATOM call (the second ATOM call in the modeset path; downstream of
++	 * AdjustDisplayPll). If this returns non-zero or never runs, the
++	 * actual blocker is here, not in AdjustDisplayPll. */
++	if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++		pr_info("ps4_atom: SetPixelClock IN frev=%u crev=%u crtc=%u clock=%u pll=%u ref=%u fb=%u frac=%u post=%u enc_id=%u enc_mode=%u bpc=%d ss=%d\n",
++			frev, crev, crtc_id, clock, pll_id, ref_div, fb_div,
++			frac_fb_div, post_div, encoder_id, encoder_mode, bpc, ss_enabled);
++	{
++		int r = amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args, sizeof(args));
++		if (adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++			pr_info("ps4_atom: SetPixelClock OUT r=%d\n", r);
++	}
+ }
+
+ int amdgpu_atombios_crtc_prepare_pll(struct drm_crtc *crtc,
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -737,6 +737,15 @@
+
+ 	amdgpu_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
+ 	amdgpu_atombios_dp_get_dpcd(amdgpu_connector);
++	/* v46 (Kimi hypothesis): PS4 internal DP→MN864729 link is fixed at
++	 * 4 lanes @ 2.7 Gbps. If amdgpu_atombios_dp_get_dpcd silently fails
++	 * (lost ddc adapter in 6.x connector init), dp_clock would stay 0
++	 * and AdjustDisplayPll would be fed usPixelClock=0, returning 0.
++	 * Force the known-good PS4 link config so the ATOM input is sane. */
++	pr_info("ps4_bridge_detect: forcing dp_clock=270000 dp_lane_count=4 (was %d/%d)\n",
++		amdgpu_dig_connector->dp_clock, amdgpu_dig_connector->dp_lane_count);
++	amdgpu_dig_connector->dp_clock = 270000;
++	amdgpu_dig_connector->dp_lane_count = 4;
+
+ 	mutex_lock(&mn_bridge->mutex);
+ 	cq_init(&mn_bridge->cq, 4);

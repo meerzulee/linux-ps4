@@ -1,0 +1,67 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] sky2: also skip MSI self-test in APCIE/BPCIE early-bind branch on Baikal
+
+v67b boot proved patch 0005 wasn't enough. Sky2 reaches MSI setup via
+the APCIE-assigned-irqs branch (which on Baikal is implemented by the
+bpcie southbridge code), not the standard pci_enable_msi() branch:
+
+    sky2 0000:00:14.1: bpcie_assign_irqs(1)            ← APCIE wrapper
+    sky2 0000:00:14.1: bpcie_msi_write_msg(...)
+    sky2 0000:00:14.1: bpcie_assign_irqs returning 1
+    sky2 0000:00:14.1: bpcie_msi_write_msg(...)
+    sky2 0000:00:14.1: No interrupt generated using MSI, switching to INTx mode.
+    sky2 0000:00:14.1: probe with driver sky2 failed with error -95
+
+Patch 0005 only skipped sky2_test_msi() in the `pci_enable_msi() == 0`
+branch — but apcie_assign_irqs(pdev, 1) returned 1 first, so the kernel
+never reached the standard branch. The APCIE branch ran sky2_test_msi
+unconditionally and failed.
+
+Fix: add the same Baikal-skip clause to the APCIE branch. When the
+device is BAIKAL_GBE, set SKY2_HW_USE_AEOLIA_MSI directly (matching
+the original branch's success path) and skip the test that the silicon
+doesn't support.
+
+The "AEOLIA" name in SKY2_HW_USE_AEOLIA_MSI is a misnomer — it's the
+flag for "PS4 southbridge-routed MSI", which covers Aeolia/Belize/Baikal
+all the same. Reusing it for Baikal preserves the rest of sky2's IRQ
+plumbing (sky2_intr handler dispatch, refill_rx_pending, etc).
+
+After this:
+    sky2 0000:00:14.1: PS4 Baikal: B2_CHIP_ID=0x0, forcing YUKON_PRM
+    sky2 0000:00:14.1: chip type 0xbd, Yukon-2 OptimaEEE rev 0
+    sky2 0000:00:14.1: bpcie_assign_irqs(1) → 1
+    sky2 0000:00:14.1: PS4 Baikal: skipping MSI self-test in APCIE branch
+    [no more "probe failed -95"]
+    eth0: registered Yukon-2 OptimaEEE
+---
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -5055,11 +5055,22 @@
+ 	#ifdef CONFIG_X86_PS4
+ 	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+ 	    apcie_assign_irqs(pdev, 1) > 0) {
+-		err = sky2_test_msi(hw);
+-		if (err) {
+-			apcie_free_irqs(pdev->irq, 1);
+-			/* PS4 requires MSI, so if it fails, bail out. */
+-			goto err_out_free_netdev;
++		if (pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_GBE) {
++			/* Baikal silicon does not respond to CS_ST_SW_IRQ
++			 * (sky2's MSI test trigger) — skip the test and
++			 * trust the bpcie southbridge MSI routing that
++			 * apcie_assign_irqs just programmed. Real device
++			 * interrupts still deliver normally through bpcie's
++			 * subfunction demux. */
++			dev_info(&pdev->dev, "PS4 Baikal: skipping MSI self-test in APCIE branch\n");
++		} else {
++			err = sky2_test_msi(hw);
++			if (err) {
++				apcie_free_irqs(pdev->irq, 1);
++				/* Aeolia/Belize need a working MSI test —
++				 * if the test fails there, bail out. */
++				goto err_out_free_netdev;
++			}
+ 		}
+ 		hw->flags |= SKY2_HW_USE_AEOLIA_MSI;
+ 	} else

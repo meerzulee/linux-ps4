@@ -1,0 +1,22 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] usb: xhci-aeolia: replace printk timing hack with usleep
+
+Do not depend on console logging latency for controller stabilization. Use
+the short explicit delay carried by the current rmux stable branch.
+
+Source: https://github.com/rmuxnet/ps4-linux-12xx/commit/6513cc8e3f7ac011a0f5c8a5a0d1716371ed03ed
+
+---
+diff --git a/drivers/usb/host/xhci-aeolia.c b/drivers/usb/host/xhci-aeolia.c
+--- a/drivers/usb/host/xhci-aeolia.c
++++ b/drivers/usb/host/xhci-aeolia.c
+@@ -149,6 +149,5 @@ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
+-	// ok...adding this printk appears to have introduced a delay that fixed
+-	// bringup of the middle host controller, so w/e for now...
+-
+-	printk("xhci_aeolia_probe_one %d, controller is %x\n", index, dev->device);
++	dev_dbg(&dev->dev, "xhci_aeolia_probe_one %d\n", index);
++	/* Explicit hardware stabilization; do not rely on printk latency. */
++	usleep_range(200, 500);
+ 
+ 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));

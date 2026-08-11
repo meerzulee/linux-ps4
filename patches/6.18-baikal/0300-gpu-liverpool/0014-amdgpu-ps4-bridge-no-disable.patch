@@ -1,0 +1,42 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v31 - remove bridge_disable to keep HDMI signal
+
+After v28's adjusted_clock fallback let CRTC mode_set succeed, the
+display went DARK (backlight off).  In v26 with mode_set failing,
+backlight was on (because bridge was running but CRTC didn't program
+GPU TX).  Diagnosis: when mode_set succeeds, drm_crtc_helper_set_mode
+calls bridge_disable BEFORE the GPU reprograms DP TX, then
+bridge_enable after.  The disable mutes the bridge (VMUTECNT
+sequence in ps4_bridge_disable), then GPU TX changes its output,
+then bridge_enable tries to re-lock to the new signal.  Empirically
+the bridge fails to re-lock -> no HDMI output.
+
+Workaround: remove .disable and .post_disable from ps4_bridge_funcs
+so the bridge stays running with its last good config through the
+GPU reprogramming.  The post-GPU bridge_enable then layers on top
+of an already-active bridge.
+
+If v31 works:
+- backlight stays on across DRM modeset cycles
+- bridge_enable runs without preceding disable
+- HDMI shows actual content (lightdm / TTY)
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -805,8 +805,13 @@
+ static struct drm_bridge_funcs ps4_bridge_funcs = {
+ 	.pre_enable = ps4_bridge_pre_enable,
+ 	.enable = ps4_bridge_enable,
+-	.disable = ps4_bridge_disable,
+-	.post_disable = ps4_bridge_post_disable,
++	/* v31: bridge_disable + post_disable removed.  When CRTC mode_set
++	 * runs (v28 fallback makes it succeed), DRM modeset chain calls
++	 * bridge_disable -> mutes the bridge (VMUTECNT), then GPU
++	 * reprograms DP TX, then bridge_enable runs.  Empirically the
++	 * post-GPU enable doesn't restore HDMI signal -> backlight goes
++	 * off.  Removing the disable callback keeps the bridge running
++	 * (last good config) through the GPU reprogramming. */
+ 	.attach = ps4_bridge_attach,
+ 	.mode_fixup = ps4_bridge_mode_fixup,
+ 	.mode_set = ps4_bridge_mode_set,

@@ -190,9 +190,9 @@ costs reboots.
 │                 result.md, appends one paragraph each to LEARNINGS.md   │
 │                 + BUILD_LOG.md.                                         │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ 9. COMMIT       Claude commits the patch + docs + saved log under one  │
-│                 message that captures the result, then `git push`.      │
-│                 Authored as "Meerzulee", co-authored-by Claude.        │
+│ 9. COMMIT       Commit the patch + docs + saved log under one change.   │
+│                 Use the human maintainer as author; never add a model   │
+│                 or automated tool as a co-author.                       │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ 10. NEXT        User compacts the conversation when context fills up,   │
 │                 may switch effort/model, and starts the next            │

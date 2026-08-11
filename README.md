@@ -4,8 +4,9 @@ A patch-based build system for porting **mainline Linux** to PlayStation 4
 consoles with the **Baikal** southbridge (PS4 Slim CUH-2xxx, PS4 Pro
 CUH-7xxx; Marvell MT7668 WiFi+BT, AMD Liverpool/Gladius GPU).
 
-> 🎉 **HDMI display works on 6.x as of v60 (`abe29da`, 2026-05-10).**
-> WiFi via USB adapter (rtw88) + SSH from host works on 6.x as of v62 (`b02d1c6`).
+> **Linux 6.18.44 is the default.** On Baikal B1 hardware it boots an external
+> USB root to XFCE at 1080p60, connects through the internal MT7668, and accepts
+> SSH. Internal installation is not part of this release.
 > See [STATUS.md](STATUS.md) for the at-a-glance "what works" matrix.
 
 > **What's original to this project vs forward-ported from upstream?**
@@ -19,6 +20,7 @@ CUH-7xxx; Marvell MT7668 WiFi+BT, AMD Liverpool/Gladius GPU).
 |---|---|---|---|
 | `5.4-baikal` | vanilla `v5.4.247` + 13 patches | ✅ Boots, KDE, WiFi (mt7668), SSH | Clang 22 |
 | `6.x-baikal` | vanilla `v6.15.4` + 30 patches | ✅ **Boots to systemd**, HDMI, USB, SATA, WiFi (USB rtw88), SSH | GCC 14+ |
+| `6.18-baikal` **(default)** | pinned `v6.18.44` LTS + 54 patches | ✅ HDMI/XFCE, USB root, MT7668 Wi-Fi and SSH verified on Baikal B1 | GCC 14 cross-toolchain |
 
 The `5.4-baikal` target is a faithful re-creation of feeRnt's
 `5.4.247-baikal-dfaus`. The `6.x-baikal` target started as crashniels'
@@ -26,26 +28,37 @@ The `5.4-baikal` target is a faithful re-creation of feeRnt's
 display-bring-up work that took the project from "boots, no screen"
 to "boots to a desktop with SSH".
 
+`6.18-baikal` is the clean current-LTS port: it keeps the useful,
+hardware-backed changes, imports current Baikal storage/IRQ behavior from rmux
+with exact provenance, and leaves diagnostic or disproven experiments
+disabled. See [the port status](docs/6.18-PORT.md) and
+[patch provenance](docs/PATCH-PROVENANCE.md).
+
 ## Quick start
 
 ```sh
 # First-time setup: clone reference repos (~10 GB) and download firmware
 make init
 
-# Build the 6.x kernel (the active development target)
-make TARGET=6.x-baikal
+# Build the default Linux 6.18 target
+make
+
+# On macOS, build current LTS in OrbStack. OrbStack must be running and
+# the active Docker context must be orbstack.
+./scripts/build-kernel-orbstack
 
 # Build the 5.4 baseline
 make TARGET=5.4-baikal
 
-# Outputs land in output/<target>/{bzImage,config,version.txt}
+# Outputs include bzImage, config, System.map, modules, manifest and checksums
+# under output/<target>/
 ```
 
-Then to install modules into a stagable directory:
+The build also creates a stripped module archive and verifies all release
+outputs through `output/6.18-baikal/SHA256SUMS`:
 
 ```sh
-cd src/<target>
-make INSTALL_MOD_PATH=../../output/<target>/modules modules_install
+(cd output/6.18-baikal && sha256sum -c SHA256SUMS)
 ```
 
 For the full PS4 dev loop (UART capture, USB swap, bootargs profiles),
@@ -63,12 +76,14 @@ linux-ps4/
 ├── Makefile                   # `make TARGET=<target>` shortcuts
 ├── targets/
 │   ├── 5.4-baikal.env         # base repo, BASE_REF, config, compiler
-│   └── 6.x-baikal.env
+│   ├── 6.x-baikal.env         # archived 6.15 development target
+│   └── 6.18-baikal.env        # current default LTS target
 ├── patches/
 │   ├── 5.4-baikal/            # 13 patches mirroring feeRnt's stack
 │   │   ├── series             # apply order
 │   │   └── 0100..1200/        # bucketed by subsystem
-│   └── 6.x-baikal/            # 30+ patches; v60 + v62 milestones
+│   ├── 6.x-baikal/            # archived 6.15 patch stack
+│   └── 6.18-baikal/           # 54 active, provenance-tracked patches
 │       ├── series
 │       ├── 0100-x86-platform/
 │       ├── 0150-acpi/         # IRQ 9 desc fix (root cause for ATOM mutex)
@@ -84,7 +99,8 @@ linux-ps4/
 │       └── 1100-pci-msi/
 ├── config/
 │   ├── 5.4-baikal.config      # working 5.4 config
-│   └── 6.x-baikal.config      # working 6.15 config
+│   ├── 6.x-baikal.config      # working 6.15 config
+│   └── 6.18-baikal.config     # hardware-tested 6.18 config
 ├── bootargs/                  # canonical kernel cmdline strings per scenario
 ├── checkpoint/
 │   ├── docs/
@@ -116,9 +132,9 @@ it documents the 16-iteration bisection that found the fix.
 Each kernel target is one `targets/<name>.env` file plus one
 `patches/<name>/` directory. To port to a new upstream release:
 
-1. Copy `targets/6.x-baikal.env` to `targets/<NEW>.env`
+1. Copy `targets/6.18-baikal.env` to `targets/<NEW>.env`
 2. Bump `BASE_REF` to the new tag (e.g., `v6.16.4`, `v7.0.1`)
-3. Copy `patches/6.x-baikal/` to `patches/<NEW>/`
+3. Copy `patches/6.18-baikal/` to `patches/<NEW>/`
 4. Run `./build.sh -t <NEW>` and fix any patch-rejects
 
 That's it — the build system is target-agnostic. See
@@ -135,15 +151,19 @@ worked example.
 - [checkpoint/docs/LEARNINGS.md](checkpoint/docs/LEARNINGS.md) — diagnosis notes
 - [checkpoint/docs/research/](checkpoint/docs/research/) — per-iteration reports
 - [bootargs/README.md](bootargs/README.md) — kernel cmdline reference
+- [docs/6.18-PORT.md](docs/6.18-PORT.md) — current LTS build and hardware gate
+- [docs/PATCH-PROVENANCE.md](docs/PATCH-PROVENANCE.md) — exact source ledger
+- [docs/INTERNAL-STORAGE.md](docs/INTERNAL-STORAGE.md) — internal encrypted/UFS/image path and safety policy
+- [docs/ARCH-DISTRIBUTION.md](docs/ARCH-DISTRIBUTION.md) — AUR and signed pacman repository plan
 
 ## Reference repos (cloned to `tmp/`, gitignored)
 
 | Repo | Branch | Role |
 |---|---|---|
-| crashniels-6.15 | `ps4-linux-6.15.y-baikal` | 6.x patch source |
-| feeRnt-5.4.247-baikal | `5.4.247-baikal-dfaus` | 5.4 patch source + MT7668 vendor driver |
+| [crashniels/linux](https://github.com/crashniels/linux/tree/b3b6b1e4fe8754482186f1d894a8eda431dbcd05) | `ps4-linux-6.15.y-baikal` | initial 6.x forward-port source |
+| [feeRnt/ps4-linux-12xx](https://github.com/feeRnt/ps4-linux-12xx/tree/1fdfbd9a4c5690602893f6d5f65e154c6d9ba711) | `5.4.247-baikal-dfaus` | 5.4 patch source + MT7668 vendor driver |
 | feeRnt-6.15.4-BaikalLove | `x_exp__6.15.4-BaikalLove` | alternate 6.15 reference |
-| rmuxnet-12xx-current | various | sky2 + xhci experimental fixes |
+| [rmuxnet/linux](https://github.com/rmuxnet/linux/tree/d8cbb8e912f59c352479f1158103e8ce7b6ca8c4) | `baikal/7.0.8-Stable` | current Baikal comparison and selected fixes |
 | baikal-bringup | various | Aeolia/Belize/Baikal southbridge reference |
 | whitehax0r-5.4-baikal | `main` | original 5.4 squashed Baikal port |
 | vanilla-5.4.247 / vanilla-6.15.4 | upstream tags | clean baselines for diffing |
@@ -153,19 +173,9 @@ worked example.
 - **whitehax0r** — original PS4 Baikal 5.4 port
 - **DFAUS / feeRnt** — 5.4.247 refinement, MT7668 driver, build infra
 - **crashniels** — 6.15 forward-port (the heavy lifting for 6.x)
-- **rmuxnet** — sky2 + xhci experimental fixes
+- **rmuxnet** — current Baikal southbridge, storage, IRQ, xHCI, IOMMU and display reference work
 - **fail0verflow** — original PS4 Linux work and tooling
 - **psxitarch project** — Arch-based PS4 Linux distro we boot into
-
-### Tooling
-
-Much of the code in this repository — patches, build scripts, docs, and
-debugging analysis — was written collaboratively using
-[Claude Code](https://claude.com/claude-code), Anthropic's CLI agent for
-software engineering. Specifications, diagnoses, and architectural decisions
-were directed by the human maintainer; Claude implemented the mechanical
-work (patch generation, build automation, log analysis, infrastructure
-scaffolding) under that direction.
 
 ## Licensing
 
@@ -199,7 +209,7 @@ vendor's license.
 The vendor driver under `drivers/net/wireless/mediatek/mt76x8/` is
 distributed by MediaTek under a dual BSD-3-Clause / GPL-2.0 license. It
 was originally imported from feeRnt's 5.4 baseline and adapted for newer
-kernels via cherry-picks credited in `patches/6.x-baikal/series`. Inside
+kernels via cherry-picks credited in `patches/6.18-baikal/series`. Inside
 that subtree, individual files retain their original headers — consult
 those for per-file specifics. Outside that subtree, GPL-2.0 applies.
 

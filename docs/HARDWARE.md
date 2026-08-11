@@ -31,7 +31,7 @@
 |------|-----------|--------|--------|
 | Marvell 88w8797 | SDIO | CUH-10xx (some) | mwifiex |
 | Marvell 88w8897 | SDIO | CUH-12xx | mwifiex + quirks |
-| **MediaTek MT7668** | **SDIO** | **Baikal B1** | **mt76** |
+| **MediaTek MT7668** | **SDIO** | **Baikal B1** | **downstream `mt76x8` vendor driver** |
 
 ### MediaTek MT7668 Specs
 

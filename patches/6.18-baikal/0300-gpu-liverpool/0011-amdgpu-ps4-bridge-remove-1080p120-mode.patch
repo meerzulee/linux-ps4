@@ -1,0 +1,60 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v25 - remove 1080p120 mode, mark 1080p60 preferred
+
+Per the PS4-on-Linux community guide:
+
+  "If you lose signal or get an 'unsupported resolution' error from
+   your TV/monitor right after booting or BEFORE seeing the login
+   screen, then you must change to a different kernel, as some kernels
+   try to run the PS4 in 120hz mode (no, it doesn't show anything on
+   a high refresh-rate capable display)"
+
+ps4_bridge_get_modes was adding both mode_1080p (VIC 16, 60Hz) AND
+mode_1080p120 (VIC 63, 120Hz). Some logic path may pick 120Hz which
+the bridge can't actually output cleanly to most displays -> blank.
+
+Remove mode_1080p120 from get_modes, mark 1080p60 as PREFERRED, and
+return count=1 so DRM probe knows we have exactly one mode.
+
+Combined with v24's mode_fixup (forces adjusted_mode to 1080p), DRM
+should now ALWAYS run the GPU at 1080p60.
+
+Also bumps return value from 0 to 1 — drm_helper_probe_single_connector_modes
+treats 0 as "no modes found" and might not use our probed mode.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -703,20 +703,23 @@
+ 	struct drm_display_mode *newmode;
+ 	pr_info("ps4_bridge_get_modes\n");
+ 
++	/* v25: ONLY expose 1080p60 and mark it preferred. The PS4-on-Linux
++	 * community guide specifically calls out that 120Hz mode causes
++	 * "unsupported resolution" and no signal on real displays:
++	 *
++	 *   "Some kernels try to run the PS4 in 120hz mode (no, it doesn't
++	 *    show anything on a high refresh-rate capable display)"
++	 *
++	 * Removing mode_1080p120 forces DRM to pick 1080p60 as the only
++	 * available CEA mode. Marking PREFERRED so DRM's mode-pick logic
++	 * favors it over any user-mode alternatives. */
+ 	newmode = drm_mode_duplicate(dev, &mode_1080p);
++	newmode->type |= DRM_MODE_TYPE_PREFERRED;
+ 	drm_mode_probed_add(connector, newmode);
+ 
+-	newmode = drm_mode_duplicate(dev, &mode_1080p120);
+-	drm_mode_probed_add(connector, newmode);
+-
+-	//newmode = drm_mode_duplicate(dev, &mode_720p);
+-	//drm_mode_probed_add(connector, newmode);
+-	//newmode = drm_mode_duplicate(dev, &mode_480p);
+-	//drm_mode_probed_add(connector, newmode);
+-
+ 	drm_connector_update_edid_property(connector, NULL);
+ 
+-	return 0;
++	return 1;
+ }
+ 
+ enum drm_connector_status ps4_bridge_detect(struct drm_connector *connector,

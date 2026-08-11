@@ -1,0 +1,33 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v32 - msleep(500) at bridge_enable for DP TX settle
+
+After v31 (remove bridge_disable) bridge programming runs cleanly but
+HDMI signal still doesn't lock to GPU output (backlight off).  Theory:
+bridge_enable runs immediately after GPU's encoder_commit (DPMS_ON ->
+setup_dig_transmitter ENABLE).  DP signal needs to stabilize before
+MN864729 can lock onto it.  cq_wait_set steps for DP lane status
+(0x60f8/0x60f9) silently no-op on unstable signal.
+
+Add 500ms msleep at start of bridge_enable.  Also #include linux/delay.h.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -27,6 +27,7 @@
+ 
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
++#include <linux/delay.h>
+ 
+ 
+ #include "amdgpu.h"
+@@ -393,6 +394,9 @@
+ 		return;
+ 	}
+ 
++	/* v32: 500ms settle for GPU DP TX before bridge tries to lock */
++	msleep(500);
++
+ 	if(pdev->vendor != PCI_VENDOR_ID_ATI) {
+ 		DRM_ERROR("Invalid vendor: %04x", pdev->vendor);
+ 		return;

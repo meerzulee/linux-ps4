@@ -1,0 +1,83 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v47 - floor dp_clock=270000 on Liverpool/Gladius in adjust_pll
+
+The v46 ATOM trace (patch 0021) caught the proximate cause of the dark
+screen at log line 2625:
+
+  ps4_atom: AdjustDisplayPll v1.3 IN pix=0 tx=0x1e enc=0 cfg=0x20 ext_tx=0x00 dp_clock=0
+  ps4_atom: AdjustDisplayPll v1.3 OUT r=0 freq=0 ref=0 post=0
+
+dp_clock=0 is the input. The encoder runs in DP mode (enc=0 =
+ATOM_ENCODER_MODE_DP), and the v3 case branch sets
+
+  args.v3.sInput.usPixelClock = cpu_to_le16(dp_clock / 10);
+
+so feeding zero in produces zero out. ATOM executes cleanly (r=0), no
+abort, and dutifully writes ulDispPllFreq=0 because that's what zero
+input deserves.
+
+The reason dp_clock is zero: amdgpu_atombios_crtc_adjust_pll reads it
+from dig_connector->dp_clock at line 332. On Liverpool/Gladius that
+field is never populated. Patch 0001 wires connector .detect to
+ps4_bridge_detect, but our boot path force-attaches the bridge at probe
+(patch 0007 -> pre_enable + enable + mode_set), bypassing detect. The
+DPCD-read path that would normally fill in dp_clock never runs, so
+dig_connector->dp_clock stays at its zero-init value through the entire
+mode_set.
+
+v46 attempted to fix this by writing dp_clock=270000 inside
+ps4_bridge_detect, but that callback never runs in our path either.
+v46 boot log shows zero hits for the "ps4_bridge_detect: forcing
+dp_clock=270000" marker. The defensive write was placed in the wrong
+function.
+
+This patch (v47) moves the fix to the actual consumer. Right after the
+existing dp_clock = dig_connector->dp_clock line in
+amdgpu_atombios_crtc_adjust_pll, gate on Liverpool/Gladius and floor
+dp_clock to 270000 if it's still zero. PS4's internal GPU->MN864729
+DisplayPort link is hardwired at 4 lanes @ 2.7 Gbps regardless of the
+EDID/DPCD read outcome, so 270000 kHz is the correct value.
+
+The v46 trace patch (0021) stays in place as ongoing visibility.
+
+Expected v47 trace on next boot:
+
+  ps4_atom: flooring dp_clock 0 -> 270000 (PS4 internal DP link)
+  ps4_atom: AdjustDisplayPll v1.3 IN pix=27000 tx=0x1e enc=0 cfg=0x20 ext_tx=0x00 dp_clock=270000
+  ps4_atom: AdjustDisplayPll v1.3 OUT r=0 freq=<non-zero> ref=<N> post=<N>
+
+If freq comes back non-zero with valid divider hints, the v28 fallback
+path no longer fires, amdgpu_pll_compute receives real ATOM output, and
+the bridge cq_wait_set 3-second hang at log line 2645 should shrink to
+<500ms (lane lock acquired). HDMI lights up.
+
+If freq still returns 0 with non-zero input, the DP-mode AdjustDisplayPll
+branch on Liverpool needs more than just a non-zero pixel clock — likely
+ucDispPllConfig or ucExtTransmitterID also need PS4-specific values. The
+v46 trace already shows: tx=0x1e enc=0 cfg=0x20 ext_tx=0x00 — those
+fields become the next investigation.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_crtc.c
+@@ -333,6 +333,20 @@
+ 		}
+ 	}
+
++	/* v47 (PS4 Liverpool/Gladius): the connector detect/dpcd path doesn't
++	 * run in our boot flow (bridge is force-attached at probe by patch
++	 * 0007), so dig_connector->dp_clock stays at its zero-init value.
++	 * That zeroes args.v3.sInput.usPixelClock when ENCODER_MODE_IS_DP,
++	 * which makes ATOM AdjustDisplayPll return ulDispPllFreq=0 (GIGO,
++	 * confirmed by v46 trace: pix=0 dp_clock=0 -> OUT freq=0 ref=0 post=0).
++	 * Floor it here to the PS4-internal DP link rate (4 lanes @ 2.7 Gbps =
++	 * 270000 kHz) so ATOM gets a sane input. */
++	if ((adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS)
++	    && dp_clock == 0) {
++		pr_info("ps4_atom: flooring dp_clock 0 -> 270000 (PS4 internal DP link)\n");
++		dp_clock = 270000;
++	}
++
+ 	/* use recommended ref_div for ss */
+ 	if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
+ 		if (amdgpu_crtc->ss_enabled) {

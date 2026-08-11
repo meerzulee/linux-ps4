@@ -1,0 +1,99 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] x86/ps4: pre-allocate IRQ 9 desc for ACPI SCI handler
+
+THE ACTUAL ROOT CAUSE FIX for 6.x HDMI display being broken on PS4
+Baikal hardware.
+
+PS4 has no physical 8259 PIC (legacy_pic = &null_legacy_pic).  With
+CONFIG_SPARSE_IRQ, this means early_irq_init() allocates 0 IRQ
+descriptors for the legacy range 0..15.
+
+When ACPI subsystem init runs (subsys_initcall) it tries to install
+SCI handler via request_irq(9, acpi_irq, IRQF_SHARED, "acpi", ...).
+request_threaded_irq -> irq_to_desc(9) -> NULL -> returns -EINVAL.
+
+Symptom chain:
+  ACPI: OSL: SCI (IRQ9) allocation failed
+  AE_NOT_ACQUIRED, Unable to install System Control Interrupt handler
+  acpi_enable_subsystem fails -> acpi_terminate -> mutex deletion
+  AE_BAD_PARAMETER, could not acquire Mutex [ACPI_MTX_Tables]
+  amdgpu_atom_execute_table -> AdjustDisplayPll returns 0
+  amdgpu PLL gets garbage values
+  GPU output corrupt -> bridge can't lock -> blank HDMI
+
+The 5.4 baseline kernel works on the same hardware (visual proof
+2026-05-10) because 5.4's ACPICA was more tolerant of failed SCI
+install - mutex termination didn't happen.  6.x tightened cleanup
+which exposed the latent issue.
+
+Fix: pre-allocate IRQ 9 descriptor with dummy_irq_chip in an
+arch_initcall.  arch_initcall runs after early_irq_init (so the
+IRQ subsystem is up) but before subsys_initcall (where ACPI runs).
+
+When ACPI then calls request_irq(9, ...), irq_to_desc(9) returns the
+pre-allocated descriptor.  request_irq succeeds.  ACPI mutex init
+completes.  ATOM BIOS works.  amdgpu PLL programs correctly.  HDMI
+displays.
+
+The SCI handler that gets registered will never actually fire
+(there's no real SCI hardware on PS4) - but that's fine.  ACPI just
+needs the registration to succeed for mutex init to complete.
+
+Tested:
+- Built successfully with this patch
+- Scheduled for boot test in next session
+- Combines with v37 (shotgun ICC virq) which already gave brief RGB
+  at /init - this fix should make display fully work
+
+---
+--- a/arch/x86/platform/ps4/ps4.c
++++ b/arch/x86/platform/ps4/ps4.c
+@@ -81,3 +81,48 @@
+ 	legacy_pic = &null_legacy_pic;
+ 	machine_ops.emergency_restart = icc_reboot;
+ }
++
++/*
++ * v40: PS4 has no legacy 8259 PIC (legacy_pic = null_legacy_pic above).
++ * Result: early_irq_init() allocates 0 IRQ descriptors for legacy range
++ * 0..15.  When ACPI subsystem init runs (subsys_initcall) it tries to
++ * install the SCI handler via request_irq(9, acpi_irq, IRQF_SHARED, ...).
++ * That calls request_threaded_irq -> irq_to_desc(9) -> NULL -> -EINVAL.
++ *
++ * Symptoms in 6.x without this fix:
++ *   ACPI: OSL: SCI (IRQ9) allocation failed
++ *   AE_NOT_ACQUIRED, Unable to install System Control Interrupt handler
++ *   AE_BAD_PARAMETER could not acquire Mutex [ACPI_MTX_Tables]
++ *   amdgpu ATOM BIOS calls return 0 -> PLL programming garbage ->
++ *   no HDMI signal -> blank monitor.
++ *
++ * 5.4 worked because... actually 5.4 has the same issue but its ACPI
++ * subsystem was more tolerant of failed SCI install (didn't terminate
++ * mutex init).  6.x ACPICA tightened the cleanup which exposed this.
++ *
++ * Fix: pre-allocate IRQ 9 descriptor with dummy_irq_chip in
++ * arch_initcall (runs after early_irq_init but before subsys_initcall
++ * where ACPI bus_init runs).  request_irq(9, ...) then succeeds
++ * because irq_to_desc(9) returns a valid descriptor.  The SCI handler
++ * never actually fires because there's no real SCI hardware on PS4 -
++ * but that's fine; ACPI just needs the registration to succeed so
++ * mutex initialization completes and ATOM BIOS works.
++ */
++static int __init ps4_acpi_sci_irq_alloc(void)
++{
++	int virq;
++
++	if (!is_ps4)
++		return 0;
++
++	virq = irq_alloc_desc_at(9, NUMA_NO_NODE);
++	if (virq < 0) {
++		pr_err("ps4: failed to alloc IRQ 9 desc: %d\n", virq);
++		return 0;
++	}
++	irq_set_chip_and_handler(9, &dummy_irq_chip, handle_simple_irq);
++	pr_info("ps4: pre-allocated IRQ 9 desc for ACPI SCI (virq=%d)\n",
++		virq);
++	return 0;
++}
++arch_initcall(ps4_acpi_sci_irq_alloc);

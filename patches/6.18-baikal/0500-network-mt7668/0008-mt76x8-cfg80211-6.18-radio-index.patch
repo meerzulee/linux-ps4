@@ -1,0 +1,42 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] mt76x8: adapt cfg80211 callbacks to Linux 6.18 radio_idx
+
+Linux 6.18 added a radio index to the wiphy-parameter and TX-power
+callbacks. The MT7668 vendor driver exposes one radio through these
+legacy wrappers, so accept and ignore the index while preserving its
+existing behavior.
+
+Upstream API reference:
+https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/include/net/cfg80211.h?h=v6.18.44
+
+---
+diff --git a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
+--- a/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
++++ b/drivers/net/wireless/mediatek/mt76x8/drv_wlan/MT6632/wlan/os/linux/gl_p2p.c
+@@ -129,21 +129,22 @@ struct net_device *gPrP2pDev[KAL_P2P_NUM];
+ #if CFG_ENABLE_WIFI_DIRECT_CFG_80211
+ 
+ /* Wrapper for set_wiphy_params to match expected signature */
+-static int mtk_p2p_cfg80211_set_wiphy_params_adapter(struct wiphy *wiphy, u32 changed)
++static int mtk_p2p_cfg80211_set_wiphy_params_adapter(struct wiphy *wiphy,
++	int radio_idx, u32 changed)
+ {
+ 	return mtk_p2p_cfg80211_set_wiphy_params(wiphy, changed);
+ }
+ 
+ /* Wrapper for set_tx_power to match expected signature */
+ static int mtk_p2p_cfg80211_set_txpower_adapter(struct wiphy *wiphy, struct wireless_dev *wdev,
+-	enum nl80211_tx_power_setting type, int mbm)
++	int radio_idx, enum nl80211_tx_power_setting type, int mbm)
+ {
+ 	return mtk_p2p_cfg80211_set_txpower(wiphy, wdev, type, mbm);
+ }
+ 
+-/* Wrapper for get_tx_power to match expected signature (link_id added in 6.x) */
++/* Wrapper for get_tx_power to match expected signature. */
+ static int mtk_p2p_cfg80211_get_txpower_adapter(struct wiphy *wiphy, struct wireless_dev *wdev,
+-	unsigned int link_id, int *dbm)
++	int radio_idx, unsigned int link_id, int *dbm)
+ {
+ 	return mtk_p2p_cfg80211_get_txpower(wiphy, wdev, dbm);
+ }

@@ -1,0 +1,22 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drm/ps4: adapt bridge attach callback to Linux 6.18
+
+Linux 6.18 passes the encoder explicitly to drm_bridge_funcs.attach.
+The PS4 bridge has no attach-time work, so accept the argument and keep
+the existing no-op behavior.
+
+Upstream API reference:
+https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/include/drm/drm_bridge.h?h=v6.18.44
+
+---
+diff --git a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -910,6 +910,7 @@ enum drm_mode_status ps4_bridge_mode_valid(struct drm_connector *connector,
+ }
+ 
+ static int ps4_bridge_attach(struct drm_bridge *bridge,
++                             struct drm_encoder *encoder,
+ 			     enum drm_bridge_attach_flags flags)
+ {
+ 	/* struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge); */

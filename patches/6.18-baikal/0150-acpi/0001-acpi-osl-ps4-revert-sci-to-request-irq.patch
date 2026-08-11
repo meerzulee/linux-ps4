@@ -1,0 +1,63 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] acpi/osl: PS4 - revert SCI install to non-threaded request_irq
+
+ROOT CAUSE for PS4 6.x HDMI display being broken since the start of
+this port.
+
+In 6.x kernels, acpi_os_install_interrupt_handler uses:
+  request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED | IRQF_ONESHOT,
+                       "acpi", acpi_irq)
+
+In 5.4, it used:
+  request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)
+
+On PS4 (Baikal southbridge), IRQ9 is shared with another peripheral
+that uses non-ONESHOT semantics.  Registering an ONESHOT handler as
+a SHARED action gets rejected by the kernel ->
+"SCI (IRQ9) allocation failed" -> AE_NOT_ACQUIRED ->
+SCI handler isn't installed -> ACPI mutex initialization is incomplete
+-> ATOM BIOS calls return AE_BAD_PARAMETER from
+acpi_os_wait_semaphore (the underlying mutex impl) ->
+amdgpu_atombios_crtc_adjust_pll returns 0 ->
+amdgpu_atombios_crtc_set_pll programs garbage values ->
+GPU PLL/DP-TX broken -> HDMI bridge can't lock -> blank monitor.
+
+5.4-baikal works perfectly on the same hardware (visual confirmation
+2026-05-10) precisely because the request_irq call succeeds without
+the ONESHOT requirement.
+
+Revert to 5.4 behavior on PS4 hardware (or unconditionally - the
+threaded variant doesn't gain anything for SCI specifically).
+
+If v35 works:
+- "SCI (IRQ9) allocation failed" gone from boot log
+- "could not acquire Mutex [ACPI_MTX_Tables]" gone
+- amdgpu probe doesn't see ATOM BIOS errors
+- mode_set programs PLL via working ATOM
+- HDMI display lights up (FINALLY)
+
+This is THE fix.
+
+---
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -578,8 +578,17 @@
+ 
+ 	acpi_irq_handler = handler;
+ 	acpi_irq_context = context;
+-	if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED | IRQF_ONESHOT,
+-			         "acpi", acpi_irq)) {
++	/* v35: PS4 - revert to non-threaded request_irq.
++	 * IRQF_ONESHOT requires that the IRQ NOT be re-enabled until the
++	 * threaded handler completes. On PS4 (Baikal southbridge) IRQ9 is
++	 * shared with something else that uses non-ONESHAOT semantics, so
++	 * shared registration of an ONESHOT handler is rejected ->
++	 * request_threaded_irq fails -> "SCI (IRQ9) allocation failed" ->
++	 * AE_NOT_ACQUIRED -> ACPI mutex initialization breaks -> ATOM BIOS
++	 * silently fails -> amdgpu PLL programming returns garbage ->
++	 * HDMI display dead. 5.4 used plain request_irq which works on
++	 * PS4. Reverting to that. */
++	if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
+ 		pr_err("SCI (IRQ%d) allocation failed\n", irq);
+ 		acpi_irq_handler = NULL;
+ 		return AE_NOT_ACQUIRED;

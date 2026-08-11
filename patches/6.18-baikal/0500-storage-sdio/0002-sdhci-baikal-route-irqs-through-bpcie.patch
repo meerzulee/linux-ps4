@@ -1,0 +1,42 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] mmc: sdhci-pci: route Baikal IRQs through bpcie
+
+Baikal's SDHCI function is behind the Sony southbridge interrupt fabric.
+Allocating ordinary PCI MSI vectors bypasses that fabric, and removal must
+free the vector through the same allocator that created it.
+
+Source: https://github.com/rmuxnet/ps4-linux-12xx/commit/a827d7936c44e672138f269297965817f2e2a8f4
+Adaptation: this target is Baikal-only, so no additional Kconfig symbol is
+needed around the already device-ID-gated code.
+
+---
+diff --git a/drivers/mmc/host/sdhci-pci-core.c b/drivers/mmc/host/sdhci-pci-core.c
+--- a/drivers/mmc/host/sdhci-pci-core.c
++++ b/drivers/mmc/host/sdhci-pci-core.c
+@@ -346,11 +346,9 @@ static int aeolia_probe_slot(struct sdhci_pci_slot *slot)
+ {
+ 	int err;
+-	
+-	if (slot->chip->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_SDHCI) {
+-		err = pci_alloc_irq_vectors(slot->chip->pdev, 1, INT_MAX,
+-			PCI_IRQ_MSIX | PCI_IRQ_MSI);
+-	} else {	
++
++	if (slot->chip->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_SDHCI)
++		err = bpcie_assign_irqs(slot->chip->pdev, 1);
++	else
+ 		err = apcie_assign_irqs(slot->chip->pdev, 1);
+-	}
+-	
++
+ 	if (err <= 0) {
+@@ -368,5 +364,8 @@ static int aeolia_probe_slot(struct sdhci_pci_slot *slot)
+ 
+ static void aeolia_remove_slot(struct sdhci_pci_slot *slot, int dead)
+ {
+-	apcie_free_irqs(slot->chip->pdev->irq, 1);
++	if (slot->chip->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_SDHCI)
++		bpcie_free_irqs(slot->host->irq, 1);
++	else
++		apcie_free_irqs(slot->host->irq, 1);
+ }

@@ -238,12 +238,12 @@ For full transparency:
 
 | Inherited from | Where it lives | Attribution location |
 |---|---|---|
-| crashniels' 5.4 → 6.15 forward-port | Most patches under `patches/6.x-baikal/0200-1100-*/` | `patches/6.x-baikal/series` header, `scripts/generate-6.x-patches.sh` |
-| feeRnt's xhci-aeolia Baikal shutdown fix | `patches/6.x-baikal/0800-usb-aeolia/0002-…patch` | Inline patch comment + series header |
-| feeRnt's MT7668 vendor tree | `patches/6.x-baikal/0500-network-mt7668/0001-…patch` | Inline patch comment |
-| feeRnt's MT7668 6.15+ dev_addr fix (cherry-picked from rmuxnet's tree) | `patches/6.x-baikal/0500-network-mt7668/0002-…patch` | `From:` line preserves feeRnt authorship |
-| rmuxnet's MT7668 6.15+ build fixes | `patches/6.x-baikal/0500-network-mt7668/0003,0005,0006-…patch` | `From:` line preserves rmuxnet authorship + series comment |
-| fail0verflow's original PS4 platform code | `patches/6.x-baikal/0100-x86-platform/0001-…patch` | Inline patch comment |
+| crashniels' 5.4 → 6.15 forward-port | Most subsystem patches under `patches/6.18-baikal/` | Immutable source in `docs/PATCH-PROVENANCE.md` and the series header |
+| feeRnt's xhci-aeolia Baikal shutdown fix | `patches/6.18-baikal/0800-usb-aeolia/0002-…patch` | Original author plus immutable commit URL in the patch header |
+| feeRnt's MT7668 vendor tree | `patches/6.18-baikal/0500-network-mt7668/0001-…patch` | Immutable source-tree URL and original per-file license headers |
+| feeRnt's MT7668 6.15+ `dev_addr` fix | `patches/6.18-baikal/0500-network-mt7668/0002-…patch` | Original `From:` metadata plus immutable commit URL |
+| rmuxnet's MT7668 fixes | `patches/6.18-baikal/0500-network-mt7668/0003,0005,0006-…patch` | Original `From:` metadata plus immutable commit URLs |
+| fail0verflow's original PS4 platform code | `patches/6.18-baikal/0100-x86-platform/0001-…patch` | Preserved code comments and the forward-port source ledger |
 | whitehax0r's original 5.4 squashed Baikal port | Reference baseline only, not directly imported | README credits |
 
 ---

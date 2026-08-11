@@ -1,0 +1,99 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: restore proven MN864729 command-stage boundaries
+
+The HDMI-positive Linux 6.15.4 v60 checkpoint did not submit the Panasonic
+MN864729 enable program as one ICC command queue. It executed three stages at
+the bridge firmware's wait boundaries and read back the waited-on registers
+between them:
+
+  1. DP lane status: 0x60f8/0xff and 0x60f9/0x1b
+  2. HDMI update:    0x10f6/0x80
+  3. PLL/finalize:   0x7204/0x40 clear
+
+Linux 6.18 experiment A38 proved that the monolithic queue returns success and
+the DP lane lock remains intact, but the monitor still renders no image. A
+successful firmware reply only proves that the command interpreter completed;
+it does not prove that the HDMI-side state latched across a transaction
+boundary. Restore the exact v60 stage boundaries as the only functional change
+for A39 while retaining the pointer-safe post-0034 bridge lifetime and 0035
+timing/status diagnostics.
+
+This is a forward port of the meaningful transaction-boundary behavior from
+the hardware-tested v55/v60 patch history:
+https://github.com/meerzulee/linux-ps4/commit/f5aea5d4d442d3227039d5bd0e7acb05aa4b01c7
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -312,6 +312,19 @@
+ 			rc >= 0 ? mn_bridge->cq.reply.databuf[3] : 0);
+ 	}
+ 	mutex_unlock(&mn_bridge->mutex);
++}
++
++static void ps4_bridge_log_register_locked(struct ps4_bridge *mn_bridge,
++					   const char *phase, u16 reg)
++{
++	int rc;
++
++	cq_init(&mn_bridge->cq, 4);
++	cq_read(&mn_bridge->cq, reg, 1);
++	rc = cq_exec(&mn_bridge->cq);
++	pr_info("ps4_bridge_diag: phase=%s reg=0x%04x rc=%d value=0x%02x\n",
++		phase, reg, rc,
++		rc >= 0 ? mn_bridge->cq.reply.databuf[3] : 0);
+ }
+ 
+ void ps4_bridge_mode_set(struct drm_bridge *bridge,
+@@ -565,7 +578,18 @@
+ 		cq_wait_set(&mn_bridge->cq, 0x60f9, 0x01);
+ 		cq_writereg(&mn_bridge->cq, 0x6a01, 0x4d);
+ 		cq_wait_set(&mn_bridge->cq, 0x60f9, 0x1a);
+ 
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++
++			pr_info("ps4_bridge_diag: split-stage=lane rc=%d\n", rc);
++			if (rc < 0)
++				DRM_ERROR("MN864729 lane stage failed\n");
++		}
++		ps4_bridge_log_register_locked(mn_bridge, "split-lane", 0x60f8);
++		ps4_bridge_log_register_locked(mn_bridge, "split-lane", 0x60f9);
++		cq_init(&mn_bridge->cq, 4);
++
+ 		cq_mask(&mn_bridge->cq, 0x1e00, 0x00, 0x21);
+ 		cq_mask(&mn_bridge->cq, 0x1e02, 0x00, 0x70);
+ 		// 03 08 01 01 00  2c 01 00
+@@ -611,6 +635,16 @@
+ 		//cq_writereg(&mn_bridge->cq, 0x7a00, 0x0e);
+ 
+ 		cq_wait_set(&mn_bridge->cq, 0x10f6, 0x80);
++		{
++			int rc = cq_exec(&mn_bridge->cq);
++
++			pr_info("ps4_bridge_diag: split-stage=hdmi-update rc=%d\n", rc);
++			if (rc < 0)
++				DRM_ERROR("MN864729 HDMI update stage failed\n");
++		}
++		ps4_bridge_log_register_locked(mn_bridge, "split-hdmi-update", 0x10f6);
++		cq_init(&mn_bridge->cq, 4);
++
+ 		cq_mask(&mn_bridge->cq, 0x7226, 0x00, 0x80);
+ 		cq_mask(&mn_bridge->cq, 0x7228, 0x00, 0xFF);
+ 		cq_delay(&mn_bridge->cq, 0x012c);
+@@ -625,12 +659,13 @@
+ 		{
+ 			int rc;
+ 
+-			pr_info("ps4_bridge_diag: MN864729-main-begin\n");
++			pr_info("ps4_bridge_diag: split-stage=pll-finalize-begin\n");
+ 			rc = cq_exec(&mn_bridge->cq);
+-			pr_info("ps4_bridge_diag: MN864729-main-end rc=%d\n", rc);
++			pr_info("ps4_bridge_diag: split-stage=pll-finalize-end rc=%d\n", rc);
+ 			if (rc < 0)
+ 				DRM_ERROR("Failed to configure ps4-bridge (MN864729) mode\n");
+ 		}
++		ps4_bridge_log_register_locked(mn_bridge, "split-pll-finalize", 0x7204);
+ 		#if 1
+ 		// AUDIO preinit
+ 		cq_init(&mn_bridge->cq, 4);

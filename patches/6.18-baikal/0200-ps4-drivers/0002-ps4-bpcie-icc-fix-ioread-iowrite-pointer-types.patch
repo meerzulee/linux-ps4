@@ -1,0 +1,27 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] drivers/ps4: fix bpcie-icc ioread/iowrite pointer types
+
+`bpcie_init_usb()` declares `u32 addr;` then passes `addr` to
+`ioread32()`/`iowrite32()`, which expect `void __iomem *`. On strict
+type-checking compilers (modern GCC/Clang) this fails with
+"-Wint-conversion" turned into an error. The variable should always
+have been a memory pointer.
+
+This bug exists in both whitehax0r's 5.4 squash and crashniels' 6.15
+trees and has bitten the project at every modern build. We carry the
+fix as a small dedicated patch here rather than the previous workaround
+of an in-place sed in build.sh.
+
+---
+diff --git a/drivers/ps4/ps4-bpcie-icc.c b/drivers/ps4/ps4-bpcie-icc.c
+--- a/drivers/ps4/ps4-bpcie-icc.c
++++ b/drivers/ps4/ps4-bpcie-icc.c
+@@ -283,7 +283,7 @@ EXPORT_SYMBOL_GPL(bpcie_icc_cmd);
+
+ static void bpcie_init_usb(struct bpcie_dev *sc, int usb_no) {
+ 	u32 value_to_write;
+-	u32 addr;
++	void __iomem *addr;
+ 	u32 offset;
+
+ 	offset = usb_no ? 0x68 : 0x64;

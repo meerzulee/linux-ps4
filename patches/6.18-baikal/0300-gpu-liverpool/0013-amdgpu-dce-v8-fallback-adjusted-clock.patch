@@ -1,0 +1,54 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: v28 - dce_v8_0 fallback adjusted_clock to mode->clock
+
+After v27 (mode_fixup no-op), CRTC mode_set still fails:
+  [drm] *ERROR* [CRTC:41:crtc-0] failed to set mode
+
+Source of error in dce_v8_0_crtc_mode_set:
+  if (!amdgpu_crtc->adjusted_clock)
+      return -EINVAL;
+
+amdgpu_crtc->adjusted_clock comes from amdgpu_atombios_crtc_adjust_pll
+which calls ATOM BIOS AdjustDisplayPll command. On PS4 we have known
+ATOM BIOS issues (ACPI Error: AE_BAD_PARAMETER during ATOM init), and
+that command returns 0 in args.v3.sOutput.ulDispPllFreq.  Result:
+adjusted_clock = 0 * 10 = 0 -> -EINVAL -> blank screen.
+
+Workaround: fall back to adjusted_mode->clock (the pixel clock from
+the requested mode, which IS valid on PS4 since EDID firmware
+provides it).  PLL programming downstream of this point uses
+adjusted_clock; if ATOM gave us nothing useful, the mode's own
+pixel clock is the natural fallback.
+
+If v28 works:
+- "ATOM returned 0, using adjusted_mode->clock=148500 kHz" logs
+- No more "failed to set mode"
+- CRTC programs successfully
+- HDMI shows content (backlight already on per v26)
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/dce_v8_0.c
+@@ -2553,8 +2553,20 @@
+ {
+ 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
+ 
+-	if (!amdgpu_crtc->adjusted_clock)
+-		return -EINVAL;
++	if (!amdgpu_crtc->adjusted_clock) {
++		/* v28: PS4 ATOM BIOS sometimes returns 0 from
++		 * AdjustDisplayPll (we see "ACPI Error: AE_BAD_PARAMETER"
++		 * during ATOM init).  Without this fallback, mode_set returns
++		 * -EINVAL and CRTC modeset fails -> blank monitor backlight.
++		 * Fall back to the adjusted_mode's pixel clock directly. */
++		if (!adjusted_mode->clock) {
++			pr_warn("dce_v8_0_crtc_mode_set: adjusted_clock=0 AND adjusted_mode->clock=0, can't recover\n");
++			return -EINVAL;
++		}
++		pr_info("dce_v8_0_crtc_mode_set: ATOM returned 0, using adjusted_mode->clock=%d kHz\n",
++			adjusted_mode->clock);
++		amdgpu_crtc->adjusted_clock = adjusted_mode->clock;
++	}
+ 
+ 	amdgpu_atombios_crtc_set_pll(crtc, adjusted_mode);
+ 	amdgpu_atombios_crtc_set_dtd_timing(crtc, adjusted_mode);

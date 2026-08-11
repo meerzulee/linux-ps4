@@ -1,0 +1,107 @@
+From: rmuxnet <armandas.kvietkus@proton.me>
+Date: Wed May 6 17:19:14 2026 +0200
+Subject: [PATCH] net: sky2: fix interrupt storm and memory leak on PS4
+
+Hand-extracted from rmuxnet/ps4-linux-12xx commit 45f6ad09 on the
+rmux/sky2/experimental-fixes branch. The original commit is a 5300-line
+file replacement plus modernization noise (pci_*_consistent →
+dma_*_coherent etc.); this version is the substantive PS4 quirks only,
+adapted for direct application onto a 5.4-based PS4 sky2 quirks patch
+(or the bringup tree's sky2.c).
+
+Root cause: PS4's GBE controller is a Yukon-2 variant whose ISRC2 read
+DOES NOT mask interrupts as a side effect, and whose LISR read DOES NOT
+unmask them. Standard Yukon-2 driver relies on both, so on PS4 the IRQ
+re-asserts immediately while the handler is still running → storm.
+
+Fix: explicit mask via AEOLIA_SP_ICR (offset 0x68) on entry to sky2_intr,
+explicit unmask in sky2_poll after napi_complete_done. Same in test
+path. Also extends the existing Aeolia-only PS4 quirks to Belize and
+Baikal (drop the device-ID check, just check vendor).
+
+Side fix: Baikal GBE PCI ID is enabled (was commented out previously).
+
+Status: NOT YET APPLIED to linux-ps4/. Suitable for the 0700-network-sky2/
+patch directory once verified.
+
+---
+ drivers/net/ethernet/marvell/sky2.c | 50 +++++++++++++++++++++++++----
+ drivers/net/ethernet/marvell/sky2.h |  6 ++++
+ 2 files changed, 50 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -<orig_baikal_gbe>,1 @@
+-	//{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BAIKAL_GBE) },
+
+@@ <sky2_poll, after napi_complete_done()> @@
+ 	napi_complete_done(napi, work_done);
+ 	sky2_read32(hw, B0_Y2_SP_LISR);
++#ifdef CONFIG_X86_PS4
++	/* PS4: LISR read has no unmask side-effect; rearm via ICR.
++	 * Preserve other config bits. */
++	if (hw->pdev->vendor == PCI_VENDOR_ID_SONY) {
++		u32 val = sky2_read32(hw, AEOLIA_SP_ICR);
++		sky2_write32(hw, AEOLIA_SP_ICR, (val & ~2) | 1);
++	}
++#endif
+ done:
+ 	return work_done;
+
+@@ <sky2_intr, top of function> @@
+ {
+ 	struct sky2_hw *hw = dev_id;
+ 	u32 status;
+-
+-	/* Reading this mask interrupts as side effect */
++#ifdef CONFIG_X86_PS4
++	/* PS4: mask on entry before any register read to close the
++	 * re-assertion race window. ISRC2 read has no mask side-effect.
++	 * Preserve other config bits. */
++	if (hw->pdev->vendor == PCI_VENDOR_ID_SONY) {
++		u32 val = sky2_read32(hw, AEOLIA_SP_ICR);
++		sky2_write32(hw, AEOLIA_SP_ICR, (val & ~1) | 2);
++	}
++#endif
++	/* Reading this masks interrupts as side effect (standard Yukon-2 only) */
+ 	status = sky2_read32(hw, B0_Y2_SP_ISRC2);
+ 	if (status == 0 || status == ~0) {
++#ifdef CONFIG_X86_PS4
++		/* Unmask Sony ICR if we masked it and it's not our IRQ */
++		if (hw->pdev->vendor == PCI_VENDOR_ID_SONY) {
++			u32 val = sky2_read32(hw, AEOLIA_SP_ICR);
++			sky2_write32(hw, AEOLIA_SP_ICR, (val & ~2) | 1);
++		}
++#endif
+ 		sky2_write32(hw, B0_Y2_SP_ICR, 2);
+ 		return IRQ_NONE;
+ 	}
+
+@@ <sky2_test_msi, after CS_CL_SW_IRQ> @@
+ 	if (status == ~0)
+ 		;
+ 	if (sky2_read32(hw, B0_ISRC) & Y2_IS_IRQ_SW) {
+ 		wake_up(&hw->msi_wait);
+ 		sky2_write8(hw, B0_CTST, CS_CL_SW_IRQ);
+ 	}
++#ifdef CONFIG_X86_PS4
++	if (hw->pdev->vendor == PCI_VENDOR_ID_SONY) {
++		u32 val = sky2_read32(hw, AEOLIA_SP_ICR);
++		sky2_write32(hw, AEOLIA_SP_ICR, (val & ~1) | 2);
++	}
++#endif
+ 	sky2_write32(hw, B0_Y2_SP_ICR, 2);
+ 	return IRQ_HANDLED;
+
+diff --git a/drivers/net/ethernet/marvell/sky2.h b/drivers/net/ethernet/marvell/sky2.h
+--- a/drivers/net/ethernet/marvell/sky2.h
++++ b/drivers/net/ethernet/marvell/sky2.h
+@@ <enum csr_regs, after B0_Y2_SP_ICR> @@
+ 	B0_Y2_SP_ICR	= 0x002c,
++#ifdef CONFIG_X86_PS4
++	/* Aeolia (CXD90025G): ICR at different offset. Write 2=mask, 1=unmask.
++	 * ISRC2 and LISR read side-effects are absent on this hardware. */
++	AEOLIA_SP_ICR	= 0x0068,
++#endif

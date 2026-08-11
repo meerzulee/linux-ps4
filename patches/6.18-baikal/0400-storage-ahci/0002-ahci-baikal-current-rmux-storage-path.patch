@@ -1,0 +1,274 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] ata/ahci: port the current rmux Baikal storage path
+
+The older 6.15 extraction only adds the Baikal PCI ID. That is not enough:
+Baikal exposes AHCI through BAR 0, uses bpcie's IRQ allocator, and shares PHY
+state with function 7. Use the current rmux implementation and retain its
+power-of-two 2 GiB DMA boundary, which avoids SWIOTLB rejecting the former
+0xB7FFFFFF boundary.
+
+Source: https://github.com/rmuxnet/ps4-linux-12xx/commit/a827d7936c44e672138f269297965817f2e2a8f4
+Branch checked: https://github.com/rmuxnet/ps4-linux-12xx/tree/baikal/7.0.8-Stable
+Adaptation: CONFIG_X86_PS4_BAIKAL guards are unnecessary in this Baikal-only
+target, so hardware checks use the Sony Baikal PCI IDs directly.
+
+---
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -47,4 +47,5 @@ enum {
+ 	AHCI_PCI_BAR_ENMOTUS	= 2,
+ 	AHCI_PCI_BAR_CAVIUM_GEN5	= 4,
+ 	AHCI_PCI_BAR_STANDARD	= 5,
++	AHCI_PCI_BAR0_BAIKAL	= 0,
+ };
+@@ -115,4 +116,18 @@ static const struct scsi_host_template ahci_sht = {
+ 	AHCI_SHT("ahci"),
+ };
+ 
++#define PS4_AHCI_DMA_BOUNDARY	0x7FFFFFFFUL
++
++static const struct scsi_host_template ahci_ps4_sht = {
++	__ATA_BASE_SHT("ahci"),
++	.can_queue		= AHCI_MAX_CMDS,
++	.sg_tablesize		= AHCI_MAX_SG,
++	.dma_boundary		= PS4_AHCI_DMA_BOUNDARY,
++	.shost_groups		= ahci_shost_groups,
++	.sdev_groups		= ahci_sdev_groups,
++	.change_queue_depth	= ata_scsi_change_queue_depth,
++	.tag_alloc_policy_rr	= true,
++	.sdev_configure		= ata_scsi_sdev_configure,
++};
++
+ static struct ata_port_operations ahci_vt8251_ops = {
+@@ -1761,4 +1778,8 @@ static void ahci_init_irq(struct pci_dev *pdev, unsigned int n_ports,
+ 	#ifdef CONFIG_X86_PS4
+ 	if (pdev->vendor == PCI_VENDOR_ID_SONY) {
++		if (pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI) {
++			bpcie_assign_irqs(pdev, n_ports);
++			return;
++		}
+ 		apcie_assign_irqs(pdev, n_ports);
+ 		return;
+@@ -1918,4 +1939,23 @@ static ssize_t remapped_nvme_show(struct device *dev,
+ 
+ static DEVICE_ATTR_RO(remapped_nvme);
+ 
++static bool ahci_baikal_shared_phy_seeded(struct pci_dev *pdev)
++{
++	struct pci_dev *xhci;
++	bool seeded = false;
++
++	xhci = pci_get_slot(pdev->bus, (pdev->devfn & ~0x7) | 7);
++	if (!xhci)
++		return false;
++
++	if (xhci->vendor == PCI_VENDOR_ID_SONY &&
++	    xhci->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI &&
++	    xhci->dev.driver &&
++	    !strcmp(xhci->dev.driver->name, "xhci_aeolia"))
++		seeded = true;
++
++	pci_dev_put(xhci);
++	return seeded;
++}
++
+ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+@@ -1923,6 +1963,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	unsigned int board_id = ent->driver_data;
+ 	struct ata_port_info pi = ahci_port_info[board_id];
+ 	const struct ata_port_info *ppi[] = { &pi, NULL };
++	const struct scsi_host_template *sht = &ahci_sht;
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_host_priv *hpriv;
+ 	struct ata_host *host;
+@@ -1939,3 +1980,6 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (apcie_status() == 0)
+ 		return -EPROBE_DEFER;
++
++	if (pdev->vendor == PCI_VENDOR_ID_SONY)
++		sht = &ahci_ps4_sht;
+ 	#endif
+@@ -1971,3 +2015,6 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		if (pdev->device == 0xa084)
+ 			ahci_pci_bar = AHCI_PCI_BAR_CAVIUM_GEN5;
++	} else if (pdev->vendor == PCI_VENDOR_ID_SONY &&
++		   pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI) {
++		ahci_pci_bar = AHCI_PCI_BAR0_BAIKAL;
+ 	} else if (pdev->vendor == PCI_VENDOR_ID_LOONGSON) {
+@@ -2035,4 +2082,16 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 				&dev_attr_remapped_nvme.attr,
+ 				NULL);
+ 
++	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
++	    pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI) {
++		if (!ahci_baikal_shared_phy_seeded(pdev)) {
++			rc = bpcie_baikal_sata_phy_init(pdev, hpriv->mmio);
++			if (rc)
++				goto err_rm_sysfs_file;
++		} else {
++			dev_dbg(&pdev->dev,
++				"Baikal xHCI sibling already initialized SATA PHY\n");
++		}
++	}
++
+ #ifdef CONFIG_ARM64
+@@ -2173,7 +2232,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	ahci_pci_print_info(host);
+ 
+ 	pci_set_master(pdev);
+ 
+-	rc = ahci_host_activate(host, &ahci_sht);
++	rc = ahci_host_activate(host, sht);
+ 	if (rc)
+ 		goto err_rm_sysfs_file;
+@@ -2198,7 +2257,11 @@ static void ahci_remove_one(struct pci_dev *pdev)
+ 	pm_runtime_get_noresume(&pdev->dev);
+ 	ata_pci_remove_one(pdev);
+ 
+ 	#ifdef CONFIG_X86_PS4
+ 	if (pdev->vendor == PCI_VENDOR_ID_SONY) {
++		if (pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI) {
++			bpcie_free_irqs(pdev->irq, 1);
++			return;
++		}
+ 		apcie_free_irqs(pdev->irq, 1);
+ 	}
+ 	#endif
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -486,5 +486,6 @@ struct ahci_controller{
+ };
+ 
+ void bpcie_sata_phy_init(struct device *dev, struct ahci_controller *ctlr);
++int bpcie_baikal_sata_phy_init(struct pci_dev *pdev, void __iomem *ahci_mmio);
+ 
+ static inline void bpcie_ahci_write(struct f_resource *r_mem, u32 offset, u32 val) {
+diff --git a/drivers/ps4/ps4-bpcie.c b/drivers/ps4/ps4-bpcie.c
+--- a/drivers/ps4/ps4-bpcie.c
++++ b/drivers/ps4/ps4-bpcie.c
+@@ -7,3 +7,4 @@
+ #include <linux/irqchip.h>
+ #include <linux/irqdomain.h>
++#include <linux/iopoll.h>
+ #include <linux/msi.h>
+@@ -662,2 +663,118 @@ static struct pci_driver bpcie_driver = {
+ };
+ module_pci_driver(bpcie_driver);
++
++static void bpcie_ahci_rmw(void __iomem *mmio, u32 offset, u32 mask, u32 set)
++{
++	u32 val = ioread32(mmio + offset);
++
++	iowrite32((val & mask) | set, mmio + offset);
++}
++
++int bpcie_baikal_sata_phy_init(struct pci_dev *pdev, void __iomem *ahci_mmio)
++{
++	struct pci_dev *glue_dev;
++	struct bpcie_dev *sc;
++	u32 efuse0, efuse1;
++	u32 tune0 = 40;
++	u32 tune1 = 16;
++	u32 tune2 = 16;
++	u32 pulse_offset;
++	u32 hold_offset;
++	u32 status;
++	bool shared_path;
++	int ret = 0;
++
++	if (!pdev || pdev->vendor != PCI_VENDOR_ID_SONY || !ahci_mmio)
++		return 0;
++
++	if (pdev->device != PCI_DEVICE_ID_SONY_BAIKAL_AHCI &&
++	    pdev->device != PCI_DEVICE_ID_SONY_BAIKAL_XHCI)
++		return 0;
++
++	glue_dev = pci_get_slot(pdev->bus,
++				(pdev->devfn & ~0x7) | BAIKAL_FUNC_ID_PCIE);
++	if (!glue_dev)
++		return -EPROBE_DEFER;
++
++	if (!bpcie_is_compatible_device(glue_dev)) {
++		ret = -ENODEV;
++		goto out_put;
++	}
++
++	sc = pci_get_drvdata(glue_dev);
++	if (!sc || !sc->bar2 || !sc->bar4) {
++		ret = -EPROBE_DEFER;
++		goto out_put;
++	}
++
++	dev_info(&pdev->dev, "Baikal SATA PHY init\n");
++
++	shared_path = pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI;
++	if (shared_path) {
++		pulse_offset = 112;
++		hold_offset = 48;
++	} else {
++		pulse_offset = 108;
++		hold_offset = 44;
++	}
++
++	glue_write32(sc, BPCIE_USB_BASE + pulse_offset, 1);
++	glue_write32(sc, BPCIE_USB_BASE + hold_offset, 1);
++	glue_write32(sc, BPCIE_USB_BASE + pulse_offset, 0);
++
++	efuse0 = ioread32(sc->bar4 + 0xC000 + 72);
++	efuse1 = ioread32(sc->bar4 + 0xC000 + 108);
++
++	if (shared_path) {
++		if (efuse1 & BIT(26)) {
++			tune0 = (efuse0 >> 16) & 0x3f;
++			tune1 = (efuse0 >> 22) & 0x1f;
++			tune2 = efuse0 >> 27;
++		}
++	} else if (efuse1 & BIT(18)) {
++		tune0 = efuse0 & 0x3f;
++		tune1 = (efuse0 >> 6) & 0x1f;
++		tune2 = efuse0 >> 11;
++	}
++
++	dev_info(&pdev->dev, "Baikal SATA EFUSE VALUE: 0x%02x:0x%02x:0x%02x\n",
++		 tune0, tune1, tune2);
++
++	bpcie_ahci_rmw(ahci_mmio, 0x20A0, 0xFBFF03FF, (tune0 << 10) | 0x4000000);
++	iowrite32(ioread32(ahci_mmio + 0x2014) | 0x100000, ahci_mmio + 0x2014);
++	bpcie_ahci_rmw(ahci_mmio, 0x2054, 0xFFFFF07F, tune1 << 7);
++	iowrite32(ioread32(ahci_mmio + 0x201C) | 0x4, ahci_mmio + 0x201C);
++	bpcie_ahci_rmw(ahci_mmio, 0x2078, 0xFFFFFE0F, tune2 << 4);
++	bpcie_ahci_rmw(ahci_mmio, 0x204C, 0xFFC0FFFF, 0x1E0000);
++	bpcie_ahci_rmw(ahci_mmio, 0x204C, 0xC0FFFFFF, 0);
++	bpcie_ahci_rmw(ahci_mmio, 0x2054, 0xFFFF9FFF, 0x2000);
++	bpcie_ahci_rmw(ahci_mmio, 0x207C, 0xFFFFF03F, 0x840);
++	bpcie_ahci_rmw(ahci_mmio, 0x207C, 0xFFFC0FFF, 0x2000);
++	bpcie_ahci_rmw(ahci_mmio, 0x205C, 0xCFFFFFFF, 0x10000000);
++	bpcie_ahci_rmw(ahci_mmio, 0x2080, 0xFFFFF03F, 0x8C0);
++	bpcie_ahci_rmw(ahci_mmio, 0x2080, 0xFFFC0FFF, 0x7000);
++	bpcie_ahci_rmw(ahci_mmio, 0x205C, 0x3FFFFFFF, 0x40000000);
++	bpcie_ahci_rmw(ahci_mmio, 0x204C, 0xFFFFFFF0, 0x3);
++	bpcie_ahci_rmw(ahci_mmio, 0x206C, 0xFFFFF0FF, 0x100);
++	bpcie_ahci_rmw(ahci_mmio, 0x2084, 0xFFFFFF00, 0x43);
++	bpcie_ahci_rmw(ahci_mmio, 0x2040, 0xFFFFFFE0, 0x12);
++	bpcie_ahci_rmw(ahci_mmio, 0x2040, 0xFFFFC0FF, 0x3100);
++	bpcie_ahci_rmw(ahci_mmio, 0x2040, 0xFFE0FFFF, 0xE0000);
++	bpcie_ahci_rmw(ahci_mmio, 0x2040, 0xFFFFFF1F, 0x80);
++	bpcie_ahci_rmw(ahci_mmio, 0x201C, 0xFF0FFFFF, 0x200000);
++	bpcie_ahci_rmw(ahci_mmio, 0x20DC, 0xFFFFE0FF, 0x400);
++	iowrite32(ioread32(ahci_mmio + 0x2024) | 0x30, ahci_mmio + 0x2024);
++
++	glue_write32(sc, BPCIE_USB_BASE + hold_offset, 0);
++	readl_poll_timeout_atomic(ahci_mmio + 0xDC, status, status & 0x1,
++				  10, 1000);
++	bpcie_ahci_rmw(ahci_mmio, 0x0, 0xE7FFFFFF, 0);
++	iowrite32(0x1, ahci_mmio + 0x0C);
++	bpcie_ahci_rmw(ahci_mmio, 0x0B8, 0xFFFDFFFF, 0);
++	bpcie_ahci_rmw(ahci_mmio, 0x118, 0xFFE3FFFF, 0x40000);
++
++out_put:
++	pci_dev_put(glue_dev);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(bpcie_baikal_sata_phy_init);

@@ -1,0 +1,59 @@
+From: PS4 Linux Baikal Port <noreply@ps4-linux>
+Subject: [PATCH] amdgpu: rename ProcessI2cChannelTransaction -> ReadEDIDFromHWAssistedI2C
+
+Mirrors the rename done by ps4gentoo's original 2020 ps4patches mega-commit
+(github.com/ps4boot/ps4-linux 1fef36f5a). In current upstream atombios.h:357
+the two names are #define aliases for the same ATOM table, so this is
+functionally a no-op — the compiled GetIndexIntoMasterTable result is
+identical.
+
+Reason for applying anyway:
+  - documents which ATOM table name PS4 ATOM is actually built against
+    (ReadEDIDFromHWAssistedI2C, per the ps4gentoo investigation)
+  - if the macro alias is ever removed in a future upstream sync, this
+    patch keeps the PS4 path on the correct table name without us
+    having to rediscover the workaround
+  - cheap consistency win when grepping our tree against the original
+    ps4gentoo reference patches
+
+No behavior change expected from this patch alone.
+
+Source: ps4gentoo 1fef36f5aefd11c594602a98e528184026e146c9 (Dec 2020),
+        adapted for our 6.x source layout.
+
+---
+--- a/drivers/gpu/drm/amd/amdgpu/atombios_i2c.c
++++ b/drivers/gpu/drm/amd/amdgpu/atombios_i2c.c
+@@ -31,7 +31,8 @@
+
+ #define TARGET_HW_I2C_CLOCK 50
+
+-/* these are a limitation of ProcessI2cChannelTransaction not the hw */
++/* limitation of ProcessI2cChannelTransaction / ReadEDIDFromHWAssistedI2C
++ * (these are aliases for the same ATOM table); the limit is in the table args, not the hw */
+ #define ATOM_MAX_HW_I2C_WRITE 3
+ #define ATOM_MAX_HW_I2C_READ  255
+
+@@ -42,7 +43,10 @@
+ 	struct drm_device *dev = chan->dev;
+ 	struct amdgpu_device *adev = drm_to_adev(dev);
+ 	PROCESS_I2C_CHANNEL_TRANSACTION_PS_ALLOCATION args;
+-	int index = GetIndexIntoMasterTable(COMMAND, ProcessI2cChannelTransaction);
++	/* PS4 ATOM uses ReadEDIDFromHWAssistedI2C name (ps4gentoo 1fef36f5).
++	 * In current atombios.h this is a #define alias for ProcessI2cChannelTransaction,
++	 * so functionally equivalent; the rename documents PS4 ATOM table-set choice. */
++	int index = GetIndexIntoMasterTable(COMMAND, ReadEDIDFromHWAssistedI2C);
+ 	unsigned char *base;
+ 	u16 out = cpu_to_le16(0);
+ 	int r = 0;
+@@ -162,7 +166,9 @@
+ void amdgpu_atombios_i2c_channel_trans(struct amdgpu_device *adev, u8 slave_addr, u8 line_number, u8 offset, u8 data)
+ {
+ 	PROCESS_I2C_CHANNEL_TRANSACTION_PS_ALLOCATION args;
+-	int index = GetIndexIntoMasterTable(COMMAND, ProcessI2cChannelTransaction);
++	/* PS4 ATOM uses ReadEDIDFromHWAssistedI2C name (ps4gentoo 1fef36f5);
++	 * macro alias for ProcessI2cChannelTransaction in our atombios.h. */
++	int index = GetIndexIntoMasterTable(COMMAND, ReadEDIDFromHWAssistedI2C);
+
+ 	args.ucRegIndex = offset;
+ 	args.lpI2CDataOut = data;
