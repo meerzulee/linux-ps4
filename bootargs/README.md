@@ -8,6 +8,7 @@ USB.
 
 | File | When to use |
 |---|---|
+| [`6.18-baikal-usb-no-internal-sata.txt`](6.18-baikal-usb-no-internal-sata.txt) | Current 6.18 development profile. Boots the external `OMARCHY-PS4` root and applies `libata.force=1.00:disable` to ATA port 1, device 0—the internal HDD. The optical drive and USB root remain available. |
 | [`5.4-normal.txt`](5.4-normal.txt) | Normal boot of our 5.4-baikal kernel. UART via earlycon at 0xC890E000, then handed off to fbcon. `console=ttyS0` is included because BPCIe UART driver registers ttyS0 successfully on 5.4. |
 | [`6.x-diagnostic.txt`](6.x-diagnostic.txt) | The current 6.x-baikal target. Uses `keep_bootcon` to keep MMIO UART alive past tty0 takeover, drops `console=ttyS0` (phantom on 6.x), zeroes `8250.nr_uarts` to skip phantom slot allocation, adds `initcall_debug` for cause-of-hang isolation. **This is what got us to `/init` on 2026-05-08.** |
 | [`6.x-bypass-systemd.txt`](6.x-bypass-systemd.txt) | Same as `6.x-diagnostic.txt` plus `init=/bin/sh` — drops into a busybox shell instead of running systemd. Use when you want to find which userspace service hangs the boot. |
@@ -31,6 +32,7 @@ To install one of these onto the PS4 USB, plug it into your host and run:
 sudo bash scripts/dev/update-bootargs.sh                    # default: 6.x-diagnostic
 sudo bash scripts/dev/update-bootargs.sh 5.4-normal
 sudo bash scripts/dev/update-bootargs.sh 6.x-bypass-systemd
+sudo bash scripts/dev/update-bootargs.sh 6.18-baikal-usb-no-internal-sata
 ```
 
 The script saves the previous `bootargs.txt` as `bootargs.txt.prev`

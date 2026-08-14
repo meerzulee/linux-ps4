@@ -72,6 +72,9 @@ Most of the time you only have one running.
 
 ## Other scripts in this directory
 
+- `capability-report.sh` — print one bounded, read-only snapshot of CPU, GPU,
+  storage, networking, audio, USB, Bluetooth, thermal and power-management
+  state from a booted PS4. It does not run stress tests or suspend the system.
 - `update-bootargs.sh` — install a profile from `bootargs/` into
   `bootargs.txt` on the USB. See `bootargs/README.md`.
 - `test-kernel.sh`, `mark-good.sh`, `rollback-kernel.sh` — manage

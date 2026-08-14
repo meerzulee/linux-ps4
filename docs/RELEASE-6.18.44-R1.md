@@ -6,10 +6,10 @@ path and UART access.
 
 ## Hardware evidence
 
-The released bzImage is the exact A39 artifact tested on a Baikal B1 PS4 with
-firmware 12.02. Experiments A43 and A51 reached stable 1920×1080 at 60 Hz,
-LightDM and XFCE. A51 also connected through the internal MT7668, obtained
-a DHCP lease, and accepted pinned-key SSH.
+The released bzImage is the exact A39 artifact tested on a PS4 Slim with a
+Baikal B1 southbridge and firmware 12.02. Experiments A43 and A51 reached
+stable 1920×1080 at 60 Hz, LightDM and XFCE. A51 also connected through the
+internal MT7668, obtained a DHCP lease, and accepted pinned-key SSH.
 
 ## Boot boundary
 
