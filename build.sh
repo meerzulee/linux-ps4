@@ -41,6 +41,7 @@ Options:
     -u, --update        Update base kernel from upstream
     -p, --patches-only  Only apply patches (don't build)
     -n, --no-patches    Build without applying patches
+    -x, --cross         Force cross-compilation (auto-detected on non-x86_64)
     -j, --jobs N        Number of parallel jobs (default: $(nproc))
     -C, --config FILE   Use specific config file
     -s, --series FILE   Use specific series file
@@ -62,9 +63,17 @@ CLEAN=false
 UPDATE=false
 PATCHES_ONLY=false
 NO_PATCHES=false
+CROSS=false
 # Use 80% of CPU cores by default
 JOBS=$(($(nproc) * 80 / 100))
 [ "$JOBS" -lt 1 ] && JOBS=1
+
+# Auto-detect if cross-compilation is needed
+HOST_ARCH=$(uname -m)
+if [ "$HOST_ARCH" != "x86_64" ]; then
+    CROSS=true
+    log_info "Non-x86_64 host detected ($HOST_ARCH), enabling cross-compilation"
+fi
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -72,6 +81,7 @@ while [[ $# -gt 0 ]]; do
         -u|--update) UPDATE=true; shift ;;
         -p|--patches-only) PATCHES_ONLY=true; shift ;;
         -n|--no-patches) NO_PATCHES=true; shift ;;
+        -x|--cross) CROSS=true; shift ;;
         -j|--jobs) JOBS="$2"; shift 2 ;;
         -C|--config) CONFIG_FILE="$2"; shift 2 ;;
         -s|--series) SERIES_FILE="$2"; shift 2 ;;
@@ -79,6 +89,13 @@ while [[ $# -gt 0 ]]; do
         *) log_error "Unknown option: $1"; usage ;;
     esac
 done
+
+# Set cross-compilation variables
+MAKE_ARGS=""
+if [ "$CROSS" = true ]; then
+    MAKE_ARGS="ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu-"
+    log_info "Cross-compile: ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu-"
+fi
 
 echo ""
 echo "=============================================="
@@ -227,7 +244,7 @@ fi
 
 # Resolve config dependencies
 log_info "Resolving config dependencies..."
-make olddefconfig
+make ${MAKE_ARGS} olddefconfig
 
 # Step 4: Build kernel
 log_step "=== Step 4: Building kernel ==="
@@ -244,11 +261,11 @@ fi
 
 echo ""
 log_info "Building bzImage..."
-make -j${JOBS} bzImage
+make ${MAKE_ARGS} -j${JOBS} bzImage
 
 echo ""
 log_info "Building modules..."
-make -j${JOBS} modules
+make ${MAKE_ARGS} -j${JOBS} modules
 
 # Step 5: Copy outputs
 log_step "=== Step 5: Collecting build artifacts ==="
@@ -258,7 +275,7 @@ cp .config "${OUTPUT_DIR}/config"
 cp System.map "${OUTPUT_DIR}/" 2>/dev/null || true
 
 # Get kernel version
-KERNEL_VERSION=$(make kernelrelease)
+KERNEL_VERSION=$(make ${MAKE_ARGS} kernelrelease)
 echo "${KERNEL_VERSION}" > "${OUTPUT_DIR}/version.txt"
 
 echo ""
@@ -275,7 +292,7 @@ echo "  ${OUTPUT_DIR}/version.txt"
 echo ""
 echo "To install modules to a directory:"
 echo "  cd ${SRC_DIR}"
-echo "  make INSTALL_MOD_PATH=${OUTPUT_DIR}/modules modules_install"
+echo "  make ${MAKE_ARGS} INSTALL_MOD_PATH=${OUTPUT_DIR}/modules modules_install"
 echo ""
 echo "To test on PS4:"
 echo "  1. Copy bzImage to FAT32 USB partition"
