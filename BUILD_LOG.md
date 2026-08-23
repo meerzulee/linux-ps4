@@ -13,10 +13,13 @@
 |-----------|--------|-------|
 | Base Kernel | 6.15.4 | crashniels ps4-linux-6.15.y-baikal |
 | Patches Applied | 1 | bpcie-icc pointer fix (via sed) |
-| Config | Ready | crashniels base + MT7668 + debug |
-| Build | SUCCESS | bzImage 9.6MB |
+| Config | Ready | crashniels base + MT7668 + debug + UART + USB-ethernet |
+| Build #4 | **SUCCESS** | bzImage 9.0MB, cross-compiled from ARM64 |
+| Initramfs | **NEW** | Custom 685KB, dual-console (HDMI+UART), busybox |
+| Rootfs | **NEW** | Arch Linux x86_64 + XFCE4 (808MB) |
+| Modules | **NEW** | 91MB, includes mt76/btmtksdio/r8152/cfg80211 |
 | Boot Test #1 | FAILED | Black screen - old initramfs |
-| Boot Test #2 | PENDING | Using new minimal initramfs |
+| Boot Test #2 | PENDING | Using new build #4 initramfs + UART debug |
 
 ---
 
@@ -209,7 +212,105 @@ CONFIG_BT_MTKSDIO=m
 
 ---
 
+## Build Attempt #4
+
+**Date:** 2026-03-16
+**Base:** crashniels/linux `ps4-linux-6.15.y-baikal`
+**Branch/Commit:** b3b6b1e4f (Add baikal checks)
+**Kernel Version:** 6.15.4
+**Build Method:** Cross-compilation from ARM64 (Apple M5) via Orbstack Ubuntu
+
+### Environment
+- Host: macOS 26.3, Apple M5 ARM64, 24GB RAM
+- Build VM: Orbstack Ubuntu 24.04 ARM64
+- Cross-compiler: x86_64-linux-gnu-gcc 13.3.0
+
+### Patches Applied
+```
+# Applied via sed in build.sh
+drivers/ps4/ps4-bpcie-icc.c: u32 addr -> void __iomem *addr
+```
+
+### Config Changes
+- Base: `config/config.baikal-b1`
+- Fragments: `mt7668.config`, `debug.config`, `uart.config`, `usb-ethernet.config`
+- Key additions:
+  - CONFIG_SERIAL_8250_CONSOLE=y (UART debug)
+  - CONFIG_EARLY_PRINTK=y (early serial output)
+  - CONFIG_NETCONSOLE=y (network console)
+  - CONFIG_USB_RTL8152=m (USB ethernet)
+
+### Build Result
+- Status: **SUCCESS**
+- bzImage: 9.0MB
+- Modules: 91MB (mt76, btmtksdio, r8152, cfg80211, mac80211, etc.)
+- Kernel: `6.15.4-gb3b6b1e4fe87-dirty`
+- Build time: ~5 minutes (cross-compile)
+
+### Initramfs
+- Custom built, 685KB
+- x86_64 static busybox 1.35.0
+- Dual-console init (HDMI + UART)
+- USB wait loop, root mount retry, systemd detection
+- Emergency shell fallback
+
+### Rootfs
+- Arch Linux x86_64 via Docker (--platform linux/amd64)
+- XFCE4 desktop, LightDM (auto-login), Firefox
+- mesa + vulkan-radeon for Liverpool GPU
+- NetworkManager, bluetooth, sshd enabled
+- Size: 808MB compressed
+
+### Bootargs (UART Debug)
+```
+initrd=initramfs.cpio.gz root=/dev/sda2 rootfstype=ext4 rw console=tty0 console=ttyS0,115200n8 earlyprintk=serial,ttyS0,115200 loglevel=7 debug initcall_debug
+```
+
+### USB Layout
+- /dev/sda1: 1GB FAT32 (PS4BOOT) - bzImage, initramfs, bootargs
+- /dev/sda2: ~127GB EXT4 (psxitarch) - Arch Linux rootfs + modules + firmware
+
+### Test Result - PENDING
+- Booted: -
+- Display: -
+- UART: -
+- WiFi: -
+- Notes: Awaiting manual test with UART serial console
+
+### Output Files
+```
+output/attempt-004-2026-03-16/
+  bzImage                        (9.0MB)
+  config                         (122KB)
+  version.txt                    (27B)
+  System.map                     (4.2MB)
+  initramfs.cpio.gz              (685KB)
+  bootargs.txt                   (debug boot)
+  bootargs-minimal.txt           (normal boot)
+  init-script.sh                 (init source)
+  build-bzimage.log              (214KB)
+  build-modules.log              (11KB)
+  modules-firmware-overlay.tar.xz (15MB)
+  modules/                       (91MB - staging)
+output/
+  ps4linux.tar.xz                (808MB - rootfs)
+  Dockerfile.ps4arch             (Dockerfile source)
+```
+
+---
+
 ## History
+
+### 2026-03-16
+- Build #4 SUCCESS - cross-compiled from ARM64 via Orbstack
+- New custom initramfs with UART dual-console debug (685KB)
+- New Arch Linux x86_64 rootfs with XFCE4 (808MB)
+- Kernel modules installed (91MB)
+- Updated build.sh with auto cross-compile detection
+- Added UART config fragment
+- Updated USB scripts for 1GB boot partition
+- Created deploy-to-usb.sh all-in-one deployment script
+- **Next:** Test with UART serial console
 
 ### 2026-01-14 (continued)
 - Build #3 SUCCESS - kernel 6.15.4 built (9.6MB)
