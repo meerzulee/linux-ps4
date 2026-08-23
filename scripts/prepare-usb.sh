@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="${SCRIPT_DIR}/.."
 
 # Default values
-BOOT_SIZE="100M"  # 100MB for boot partition (plenty of room)
+BOOT_SIZE="1G"  # 1GB for boot partition (room for multiple kernels/initramfs)
 ROOTFS_LABEL="psxitarch"
 
 usage() {
