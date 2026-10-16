@@ -53,19 +53,63 @@ external USB and does not install to the internal disk.
 
 ## Build
 
-```sh
-make init
-make
-```
+### Get the PS4 sources
 
-On macOS, use OrbStack:
+For the current development stack, clone this patch/configuration repository:
 
 ```sh
-./scripts/build-kernel-orbstack
+git clone --branch agent/document-baikal-capabilities \
+  https://github.com/meerzulee/linux-ps4.git linux-ps4-kernel
+cd linux-ps4-kernel
 ```
 
-OrbStack must be running and the active Docker context must be `orbstack`.
-Build outputs are written to `output/6.18-baikal/`.
+The complete upstream Linux source is downloaded automatically by `build.sh`
+when you build. `targets/6.18-baikal.env` records its repository
+`https://github.com/gregkh/linux.git`, tag `v6.18.44` and required commit
+`1efe5d048a391de3ead2804b2e7f86376c356cc5`. The builder checks that commit
+before applying the PS4 patches. You do not need to copy `src/` from another
+computer or substitute an unrelated PS4 kernel fork.
+
+### macOS ARM64 (Apple Silicon)
+
+Use OrbStack for the Linux build environment. Install the host tools and start
+OrbStack before building:
+
+```sh
+brew install git bash python coreutils zstd xz
+orb status
+# Must report Running.
+docker context show
+# Must report orbstack.
+docker info >/dev/null
+./scripts/build-kernel-orbstack --target 6.18-baikal
+```
+
+The helper runs an ARM64 Linux container with `x86_64-linux-gnu-` cross
+compilation and `KERNEL_ARCH=x86_64`. The output is a PS4 x86-64 kernel.
+Do not run `make` or `build.sh` directly on Darwin.
+
+### Linux x86-64 (Arch)
+
+The native build does not need Docker or a virtual machine:
+
+```sh
+uname -m
+# Must report x86_64.
+sudo pacman -Syu --needed base-devel git bc cpio pahole libelf openssl \
+  kmod perl python rsync xz zstd ripgrep
+make TARGET=6.18-baikal
+```
+
+`build.sh` fetches the pinned upstream kernel and applies the committed series.
+`make init` additionally downloads reference repositories and firmware; it is
+not required for the normal build from the current checkout. A new Arch
+compiler can produce different artifact bytes from the pinned OrbStack build:
+check the manifest and matching modules before considering hardware use.
+
+Both paths write build outputs to `output/6.18-baikal/`. Do not overwrite a
+known-good release output when comparing candidates. These are host build
+instructions; a build passing is not a new hardware acceptance result.
 
 Older targets remain available for comparison and recovery:
 
@@ -73,6 +117,10 @@ Older targets remain available for comparison and recovery:
 make TARGET=5.4-baikal
 make TARGET=6.x-baikal
 ```
+
+Read [AGENTS.md](AGENTS.md) before development. In the full workspace, the
+sibling `omarchy-ps4/docs/DEVELOPMENT-HOSTS.md` also covers distribution setup
+and the current OrbStack-only image builders.
 
 ## How the repository works
 
