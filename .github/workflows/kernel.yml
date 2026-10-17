@@ -1,0 +1,76 @@
+name: Kernel build and tester release
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish a new experimental release after all build checks pass
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install native x86-64 build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bc bison cpio dwarves flex gcc git kmod libelf-dev libssl-dev make python3 rsync xz-utils zstd binutils
+      - name: Check host contracts
+        run: |
+          bash -n build.sh scripts/build-kernel-orbstack scripts/ci/package-release
+          make -C experiments/baikal-mts/netdev host-test
+          python3 -m unittest discover -s tests -p '*_test.py'
+          python3 -m unittest discover -s scripts/dev/tests -p 'test_*.py'
+      - name: Build firmware-free tester target
+        env:
+          PS4_KERNEL_BUILDER_IMAGE: github-ubuntu-24.04-native
+        run: ./build.sh --target 6.18-baikal-mts2-public --jobs 2
+      - name: Package matching kernel, modules and corresponding source
+        run: ./scripts/ci/package-release
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-ps4-mts2-public-${{ github.sha }}
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+  release:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/master' && github.repository == 'meerzulee/linux-ps4'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: linux-ps4-mts2-public-${{ github.sha }}
+          path: dist
+      - name: Publish experimental tester release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c SHA256SUMS
+          version=$(cat version.txt)
+          test "$version" = 6.18.44-ps4-baikal-mts2-public1
+          gh release create "v$version" ./* --target "$GITHUB_SHA" --prerelease --latest=false --title "PS4 Baikal Ethernet tester build — $version" --notes-file RELEASE-NOTES.md

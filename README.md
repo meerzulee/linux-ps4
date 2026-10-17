@@ -48,6 +48,29 @@ See [STATUS.md](STATUS.md) for the detailed matrix,
 [CAPABILITY-TESTS.md](docs/CAPABILITY-TESTS.md) for acceptance criteria and
 [OMARCHY-READINESS.md](docs/OMARCHY-READINESS.md) for distribution readiness.
 
+## Public tester release and CI
+
+The [GitHub Actions workflow](.github/workflows/kernel.yml) builds the native
+x86-64 target `6.18-baikal-mts2-public` on pushes and pull requests. Its release
+is `6.18.44-ps4-baikal-mts2-public1`. A manual run with `publish_release` enabled
+publishes a new GitHub **prerelease** only after build and packaging checks pass.
+The release name is fixed in the target and packaging contract; bump both for
+a new candidate. Existing releases are not overwritten.
+
+This public candidate uses the same MTS2 driver and ordered55patch stack, but
+a distinct release name, native CI compiler and **no embedded device firmware**.
+It has not yet been boot-tested; EXP016 tested the private mts2 build. Testers
+must supply compatible firmware in their own initramfs/rootfs, particularly
+for the built-in Wi-Fi driver. No loader, initramfs or OS image is included.
+
+[Download experimental public1](https://github.com/meerzulee/linux-ps4/releases/tag/v6.18.44-ps4-baikal-mts2-public1)
+· [Tester instructions and manual activation](docs/TESTING-MTS2-PUBLIC.md)
+
+Release assets include the kernel, full matching module tree, config, manifest,
+boot arguments, activation helper, checksums and a complete corresponding-source
+archive. CI success establishes compilation and packaging, not hardware support.
+Read the tester guide before replacing boot files.
+
 ## Experimental Ethernet kernel
 
 The optional **`6.18-baikal-mts2`** target builds
@@ -73,7 +96,7 @@ in this kernel repository. Automatic setup from a kernel-only clone is not
 yet provided. Published DMA and module code remain retained until power-off;
 do not unload, reset or rearm a published instance.
 
-## Download
+## Original r1 download
 
 [Linux 6.18.44 PS4 Baikal r1](https://github.com/meerzulee/linux-ps4/releases/tag/v6.18.44-ps4-baikal-r1)
 is a developer build for the tested hardware. Its downloadable assets are:
@@ -155,16 +178,18 @@ The same target definition, patch series and config are used on both hosts.
 A different compiler can produce different artifact bytes; compare the build
 manifest and use modules from the same build as the kernel.
 
-### Select the experimental Ethernet target
+### Select the public tester target
 
 ```sh
 # macOS ARM64, after the OrbStack checks above:
-./scripts/build-kernel-orbstack --target 6.18-baikal-mts2
+./scripts/build-kernel-orbstack --target 6.18-baikal-mts2-public
 # Linux x86-64:
-make TARGET=6.18-baikal-mts2
+make TARGET=6.18-baikal-mts2-public
 ```
 
-Use `output/6.18-baikal-mts2/` and its whole matching module archive.
+Use `output/6.18-baikal-mts2-public/` and its whole matching module archive.
+The original `6.18-baikal-mts2` target preserves the private EXP016 inputs;
+it embeds device firmware and is not the public binary-release target.
 The predecessor `6.18-baikal-mts` builds the bounded, single-open mts1
 experiment and is retained for investigation. Do not use it for continuous
 networking. Both optional targets preserve the tested `NETFILTER=n` baseline;

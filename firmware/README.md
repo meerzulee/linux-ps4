@@ -83,5 +83,22 @@ https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/
 
 Consult its `WHENCE` and file-specific license notices for matching upstream
 artifacts; do not assume the same license covers a differently sourced or
-modified blob. The complete per-file origin/notice audit for these historical
-inputs is still pending.
+modified blob. `mediatek/mt7668pr2h.bin` exactly matches linux-firmware commit
+`5bc5868b7ee5a243abdd73cfcd3bbf7166f4f42f` (tag `20250211`). Its
+[`LICENCE.mediatek`](https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware.git/+/5bc5868b7ee5a243abdd73cfcd3bbf7166f4f42f/LICENCE.mediatek)
+allows distribution for MediaTek devices but excludes bundling it as part of
+the Linux kernel. Therefore the public tester target sets
+`CONFIG_EXTRA_FIRMWARE=""` and loads firmware separately. The notice's SHA256 is
+`a90d3f66704d85889945fec5525ea77622549da83aced1aac99828383f8f1805`.
+
+The other nine embedded inputs exactly match
+[`feeRnt/ps4-linux-12xx/extra_firmware` at `1fdfbd9a4c5690602893f6d5f65e154c6d9ba711`](https://github.com/feeRnt/ps4-linux-12xx/tree/1fdfbd9a4c5690602893f6d5f65e154c6d9ba711/extra_firmware).
+No firmware-specific redistribution notice was found there. A generic kernel
+COPYING file or a neighboring driver's GPL/BSD header does not establish their
+firmware license. These inputs are excluded from new release assets pending
+resolution. Historical binaries remain outside the new tester release.
+
+GitHub source archives exclude historical firmware, payloads and binary/log
+checkpoints using `.gitattributes`. The custom corresponding-source release
+asset contains the complete patched Linux source, its config and build inputs,
+and excludes staged firmware.

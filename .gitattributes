@@ -1,0 +1,3 @@
+# Historical firmware, payloads and console evidence are not release source inputs.
+/firmware/** export-ignore
+/checkpoint/** export-ignore

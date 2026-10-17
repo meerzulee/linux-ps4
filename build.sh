@@ -256,7 +256,7 @@ make "${MAKE_BASE_ARGS[@]}" olddefconfig
 # Stage firmware blobs into kernel source tree for CONFIG_EXTRA_FIRMWARE
 # (kbuild expects them relative to ${CONFIG_EXTRA_FIRMWARE_DIR} which we set
 # to "firmware" — same as kbuild's default, relative to kernel source root).
-if [ -d "${SCRIPT_DIR}/firmware" ]; then
+if grep -q '^CONFIG_EXTRA_FIRMWARE="[^" ]' .config && [ -d "${SCRIPT_DIR}/firmware" ]; then
     log_info "Staging firmware blobs from ${SCRIPT_DIR#${HOME}/}/firmware/..."
     mkdir -p firmware
     # Copy non-doc files (skip README.md). Preserve subdirs (mediatek/, mrvl/).

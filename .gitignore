@@ -39,3 +39,8 @@ Thumbs.db
 .claude/
 debug/
 vendor/
+
+# CI packaging and Python host checks
+/dist/
+__pycache__/
+*.pyc
