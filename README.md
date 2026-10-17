@@ -1,3 +1,18 @@
+> **Archived — development continues in Linux psX.**
+>
+> PS4 kernel patches, configs, builds, CI and curated research have moved to
+> **[Linux psX](https://github.com/meerzulee/linux-psx)**, the shared kernel
+> project for PS4 and planned PS5/future-console ports. Open new issues and
+> pull requests there.
+>
+> Omarchy distribution, installation and launcher work lives in
+> **[Omarchy psX](https://github.com/meerzulee/omarchy-psx)**.
+>
+> This repository is preserved read-only for source history, contributor
+> attribution, pinned research/initramfs inputs and existing releases.
+> Historical hardware results retain their original artifact scope; PS5
+> implementation remains planned.
+
 # linux-ps4
 
 Patch-based Linux kernel builds for PlayStation 4, currently targeting
