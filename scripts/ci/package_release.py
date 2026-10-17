@@ -60,6 +60,8 @@ def main():
         raise ValueError("unexpected release")
     check_config((output / "config").read_text())
     check_config((source / ".config").read_text())
+    if (source / ".config").read_bytes() != (output / "config").read_bytes():
+        raise ValueError("source and built kernel configurations differ")
     subprocess.run(["sha256sum", "-c", "SHA256SUMS"], cwd=output, check=True)
     patched_paths = set()
     series = repo / "patches/6.18-baikal-mts2/series"
@@ -79,9 +81,20 @@ def main():
     for name in ["bzImage", "config", "System.map", "manifest.txt", "version.txt", archive]:
         shutil.copy2(output / name, destination / name)
     shutil.copy2(output / "SHA256SUMS", destination / "BUILD-SHA256SUMS")
-    shutil.copy2(repo / "bootargs/6.18-baikal-mts2-omarchy-usb.txt", destination / "bootargs.txt")
+    shutil.copy2(repo / "bootargs/6.18-baikal-mts2-omarchy-usb.txt", destination / "bootargs-omarchy.txt")
+    shutil.copy2(repo / "bootargs/6.18-baikal-generic-usb.example.txt", destination / "bootargs-generic.example.txt")
     (destination / "vram.txt").write_text("1024\n")
-    shutil.copy2(repo / "docs/TESTING-MTS2-PUBLIC.md", destination / "TESTING.md")
+    boot_guide = (repo / "docs/BOOTING.md").read_text()
+    for old, new in {"TESTING-MTS2-PUBLIC.md": "TESTING.md",
+                     "../bootargs/6.18-baikal-generic-usb.example.txt": "bootargs-generic.example.txt",
+                     "../bootargs/6.18-baikal-mts2-omarchy-usb.txt": "bootargs-omarchy.txt",
+                     "../README.md": "https://github.com/meerzulee/linux-ps4"}.items():
+        boot_guide = boot_guide.replace(old, new)
+    (destination / "BOOTING.md").write_text(boot_guide)
+    tester_guide = (repo / "docs/TESTING-MTS2-PUBLIC.md").read_text()
+    tester_guide = tester_guide.replace("RELEASE-6.18.44-MTS2.md", "https://github.com/meerzulee/linux-ps4/blob/master/docs/RELEASE-6.18.44-MTS2.md")
+    tester_guide = tester_guide.replace("../firmware/README.md", "https://github.com/meerzulee/linux-ps4/blob/master/firmware/README.md")
+    (destination / "TESTING.md").write_text(tester_guide)
     shutil.copy2(repo / "scripts/dev/activate-mts2-public", destination / "activate-mts2-public")
     with tempfile.TemporaryDirectory(prefix="ps4-release-") as directory:
         temporary = Path(directory)
@@ -111,7 +124,15 @@ def main():
         inputs = temporary / "PS4-BUILD-INPUTS.tar.gz"
         # export-ignore excludes historical binary checkpoints and firmware from this archive.
         with inputs.open("wb") as stream:
-            subprocess.run(["git", "archive", "--format=tar.gz", "--prefix=ps4-build-inputs/", "HEAD"], stdout=stream, check=True)
+            subprocess.run([
+                "git", "archive", "--format=tar.gz", "--prefix=ps4-build-inputs/", "HEAD", "--",
+                "build.sh", "Makefile", "LICENSE", "README.md", "AGENTS.md",
+                f"targets/{TARGET}.env", f"config/{TARGET}.config",
+                "config/fragments/mt7668.config", "config/fragments/usb-ethernet.config",
+                "patches/6.18-baikal", "patches/6.18-baikal-mts2", "containers/kernel-builder",
+                "scripts/ci", "scripts/build-kernel-orbstack", "scripts/dev/activate-mts2-public",
+                "docs/PATCH-PROVENANCE.md", "docs/BOOTING.md", "docs/TESTING-MTS2-PUBLIC.md",
+            ], stdout=stream, check=True)
         with tarfile.open(inputs) as members:
             for member in members:
                 name = member.name.removeprefix("ps4-build-inputs/")
@@ -146,10 +167,12 @@ def main():
         "It uses a separate release name and CONFIG_EXTRA_FIRMWARE=\"\"; firmware must be "
         "supplied separately in the compatible initramfs/rootfs. Built-in Wi-Fi may need "
         "firmware early in initramfs; do not assume it is available as recovery.\n\n"
-        "Download bzImage AND the matching full modules archive, config, bootargs.txt, "
+        "Download bzImage AND the matching full modules archive, config, both boot-argument examples, "
         "vram.txt, ethernet-candidate.json, activate-mts2-public, TESTING.md and SHA256SUMS. "
-        "A compatible loader/initramfs/rootfs is required separately. The supplied command "
-        "line is for an ext4 OMARCHY-PS4 partitioned USB and its Omarchy initramfs.\n\n"
+        "A compatible loader/initramfs/rootfs is required separately. Read BOOTING.md: "
+        "the generic Linux USB template and optional exact Omarchy example are separate. "
+        "Adapt the selected example to your root layout and save it as bootargs.txt; "
+        "Omarchy is not required by the kernel.\n\n"
         "Read TESTING.md before use. The explicit helper is one attempt per boot; nothing "
         "is enabled automatically. Do not unload/reset/rearm a published driver. Safe DMA "
         "drain, suspend, cable recovery and repeated boot qualification remain pending. "

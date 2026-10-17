@@ -2,7 +2,9 @@
 
 Patch-based Linux kernel builds for PlayStation 4, currently targeting
 **Linux 6.18.44 on PS4 Baikal**. Upstream Linux, configuration and patch order
-are pinned so the build inputs and their origins can be inspected.
+are pinned so the build inputs and their origins can be inspected. Pair the
+kernel with your preferred Linux x86-64 distribution; Omarchy is optional.
+See [general Linux booting and the separate Omarchy example](docs/BOOTING.md).
 
 [Download Baikal r1](https://github.com/meerzulee/linux-ps4/releases/tag/v6.18.44-ps4-baikal-r1)
 · [Hardware status](STATUS.md)
@@ -69,7 +71,9 @@ for the built-in Wi-Fi driver. No loader, initramfs or OS image is included.
 Release assets include the kernel, full matching module tree, config, manifest,
 boot arguments, activation helper, checksums and a complete corresponding-source
 archive. CI success establishes compilation and packaging, not hardware support.
-Read the tester guide before replacing boot files.
+Read the [general boot guide](docs/BOOTING.md) and tester guide before replacing
+boot files. Release assets contain separate generic-Linux and Omarchy boot
+argument examples; edit the selected example and save it as `bootargs.txt`.
 
 ## Experimental Ethernet kernel
 
@@ -91,9 +95,10 @@ Read the [kernel, module and boot contract](docs/BAIKAL-MTS-KERNEL-CANDIDATE.md)
 [tested boot settings](docs/RELEASE-6.18.44-MTS2.md). The driver is built as
 `psx_mts_net.ko` and requires explicit gated activation after `baikal_pcie`.
 It has no PCI-alias autoload; boot arguments alone do not enable Ethernet.
-The Omarchy activation package is maintained separately and is not included
-in this kernel repository. Automatic setup from a kernel-only clone is not
-yet provided. Published DMA and module code remain retained until power-off;
+The standalone optional NetworkManager adapter is included in this repository.
+It supplies guarded manual activation without an Omarchy package. Automatic
+Omarchy boot integration is maintained separately; other networking stacks
+need their own reviewed adapter. Published DMA and module code remain retained until power-off;
 do not unload, reset or rearm a published instance.
 
 ## Original r1 download
@@ -261,6 +266,7 @@ For the Arch/Omarchy distribution and its installation workflow, see
 | Document | Contents |
 |---|---|
 | [STATUS.md](STATUS.md) | Hardware results and remaining limits |
+| [General Linux booting](docs/BOOTING.md) | Distribution-independent boot components and optional Omarchy layout |
 | [Baikal Ethernet bring-up](docs/BAIKAL-ETHERNET-BRINGUP.md) | Investigation, implementation and measured limits |
 | [MTS2 kernel and boot settings](docs/RELEASE-6.18.44-MTS2.md) | Exact built candidate, checksums and boot contract |
 | [6.18-PORT.md](docs/6.18-PORT.md) | Linux 6.18 port and acceptance history |

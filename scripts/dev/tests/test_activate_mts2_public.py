@@ -28,6 +28,7 @@ import importlib.machinery
 import importlib.util
 import json
 from pathlib import Path
+import stat
 import sys
 from types import SimpleNamespace
 import unittest
@@ -396,9 +397,39 @@ class ActivationTests(unittest.TestCase):
 
     def test_command_preserves_blank_nm_fields_for_unrelated_mac_profile(self):
         host = APP.System()
-        with mock.patch.object(APP.subprocess, "check_output", return_value="\n00:11:22:33:44:55\nyes\n"):
+        with mock.patch.object(host, "resolve_tool", return_value=APP.NM), \
+             mock.patch.object(APP.subprocess, "check_output", return_value="\n00:11:22:33:44:55\nyes\n"):
             text = host.command(APP.NM, "-g", "synthetic-fields")
         self.assertEqual(text.split("\n"), ["", "00:11:22:33:44:55", "yes"])
+
+    def test_trusted_sbin_multicall_alias_resolves_and_preserves_argv0(self):
+        host = APP.System()
+        alias, canonical = "/usr/sbin/modprobe", "/usr/bin/kmod"
+        def info(path):
+            kind = stat.S_IFLNK | 0o777 if str(path) == alias else stat.S_IFDIR | 0o755
+            return SimpleNamespace(st_uid=0, st_mode=kind)
+        with mock.patch.object(host, "exists", side_effect=lambda path: path == alias), \
+             mock.patch.object(host, "real", return_value=canonical), \
+             mock.patch.object(host, "sealed", return_value=b"synthetic root-owned executable") as seal, \
+             mock.patch.object(APP.Path, "lstat", info), \
+             mock.patch.object(APP.os, "access", return_value=True), \
+             mock.patch.object(APP.subprocess, "check_output", return_value="ok\n") as command:
+            self.assertEqual(host.command("/usr/bin/modprobe", "--show-depends", APP.NAME), "ok")
+            self.assertEqual(command.call_args.args[0], (alias, "--show-depends", APP.NAME))
+            seal.assert_called_once_with(canonical)
+
+    def test_untrusted_or_missing_system_tool_never_executes(self):
+        for available in (False, True):
+            with self.subTest(available=available):
+                host = APP.System()
+                with mock.patch.object(host, "exists", return_value=available), \
+                     mock.patch.object(host, "real", return_value="/usr/bin/nmcli"), \
+                     mock.patch.object(host, "sealed", return_value=b"fake"), \
+                     mock.patch.object(APP.Path, "lstat", return_value=SimpleNamespace(st_uid=1000, st_mode=stat.S_IFREG | 0o755)), \
+                     mock.patch.object(APP.subprocess, "check_output") as command:
+                    with self.assertRaises(RuntimeError):
+                        host.command(APP.NM, "device", "status")
+                    command.assert_not_called()
 
 
 if __name__ == "__main__":

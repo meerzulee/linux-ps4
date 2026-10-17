@@ -4,6 +4,9 @@ This experimental **PS4 Baikal B1** build is for testers who already have a
 working Linux boot chain, a compatible root filesystem/initramfs, recovery
 access and a UART logger. It is not a PS5 kernel or a universal PS4 installer.
 The release is `6.18.44-ps4-baikal-mts2-public1`.
+The kernel is distribution independent: Omarchy and the author's setup are
+optional. Your distribution still needs compatible PS4 userspace, firmware
+and boot support; see [Booting Linux on PS4](BOOTING.md).
 
 The original MTS2 build passed IPv4 DHCP, wired routing, independent 4 MiB
 transfers in both directions, public HTTPS, three NetworkManager reconnects
@@ -16,7 +19,7 @@ See [the original evidence and limits](RELEASE-6.18.44-MTS2.md).
 ## Inputs and firmware
 
 Use the matching release assets: `bzImage`, the complete matching module
-archive, `config`, `ethernet-candidate.json`, boot arguments and checksums.
+archive, `config`, `ethernet-candidate.json`, boot-argument examples and checksums.
 Full corresponding GPL source accompanies the release. Obtain release assets
 from the repository's Releases page:
 
@@ -37,19 +40,23 @@ display EDID. A file present only on the root filesystem may be too late.
 See [the firmware inventory](../firmware/README.md). The Ethernet implementation
 does not contain Sony system firmware or proprietary driver code.
 
-The supplied boot arguments describe the tested partitioned Omarchy USB:
-FAT boot partition, ext4 root labelled `OMARCHY-PS4`, and a compatible existing
-Omarchy initramfs. They keep internal SATA disabled. They are not suitable for
-every root filesystem or loader. The initramfs/root filesystem and launcher
-PKG are not installed by these kernel assets or the activation helper.
+Choose your boot arguments explicitly. `bootargs-generic.example.txt` is an
+example for a generic ext4 USB root labelled `PS4LINUX`; adapt it to your
+loader, initramfs and root filesystem. `bootargs-omarchy.txt` is the separately
+tested Omarchy profile for a FAT boot partition and ext4 root labelled
+`OMARCHY-PS4`, with a compatible existing Omarchy initramfs. No default
+`bootargs.txt` is selected for you. Neither profile supplies a loader,
+initramfs or root filesystem, and no launcher PKG is installed. Keep internal
+SATA disabled for this external-media test.
 
 ## Install a matching kernel/module pair
 
 Back up the whole current boot set and preserve the complete old module tree
 on another machine. Keep a tested recovery boot set. Install the **whole** new
-module tree side by side; never replace the old release directory. On the PS4
-root filesystem, `/lib/modules` must resolve to `/usr/lib/modules` for the
-commands below. Inspect archive paths before extracting a verified archive:
+module tree side by side; never replace the old release directory. On a
+merged-/usr root filesystem, `/lib/modules` resolves to `/usr/lib/modules`, as
+used below. Other layouts must install the tree where that distribution's
+kmod expects it. Inspect archive paths before extracting a verified archive:
 
 ```sh
 release=6.18.44-ps4-baikal-mts2-public1
@@ -79,11 +86,19 @@ uname -r
 # 6.18.44-ps4-baikal-mts2-public1
 ```
 
-## Explicit Ethernet activation
+## Optional NetworkManager activation
 
-The kernel repository includes a standalone helper; no unpublished Omarchy
-package is required. It expects Python 3, kmod, iproute2 and NetworkManager at
-the Arch `/usr/bin` paths. It creates only its named
+The kernel/driver has no NetworkManager or Omarchy dependency. This optional
+standalone helper supports NetworkManager; other network managers need an
+equivalent reviewed activation path respecting the same first-open gate and
+positive-publication checks. Do not let another manager race a manual open.
+No unpublished Omarchy package is required.
+
+The helper needs `/usr/bin/python3`, kmod, iproute2 and NetworkManager. It
+resolves `modprobe`, `modinfo`, `ip` and `nmcli` only through trusted,
+root-controlled `/usr/bin`, `/usr/sbin`, `/bin` and `/sbin` paths; it supports
+root-owned merged-/usr and kmod multicall symlinks. Its module check currently
+uses the canonical `/usr/lib/modules` layout. It creates only its named
 `PS4EthernetPublic.nmconnection` profile: DHCPv4, route metric 100, MTU 1500,
 IPv6 disabled, inherited permanent MAC preserved. It does not enable startup.
 
@@ -125,7 +140,9 @@ full permission notice. Kernel driver code remains GPL-2.0-only.
 ## Show that packets use Ethernet
 
 ```sh
+# Optional, when using the NetworkManager helper:
 nmcli device status
+# Independent of the selected network manager:
 ip -4 address show dev psx0
 ip -4 route get 1.1.1.1
 ip -s link show dev psx0

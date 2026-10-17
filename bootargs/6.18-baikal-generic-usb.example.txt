@@ -1,0 +1,1 @@
+root=LABEL=PS4LINUX rootfstype=ext4 rootwait rw earlycon=uart8250,mmio32,0xC890E000,115200n8 console=tty0 keep_bootcon 8250.nr_uarts=0 panic=0 loglevel=7 pci=nocrs intremap=off libata.force=1.00:disable
