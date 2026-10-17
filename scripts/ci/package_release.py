@@ -109,13 +109,16 @@ def main():
         if subprocess.check_output(["modinfo", "-F", "vermagic", str(module)]).decode().split()[0] != RELEASE:
             raise ValueError("MTS module release mismatch")
         note = temporary / "module-note.bin"
-        subprocess.run(["objcopy", "--dump-section", f".note.gnu.build-id={note}", str(module)], check=True)
+        module_sha256 = digest(module)
+        subprocess.run(["objcopy", "--dump-section", f".note.gnu.build-id={note}", str(module), str(temporary / "module-note-copy.ko")], check=True)
+        if digest(module) != module_sha256:
+            raise ValueError("module identity extraction modified the original module")
         manifest = {
             "schema": 1,
             "kernel_release": RELEASE,
             "kernel_config_sha256": digest(output / "config"),
             "module_path": "/usr/" + MODULE,
-            "module_sha256": digest(module),
+            "module_sha256": module_sha256,
             "loaded_note_hex": note.read_bytes().hex(),
         }
         if not manifest["loaded_note_hex"]:
