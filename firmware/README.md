@@ -51,12 +51,37 @@ CONFIG_EXTRA_FIRMWARE="mediatek/mt7668pr2h.bin"
 CONFIG_EXTRA_FIRMWARE_DIR="/path/to/firmware"
 ```
 
-## Sources
+## Provenance and embedded firmware
 
-All firmware files are from the official Linux firmware repository:
+The regular and MTS configurations explicitly embed device firmware through
+`CONFIG_EXTRA_FIRMWARE`. In particular, the tested MTS2 bzImage contains the
+ten files below. They are pre-existing repository inputs, not Sony PUP or
+system-kernel files. The previous blanket statement that every file came from
+linux-firmware was not backed by a per-file source and notice ledger.
+
+The kernel and original Linux patches use their stated GPL licenses. That
+does not grant a GPL license to firmware. Firmware redistribution notices
+must be established separately before a new public binary release. The
+current source update adds no new firmware blobs.
+
+| Embedded path | Bytes | SHA256 |
+| --- | ---: | --- |
+| `mediatek/mt7668pr2h.bin` | 170990 | `465ed634c61b46b34bb21240736f33d3d347fefec7cbfbd1cb6e63334aec4cc9` |
+| `EEPROM_MT7668.bin` | 1024 | `d3ecac0fde5b66fab282cd97f43c04d77bf4fd6abdbd9c35c5d3d40e2f1f035a` |
+| `EEPROM_MT7668_e1.bin` | 1024 | `a042c6ceb77ae4a0c367e5e5522cbf21f767936b8799a781096e1e72684d957c` |
+| `mt7668_patch_e1_hdr.bin` | 152302 | `519083ebb8318d9cfc8eaaaa7470d1a266c8f32275df3c62e3619d6c07f97389` |
+| `mt7668_patch_e2_hdr.bin` | 178782 | `05a619651517ee481ccfa3ed2cd11bd33f497967802233e6f81085036e0ec9d5` |
+| `TxPwrLimit_MT76x8.dat` | 19064 | `49fa3e52b26fe49b837187c91765550e32cd6540ea2e09343274245d6630062a` |
+| `wifi.cfg` | 889 | `828d7d18607c78513a71719f919340a7c91ee8ef68080ad7270a65dd661abbbd` |
+| `WIFI_RAM_CODE2_SDIO_MT7668.bin` | 51816 | `35faff6a613fefcbe33a6f6d8df885be76c546f9e78ba8ab93056a816ad87254` |
+| `WIFI_RAM_CODE2_USB_MT7668.bin` | 55880 | `b6c6b63f021168a327a0600119a416c4f5f5198820a3267b54a1259c19da0baf` |
+| `WIFI_RAM_CODE_MT7668.bin` | 463080 | `977724f3eef0e6f27567a6684bf616b884b82fe948bde0a436ea546a1f9c83ee` |
+
+The public linux-firmware source is:
+
 https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/
 
-## License
-
-Firmware files have their own licenses. Check the linux-firmware repository
-for specific licensing terms.
+Consult its `WHENCE` and file-specific license notices for matching upstream
+artifacts; do not assume the same license covers a differently sourced or
+modified blob. The complete per-file origin/notice audit for these historical
+inputs is still pending.

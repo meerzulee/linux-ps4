@@ -25,6 +25,33 @@ test passed; device enumeration alone is not enough.
 | Shutdown | power-off path is exposed | clean shutdown with UART capture | Pending |
 | Suspend/resume | `/sys/power/state` and `mem_sleep` are absent | blocked | Not supported |
 
+## Experimental Ethernet update — 2026-10-17
+
+A manually loaded [Baikal MTS polling module](../experiments/baikal-mts/netdev/README.md)
+passed DHCP and4MiB TCP transfers in each direction in EXP-20261017-014, with
+3297 TX/3039 RX packets, zero reported drops/errors and completed UART continuity.
+This is one fresh-boot prototype result. The table above describes the standard
+kernel artifact, which does not include this module. Repeated operation, IRQ,
+link recovery and safe DMA teardown remain pending.
+
+EXP-20261017-015 then passed the same bidirectional transfer gate plus modem
+DHCP, preferred IPv4 default routing and certificate-verified public HTTPS on
+the isolated `6.18.44-ps4-baikal-mts1` in-tree module candidate. Wi-Fi SSH,
+DNS and the desktop recovered unchanged; UART continuity completed. See
+[the candidate record](BAIKAL-MTS-KERNEL-CANDIDATE.md). Continuous operation,
+ordinary reopen/unload and lifecycle acceptance remain separate gates.
+
+The continuous `6.18.44-ps4-baikal-mts2` successor now has EXP016 transport
+and three ordinary NM profile reconnect passes on that console. One explicit
+administrative down/up reused the same DMA generation with no driver fault,
+but a test-helper guard failed because NM preserved its address when made
+unmanaged; strict packet-gating proof remains inconclusive. The first userspace
+startup handoff required an explicit first link-UP, now implemented in the
+installed activation package0.1.1. Further verified HTTPS after900seconds,
+wired SSH and completed UART continuity passed, with the same DMA/refcount.
+Automatic startup with that package and cable recovery remain pending;
+EXP016 is DEGRADED overall, with no standard-target support promotion.
+
 ## Order
 
 1. Run `scripts/dev/capability-report.sh` over SSH.

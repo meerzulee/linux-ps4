@@ -1,0 +1,150 @@
+From: Omarchy PS4 contributors
+Subject: [PATCH] amdgpu: add removable PS4 3440x1440@50 experiment
+
+Keep the proven 1080p60 bridge initialization as the recovery baseline, but
+expose a 3440x1440 CVT-RB mode and coherently pass its exact raster through the
+Liverpool CRTC and MN864729 bridge. The custom mode uses AVI VIC 0 and has a
+separate state bit so VIC zero is not mistaken for an absent mode.
+
+This patch belongs only to the 6.18-baikal-ultrawide test target. Booting the
+unchanged 6.18-baikal target is the rollback.
+---
+ drivers/gpu/drm/amd/amdgpu/ps4_bridge.c | 68 ++++++++++++++++++------
+ 1 file changed, 54 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+--- a/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
++++ b/drivers/gpu/drm/amd/amdgpu/ps4_bridge.c
+@@ -150,6 +150,7 @@ struct ps4_bridge {
+ 	struct mutex mutex;
+ 
+ 	int mode;
++	bool non_cea_mode;
+ };
+ 
+ /* this should really be taken care of by the connector, but that is currently
+@@ -333,8 +334,24 @@ void ps4_bridge_mode_set(struct drm_bridge *bridge,
+ {
+ 	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
+ 
++	if (adjusted_mode->clock == 265310 &&
++	    adjusted_mode->hdisplay == 3440 &&
++	    adjusted_mode->hsync_start == 3488 &&
++	    adjusted_mode->hsync_end == 3520 &&
++	    adjusted_mode->htotal == 3600 &&
++	    adjusted_mode->vdisplay == 1440 &&
++	    adjusted_mode->vsync_start == 1443 &&
++	    adjusted_mode->vsync_end == 1453 &&
++	    adjusted_mode->vtotal == 1474) {
++		mn_bridge->mode = 0;
++		mn_bridge->non_cea_mode = true;
++		pr_info("ps4_bridge: selected non-CEA 3440x1440@49.998 (AVI VIC 0)\n");
++		return;
++	}
++
+ 	/* This gets called before pre_enable/enable, so we just stash
+ 	 * the vic ID for later */
++	mn_bridge->non_cea_mode = false;
+ 	mn_bridge->mode = drm_match_cea_mode(adjusted_mode);
+ 	DRM_DEBUG_KMS("vic mode: %d\n", mn_bridge->mode);
+ 	if (!mn_bridge->mode) {
+@@ -428,8 +445,8 @@ static void ps4_bridge_enable(struct drm_bridge *bridge)
+ 	struct pci_dev *pdev = to_pci_dev(dev->dev);
+ 	u8 dp[3];
+ 
+-	DRM_DEBUG("Enable PS4_BRIDGE_ENABLE\n");
+-	if (!mn_bridge->mode) {
++	DRM_DEBUG("Enable PS4_BRIDGE_ENABLE\n");
++	if (!mn_bridge->mode && !mn_bridge->non_cea_mode) {
+ 		DRM_ERROR("mode not available\n");
+ 		return;
+ 	}
+@@ -763,5 +780,12 @@ static const struct drm_display_mode mode_1080p = {
+ 	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9
+ };
++/* Experimental 3440x1440@49.998Hz CVT reduced-blanking raster. */
++static const struct drm_display_mode mode_3440x1440_50 = {
++	DRM_MODE("3440x1440", DRM_MODE_TYPE_DRIVER, 265310, 3440, 3488,
++		 3520, 3600, 0, 1440, 1443, 1453, 1474, 0,
++		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC),
++	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_64_27
++};
+ /* 63 - 1920x1080@120Hz */
+ static const struct drm_display_mode mode_1080p120 = {
+ 	DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 297000, 1920, 2008,
+@@ -776,23 +800,19 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
+ 	struct drm_display_mode *newmode;
+ 	pr_info("ps4_bridge_get_modes\n");
+ 
+-	/* v25: ONLY expose 1080p60 and mark it preferred. The PS4-on-Linux
+-	 * community guide specifically calls out that 120Hz mode causes
+-	 * "unsupported resolution" and no signal on real displays:
+-	 *
+-	 *   "Some kernels try to run the PS4 in 120hz mode (no, it doesn't
+-	 *    show anything on a high refresh-rate capable display)"
+-	 *
+-	 * Removing mode_1080p120 forces DRM to pick 1080p60 as the only
+-	 * available CEA mode. Marking PREFERRED so DRM's mode-pick logic
+-	 * favors it over any user-mode alternatives. */
++	/* Prefer only the experimental native raster. Retain 1080p60 as a
++	 * selectable same-kernel recovery mode, while the unchanged release
++	 * target remains the primary rollback. */
++	newmode = drm_mode_duplicate(dev, &mode_3440x1440_50);
++	newmode->type |= DRM_MODE_TYPE_PREFERRED;
++	drm_mode_probed_add(connector, newmode);
++
+ 	newmode = drm_mode_duplicate(dev, &mode_1080p);
+-	newmode->type |= DRM_MODE_TYPE_PREFERRED;
+ 	drm_mode_probed_add(connector, newmode);
+ 
+ 	drm_connector_update_edid_property(connector, NULL);
+ 
+-	return 1;
++	return 2;
+ }
+ 
+ enum drm_connector_status ps4_bridge_detect(struct drm_connector *connector,
+@@ -838,6 +858,15 @@ enum drm_mode_status ps4_bridge_mode_valid(struct drm_connector *connector,
+ 	if (vic == 16 || vic == 4 || vic == 63)
+ 		return MODE_OK;
+ 
++	if (mode->clock == 265310 &&
++	    mode->hdisplay == 3440 && mode->hsync_start == 3488 &&
++	    mode->hsync_end == 3520 && mode->htotal == 3600 &&
++	    mode->vdisplay == 1440 && mode->vsync_start == 1443 &&
++	    mode->vsync_end == 1453 && mode->vtotal == 1474 &&
++	    (mode->flags & (DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC)) ==
++		(DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC))
++		return MODE_OK;
++
+ 	/* v22: also accept any mode whose pixel resolution matches one of
+ 	 * our supported modes, even if drm_match_cea_mode doesn't match
+ 	 * (e.g. due to vrefresh-on-the-fly differences in 6.x kernels).
+@@ -871,10 +900,20 @@ static bool ps4_bridge_mode_fixup(struct drm_bridge *bridge,
+ {
+ 	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
++
++	if (mode->hdisplay == 3440 && mode->vdisplay == 1440) {
++		pr_info("ps4_bridge_mode_fixup: forcing coherent 3440x1440@49.998 raster clock=265310 kHz\n");
++		drm_mode_copy(adjusted_mode, &mode_3440x1440_50);
++		mn_bridge->mode = 0;
++		mn_bridge->non_cea_mode = true;
++		return true;
++	}
++
+ 	pr_info("ps4_bridge_mode_fixup: incoming %dx%d -> forcing 1920x1080@60\n",
+ 		mode->hdisplay, mode->vdisplay);
+ 
+ 	drm_mode_copy(adjusted_mode, &mode_1080p);
+ 	mn_bridge->mode = 16;	/* CEA VIC 16 */
++	mn_bridge->non_cea_mode = false;
+ 	return true;
+ }
+ 
+@@ -949,5 +988,6 @@ int ps4_bridge_register(struct drm_connector *connector,
+ 	 * bridge_enable never fire and HDMI output stays dark. */
+ 	mn_bridge->mode = 16;	/* CEA VIC 16 = 1920x1080 @ 60Hz */
++	mn_bridge->non_cea_mode = false;
+ 	pr_info("ps4_bridge: forcing bridge init at attach (mode=VIC %d)\n",
+ 		mn_bridge->mode);
+ 	ps4_bridge_pre_enable(&mn_bridge->bridge);

@@ -89,8 +89,11 @@ Per the [PS4 dev loop](scripts/dev/), this means power-cycling through
 PSFree-Enhanced and re-launching `linux-1024mb.bin`. Each test cycle
 costs ~5 minutes of the gauntlet, so plan changes carefully.
 
-If you have SSH already (post-v62), kernel-module changes can be hot-
-swapped via `scp` + `modprobe -r` + `modprobe` without a reboot.
+Some independently removable modules can be tested through SSH. The Baikal
+MTS Ethernet driver is explicitly excluded: after DMA publication it retains
+its code and allocations until power-off. Do not unload, reset or rearm it.
+Follow [the MTS candidate contract](docs/BAIKAL-MTS-KERNEL-CANDIDATE.md) and
+[AGENTS.md](AGENTS.md) before a hardware experiment.
 
 ### 5. Open a PR
 
@@ -180,9 +183,8 @@ For each upstream-candidate patch:
 
 Maintainer review can take weeks to months. Be prepared to iterate.
 
-We track upstream progress in
-[checkpoint/docs/upstream-status.md](checkpoint/docs/upstream-status.md)
-(if/when patches are submitted).
+When patches are submitted, record upstream progress in the planned
+`checkpoint/docs/upstream-status.md` tracker.
 
 ## Development model — drawing inspiration from `linux-g14`
 

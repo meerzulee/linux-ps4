@@ -1,6 +1,6 @@
 # Patch provenance
 
-Snapshot date: 2026-08-11
+Baseline snapshot: 2026-08-11; MTS additions: 2026-10-17
 
 The release is intentionally patch-based. Linux is cloned from an immutable
 upstream tag, and PS4 changes remain reviewable instead of hiding inside a
@@ -84,6 +84,24 @@ the functional command sequence monolithic. Its patch header links both the
 immutable local v60 milestone and the rmux Liverpool comparison commit. The
 archived v55 split patch remains disabled because it does not apply cleanly
 after the Linux 6.18 bridge-lifetime adaptation.
+
+## Native MTS additions
+
+The optional `6.18-baikal-mts` target adds the locally authored native MTS
+Ethernet implementation from EXP-20261017-014. Its patch preserves the
+GPL-2.0 SPDX headers and the prior Baikal platform patch provenance. The
+local register/descriptor research and private artifact references are
+described in `docs/BAIKAL-MTS-HANDOFF.md` and `experiments/baikal-mts/`;
+proprietary firmware and raw reverse-engineering inputs are not included in
+the patch. Integration changes only Kconfig/Kbuild, the release guard and
+the bounded lease. See `docs/BAIKAL-MTS-KERNEL-CANDIDATE.md` for its limits.
+
+The successor `6.18-baikal-mts2` target uses a separate original GPL-2.0-only
+patch for one continuous retained DMA generation, synchronized administration
+and carrier polling. Its first integrated hardware results and limitations
+are recorded in [the bring-up guide](BAIKAL-ETHERNET-BRINGUP.md). Historical
+packet-proof source is published as an explicitly marked MAC-redacted
+derivative; its hash differs from the original private experiment receipt.
 
 ## Release policy
 

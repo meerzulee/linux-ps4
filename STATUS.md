@@ -38,6 +38,36 @@ older 6.15 experiments.
 | Suspend/resume | Not supported | `/sys/power/state` and `/sys/power/mem_sleep` are absent |
 | Internal Linux installation | Not supported | The tested system boots kernel and root filesystem from external USB |
 
+## Experimental Ethernet update — 2026-10-17
+
+A manually loaded [Baikal MTS polling module](experiments/baikal-mts/netdev/README.md)
+passed DHCP and4MiB TCP transfers in each direction in EXP-20261017-014, with
+3297 TX/3039 RX packets, zero reported drops/errors and completed UART continuity.
+This is one fresh-boot prototype result. The table above describes the standard
+kernel artifact, which does not include this module. Repeated operation, IRQ,
+link recovery and safe DMA teardown remain pending.
+
+The isolated [in-tree MTS candidate](docs/BAIKAL-MTS-KERNEL-CANDIDATE.md)
+`6.18.44-ps4-baikal-mts1` subsequently passed EXP-20261017-015: modem DHCP,
+Ethernet-preferred IPv4, hash-checked 4 MiB each way and public HTTPS. Final
+TX3237/RX4417 counters had zero reported drops/errors; Wi-Fi recovery and
+completed UART continuity were verified. It remains explicitly activated,
+single-open and retained after close, with a fixed 900-second lease.
+
+The separate continuous target `6.18.44-ps4-baikal-mts2` is now running in
+EXP-20261017-016: modem DHCP, preferred wired IPv4, hash-checked 4 MiB each way,
+public HTTPS and three NM profile reconnects passed on the same console.
+One explicit administrative down/up also preserved its DMA generation; the
+test helper's stricter no-address guard failed because NM retained the address
+after becoming unmanaged, so packet-gating acceptance remains inconclusive.
+The driver has no fixed lease and retains one engine/DMA generation per boot.
+An initial userspace handoff bug was corrected by explicit first link-UP before
+NM management; package0.1.1 is installed for future boot, with automatic startup
+still pending. A healthy retained generation survived beyond900seconds and
+further public HTTPS; wired SSH and completed UART continuity passed, with
+Ethernet left preferred and Wi-Fi kept. Cable recovery has no operator result.
+EXP016 is qualified DEGRADED overall; the standard-target table is unchanged.
+
 ## Exact accepted kernel artifact
 
 - bzImage SHA-256:

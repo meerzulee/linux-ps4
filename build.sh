@@ -216,6 +216,18 @@ if [[ -n "${CROSS_COMPILE:-}" ]]; then
     MAKE_BASE_ARGS+=("CROSS_COMPILE=${CROSS_COMPILE}")
 fi
 
+if [[ -n "${SOURCE_DATE_EPOCH:-}" ]]; then
+    [[ "${SOURCE_DATE_EPOCH}" =~ ^[0-9]+$ ]] || {
+        log_error "SOURCE_DATE_EPOCH must be an integer"
+        exit 1
+    }
+    export SOURCE_DATE_EPOCH
+    export KBUILD_BUILD_TIMESTAMP="${KBUILD_RELEASE_TIMESTAMP:-1970-01-01 00:00:00 UTC}"
+    export KBUILD_BUILD_USER="${KBUILD_RELEASE_USER:-omarchy-ps4}"
+    export KBUILD_BUILD_HOST="${KBUILD_RELEASE_HOST:-orb-builder}"
+    export KBUILD_BUILD_VERSION="${KBUILD_RELEASE_VERSION:-1}"
+fi
+
 # Step 3: configure
 log_step "=== Step 3: Configuring kernel ==="
 if [ -f "${CONFIG_FILE}" ]; then
@@ -303,7 +315,16 @@ rm -f \
     "${MODULES_DIR}/lib/modules/${KERNEL_VERSION}/source"
 
 log_info "Compressing the module tree..."
-tar --zstd -C "${MODULES_DIR}" -cf "${MODULES_ARCHIVE}" lib
+tar \
+    --sort=name \
+    --mtime="@${SOURCE_DATE_EPOCH:-0}" \
+    --owner=0 \
+    --group=0 \
+    --numeric-owner \
+    --zstd \
+    -C "${MODULES_DIR}" \
+    -cf "${MODULES_ARCHIVE}" \
+    lib
 
 SERIES_SHA256=$(sha256sum "${SERIES_FILE}" | awk '{print $1}')
 CONFIG_SHA256=$(sha256sum "${OUTPUT_DIR}/config" | awk '{print $1}')
@@ -328,6 +349,9 @@ active_patch_count=${PATCH_COUNT}
 compiler=$(${CROSS_COMPILE:-}gcc --version | head -1)
 builder_image=${PS4_KERNEL_BUILDER_IMAGE:-unspecified}
 builder_image_id=${PS4_KERNEL_BUILDER_IMAGE_ID:-unspecified}
+source_date_epoch=${SOURCE_DATE_EPOCH:-unspecified}
+kbuild_identity=${KBUILD_BUILD_USER:-unspecified}@${KBUILD_BUILD_HOST:-unspecified}
+kbuild_version=${KBUILD_BUILD_VERSION:-unspecified}
 EOF
 
 (
